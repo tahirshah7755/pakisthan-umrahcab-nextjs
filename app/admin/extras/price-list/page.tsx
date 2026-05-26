@@ -3,7 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { api } from "@/utils/api";
+import {
+  useGetPriceListQuery,
+  useUpdatePriceListMutation,
+  useApplyBulkPriceListMutation,
+} from "@/store/api/priceListApi";
 
 interface PriceCell {
   price: string;
@@ -43,7 +47,6 @@ export default function PriceListMatrix() {
 
   // Pricing State
   const [packages, setPackages] = useState<PackageRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   
   // Date Tool State
@@ -61,46 +64,41 @@ export default function PriceListMatrix() {
     type: "success",
   });
 
+  const { data: priceListData, isLoading: isFetching } = useGetPriceListQuery(undefined, {
+    skip: !extrasUnlocked,
+  });
+
+  const [updatePriceList, { isLoading: isUpdating }] = useUpdatePriceListMutation();
+  const [applyBulkPriceList, { isLoading: isApplyingBulk }] = useApplyBulkPriceListMutation();
+
   useEffect(() => {
-    async function loadPrices() {
-      try {
-        const data = await api.getPriceList();
-        if (data && data.length > 0) {
-          const mapped = data.map((b: any) => {
-            const sedanDates = b.sedan_dates || "2026-06-01 to 2026-08-31";
-            const parts = sedanDates.split(" to ");
-            const fromDate = parts[0] || "2026-06-01";
-            const toDate = parts[1] || "2026-08-31";
-            
-            return {
-              id: String(b.id),
-              englishName: b.route,
-              urduName: b.route.includes("Airport") ? "ایئرپورٹ ٹرانسپورٹ" : "ہوٹل ٹرانسپورٹ",
-              shortCode: b.route.split(" To ").map((s: string) => s.substring(0, 3).toUpperCase()).join("-"),
-              prices: {
-                sedan: { price: String(b.sedan_price || 300), from: fromDate, to: toDate },
-                staria: { price: String(b.van_price || 500), from: fromDate, to: toDate },
-                starex: { price: String(b.van_price || 450), from: fromDate, to: toDate },
-                yukon: { price: String(b.suv_price || 700), from: fromDate, to: toDate },
-                hiace: { price: String(b.van_price || 600), from: fromDate, to: toDate },
-                coaster: { price: String(b.coach_price || 1200), from: fromDate, to: toDate },
-                bus: { price: String(b.coach_price || 1800), from: fromDate, to: toDate },
-                luxury_bus: { price: String(b.coach_price || 2400), from: fromDate, to: toDate },
-              }
-            };
-          });
-          setPackages(mapped);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    if (priceListData && Array.isArray(priceListData)) {
+      const mapped = priceListData.map((b: any) => {
+        const sedanDates = b.sedan_dates || "2026-06-01 to 2026-08-31";
+        const parts = sedanDates.split(" to ");
+        const fromDate = parts[0] || "2026-06-01";
+        const toDate = parts[1] || "2026-08-31";
+        
+        return {
+          id: String(b.id),
+          englishName: b.route,
+          urduName: b.route.includes("Airport") ? "ایئرپورٹ ٹرانسپورٹ" : "ہوٹل ٹرانسپورٹ",
+          shortCode: b.route.split(" To ").map((s: string) => s.substring(0, 3).toUpperCase()).join("-"),
+          prices: {
+            sedan: { price: String(b.sedan_price || 300), from: fromDate, to: toDate },
+            staria: { price: String(b.van_price || 500), from: fromDate, to: toDate },
+            starex: { price: String(b.van_price || 450), from: fromDate, to: toDate },
+            yukon: { price: String(b.suv_price || 700), from: fromDate, to: toDate },
+            hiace: { price: String(b.van_price || 600), from: fromDate, to: toDate },
+            coaster: { price: String(b.coach_price || 1200), from: fromDate, to: toDate },
+            bus: { price: String(b.coach_price || 1800), from: fromDate, to: toDate },
+            luxury_bus: { price: String(b.coach_price || 2400), from: fromDate, to: toDate },
+          }
+        };
+      });
+      setPackages(mapped);
     }
-    if (extrasUnlocked) {
-      loadPrices();
-    }
-  }, [extrasUnlocked]);
+  }, [priceListData]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -145,30 +143,39 @@ export default function PriceListMatrix() {
     );
   };
 
-  const applyBulkDates = () => {
+  const applyBulkDates = async () => {
     if (!validFrom || !validTo) {
       showToast("Please select both 'Valid From' and 'Valid To' dates.", "error");
       return;
     }
 
-    setPackages((prev) =>
-      prev.map((pkg) => {
-        const updatedPrices = { ...pkg.prices };
-        Object.keys(updatedPrices).forEach((vehicleId) => {
-          updatedPrices[vehicleId] = {
-            ...updatedPrices[vehicleId],
-            from: validFrom,
-            to: validTo,
-          };
-        });
-        return {
-          ...pkg,
-          prices: updatedPrices,
-        };
-      })
-    );
+    try {
+      await applyBulkPriceList({
+        start_date: validFrom,
+        end_date: validTo,
+      }).unwrap();
 
-    showToast("Date validity applied across the entire pricing matrix!", "success");
+      setPackages((prev) =>
+        prev.map((pkg) => {
+          const updatedPrices = { ...pkg.prices };
+          Object.keys(updatedPrices).forEach((vehicleId) => {
+            updatedPrices[vehicleId] = {
+              ...updatedPrices[vehicleId],
+              from: validFrom,
+              to: validTo,
+            };
+          });
+          return {
+            ...pkg,
+            prices: updatedPrices,
+          };
+        })
+      );
+      showToast("Date validity applied and saved across standard pricing matrix!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to apply bulk dates to database.", "error");
+    }
   };
 
   const savePricingMatrix = async () => {
@@ -177,7 +184,8 @@ export default function PriceListMatrix() {
         const routeId = parseInt(pkg.id);
         if (isNaN(routeId)) continue;
         
-        await api.updatePriceList(routeId, {
+        await updatePriceList({
+          id: routeId,
           sedan_price: parseFloat(pkg.prices.sedan?.price || "300"),
           sedan_dates: `${pkg.prices.sedan?.from} to ${pkg.prices.sedan?.to}`,
           suv_price: parseFloat(pkg.prices.yukon?.price || "700"),
@@ -186,7 +194,7 @@ export default function PriceListMatrix() {
           van_dates: `${pkg.prices.staria?.from} to ${pkg.prices.staria?.to}`,
           coach_price: parseFloat(pkg.prices.coaster?.price || "1200"),
           coach_dates: `${pkg.prices.coaster?.from} to ${pkg.prices.coaster?.to}`,
-        });
+        }).unwrap();
       }
       showToast("Standard Price Matrix updated successfully on Laravel backend!", "success");
     } catch (err) {
@@ -222,15 +230,15 @@ export default function PriceListMatrix() {
       )}
 
       {/* Header Banner */}
-      <div className="matrix-header-banner">
+      <div className="matrix-header-banner" style={{ background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" }}>
         <div>
-          <h2>Standard Price List Setup</h2>
+          <h2>Vehicle Price List</h2>
           <p>Update standard pricing for all vehicle models and route packages.</p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={savePricingMatrix} className="form-btn-back" style={{ background: "#1f6f8b" }}>
-            <i className="fas fa-floppy-disk"></i>
-            <span>Save Matrix Pricing</span>
+          <button onClick={savePricingMatrix} disabled={isUpdating} className="form-btn-back" style={{ background: "#ffffff", color: "#1d4ed8", fontWeight: "700", border: "1px solid #cbd5e1" }}>
+            <i className="fas fa-floppy-disk" style={{ color: "#1d4ed8" }}></i>
+            <span>{isUpdating ? "Saving Matrix..." : "Save Matrix Pricing"}</span>
           </button>
           <button onClick={() => router.push("/admin/extras")} className="form-btn-back">
             <i className="fas fa-arrow-left"></i>
@@ -240,8 +248,8 @@ export default function PriceListMatrix() {
       </div>
 
       {/* Date Validity Tool */}
-      <div className="matrix-tool-card">
-        <div className="tool-title-group">
+      <div className="matrix-tool-card" style={{ borderLeft: "5px solid #2563eb" }}>
+        <div className="tool-title-group" style={{ color: "#2563eb" }}>
           <i className="fas fa-clock-rotate-left"></i>
           <span>Global Period Tool</span>
         </div>
@@ -264,20 +272,20 @@ export default function PriceListMatrix() {
               onChange={(e) => setValidTo(e.target.value)}
             />
           </div>
-          <button onClick={applyBulkDates} className="tool-btn-apply">
+          <button onClick={applyBulkDates} disabled={isApplyingBulk} className="tool-btn-apply" style={{ background: "#2563eb" }}>
             <i className="fas fa-circle-check"></i>
-            <span>Apply Period to Entire Matrix</span>
+            <span>{isApplyingBulk ? "Applying Period..." : "Apply Period to Entire Matrix"}</span>
           </button>
         </div>
         <div className="tool-help-text">
-          <i className="fas fa-circle-info"></i> Replaces all dates inside the matrix below.
+          <i className="fas fa-circle-info"></i> Replaces all dates inside the matrix below and saves changes.
         </div>
       </div>
 
       {/* Search Filter */}
       <div className="matrix-search-card">
         <div className="matrix-search-input-wrapper">
-          <i className="fas fa-search matrix-search-icon"></i>
+          <i className="fas fa-search matrix-search-icon" style={{ color: "#2563eb" }}></i>
           <input
             type="text"
             className="matrix-search-input"
@@ -290,95 +298,102 @@ export default function PriceListMatrix() {
 
       {/* Matrix Table */}
       <div className="matrix-container-card">
-        <div className="matrix-table-wrapper">
-          <table className="matrix-table">
-            <thead>
-              <tr>
-                <th>Route Package</th>
-                {VEHICLES.map((vehicle) => (
-                  <th key={vehicle.id} className={vehicle.isCore ? "col-header-core" : ""}>
-                    <span>{vehicle.name}</span>
-                    {vehicle.isCore && (
-                      <span className="core-badge">
-                        <i className="fas fa-star"></i>Core Vehicle
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPackages.map((pkg) => (
-                <tr key={pkg.id}>
-                  {/* Sticky leftmost column */}
-                  <td>
-                    <div className="package-name-cell">
-                      <span className="package-english">{pkg.englishName}</span>
-                      <span className="package-short">{pkg.shortCode}</span>
-                      <span className="package-urdu">{pkg.urduName}</span>
-                    </div>
-                  </td>
-
-                  {/* Pricing and Date cells */}
-                  {VEHICLES.map((vehicle) => {
-                    const priceCell = pkg.prices[vehicle.id] || { price: "", from: "", to: "" };
-                    return (
-                      <td key={vehicle.id}>
-                        <div className="cell-price-block">
-                          <div className="cell-price-input-wrapper">
-                            <span style={{ fontSize: "11px", position: "absolute", left: "6px", fontWeight: "700", color: "#64748b" }}>SR</span>
-                            <input
-                              type="text"
-                              className="cell-price-input"
-                              value={priceCell.price}
-                              onChange={(e) => handlePriceChange(pkg.id, vehicle.id, e.target.value)}
-                              style={{ paddingLeft: "24px" }}
-                            />
-                          </div>
-
-                          <div className="cell-date-field">
-                            <label>From</label>
-                            <input
-                              type="date"
-                              className="cell-date-input"
-                              value={priceCell.from}
-                              onChange={(e) => handleDateChange(pkg.id, vehicle.id, "from", e.target.value)}
-                            />
-                          </div>
-
-                          <div className="cell-date-field">
-                            <label>To</label>
-                            <input
-                              type="date"
-                              className="cell-date-input"
-                              value={priceCell.to}
-                              onChange={(e) => handleDateChange(pkg.id, vehicle.id, "to", e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-              {filteredPackages.length === 0 && (
+        {isFetching ? (
+          <div style={{ padding: "50px", textAlign: "center", color: "#64748b" }}>
+            <div className="spinner" style={{ borderTopColor: "#2563eb" }}></div>
+            <p style={{ marginTop: "12px", fontWeight: "600" }}>Loading standard matrix pricing...</p>
+          </div>
+        ) : (
+          <div className="matrix-table-wrapper">
+            <table className="matrix-table">
+              <thead>
                 <tr>
-                  <td
-                    colSpan={VEHICLES.length + 1}
-                    style={{
-                      textAlign: "center",
-                      padding: "40px",
-                      color: "#94a3b8",
-                      fontWeight: 500,
-                    }}
-                  >
-                    No packages found matching your search.
-                  </td>
+                  <th style={{ background: "#2563eb", color: "#ffffff" }}>Route Package</th>
+                  {VEHICLES.map((vehicle) => (
+                    <th key={vehicle.id} className={vehicle.isCore ? "col-header-core" : ""}>
+                      <span>{vehicle.name}</span>
+                      {vehicle.isCore && (
+                        <span className="core-badge" style={{ background: "#eff6ff", color: "#2563eb" }}>
+                          <i className="fas fa-star" style={{ color: "#2563eb" }}></i>Core Vehicle
+                        </span>
+                      )}
+                    </th>
+                  ))}
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredPackages.map((pkg) => (
+                  <tr key={pkg.id}>
+                    {/* Sticky leftmost column */}
+                    <td>
+                      <div className="package-name-cell">
+                        <span className="package-english" style={{ color: "#2563eb" }}>{pkg.englishName}</span>
+                        <span className="package-short" style={{ background: "#e5e7eb", color: "#4b5563", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", display: "inline-block", width: "fit-content" }}>{pkg.shortCode}</span>
+                        <span className="package-urdu">{pkg.urduName}</span>
+                      </div>
+                    </td>
+
+                    {/* Pricing and Date cells */}
+                    {VEHICLES.map((vehicle) => {
+                      const priceCell = pkg.prices[vehicle.id] || { price: "", from: "", to: "" };
+                      return (
+                        <td key={vehicle.id}>
+                          <div className="cell-price-block">
+                            <div className="cell-price-input-wrapper">
+                              <span style={{ fontSize: "11px", position: "absolute", left: "6px", fontWeight: "700", color: "#16a34a" }}>SR</span>
+                              <input
+                                type="text"
+                                className="cell-price-input"
+                                value={priceCell.price}
+                                onChange={(e) => handlePriceChange(pkg.id, vehicle.id, e.target.value)}
+                                style={{ paddingLeft: "24px", color: "#16a34a", fontWeight: "700" }}
+                              />
+                            </div>
+
+                            <div className="cell-date-field">
+                              <label>From</label>
+                              <input
+                                type="date"
+                                className="cell-date-input"
+                                value={priceCell.from}
+                                onChange={(e) => handleDateChange(pkg.id, vehicle.id, "from", e.target.value)}
+                              />
+                            </div>
+
+                            <div className="cell-date-field">
+                              <label>To</label>
+                              <input
+                                type="date"
+                                className="cell-date-input"
+                                value={priceCell.to}
+                                onChange={(e) => handleDateChange(pkg.id, vehicle.id, "to", e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+                {filteredPackages.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={VEHICLES.length + 1}
+                      style={{
+                        textAlign: "center",
+                        padding: "40px",
+                        color: "#94a3b8",
+                        fontWeight: 500,
+                      }}
+                    >
+                      No packages found matching your search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

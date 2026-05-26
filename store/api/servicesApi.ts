@@ -3,7 +3,8 @@ import { apiSlice } from "./apiSlice";
 export const servicesApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getServices: builder.query({
-      query: ({ search, type, page, perPage, status, catalog } = {}) => {
+      query: (args: { search?: string; type?: string; page?: number; perPage?: number; status?: string; catalog?: boolean } = {}) => {
+        const { search, type, page, perPage, status, catalog } = args;
         const q = new URLSearchParams();
         if (search) q.append("search", search);
         if (type) q.append("type", type);

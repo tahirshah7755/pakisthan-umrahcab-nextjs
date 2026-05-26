@@ -3,7 +3,8 @@ import { apiSlice } from "./apiSlice";
 export const trainsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getTrains: builder.query({
-      query: ({ search, leg, page, perPage, status, startDate, endDate } = {}) => {
+      query: (args: { search?: string; leg?: string; page?: number; perPage?: number; status?: string; startDate?: string; endDate?: string } = {}) => {
+        const { search, leg, page, perPage, status, startDate, endDate } = args;
         const q = new URLSearchParams();
         if (search) q.append("search", search);
         if (leg) q.append("leg", leg);

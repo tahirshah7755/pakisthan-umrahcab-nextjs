@@ -3,7 +3,8 @@ import { apiSlice } from "./apiSlice";
 export const customersApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getCustomers: builder.query({
-      query: ({ search, company, page, perPage } = {}) => {
+      query: (args: { search?: string; company?: string; page?: number; perPage?: number } = {}) => {
+        const { search, company, page, perPage } = args;
         const q = new URLSearchParams();
         if (search) q.append("search", search);
         if (company) q.append("company", company);

@@ -35,13 +35,13 @@ export default function Sidebar() {
   const menuItems: MenuItem[] = [
     { name: "Central Hub", icon: "fa-cubes", href: "/admin/hub" },
     { name: "Dashboard", icon: "fa-gauge", href: "/admin/dashboard" },
-    { name: "Reminders", icon: "fa-bell", href: "/admin/mock/reminders" },
+    { name: "Reminders", icon: "fa-bell", href: "/admin/reminders" },
     {
       name: "Customers",
       icon: "fa-users",
       submenu: [
-        { name: "View All", href: "/admin/mock/customers-all" },
-        { name: "Add New", href: "/admin/mock/customers-add" },
+        { name: "View All", href: "/admin/customers" },
+        { name: "Add New", href: "/admin/customers/add" },
       ],
     },
     {
@@ -56,38 +56,38 @@ export default function Sidebar() {
       name: "Services",
       icon: "fa-hand-holding-heart",
       submenu: [
-        { name: "View All", href: "/admin/mock/services-all" },
-        { name: "Add New", href: "/admin/mock/services-add" },
-        { name: "Service Items Catalogue", href: "/admin/mock/services-items" },
+        { name: "View All", href: "/admin/services" },
+        { name: "Add New", href: "/admin/services/add" },
+        { name: "Service Items Catalogue", href: "/admin/services/items" },
       ],
     },
-    { name: "Companies", icon: "fa-building", href: "/admin/mock/companies" },
+    { name: "Companies", icon: "fa-building", href: "/admin/companies" },
     {
       name: "Flights",
       icon: "fa-plane-departure",
       submenu: [
-        { name: "View All", href: "/admin/mock/flights-all" },
-        { name: "Flights Check", href: "/admin/mock/flights-check" },
-        { name: "Add New", href: "/admin/mock/flights-add" },
+        { name: "View All", href: "/admin/flights" },
+        { name: "Flights Check", href: "/admin/flights/check" },
+        { name: "Add New", href: "/admin/flights/add" },
       ],
     },
     {
       name: "Trains",
       icon: "fa-train",
       submenu: [
-        { name: "View All", href: "/admin/mock/trains-all" },
-        { name: "Add New", href: "/admin/mock/trains-add" },
+        { name: "View All", href: "/admin/trains" },
+        { name: "Add New", href: "/admin/trains/add" },
       ],
     },
-    { name: "Agent Follow-ups", icon: "fa-headset", href: "/admin/mock/agent-followups" },
-    { name: "Balance Statement", icon: "fa-file-invoice-dollar", href: "/admin/mock/balance" },
-    { name: "Invoices", icon: "fa-receipt", href: "/admin/mock/invoices" },
-    { name: "Ledgers", icon: "fa-book-open", href: "/admin/mock/ledgers" },
-    { name: "General Payments", icon: "fa-money-bill-transfer", href: "/admin/mock/payments" },
+    { name: "Agent Follow-ups", icon: "fa-headset", href: "/admin/agent-followups" },
+    { name: "Balance Statement", icon: "fa-file-invoice-dollar", href: "/admin/balance" },
+    { name: "Invoices", icon: "fa-receipt", href: "/admin/invoices" },
+    { name: "Ledgers", icon: "fa-book-open", href: "/admin/ledgers" },
+    { name: "General Payments", icon: "fa-money-bill-transfer", href: "/admin/payments" },
     { name: "Price List", icon: "fa-tags", href: "/admin/extras/price-list" },
-    { name: "Company Performance", icon: "fa-chart-line", href: "/admin/mock/performance" },
-    { name: "Document Scanner", icon: "fa-print", href: "/admin/mock/scanner" },
-    { name: "Shortcuts", icon: "fa-keyboard", href: "/admin/mock/shortcuts" },
+    { name: "Company Performance", icon: "fa-chart-line", href: "/admin/performance" },
+    { name: "Document Scanner", icon: "fa-print", href: "/admin/scanner" },
+    { name: "Shortcuts", icon: "fa-keyboard", href: "/admin/shortcuts" },
   ];
 
   if (!sidebarOpen) return null;

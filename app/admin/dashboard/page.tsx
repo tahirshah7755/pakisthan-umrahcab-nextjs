@@ -591,7 +591,7 @@ export default function OperationsDashboard() {
                       </td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span onClick={() => router.push(`/admin/mock/customers-view?id=${b.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{b.customerName}</span>
+                          <span onClick={() => router.push(`/admin/customers/view?id=${b.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{b.customerName}</span>
                           <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 600 }}><i className="fas fa-building" style={{ marginRight: "4px" }}></i> {b.companyName}</span>
                         </div>
                       </td>
@@ -620,7 +620,7 @@ export default function OperationsDashboard() {
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                           <button onClick={() => handleTriggerWhatsAppAlert(b, true, "start")} title="Start WhatsApp Alert" style={{ background: "#eff6ff", border: "none", color: "#2563eb", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-play"></i></button>
                           <button onClick={() => { handleTriggerWhatsAppAlert(b, true, "complete"); handleMarkCompleted(b.id, true); }} title="Complete & Alert" style={{ background: "#e0f2fe", border: "none", color: "#0284c7", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-check"></i></button>
-                          <button onClick={() => router.push(`/admin/mock/customers-view?id=${b.customerId}`)} title="View Profile" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-user"></i></button>
+                          <button onClick={() => router.push(`/admin/customers/view?id=${b.customerId}`)} title="View Profile" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-user"></i></button>
                           <button onClick={() => setSelectedVoucher({ ...b, type: "Transport Voucher" })} title="Transport Voucher (SV)" style={{ background: "#faf5ff", border: "none", color: "#8b5cf6", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-file-invoice"></i></button>
                         </div>
                       </td>
@@ -640,7 +640,7 @@ export default function OperationsDashboard() {
                       </td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span onClick={() => router.push(`/admin/mock/customers-view?id=${s.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{s.customerName}</span>
+                          <span onClick={() => router.push(`/admin/customers/view?id=${s.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{s.customerName}</span>
                           <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}><i className="fas fa-building" style={{ marginRight: "4px" }}></i> {s.companyName}</span>
                         </div>
                       </td>
@@ -663,7 +663,7 @@ export default function OperationsDashboard() {
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                           <button onClick={() => handleTriggerWhatsAppAlert(s, false, "start")} title="Start Alert" style={{ background: "#eff6ff", border: "none", color: "#2563eb", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-play"></i></button>
                           <button onClick={() => { handleTriggerWhatsAppAlert(s, false, "complete"); handleMarkCompleted(s.id, false); }} title="Complete Alert" style={{ background: "#e0f2fe", border: "none", color: "#0284c7", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-check"></i></button>
-                          <button onClick={() => router.push(`/admin/mock/services-view?id=${s.id}`)} title="View Details" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-eye"></i></button>
+                          <button onClick={() => router.push(`/admin/services/view?id=${s.id}`)} title="View Details" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-eye"></i></button>
                           <button onClick={() => setSelectedVoucher({ ...s, type: "Additional Service Voucher" })} title="Print Service Voucher" style={{ background: "#faf5ff", border: "none", color: "#8b5cf6", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-file-invoice"></i></button>
                         </div>
                       </td>
@@ -810,7 +810,7 @@ export default function OperationsDashboard() {
                       </td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span onClick={() => router.push(`/admin/mock/customers-view?id=${b.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{b.customerName}</span>
+                          <span onClick={() => router.push(`/admin/customers/view?id=${b.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{b.customerName}</span>
                           <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}><i className="fas fa-building" style={{ marginRight: "4px" }}></i> {b.companyName}</span>
                         </div>
                       </td>
@@ -837,7 +837,7 @@ export default function OperationsDashboard() {
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
-                          <button onClick={() => router.push(`/admin/mock/customers-view?id=${b.customerId}`)} title="View Profile" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-user"></i></button>
+                          <button onClick={() => router.push(`/admin/customers/view?id=${b.customerId}`)} title="View Profile" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-user"></i></button>
                           <button onClick={() => setSelectedVoucher({ ...b, type: "Transport Voucher" })} title="Transport Voucher (SV)" style={{ background: "#faf5ff", border: "none", color: "#8b5cf6", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-file-invoice"></i></button>
                         </div>
                       </td>
@@ -857,7 +857,7 @@ export default function OperationsDashboard() {
                       </td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span onClick={() => router.push(`/admin/mock/customers-view?id=${s.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{s.customerName}</span>
+                          <span onClick={() => router.push(`/admin/customers/view?id=${s.customerId}`)} style={{ fontWeight: 700, color: "#1e293b", cursor: "pointer", textDecoration: "underline" }}>{s.customerName}</span>
                           <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}><i className="fas fa-building" style={{ marginRight: "4px" }}></i> {s.companyName}</span>
                         </div>
                       </td>
@@ -878,7 +878,7 @@ export default function OperationsDashboard() {
                       <td><span className={`status-pill ${isCompleted ? "completed" : "cancelled"}`}>{s.status}</span></td>
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
-                          <button onClick={() => router.push(`/admin/mock/services-view?id=${s.id}`)} title="View Details" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-eye"></i></button>
+                          <button onClick={() => router.push(`/admin/services/view?id=${s.id}`)} title="View Details" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-eye"></i></button>
                           <button onClick={() => setSelectedVoucher({ ...s, type: "Additional Service Voucher" })} title="Print Service Voucher" style={{ background: "#faf5ff", border: "none", color: "#8b5cf6", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-file-invoice"></i></button>
                         </div>
                       </td>

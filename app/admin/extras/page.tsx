@@ -62,7 +62,7 @@ export default function ExtrasPage() {
       icon: "fa-cloud-arrow-down",
       btnLabel: "Open Bulk Export",
       btnType: "blue",
-      href: "/admin/mock/bulk-downloads",
+      href: "/admin/bulk-downloads",
     },
     {
       title: "Price List Management",
@@ -78,7 +78,7 @@ export default function ExtrasPage() {
       icon: "fa-box-archive",
       btnLabel: "Manage Packages",
       btnType: "green",
-      href: "/admin/mock/package-management",
+      href: "/admin/package-management",
     },
     {
       title: "Fleet Management",
@@ -86,7 +86,7 @@ export default function ExtrasPage() {
       icon: "fa-bus",
       btnLabel: "Manage Fleet",
       btnType: "indigo",
-      href: "/admin/mock/fleet-management",
+      href: "/admin/fleet",
     },
     {
       title: "Round Trip Discounts",
@@ -94,7 +94,7 @@ export default function ExtrasPage() {
       icon: "fa-tag",
       btnLabel: "Manage Discounts",
       btnType: "green",
-      href: "/admin/mock/round-trip-discounts",
+      href: "/admin/round-trip-discounts",
     },
     {
       title: "System Maintenance",
@@ -110,7 +110,7 @@ export default function ExtrasPage() {
       icon: "fa-globe",
       btnLabel: "Open Global Report",
       btnType: "blue",
-      href: "/admin/mock/global-report",
+      href: "/admin/global-report",
     },
     {
       title: "Activity Audit Log",
@@ -118,7 +118,7 @@ export default function ExtrasPage() {
       icon: "fa-clock-rotate-left",
       btnLabel: "Open Audit Tool",
       btnType: "indigo",
-      href: "/admin/mock/audit-log",
+      href: "/admin/audit-log",
     },
     {
       title: "Admin Notices",
@@ -126,7 +126,7 @@ export default function ExtrasPage() {
       icon: "fa-bullhorn",
       btnLabel: "Manage Admin Notices",
       btnType: "yellow",
-      href: "/admin/mock/admin-notices",
+      href: "/admin/notices?tab=admin",
     },
     {
       title: "Agent Notices",
@@ -134,7 +134,7 @@ export default function ExtrasPage() {
       icon: "fa-bell",
       btnLabel: "Manage Agent Notices",
       btnType: "orange",
-      href: "/admin/mock/agent-notices",
+      href: "/admin/notices?tab=agent",
     },
   ];
 

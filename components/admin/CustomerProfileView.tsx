@@ -118,7 +118,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
         {/* Header Action Buttons */}
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <button
-            onClick={() => router.push("/admin/mock/customers-all")}
+            onClick={() => router.push("/admin/customers")}
             style={{
               background: "rgba(255, 255, 255, 0.15)",
               color: "#ffffff",
@@ -317,7 +317,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Linked Company</span>
-                  <a onClick={() => router.push("/admin/mock/companies")} style={{ fontSize: "14px", fontWeight: "700", color: "#2563eb", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <a onClick={() => router.push("/admin/companies")} style={{ fontSize: "14px", fontWeight: "700", color: "#2563eb", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                     <i className="fas fa-building" style={{ fontSize: "12px" }}></i>
                     {currentProfile.company}
                   </a>
@@ -607,7 +607,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                           </td>
                           <td>
                             <button
-                              onClick={() => router.push(`/admin/mock/services-view?id=${s.id}`)}
+                              onClick={() => router.push(`/admin/services/view?id=${s.id}`)}
                               style={{ background: "#e0f2fe", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#0284c7", cursor: "pointer" }}
                               title="View Details"
                             >
@@ -645,13 +645,13 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               <button onClick={() => router.push("/admin/bookings/add")} style={{ background: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-calendar-plus"></i> Add Booking
               </button>
-              <button onClick={() => router.push("/admin/mock/flights-add")} style={{ background: "#0ea5e9", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push("/admin/flights/add")} style={{ background: "#0ea5e9", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-plane"></i> Add Flight
               </button>
-              <button onClick={() => router.push("/admin/mock/trains-add")} style={{ background: "#a855f7", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push("/admin/trains/add")} style={{ background: "#a855f7", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-train"></i> Add Train
               </button>
-              <button onClick={() => router.push("/admin/mock/services-add")} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push("/admin/services/add")} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-bell"></i> Add Service
               </button>
             </div>

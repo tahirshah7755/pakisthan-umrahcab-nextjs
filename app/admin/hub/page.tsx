@@ -53,8 +53,8 @@ export default function CentralHub() {
       title: "Customers",
       icon: "fa-users",
       buttons: [
-        { label: "List", href: "/admin/mock/customers-all", type: "list" as const },
-        { label: "Add", href: "/admin/mock/customers-add", type: "add" as const },
+        { label: "List", href: "/admin/customers", type: "list" as const },
+        { label: "Add", href: "/admin/customers/add", type: "add" as const },
       ],
     },
     {
@@ -69,8 +69,8 @@ export default function CentralHub() {
       title: "Services",
       icon: "fa-hand-holding-heart",
       buttons: [
-        { label: "List", href: "/admin/mock/services-all", type: "list" as const },
-        { label: "Add", href: "/admin/mock/services-add", type: "add" as const },
+        { label: "List", href: "/admin/services", type: "list" as const },
+        { label: "Add", href: "/admin/services/add", type: "add" as const },
       ],
     },
     {
@@ -82,16 +82,16 @@ export default function CentralHub() {
       title: "Flights",
       icon: "fa-plane-departure",
       buttons: [
-        { label: "List", href: "/admin/mock/flights-all", type: "list" as const },
-        { label: "Add", href: "/admin/mock/flights-add", type: "add" as const },
+        { label: "List", href: "/admin/flights", type: "list" as const },
+        { label: "Add", href: "/admin/flights/add", type: "add" as const },
       ],
     },
     {
       title: "Trains",
       icon: "fa-train",
       buttons: [
-        { label: "List", href: "/admin/mock/trains-all", type: "list" as const },
-        { label: "Add", href: "/admin/mock/trains-add", type: "add" as const },
+        { label: "List", href: "/admin/trains", type: "list" as const },
+        { label: "Add", href: "/admin/trains/add", type: "add" as const },
       ],
     },
     {

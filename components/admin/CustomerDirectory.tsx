@@ -66,7 +66,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
           <h2>Customer Directory</h2>
           <p>Manage, filter, and track customer contact profiles across all corporate accounts.</p>
         </div>
-        <button onClick={() => router.push("/admin/mock/customers-add")} className="form-btn-back">
+        <button onClick={() => router.push("/admin/customers/add")} className="form-btn-back">
           <i className="fas fa-plus"></i>
           <span>Add New Customer</span>
         </button>
@@ -155,7 +155,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
                     <td>
                       <div style={{ display: "flex", gap: "6px" }}>
                         <button
-                          onClick={() => router.push(`/admin/mock/customers-view?id=${c.rawId || c.id}`)}
+                          onClick={() => router.push(`/admin/customers/view?id=${c.rawId || c.id}`)}
                           title="View Profile"
                           style={{
                             background: "#e0f2fe",

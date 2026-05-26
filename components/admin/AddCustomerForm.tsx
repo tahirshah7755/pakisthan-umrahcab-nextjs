@@ -53,7 +53,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           <h2 style={{ fontSize: "28px", fontWeight: "700", color: "#fff", margin: 0 }}>Add New Customer</h2>
           <p style={{ color: "rgba(255,255,255,0.85)", margin: "5px 0 0 0" }}>Register a new individual customer and assign them to a company account.</p>
         </div>
-        <button type="button" onClick={() => router.push("/admin/mock/customers-all")} className="form-btn-back" style={{ background: "rgba(255,255,255,0.2)", color: "#fff", border: "none", borderRadius: "8px", padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
+        <button type="button" onClick={() => router.push("/admin/customers")} className="form-btn-back" style={{ background: "rgba(255,255,255,0.2)", color: "#fff", border: "none", borderRadius: "8px", padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}>
           <i className="fas fa-arrow-left"></i>
           <span>Back to List</span>
         </button>

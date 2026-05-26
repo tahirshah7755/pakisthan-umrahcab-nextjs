@@ -28,7 +28,11 @@ const generateRouteCode = (route: string) => {
 
 export default function PackageManagementPage() {
   const router = useRouter();
-  const { data: routes = [], isLoading } = useGetPriceListQuery(undefined);
+  const { data: routesData, isLoading } = useGetPriceListQuery(undefined);
+
+  const routes = Array.isArray(routesData)
+    ? routesData
+    : (routesData && typeof routesData === "object" && Array.isArray((routesData as any).data) ? (routesData as any).data : []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px", maxWidth: "1000px", margin: "0 auto", padding: "10px" }}>

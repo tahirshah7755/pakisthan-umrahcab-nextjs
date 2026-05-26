@@ -1,53 +1,135 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGetCompaniesQuery } from "@/store/api/companiesApi";
-import { useGetLedgersQuery } from "@/store/api/ledgersApi";
-import { useGetInvoicesQuery } from "@/store/api/invoicesApi";
+import { useGetBalanceSummaryQuery } from "@/store/api/balanceApi";
+import { useGetCompaniesQuery, useUpdateCompanyMutation } from "@/store/api/companiesApi";
+
+const fmt = (n: number) =>
+  `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const formatRelativeDate = (dateStr: string | null) => {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  
+  const dStr = date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  
+  // Calculate relative days
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr);
+  target.setHours(0, 0, 0, 0);
+  
+  const diffTime = today.getTime() - target.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  let relative = "";
+  if (diffDays === 0) relative = "0d ago";
+  else if (diffDays > 0) relative = `${diffDays}d ago`;
+  else relative = `${Math.abs(diffDays)}d from now`;
+  
+  return { date: dStr, relative };
+};
+
+const formatDateSimple = (dateStr: string | null) => {
+  if (!dateStr) return "--";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "--";
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const TABS = [
+  { key: "all",          label: "All Companies" },
+  { key: "due_today",    label: "Due Today" },
+  { key: "overdue",      label: "Overdue" },
+  { key: "cleared",      label: "Cleared / Paid" },
+  { key: "upcoming",     label: "Upcoming (7 Days)" },
+];
 
 export default function BalancePage() {
   const router = useRouter();
+  const [activeTab,     setActiveTab]     = useState("all");
+  const [filterCompany, setFilterCompany] = useState("");
+  const [search,        setSearch]        = useState("");
+  const [editingRemarks, setEditingRemarks] = useState<number | null>(null);
+  const [tempRemarks, setTempRemarks] = useState("");
 
-  const { data: companies = [], isLoading: loadingComp } = useGetCompaniesQuery(undefined);
-  const { data: ledgers = [], isLoading: loadingLedger } = useGetLedgersQuery(undefined);
-  const { data: invoices = [], isLoading: loadingInv } = useGetInvoicesQuery(undefined);
+  const { data: response, isLoading, isFetching } = useGetBalanceSummaryQuery(
+    { company: filterCompany || undefined, tab: activeTab }
+  );
 
-  const isLoading = loadingComp || loadingLedger || loadingInv;
+  const { data: companiesData } = useGetCompaniesQuery(undefined);
+  const [updateCompany] = useUpdateCompanyMutation();
 
-  // Process data per company
-  const companyBalances = companies.map((comp: any) => {
-    // 1. Get last ledger balance
-    const companyLedgers = ledgers.filter((l: any) => l.company === comp.name);
-    // Sort by id to get the latest
-    const sortedLedgers = [...companyLedgers].sort((a: any, b: any) => b.id - a.id);
-    const lastBalance = sortedLedgers.length > 0 ? Number(sortedLedgers[0].balance) : 0;
+  const companies = Array.isArray(companiesData)
+    ? companiesData
+    : (Array.isArray((companiesData as any)?.data) ? (companiesData as any).data : []);
 
-    // 2. Get outstanding invoices (pending / unpaid amount)
-    const companyInvoices = invoices.filter((i: any) => i.company === comp.name);
-    // Assume if invoice is unpaid it has pending status, if Laravel schema has status or amount
-    const outstandingInvoices = companyInvoices.filter((i: any) => i.status !== "Paid" && i.status !== "completed");
-    const netReceivables = outstandingInvoices.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
-    const invoiceCount = outstandingInvoices.length;
+  // Response shape: { data: { rows: [...], totals: {...} }, Message, ... }
+  const payload = response?.data ?? response;
+  const allRows: any[] = Array.isArray(payload?.rows)
+    ? payload.rows
+    : (Array.isArray(payload) ? payload : []);
 
-    return {
-      name: comp.name,
-      netReceivables,
-      netLedgerBalance: lastBalance,
-      invoiceCount,
-    };
-  });
+  const totals = payload?.totals ?? {
+    total_business: allRows.reduce((s: number, r: any) => s + Number(r.total_business || 0), 0),
+    total_rec_vw:   allRows.reduce((s: number, r: any) => s + Number(r.total_rec_vw   || 0), 0),
+    total_rec_pw:   allRows.reduce((s: number, r: any) => s + Number(r.total_rec_pw   || 0), 0),
+  };
 
-  // Calculate totals
-  const totalReceivables = companyBalances.reduce((sum, item) => sum + item.netReceivables, 0);
-  const totalLedgerBalance = companyBalances.reduce((sum, item) => sum + item.netLedgerBalance, 0);
+  // Client-side search filter on displayed rows
+  const rows = allRows.filter((r) =>
+    !search || r.company?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleToggleLock = async (item: any) => {
+    const originalCompany = companies.find((c: any) => c.id === item.id);
+    if (!originalCompany) return;
+    try {
+      await updateCompany({
+        ...originalCompany,
+        vouchers: !item.vouchers_lock,
+      }).unwrap();
+    } catch (err) {
+      console.error("Failed to toggle lock status:", err);
+    }
+  };
+
+  const handleChangeStatementStatus = async (item: any, status: string) => {
+    const originalCompany = companies.find((c: any) => c.id === item.id);
+    if (!originalCompany) return;
+    try {
+      await updateCompany({
+        ...originalCompany,
+        statement_status: status,
+      }).unwrap();
+    } catch (err) {
+      console.error("Failed to update statement status:", err);
+    }
+  };
+
+  const handleSaveRemarks = async (item: any) => {
+    const originalCompany = companies.find((c: any) => c.id === item.id);
+    if (!originalCompany) return;
+    try {
+      await updateCompany({
+        ...originalCompany,
+        remarks: tempRemarks,
+      }).unwrap();
+      setEditingRemarks(null);
+    } catch (err) {
+      console.error("Failed to update company remarks:", err);
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Header */}
       <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #334155 100%)" }}>
         <div>
-          <h2>Accounts Receivable & Balances</h2>
-          <p>Monitor company ledger balances, receivables, and net outstanding totals.</p>
+          <h2>Balance Statement</h2>
+          <p>Monitor company balances, receivables, follow-ups and service timelines.</p>
         </div>
         <button onClick={() => router.push("/admin/hub")} className="form-btn-back">
           <i className="fas fa-arrow-left"></i>
@@ -55,75 +137,314 @@ export default function BalancePage() {
         </button>
       </div>
 
-      {isLoading ? (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
-          <div className="spinner" style={{ borderTopColor: "#4f46e5" }}></div>
-          <span style={{ marginLeft: "12px", color: "#64748b", fontWeight: "600" }}>Calculating Balances...</span>
-        </div>
-      ) : (
-        <>
-          <div className="db-stats-row">
-            <div className="db-stat-card">
-              <div className="db-stat-icon active" style={{ background: "#4f46e5" }}>
-                <i className="fas fa-wallet"></i>
-              </div>
-              <div className="db-stat-info">
-                <span className="db-stat-value">SR {totalReceivables.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <span className="db-stat-label">Total Outstanding Receivable</span>
-              </div>
+      {/* Summary Stat Cards */}
+      {!isLoading && (
+        <div className="db-stats-row">
+          <div className="db-stat-card">
+            <div className="db-stat-icon" style={{ background: "#3b82f6" }}>
+              <i className="fas fa-briefcase"></i>
             </div>
-            <div className="db-stat-card">
-              <div className="db-stat-icon completed" style={{ background: totalLedgerBalance >= 0 ? "#10b981" : "#ef4444" }}>
-                <i className={totalLedgerBalance >= 0 ? "fas fa-arrow-trend-up" : "fas fa-arrow-trend-down"}></i>
-              </div>
-              <div className="db-stat-info">
-                <span className="db-stat-value">SR {totalLedgerBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <span className="db-stat-label">Net Ledger Balance</span>
-              </div>
+            <div className="db-stat-info">
+              <span className="db-stat-value">{fmt(totals.total_business)}</span>
+              <span className="db-stat-label">Total Business Volume</span>
             </div>
           </div>
+          <div className="db-stat-card">
+            <div className="db-stat-icon" style={{ background: "#8b5cf6" }}>
+              <i className="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div className="db-stat-info">
+              <span className="db-stat-value">{fmt(totals.total_rec_vw)}</span>
+              <span className="db-stat-label">Total Receivable (VW)</span>
+            </div>
+          </div>
+          <div className="db-stat-card">
+            <div className="db-stat-icon" style={{ background: "#ef4444" }}>
+              <i className="fas fa-hand-holding-dollar"></i>
+            </div>
+            <div className="db-stat-info">
+              <span className="db-stat-value">{fmt(totals.total_rec_pw)}</span>
+              <span className="db-stat-label">Total Receivable (PW)</span>
+            </div>
+          </div>
+        </div>
+      )}
 
-          <div className="form-card" style={{ marginTop: "10px" }}>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#333", marginBottom: "15px" }}>Outstanding Receivables Ledger</h3>
-            <div className="table-responsive">
-              <table className="db-table">
-                <thead>
+      {/* Quick Tab Filters */}
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              background: activeTab === tab.key ? "#1e5cff" : "#ffffff",
+              color: activeTab === tab.key ? "#ffffff" : "#475569",
+              border: `1px solid ${activeTab === tab.key ? "#1e5cff" : "#e2e8f0"}`,
+              borderRadius: "9999px", padding: "8px 18px",
+              fontSize: "13px", fontWeight: "600", cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Table Card */}
+      <div className="table-card" style={{ padding: 0, overflow: "hidden" }}>
+        {/* Toolbar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {["Copy", "CSV", "Excel", "PDF", "Print"].map((btn) => (
+              <button key={btn} style={{ background: btn === "Copy" ? "#3b82f6" : btn === "Excel" ? "#10b981" : btn === "PDF" ? "#ef4444" : btn === "Print" ? "#6366f1" : "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+                {btn}
+              </button>
+            ))}
+            {isFetching && (
+              <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
+                <div className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px", borderTopColor: "#334155" }}></div>
+                Updating...
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <select
+              className="form-input"
+              style={{ padding: "6px 12px", fontSize: "13px" }}
+              value={filterCompany}
+              onChange={(e) => setFilterCompany(e.target.value)}
+            >
+              <option value="">All Companies</option>
+              {companies.map((c: any) => (
+                <option key={c.id} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+            <div style={{ position: "relative" }}>
+              <i className="fas fa-search" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: "12px" }}></i>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="form-input"
+                style={{ paddingLeft: "30px", padding: "6px 12px 6px 30px", fontSize: "13px" }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        {isLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
+            <div className="spinner" style={{ borderTopColor: "#334155" }}></div>
+            <span style={{ marginLeft: "12px", color: "#64748b", fontWeight: "600" }}>Calculating Balances...</span>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="db-table" style={{ margin: 0, fontSize: "12px" }}>
+              <thead>
+                <tr>
+                  <th style={{ paddingLeft: "16px" }}>Lock</th>
+                  <th>Status</th>
+                  <th>ID</th>
+                  <th>Company Name</th>
+                  <th>Last Inv. Amt</th>
+                  <th>Inv. Period</th>
+                  <th>Last Followup</th>
+                  <th>Followup Remarks</th>
+                  <th>Total Business</th>
+                  <th>Last Pay Date</th>
+                  <th>Last Pay Amt</th>
+                  <th>Last Pickup</th>
+                  <th>Last Service</th>
+                  <th>Next Pickup</th>
+                  <th>Next Service</th>
+                  <th>Total Rec. (VW)</th>
+                  <th>Total Rec. (PW)</th>
+                  <th>Company Remarks</th>
+                  <th style={{ paddingRight: "16px" }}>Statement Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
                   <tr>
-                    <th>Company</th>
-                    <th>Net Receivables</th>
-                    <th>Net Ledger Balance</th>
-                    <th>Invoice count</th>
+                    <td colSpan={19} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+                      No company records found for this filter.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {companyBalances.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: "center", color: "#64748b", padding: "30px" }}>
-                        No company receivable records found.
-                      </td>
-                    </tr>
-                  ) : (
-                    companyBalances.map((item, idx) => (
+                ) : (
+                  rows.map((item: any, idx: number) => {
+                    const relativeFollowup = formatRelativeDate(item.last_followup);
+                    return (
                       <tr key={idx}>
-                        <td style={{ fontWeight: 600 }}>{item.name}</td>
-                        <td style={{ color: item.netReceivables > 0 ? "var(--danger-color)" : "#64748b", fontWeight: 700 }}>
-                          SR {item.netReceivables.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        <td style={{ paddingLeft: "16px" }}>
+                          <button
+                            onClick={() => handleToggleLock(item)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              color: item.vouchers_lock ? "#10b981" : "#94a3b8",
+                              fontSize: "14px"
+                            }}
+                            title={item.vouchers_lock ? "Vouchers Unlocked" : "Vouchers Locked"}
+                          >
+                            <i className={item.vouchers_lock ? "fas fa-lock-open" : "fas fa-lock"}></i>
+                          </button>
                         </td>
-                        <td style={{ color: item.netLedgerBalance >= 0 ? "var(--success-color)" : "var(--danger-color)", fontWeight: 700 }}>
-                          SR {item.netLedgerBalance >= 0 ? "+" : ""}{item.netLedgerBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        <td>
+                          <span style={{
+                            display: "inline-block", padding: "3px 10px", borderRadius: "9999px",
+                            fontSize: "10px", fontWeight: "800", textTransform: "uppercase",
+                            background: item.status === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                            color: item.status === "CLEARED" ? "#10b981" : "#ef4444",
+                          }}>
+                            {item.status}
+                          </span>
                         </td>
-                        <td style={{ color: item.invoiceCount > 0 ? "var(--danger-color)" : "#64748b", fontWeight: 600 }}>
-                          {item.invoiceCount > 0 ? `${item.invoiceCount} Unpaid` : "Fully Settled"}
+                        <td style={{ color: "#64748b", fontWeight: "600" }}>
+                          #{item.id}
+                        </td>
+                        <td style={{ fontWeight: 700, color: "#1e5cff", whiteSpace: "nowrap" }}>
+                          {item.company}
+                        </td>
+                        <td style={{ color: "#475569", fontWeight: 600 }}>
+                          {fmt(item.last_inv_amt)}
+                        </td>
+                        <td style={{ color: "#64748b", fontSize: "11px" }}>
+                          {item.inv_period ?? "N/A"}
+                        </td>
+                        <td style={{ color: "#64748b", fontSize: "11px", whiteSpace: "nowrap" }}>
+                          {relativeFollowup ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                              <span>{relativeFollowup.date}</span>
+                              <span style={{ fontSize: "10px", color: "#1e5cff", fontWeight: "700" }}>{relativeFollowup.relative}</span>
+                            </div>
+                          ) : (
+                            "Never"
+                          )}
+                        </td>
+                        <td style={{ color: "#475569", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {item.followup_remarks || "No remarks"}
+                        </td>
+                        <td style={{ fontWeight: 700, color: "#1e293b" }}>
+                          {fmt(item.total_business)}
+                        </td>
+                        <td style={{ color: "#64748b", fontSize: "11px", whiteSpace: "nowrap" }}>
+                          {formatDateSimple(item.last_pay_date)}
+                        </td>
+                        <td style={{ fontWeight: 600, color: "#10b981" }}>
+                          {item.last_pay_amt > 0 ? fmt(item.last_pay_amt) : "0.00"}
+                        </td>
+                        <td style={{ color: "#64748b", fontSize: "11px" }}>
+                          {formatDateSimple(item.last_pickup)}
+                        </td>
+                        <td style={{ color: "#64748b", fontSize: "11px" }}>
+                          {formatDateSimple(item.last_service)}
+                        </td>
+                        <td style={{ fontSize: "11px" }}>
+                          {item.next_pickup ? (
+                            <span style={{ color: "#1e5cff", fontWeight: "600", textDecoration: "underline", cursor: "pointer" }}>
+                              {formatDateSimple(item.next_pickup)}
+                            </span>
+                          ) : (
+                            "--"
+                          )}
+                        </td>
+                        <td style={{ fontSize: "11px" }}>
+                          {item.next_service ? (
+                            <span style={{ color: "#1e5cff", fontWeight: "600", textDecoration: "underline", cursor: "pointer" }}>
+                              {formatDateSimple(item.next_service)}
+                            </span>
+                          ) : (
+                            "--"
+                          )}
+                        </td>
+                        <td style={{ fontWeight: 700, color: item.total_rec_vw > 0 ? "#ef4444" : "#64748b" }}>
+                          {fmt(item.total_rec_vw)}
+                        </td>
+                        <td style={{ fontWeight: 700, color: item.total_rec_pw > 0 ? "#f97316" : "#64748b" }}>
+                          {fmt(item.total_rec_pw)}
+                        </td>
+                        <td style={{ minWidth: "150px" }}>
+                          {editingRemarks === item.id ? (
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              <input
+                                type="text"
+                                value={tempRemarks}
+                                onChange={(e) => setTempRemarks(e.target.value)}
+                                className="form-input"
+                                style={{ padding: "2px 6px", fontSize: "11px", height: "24px" }}
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveRemarks(item)}
+                                style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "4px", padding: "0 8px", cursor: "pointer" }}
+                              >
+                                <i className="fas fa-check" style={{ fontSize: "10px" }}></i>
+                              </button>
+                              <button
+                                onClick={() => setEditingRemarks(null)}
+                                style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "0 8px", cursor: "pointer" }}
+                              >
+                                <i className="fas fa-times" style={{ fontSize: "10px" }}></i>
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => {
+                                setEditingRemarks(item.id);
+                                setTempRemarks(item.company_remarks || "");
+                              }}
+                              style={{ cursor: "pointer", minHeight: "18px", color: item.company_remarks ? "#334155" : "#94a3b8", fontSize: "11px" }}
+                              title="Click to Edit Remarks"
+                            >
+                              {item.company_remarks || "Click to add remarks"}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ paddingRight: "16px" }}>
+                          <select
+                            value={item.statement_status || "Pending"}
+                            onChange={(e) => handleChangeStatementStatus(item, e.target.value)}
+                            style={{
+                              padding: "4px 8px",
+                              borderRadius: "6px",
+                              fontSize: "11px",
+                              fontWeight: "600",
+                              border: "1px solid #cbd5e1",
+                              background: "#fff",
+                              color: "#334155",
+                              cursor: "pointer"
+                            }}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Awaiting FeedBack">Awaiting FeedBack</option>
+                            <option value="Done">Done</option>
+                          </select>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    );
+                  })
+                )}
+              </tbody>
+              {rows.length > 0 && (
+                <tfoot>
+                  <tr style={{ background: "#f8fafc", borderTop: "2px solid #e2e8f0", fontWeight: 800 }}>
+                    <td style={{ paddingLeft: "16px", color: "#0f172a" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
+                    <td colSpan={4}></td>
+                    <td style={{ color: "#1e293b" }}>{fmt(totals.total_business)}</td>
+                    <td colSpan={6}></td>
+                    <td style={{ color: "#ef4444" }}>{fmt(totals.total_rec_vw)}</td>
+                    <td style={{ color: "#f97316" }}>{fmt(totals.total_rec_pw)}</td>
+                    <td colSpan={2} style={{ paddingRight: "16px" }}></td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

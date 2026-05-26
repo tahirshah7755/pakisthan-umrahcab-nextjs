@@ -1,116 +1,158 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/utils/api";
+import { useGetFollowupsQuery, useDeleteFollowupMutation } from "@/store/api/followupsApi";
+import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 
-interface FollowupItem {
-  id: string;
-  title: string;
-  agent: string;
-  contact: string;
-  date: string;
-  status: string;
-  notes: string;
+interface RatingSelectorProps {
+  rating: number;
 }
+
+const RatingStars: React.FC<RatingSelectorProps> = ({ rating }) => {
+  return (
+    <div style={{ display: "flex", gap: "6px" }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <i
+          key={star}
+          className={star <= rating ? "fas fa-star" : "far fa-star"}
+          style={{
+            color: star <= rating ? "#ffc107" : "#cbd5e1",
+            fontSize: "14px",
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const STATUS_MAP: Record<string, { bg: string; fg: string }> = {
+  "Pending":           { bg: "rgba(249,115,22,0.1)",  fg: "#f97316" },
+  "Awaiting FeedBack": { bg: "rgba(234,179,8,0.1)",   fg: "#eab308" },
+  "Not Followed":      { bg: "rgba(244,63,94,0.1)",   fg: "#f43f5e" },
+  "Followed Up":       { bg: "rgba(111,66,193,0.1)",  fg: "#6f42c1" },
+  "Done":              { bg: "rgba(16,185,129,0.1)",  fg: "#10b981" },
+};
 
 export default function AgentFollowupsPage() {
   const router = useRouter();
-  const [followups, setFollowups] = useState<FollowupItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showFollowupModal, setShowFollowupModal] = useState(false);
 
-  // Form states
-  const [flpTitle, setFlpTitle] = useState("");
-  const [flpAgent, setFlpAgent] = useState("umrahcab");
-  const [flpContact, setFlpContact] = useState("");
-  const [flpDate, setFlpDate] = useState("2026-05-25");
-  const [flpNotes, setFlpNotes] = useState("");
+  // Filter + pagination state — all sent to backend
+  const [search,      setSearch]      = useState("");
+  const [filterCompany, setFilterCompany] = useState("");
+  const [filterStatus,  setFilterStatus]  = useState("");
+  const [startDate,   setStartDate]   = useState("");
+  const [endDate,     setEndDate]     = useState("");
+  const [datePreset,  setDatePreset]  = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Toast notification
+  // Toast
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
-    show: false,
-    message: "",
-    type: "success",
+    show: false, message: "", type: "success",
   });
-
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+    setTimeout(() => setToast((p) => ({ ...p, show: false })), 3000);
   };
 
-  const loadFollowups = async () => {
-    try {
-      setLoading(true);
-      const flpList = await api.getFollowups();
-      if (flpList) {
-        setFollowups(flpList.map((f: any) => ({
-          id: f.custom_id || `#FLP-${f.id}`,
-          title: f.title,
-          agent: f.agent,
-          contact: f.contact,
-          date: f.date,
-          status: f.status,
-          notes: f.notes
-        })));
-      } else {
-        // Seed default fallback
-        setFollowups([
-          { id: "#FLP-1", title: "Confirm Zahid Travels pickup window", agent: "umrahcab", contact: "050123456", date: "2026-05-25", status: "Pending", notes: "Call by 3:00 PM" }
-        ]);
+  const resetPage = () => setCurrentPage(1);
+
+  // RTK Query — server-side pagination + filters
+  const { data: response, isLoading, isFetching } = useGetFollowupsQuery({
+    page:       currentPage,
+    per_page:   rowsPerPage,
+    search:     search     || undefined,
+    company:    filterCompany || undefined,
+    status:     filterStatus  || undefined,
+    start_date: startDate  || undefined,
+    end_date:   endDate    || undefined,
+  });
+
+  const { data: companiesData } = useGetCompaniesQuery(undefined);
+  const [deleteFollowup] = useDeleteFollowupMutation();
+
+  // The global API middleware wraps the response: { data: { ...paginator }, Message, isError }
+  // So the Laravel paginator lives at response.data, and items at response.data.data
+  const paginator   = response?.data;
+  const followups   = Array.isArray(paginator?.data) ? paginator.data : [];
+  const totalRows   = paginator?.total       ?? 0;
+  const totalPages  = paginator?.last_page   ?? 1;
+  const fromRow     = paginator?.from        ?? 0;
+  const toRow       = paginator?.to          ?? 0;
+
+  const companies = Array.isArray(companiesData)
+    ? companiesData
+    : (Array.isArray((companiesData as any)?.data) ? (companiesData as any).data : []);
+
+  const handleDelete = async (id: number | string) => {
+    if (confirm("Are you sure you want to delete this follow-up entry?")) {
+      try {
+        await deleteFollowup(id).unwrap();
+        showToast("Follow-up deleted successfully!", "success");
+      } catch {
+        showToast("Failed to delete follow-up.", "error");
       }
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to fetch followups", "error");
-    } finally {
-      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadFollowups();
-  }, []);
-
-  const handleAddFollowup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!flpTitle || !flpContact) {
-      showToast("Please enter a subject and contact number.", "error");
-      return;
-    }
+  const getNotesMeta = (notesStr: string) => {
     try {
-      const newFlp = {
-        title: flpTitle,
-        agent: flpAgent,
-        contact: flpContact,
-        date: flpDate,
-        notes: flpNotes
-      };
-      const res = await api.createFollowup(newFlp);
-      if (res.success) {
-        showToast("Followup logged successfully in database!", "success");
-        setFlpTitle("");
-        setFlpContact("");
-        setFlpNotes("");
-        setShowFollowupModal(false);
-        await loadFollowups();
-      } else {
-        showToast("Failed to save follow-up.", "error");
+      if (notesStr && (notesStr.startsWith("{") || notesStr.startsWith("["))) {
+        const parsed = JSON.parse(notesStr);
+        return { rating: Number(parsed.rating || 5), company: parsed.company || "" };
       }
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to log follow-up.", "error");
-    }
+    } catch {}
+    return { rating: 5, company: "" };
   };
+
+  const handlePresetClick = (preset: string) => {
+    setDatePreset(preset);
+    const today = new Date().toISOString().split("T")[0];
+    if (preset === "today") {
+      setStartDate(today); setEndDate(today);
+    } else if (preset === "yesterday") {
+      const d = new Date(); d.setDate(d.getDate() - 1);
+      const s = d.toISOString().split("T")[0];
+      setStartDate(s); setEndDate(s);
+    } else if (preset === "tomorrow") {
+      const d = new Date(); d.setDate(d.getDate() + 1);
+      const s = d.toISOString().split("T")[0];
+      setStartDate(s); setEndDate(s);
+    } else {
+      setStartDate(""); setEndDate("");
+    }
+    resetPage();
+  };
+
+  // Visible page numbers (±2 around current)
+  const getPageNumbers = () => {
+    const range: number[] = [];
+    for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+      range.push(i);
+    }
+    return range;
+  };
+
+  const btnBase = (active: boolean, disabled: boolean) => ({
+    border: `1px solid ${active ? "#1e5cff" : "#e2e8f0"}`,
+    borderRadius: "6px", padding: "6px 12px",
+    fontSize: "13px", fontWeight: "700" as const,
+    background: active ? "#1e5cff" : disabled ? "#f1f5f9" : "#ffffff",
+    color: active ? "#ffffff" : disabled ? "#cbd5e1" : "#475569",
+    cursor: disabled ? "not-allowed" as const : "pointer" as const,
+    minWidth: "36px", transition: "all 0.15s ease",
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* Toast Notification */}
+      {/* Toast */}
       {toast.show && (
         <div style={{
-          position: "fixed", top: "20px", right: "20px", zIndex: 9999,
+          position: "fixed", top: "25px", right: "25px", zIndex: 99999,
           background: toast.type === "success" ? "#10b981" : "#ef4444",
-          color: "#ffffff", padding: "12px 24px", borderRadius: "8px",
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", fontWeight: "600",
+          color: "#ffffff", padding: "14px 28px", borderRadius: "10px",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.15)", fontWeight: "600",
           fontSize: "14px", display: "flex", alignItems: "center", gap: "10px",
         }}>
           <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
@@ -118,143 +160,189 @@ export default function AgentFollowupsPage() {
         </div>
       )}
 
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)" }}>
+      {/* Header */}
+      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #1e5cff 0%, #0040e6 100%)", padding: "24px 30px", borderRadius: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Agent & Broker Follow-ups</h2>
-          <p>Keep track of pending calls, voucher delivery confirmations, and client feedback requests.</p>
+          <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>Follow-up Directory</h2>
+          <p style={{ color: "rgba(255,255,255,0.8)", margin: "6px 0 0 0", fontSize: "14px" }}>
+            Advanced search and tracking for agent interactions.
+          </p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={() => setShowFollowupModal(true)} className="form-btn-back">
+          <button
+            onClick={() => router.push("/admin/agent-followups/add")}
+            style={{ background: "#ffffff", color: "#0040e6", border: "none", borderRadius: "8px", padding: "10px 20px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+          >
             <i className="fas fa-plus"></i>
-            <span>New Follow-up Task</span>
+            <span>Add Follow-up</span>
           </button>
           <button onClick={() => router.push("/admin/hub")} className="form-btn-back">
             <i className="fas fa-arrow-left"></i>
-            <span>Back to Hub</span>
+            <span>Return to Hub</span>
           </button>
         </div>
       </div>
 
-      <div className="table-card" style={{ padding: "25px" }}>
-        {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "150px" }}>
-            <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #0f766e", borderRadius: "50%", width: "35px", height: "35px", animation: "spin 1s linear infinite" }}></div>
+      {/* Quick Preset Date Filters */}
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", margin: "5px 0" }}>
+        {["all", "today", "yesterday", "tomorrow"].map((preset) => (
+          <button
+            key={preset}
+            onClick={() => handlePresetClick(preset)}
+            style={{
+              background: datePreset === preset ? "#1e5cff" : "#ffffff",
+              color: datePreset === preset ? "#ffffff" : "#475569",
+              border: `1px solid ${datePreset === preset ? "#1e5cff" : "#e2e8f0"}`,
+              borderRadius: "9999px", padding: "8px 18px", fontSize: "13px", fontWeight: "600", cursor: "pointer",
+            }}
+          >
+            {preset === "all" ? "Show All" : preset === "today" ? "Today" : preset === "yesterday" ? "Yesterday" : "Tomorrow (Scheduled)"}
+          </button>
+        ))}
+      </div>
+
+      {/* Filters Panel */}
+      <div className="form-card" style={{ padding: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "15px", alignItems: "end" }}>
+        <div>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", marginBottom: "6px", display: "block" }}>Filter by Company</label>
+          <select className="form-input" style={{ width: "100%" }} value={filterCompany} onChange={(e) => { setFilterCompany(e.target.value); resetPage(); }}>
+            <option value="">All Companies</option>
+            {companies.map((c: any) => (<option key={c.id} value={c.name}>{c.name}</option>))}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", marginBottom: "6px", display: "block" }}>Follow-up Status</label>
+          <select className="form-input" style={{ width: "100%" }} value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); resetPage(); }}>
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Awaiting FeedBack">Awaiting FeedBack</option>
+            <option value="Not Followed">Not Followed</option>
+            <option value="Followed Up">Followed Up</option>
+            <option value="Done">Done</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", marginBottom: "6px", display: "block" }}>Start Date</label>
+          <input type="date" className="form-input" style={{ width: "100%" }} value={startDate} onChange={(e) => { setStartDate(e.target.value); setDatePreset("custom"); resetPage(); }} />
+        </div>
+        <div>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", marginBottom: "6px", display: "block" }}>End Date</label>
+          <input type="date" className="form-input" style={{ width: "100%" }} value={endDate} onChange={(e) => { setEndDate(e.target.value); setDatePreset("custom"); resetPage(); }} />
+        </div>
+        <div>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", marginBottom: "6px", display: "block" }}>Search keywords</label>
+          <input type="text" className="form-input" style={{ width: "100%" }} placeholder="Search subjects/phones..." value={search} onChange={(e) => { setSearch(e.target.value); resetPage(); }} />
+        </div>
+      </div>
+
+      {/* Table Card */}
+      <div className="table-card" style={{ padding: "0px", overflow: "hidden" }}>
+        {isLoading || isFetching ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
+            <div className="spinner" style={{ borderTopColor: "#1e5cff" }}></div>
+            <span style={{ marginLeft: "12px", color: "#64748b", fontWeight: "600" }}>
+              {isFetching && !isLoading ? "Updating..." : "Loading interactions..."}
+            </span>
           </div>
         ) : (
           <div className="table-responsive">
-            <table className="db-table">
+            <table className="db-table" style={{ margin: 0 }}>
               <thead>
                 <tr>
-                  <th>Task ID</th>
-                  <th>Subject</th>
-                  <th>Assigned Agent</th>
-                  <th>Phone / Contact</th>
-                  <th>Due Date</th>
+                  <th style={{ paddingLeft: "24px" }}># ID</th>
+                  <th>Date</th>
+                  <th>Company</th>
                   <th>Status</th>
+                  <th>Rating</th>
+                  <th>Phone / Contact</th>
+                  <th>Subject</th>
+                  <th style={{ paddingRight: "24px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {followups.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>
-                      No followup records found in the database.
+                    <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+                      No follow-up interactions match the filters.
                     </td>
                   </tr>
                 ) : (
-                  followups.map((f) => (
-                    <tr key={f.id}>
-                      <td style={{ fontWeight: 700 }}>{f.id}</td>
-                      <td style={{ fontWeight: 600 }}>{f.title}</td>
-                      <td>{f.agent}</td>
-                      <td>{f.contact}</td>
-                      <td>{f.date}</td>
-                      <td>
-                        <span className={`status-pill ${f.status === "Pending" ? "pending" : "completed"}`}>{f.status}</span>
-                      </td>
-                    </tr>
-                  ))
+                  followups.map((item: any) => {
+                    const meta = getNotesMeta(item.notes);
+                    const displayCompany = meta.company || item.agent;
+                    const s = item.status || "Pending";
+                    const { bg, fg } = STATUS_MAP[s] || { bg: "rgba(100,116,139,0.1)", fg: "#64748b" };
+                    return (
+                      <tr key={item.id}>
+                        <td style={{ paddingLeft: "24px", fontWeight: 700, color: "#1e293b" }}>{item.custom_id || `#FLP-${item.id}`}</td>
+                        <td style={{ fontWeight: "600", color: "#475569" }}>{item.date}</td>
+                        <td style={{ fontWeight: "700", color: "#1e5cff" }}>{displayCompany}</td>
+                        <td>
+                          <span style={{ display: "inline-block", padding: "4px 12px", borderRadius: "9999px", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px", background: bg, color: fg }}>
+                            {s}
+                          </span>
+                        </td>
+                        <td><RatingStars rating={meta.rating} /></td>
+                        <td style={{ fontFamily: "monospace", fontSize: "13px" }}>{item.contact}</td>
+                        <td style={{ fontWeight: "600", color: "#334155", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {item.title}
+                        </td>
+                        <td style={{ paddingRight: "24px", textAlign: "right" }}>
+                          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                            <button onClick={() => router.push(`/admin/agent-followups/view?id=${item.id}`)} title="View" style={{ border: "none", width: "32px", height: "32px", borderRadius: "50%", background: "rgba(25,135,84,0.1)", color: "#198754", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
+                            </button>
+                            <button onClick={() => router.push(`/admin/agent-followups/edit?id=${item.id}`)} title="Edit" style={{ border: "none", width: "32px", height: "32px", borderRadius: "50%", background: "rgba(13,110,253,0.1)", color: "#0d6efd", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <i className="fas fa-pen" style={{ fontSize: "12px" }}></i>
+                            </button>
+                            <button onClick={() => handleDelete(item.id)} title="Delete" style={{ border: "none", width: "32px", height: "32px", borderRadius: "50%", background: "rgba(220,53,69,0.1)", color: "#dc3545", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <i className="fas fa-trash" style={{ fontSize: "12px" }}></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         )}
-      </div>
 
-      {/* New Followup Modal */}
-      {showFollowupModal && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(15, 23, 42, 0.6)",
-          backdropFilter: "blur(4px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 9999,
-          padding: "20px"
-        }}>
-          <div style={{
-            background: "#ffffff",
-            borderRadius: "16px",
-            width: "100%",
-            maxWidth: "500px",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            overflow: "hidden",
-            border: "1px solid #e2e8f0"
-          }}>
-            <div style={{
-              background: "linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)",
-              padding: "20px",
-              color: "#ffffff",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>Log New Follow-up Task</h3>
-              <button onClick={() => setShowFollowupModal(false)} style={{ background: "none", border: "none", color: "#ffffff", cursor: "pointer", fontSize: "18px" }}>
-                <i className="fas fa-times"></i>
-              </button>
+        {/* Pagination Footer */}
+        {!isLoading && totalRows > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 24px", borderTop: "1px solid #f1f5f9", flexWrap: "wrap", gap: "12px" }}>
+            {/* Left: summary + rows-per-page */}
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "600" }}>
+                Showing {fromRow}–{toRow} of {totalRows} records
+              </span>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => { setRowsPerPage(Number(e.target.value)); resetPage(); }}
+                style={{ border: "1px solid #e2e8f0", borderRadius: "6px", padding: "5px 10px", fontSize: "13px", fontWeight: "600", color: "#475569", background: "#f8fafc", cursor: "pointer" }}
+              >
+                <option value={10}>10 / page</option>
+                <option value={25}>25 / page</option>
+                <option value={50}>50 / page</option>
+              </select>
             </div>
-            <form onSubmit={handleAddFollowup} style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "15px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "5px" }}>Subject / Title *</label>
-                <input type="text" className="form-input" style={{ width: "100%" }} required placeholder="e.g. Confirm pickup timing" value={flpTitle} onChange={(e) => setFlpTitle(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "5px" }}>Contact Phone *</label>
-                <input type="text" className="form-input" style={{ width: "100%" }} required placeholder="e.g. 050123456" value={flpContact} onChange={(e) => setFlpContact(e.target.value)} />
-              </div>
-              <div style={{ display: "flex", gap: "15px" }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "5px" }}>Assigned Agent</label>
-                  <input type="text" className="form-input" style={{ width: "100%" }} value={flpAgent} onChange={(e) => setFlpAgent(e.target.value)} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "5px" }}>Due Date</label>
-                  <input type="date" className="form-input" style={{ width: "100%" }} value={flpDate} onChange={(e) => setFlpDate(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#475569", marginBottom: "5px" }}>Additional Remarks</label>
-                <textarea className="form-input form-textarea" style={{ width: "100%", height: "80px" }} placeholder="Provide extra detail..." value={flpNotes} onChange={(e) => setFlpNotes(e.target.value)}></textarea>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-                <button type="button" onClick={() => setShowFollowupModal(false)} className="form-btn-back" style={{ background: "#f1f5f9", color: "#475569" }}>Cancel</button>
-                <button type="submit" className="btn-submit" style={{ padding: "10px 20px" }}>Save Task</button>
-              </div>
-            </form>
+
+            {/* Right: page buttons */}
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <button onClick={() => setCurrentPage(1)}                                   disabled={currentPage === 1}          style={btnBase(false, currentPage === 1)}>«</button>
+              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}           disabled={currentPage === 1}          style={btnBase(false, currentPage === 1)}>‹</button>
+
+              {getPageNumbers().map((pg) => (
+                <button key={pg} onClick={() => setCurrentPage(pg)} style={btnBase(pg === currentPage, false)}>{pg}</button>
+              ))}
+
+              <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}  disabled={currentPage === totalPages} style={btnBase(false, currentPage === totalPages)}>›</button>
+              <button onClick={() => setCurrentPage(totalPages)}                           disabled={currentPage === totalPages} style={btnBase(false, currentPage === totalPages)}>»</button>
+            </div>
           </div>
-        </div>
-      )}
-      <style>{`
-        @keyframes spin { 
-          0% { transform: rotate(0deg); } 
-          100% { transform: rotate(360deg); } 
-        }
-      `}</style>
+        )}
+      </div>
     </div>
   );
 }

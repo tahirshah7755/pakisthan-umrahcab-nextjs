@@ -1,0 +1,25 @@
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
+export const apiSlice = createApi({
+  reducerPath: "umrahCabApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: "http://localhost:8000/api/umrahcab",
+  }),
+  tagTypes: [
+    "Bookings",
+    "Customers",
+    "Companies",
+    "Services",
+    "Flights",
+    "Trains",
+    "Invoices",
+    "Ledgers",
+    "Payments",
+    "Notices",
+    "Fleet",
+    "Audits",
+    "Followups",
+    "PriceList",
+  ],
+  endpoints: () => ({}),
+});

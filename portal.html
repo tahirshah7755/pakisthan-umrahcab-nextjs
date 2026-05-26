@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Umrah Cab - Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #c0a060;
+            --bg-dark: #0f172a;
+            --accent: #3b82f6;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a 100%);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .portal-bg-effects {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .glow-sphere {
+            position: absolute;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(192, 160, 96, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(50px);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .logo {
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .logo img {
+            max-width: 180px;
+            height: auto;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #c0a060 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        p.subtitle {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 50px;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .action-card {
+            background: linear-gradient(135deg, 
+                color-mix(in srgb, var(--card-accent) 25%, rgba(0,0,0,0.6)), 
+                color-mix(in srgb, var(--card-accent) 10%, rgba(0,0,0,0.8)));
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 25px;
+            padding: 35px 25px;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--card-accent);
+            background: linear-gradient(135deg, 
+                color-mix(in srgb, var(--card-accent) 40%, rgba(0,0,0,0.5)), 
+                color-mix(in srgb, var(--card-accent) 20%, rgba(0,0,0,0.7)));
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 25px color-mix(in srgb, var(--card-accent) 30%, transparent);
+        }
+
+        .card-icon {
+            width: 65px; height: 65px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            transition: all 0.4s ease;
+        }
+
+        .action-card:hover .card-icon {
+            background: var(--card-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px color-mix(in srgb, var(--card-accent) 50%, transparent);
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .login-card { --card-accent: #c0a060; }
+        .web-card { --card-accent: #3b82f6; }
+
+        .footer-note {
+            margin-top: 60px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .action-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="portal-bg-effects">
+        <div class="glow-sphere" style="top: 10%; right: 10%;"></div>
+        <div class="glow-sphere" style="bottom: 10%; left: 10%; background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);"></div>
+    </div>
+
+    <div class="container text-animate">
+        <div class="logo">
+            <img src="img/logo2.png" alt="Umrah Cab Logo">
+        </div>
+        <h1>Portal Genesis</h1>
+        <p class="subtitle">Secure Gateway to High-Performance Transport Management</p>
+
+        <div class="action-grid">
+            <a href="login.php" class="action-card login-card">
+                <div class="card-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="card-title">Secured Access</div>
+                <div class="card-desc">Enter the management hub</div>
+            </a>
+            <a href="https://umrahcab.com" class="action-card web-card">
+                <div class="card-icon"><i class="fa-solid fa-globe"></i></div>
+                <div class="card-title">Public Website</div>
+                <div class="card-desc">Explore our public services</div>
+            </a>
+        </div>
+
+        <div class="footer-note">
+            Portal 2.0 • Pulse Integrated Hub
+        </div>
+    </div>
+</body>
+</html>

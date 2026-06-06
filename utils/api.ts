@@ -1,5 +1,5 @@
 // UmrahCab Central API Utility for Next.js Frontend
-const API_BASE = "http://localhost:8000/api/umrahcab";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
 
 // Helper to handle requests with fallback to local mock state
 async function request(endpoint: string, options: RequestInit = {}) {

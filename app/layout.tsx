@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Inter, Poppins, Public_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ReduxProvider } from "@/store/ReduxProvider";
@@ -17,6 +17,13 @@ const inter = Inter({
   display: "swap",
 });
 
+const publicSans = Public_Sans({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-public-sans",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Umrah Cab - Portal",
   description: "High-Performance Transport Management Hub",
@@ -28,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
+    <html lang="en" className={`${poppins.variable} ${inter.variable} ${publicSans.variable}`}>
       <head>
         <link
           rel="stylesheet"

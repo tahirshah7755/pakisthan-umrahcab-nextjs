@@ -1,23 +1,23 @@
 :root {
-  /* Colors */
-  --primary-color: #4361ee;
-  --secondary-color: #3f37c9;
-  --accent-color: #4895ef;
-  --light-color: #f8f9fa;
-  --dark-color: #212529;
-  --bg-dark: #0f172a;
-  --bg-light: #f5f7ff;
-  --border-color: #e2e8f0;
-  --text-muted: #64748b;
-  --success-color: #198754;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
+  /* Colors - Clean, professional light theme with dark sidebar & gold accents */
+  --primary-color: #b48a1d;       /* Gold/Bronze accent from PHP style */
+  --secondary-color: #1e1e2d;     /* Dark surface/sidebar color from PHP */
+  --accent-color: #d4af37;        /* Brighter gold accent color */
+  --light-color: #ffffff;         /* Cards/container backgrounds (white) */
+  --dark-color: #2c3e50;          /* Text color (dark gray-blue) */
+  --bg-dark: #f4f7fa;             /* Central hub base background (light) */
+  --bg-light: #f4f7fa;            /* Operations/table page background (light) */
+  --border-color: #edf2f9;        /* Soft gray border for light layout */
+  --text-muted: #8898aa;          /* Muted text color from PHP */
+  --success-color: #10b981;
+  --warning-color: #fbbf24;
+  --danger-color: #f43f5e;
   
-  --gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  --gradient: linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%);
   
-  /* Fonts */
-  --font-family-sans: var(--font-poppins), 'Poppins', sans-serif;
-  --font-family-alt: var(--font-inter), 'Inter', sans-serif;
+  /* Fonts - Load Google Font 'Public Sans' from PHP project */
+  --font-family-sans: var(--font-public-sans), 'Public Sans', sans-serif;
+  --font-family-alt: var(--font-public-sans), 'Public Sans', sans-serif;
 }
 
 * {
@@ -68,8 +68,8 @@ a {
 
 .portal-body {
   font-family: var(--font-family-alt);
-  background: radial-gradient(circle at top right, #1e293b, #0f172a 100%) !important;
-  color: #ffffff;
+  background: radial-gradient(circle at top right, #f8fafc, #f1f5f9 100%) !important;
+  color: var(--dark-color);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -92,7 +92,7 @@ a {
   position: absolute;
   width: 400px; 
   height: 400px;
-  background: radial-gradient(circle, rgba(192, 160, 96, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(180, 138, 29, 0.05) 0%, transparent 70%);
   border-radius: 50%;
   filter: blur(50px);
 }
@@ -113,14 +113,14 @@ a {
 .portal-logo img {
   max-width: 180px;
   height: auto;
-  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.06));
 }
 
 .portal-title {
   font-size: 3rem;
   font-weight: 900;
   margin-bottom: 10px;
-  background: linear-gradient(135deg, #fff 0%, #c0a060 100%);
+  background: linear-gradient(135deg, var(--dark-color) 0%, var(--primary-color) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -1px;
@@ -128,7 +128,7 @@ a {
 
 .portal-subtitle {
   font-size: 1.1rem;
-  color: rgba(255,255,255,0.6);
+  color: var(--text-muted);
   margin-bottom: 50px;
 }
 
@@ -140,11 +140,9 @@ a {
 }
 
 .portal-card {
-  background: linear-gradient(135deg, 
-      color-mix(in srgb, var(--card-accent) 25%, rgba(0,0,0,0.6)), 
-      color-mix(in srgb, var(--card-accent) 10%, rgba(0,0,0,0.8)));
+  background: #ffffff !important;
   backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid #e2e8f0 !important;
   border-radius: 25px;
   padding: 35px 25px;
   text-decoration: none;
@@ -154,50 +152,49 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
   cursor: pointer;
 }
 
 .portal-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--card-accent);
-  background: linear-gradient(135deg, 
-      color-mix(in srgb, var(--card-accent) 40%, rgba(0,0,0,0.5)), 
-      color-mix(in srgb, var(--card-accent) 20%, rgba(0,0,0,0.7)));
-  box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 25px color-mix(in srgb, var(--card-accent) 30%, transparent);
+  transform: translateY(-5px);
+  border-color: var(--card-accent) !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06), 0 0 15px color-mix(in srgb, var(--card-accent) 15%, transparent) !important;
 }
 
 .portal-card-icon {
   width: 65px; 
   height: 65px;
-  background: rgba(255,255,255,0.08);
+  background: #f8fafc !important;
   border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.6rem;
   margin-bottom: 20px;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #fff;
+  border: 1px solid #e2e8f0 !important;
+  color: var(--card-accent) !important;
   transition: all 0.4s ease;
 }
 
 .portal-card:hover .portal-card-icon {
-  background: var(--card-accent);
+  background: var(--card-accent) !important;
+  color: #ffffff !important;
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px color-mix(in srgb, var(--card-accent) 50%, transparent);
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--card-accent) 30%, transparent);
 }
 
 .portal-card-title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--dark-color) !important;
   margin-bottom: 10px;
 }
 
 .portal-card-desc {
   font-size: 0.9rem;
-  color: rgba(255,255,255,0.5);
+  color: var(--text-muted) !important;
 }
 
 .login-card { --card-accent: #c0a060; }
@@ -206,7 +203,7 @@ a {
 .portal-footer {
   margin-top: 60px;
   font-size: 0.85rem;
-  color: rgba(255,255,255,0.4);
+  color: var(--text-muted) !important;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -227,21 +224,23 @@ a {
    ========================================================================== */
 
 .login-body {
-  background-color: #f5f7ff;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1e2d 100%) !important;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0;
   padding: 20px;
+  color: #f8fafc;
 }
 
 .login-card-container {
   max-width: 1200px;
   width: 100%;
-  background: white;
+  background: #1e293b;
   border-radius: 20px;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.1);
   overflow: hidden;
   display: flex;
   min-height: 600px;
@@ -271,13 +270,13 @@ a {
 
 .login-title {
   font-size: 28px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 10px;
-  color: var(--dark-color);
+  color: var(--accent-color) !important;
 }
 
 .login-subtitle {
-  color: #6c757d;
+  color: var(--text-muted);
   margin-bottom: 40px;
 }
 
@@ -291,7 +290,7 @@ a {
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #6c757d;
+  color: #94a3b8;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -303,17 +302,29 @@ a {
   width: 100%;
   height: 50px;
   border-radius: 10px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #334155;
   padding-left: 50px;
   padding-right: 45px;
   font-size: 15px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.3s ease;
   font-family: var(--font-family-sans);
+  color: white;
+}
+
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus,
+.login-input:-webkit-autofill:active {
+  -webkit-text-fill-color: white !important;
+  -webkit-box-shadow: 0 0 0 30px #334155 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .login-input:focus {
-  border-color: var(--primary-color);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
 }
 
 .login-password-toggle {
@@ -322,19 +333,19 @@ a {
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
-  color: #6c757d;
+  color: #94a3b8;
   z-index: 10;
   padding: 5px;
 }
 
 .login-btn {
   width: 100%;
-  background: var(--gradient);
+  background: var(--accent-color) !important;
   border: none;
   height: 50px;
   border-radius: 10px;
-  color: white;
-  font-weight: 500;
+  color: #000000 !important;
+  font-weight: bold;
   letter-spacing: 0.5px;
   transition: all 0.3s;
   font-size: 16px;
@@ -347,7 +358,8 @@ a {
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+  background: #bfa030 !important;
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
 }
 
 @media (max-width: 992px) {
@@ -439,7 +451,7 @@ a {
 
 .admin-sidebar {
   width: 260px;
-  background: #f8f9fa;
+  background: var(--secondary-color, #1e1e2d);
   border-right: 1px solid var(--border-color);
   flex-shrink: 0;
   display: flex;
@@ -450,10 +462,11 @@ a {
   overflow-y: auto;
   z-index: 150;
   transition: all 0.3s ease;
+  color: white;
 }
 
 .sidebar-logo-container {
-  background: #ffeb3b; /* Replicates yellow logo area */
+  background: transparent;
   padding: 15px;
   display: flex;
   justify-content: center;
@@ -471,7 +484,7 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 10px;
 }
@@ -497,7 +510,7 @@ a {
 .profile-name {
   font-weight: 600;
   font-size: 13px;
-  color: #333;
+  color: white;
 }
 
 .logout-btn {
@@ -527,30 +540,32 @@ a {
 }
 
 .nav-item {
-  padding: 10px 15px;
-  border-radius: 8px;
+  padding: 15px 25px;
+  border-left: 3px solid transparent;
+  transition: 0.3s;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: all 0.2s;
-  color: #495057;
+  color: var(--text-muted);
   font-size: 14px;
   font-weight: 500;
 }
 
 .nav-item:hover, .nav-item.submenu-open {
-  background: rgba(67, 97, 238, 0.06);
-  color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--accent-color);
+  color: var(--accent-color);
 }
 
 .nav-item.active {
-  background: var(--primary-color);
-  color: white;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--accent-color);
+  color: var(--accent-color);
 }
 
 .nav-item.active .nav-icon {
-  color: white;
+  color: var(--accent-color);
 }
 
 .nav-item-left {
@@ -562,13 +577,13 @@ a {
 .nav-icon {
   width: 20px;
   text-align: center;
-  color: var(--text-muted);
+  color: inherit;
   font-size: 14px;
 }
 
 .nav-arrow {
   font-size: 10px;
-  color: #a0aec0;
+  color: inherit;
   transition: transform 0.2s;
 }
 
@@ -577,36 +592,33 @@ a {
 }
 
 .submenu-list {
-  padding: 4px 0 4px 32px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .submenu-item {
-  padding: 8px 12px;
+  padding: 12px 15px 12px 60px;
   font-size: 13px;
-  color: #64748b;
-  border-radius: 6px;
+  color: var(--text-muted);
   transition: all 0.2s;
   font-weight: 500;
+  display: flex;
+  align-items: center;
 }
 
-.submenu-item:hover {
-  color: var(--primary-color);
-  background: rgba(67, 97, 238, 0.03);
-}
-
-.submenu-item.active {
-  color: var(--primary-color);
-  font-weight: 600;
-  background: rgba(67, 97, 238, 0.06);
+.submenu-item:hover, .submenu-item.active {
+  color: var(--accent-color);
+  background: transparent;
 }
 
 .admin-header {
   height: 70px;
-  background: white;
-  border-bottom: 1px solid var(--border-color);
+  background: rgba(30, 30, 45, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   padding: 0 30px;
   display: flex;
   justify-content: space-between;
@@ -614,6 +626,7 @@ a {
   position: sticky;
   top: 0;
   z-index: 140;
+  color: white;
 }
 
 .header-left {
@@ -635,7 +648,7 @@ a {
 }
 
 .sidebar-toggle-btn:hover {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .header-search-form {
@@ -645,17 +658,17 @@ a {
 
 .search-input-group {
   display: flex;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   overflow: hidden;
   height: 42px;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .category-select-wrapper {
   position: relative;
-  background: #f8f9fa;
-  border-right: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.02);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .category-btn {
@@ -674,17 +687,17 @@ a {
 
 .dropdown-arrow-icon {
   font-size: 8px;
-  color: #a0aec0;
+  color: var(--text-muted);
 }
 
 .category-dropdown {
   position: absolute;
   top: 46px;
   left: 0;
-  background: white;
-  border: 1px solid var(--border-color);
+  background: var(--secondary-color, #1e1e2d);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
   z-index: 1000;
   min-width: 150px;
   overflow: hidden;
@@ -694,12 +707,12 @@ a {
   padding: 10px 15px;
   font-size: 13px;
   cursor: pointer;
-  color: #4a5568;
+  color: var(--text-muted);
 }
 
 .category-item:hover {
-  background: #f8f9fa;
-  color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent-color);
 }
 
 .search-input-wrapper {
@@ -711,7 +724,7 @@ a {
 }
 
 .search-icon-inside {
-  color: #cbd5e1;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -722,6 +735,8 @@ a {
   font-size: 14px;
   padding-left: 10px;
   font-family: var(--font-family-sans);
+  background: transparent;
+  color: white;
 }
 
 .header-right {
@@ -744,20 +759,21 @@ a {
 }
 
 .user-profile-btn:hover {
-  color: var(--primary-color);
+  color: var(--accent-color);
 }
 
 .profile-dropdown-menu {
   position: absolute;
   top: 45px;
   right: 0;
-  background: white;
-  border: 1px solid var(--border-color);
+  background: var(--secondary-color, #1e1e2d);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
   z-index: 1000;
   width: 240px;
   padding: 12px 0;
+  color: white;
 }
 
 .dropdown-header-info {
@@ -768,7 +784,7 @@ a {
 
 .dropdown-header-info strong {
   font-size: 14px;
-  color: #333;
+  color: white;
 }
 
 .user-role {
@@ -778,7 +794,7 @@ a {
 
 .profile-dropdown-menu hr {
   border: none;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
   margin: 8px 0;
 }
 
@@ -791,7 +807,7 @@ a {
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: #4a5568;
+  color: var(--text-muted);
   cursor: pointer;
   text-align: left;
   transition: all 0.2s;
@@ -800,8 +816,8 @@ a {
 }
 
 .dropdown-item-btn:hover {
-  background: #f8f9fa;
-  color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent-color);
 }
 
 .logout-item {
@@ -809,7 +825,7 @@ a {
 }
 
 .logout-item:hover {
-  background: #fff5f5;
+  background: rgba(244, 63, 94, 0.05);
   color: var(--danger-color);
 }
 
@@ -841,18 +857,20 @@ a {
    ========================================================================== */
 
 .hub-header-banner {
-  background: linear-gradient(135deg, #4f46e5 0%, #ec4899 100%);
+  background: linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%);
   border-radius: 20px;
   padding: 40px;
   color: white;
   margin-bottom: 30px;
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.15);
+  box-shadow: 0 10px 25px rgba(180, 138, 29, 0.15);
+  border: 1px solid rgba(180, 138, 29, 0.2);
 }
 
 .hub-header-banner h2 {
   font-size: 2.2rem;
   font-weight: 700;
   margin-bottom: 8px;
+  color: var(--accent-color);
 }
 
 .hub-header-banner p {
@@ -868,11 +886,11 @@ a {
 }
 
 .hub-card {
-  background: white;
+  background: var(--light-color, #ffffff) !important;
   border-radius: 24px;
   padding: 30px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid var(--border-color, #edf2f9) !important;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -880,11 +898,13 @@ a {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  color: var(--dark-color, #2c3e50) !important;
 }
 
 .hub-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(180, 138, 29, 0.2) !important;
 }
 
 .hub-card-icon-container {
@@ -896,8 +916,8 @@ a {
   justify-content: center;
   font-size: 1.5rem;
   margin-bottom: 22px;
-  color: white;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  color: white !important;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
   transition: all 0.3s;
 }
 
@@ -908,7 +928,7 @@ a {
 .hub-card-title {
   font-size: 1.15rem;
   font-weight: 600;
-  color: #333;
+  color: var(--dark-color, #2c3e50) !important;
   margin-bottom: 25px;
 }
 
@@ -937,38 +957,36 @@ a {
 
 .hub-btn-visit {
   width: 100%;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+  background: #f1f3f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #4a5568 !important;
 }
 
 .hub-btn-visit:hover {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
+  background: #e2e8f0 !important;
+  color: var(--dark-color) !important;
 }
 
 .hub-btn-list {
-  background: transparent;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+  background: #f1f3f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #4a5568 !important;
 }
 
 .hub-btn-list:hover {
-  background: #f1f5f9;
+  background: #e2e8f0 !important;
+  color: var(--dark-color) !important;
 }
 
 .hub-btn-add {
-  background: white;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+  background: var(--secondary-color, #1e1e2d) !important;
+  border: 1px solid var(--secondary-color, #1e1e2d) !important;
+  color: white !important;
 }
 
 .hub-btn-add:hover {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
-  box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
+  background: var(--primary-color, #b48a1d) !important;
+  border-color: var(--primary-color, #b48a1d) !important;
 }
 
 /* Specific Card Theming */
@@ -1002,10 +1020,10 @@ a {
 }
 
 .db-stat-card {
-  background: white;
+  background: var(--light-color, #1e1e2d);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -1036,7 +1054,7 @@ a {
 .db-stat-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #333;
+  color: white;
 }
 
 .db-stat-label {
@@ -1115,10 +1133,10 @@ a {
 }
 
 .table-card {
-  background: white;
+  background: var(--light-color, #1e1e2d);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -1134,21 +1152,25 @@ a {
 }
 
 .db-table th {
-  background: #f8f9fa;
+  background: rgba(0, 0, 0, 0.2);
   padding: 14px 20px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--primary-color);
   text-transform: uppercase;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
 }
 
 .db-table td {
   padding: 16px 20px;
   font-size: 13px;
-  color: #4a5568;
+  color: #e2e8f0;
   border-bottom: 1px solid var(--border-color);
   font-weight: 500;
+}
+
+.db-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .db-table tr:last-child td {
@@ -1225,11 +1247,12 @@ a {
 }
 
 .form-card {
-  background: white;
+  background: var(--light-color, #1e1e2d);
   border-radius: 16px;
   padding: 30px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  color: white;
 }
 
 .form-grid {
@@ -1246,7 +1269,7 @@ a {
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: #475569;
+  color: var(--text-muted);
   margin-bottom: 8px;
   text-transform: uppercase;
 }
@@ -1272,22 +1295,22 @@ a {
   padding-left: 45px;
   padding-right: 15px;
   font-size: 14px;
-  color: #333;
+  color: white;
   outline: none;
   font-family: var(--font-family-sans);
-  background-color: #fafbfc;
+  background-color: rgba(255, 255, 255, 0.03);
   transition: all 0.2s;
 }
 
 .form-input:focus {
   border-color: var(--primary-color);
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.08);
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(180, 138, 29, 0.15);
 }
 
 .form-input-readonly {
-  background-color: #f1f5f9 !important;
-  color: #475569;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -1919,15 +1942,216 @@ input:checked + .slider:before {
 .cell-date-input {
   width: 100%;
   height: 26px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px;
   font-size: 11px;
   padding: 0 4px;
   outline: none;
   font-family: var(--font-family-sans);
-  background: white;
+  background: #14141f !important;
+  color: white !important;
 }
 
 .cell-date-input:focus {
   border-color: var(--primary-color);
+}
+
+/* ==========================================================================
+   GLOBAL LIGHT MODE CORE COMPONENT OVERRIDES
+   ========================================================================== */
+
+/* Page main backgrounds */
+.admin-content-area, .admin-main {
+  background: var(--bg-dark) !important;
+}
+
+/* Header Override (Solid white with thin gray border) */
+.admin-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--dark-color) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02) !important;
+}
+
+.sidebar-toggle-btn {
+  color: var(--dark-color) !important;
+}
+
+.search-input-group {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.category-btn {
+  color: var(--dark-color) !important;
+}
+
+.category-dropdown, .profile-dropdown-menu {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+  color: var(--dark-color) !important;
+}
+
+.category-item {
+  color: var(--dark-color) !important;
+}
+
+.category-item:hover {
+  background: #f1f5f9 !important;
+  color: var(--primary-color) !important;
+}
+
+.search-text-input {
+  color: var(--dark-color) !important;
+}
+
+.user-profile-btn {
+  color: var(--dark-color) !important;
+}
+
+.dropdown-header-info strong {
+  color: var(--dark-color) !important;
+}
+
+.dropdown-item-btn {
+  color: var(--dark-color) !important;
+}
+
+.dropdown-item-btn:hover {
+  background: #f1f5f9 !important;
+  color: var(--primary-color) !important;
+}
+
+/* Base Cards (Forms, Tables, Stats) */
+.table-card, .form-card, .db-stat-card, .hub-card, .card {
+  background-color: var(--light-color) !important;
+  color: var(--dark-color) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Titles and labels inside cards */
+.table-card h3, .form-card h3, .table-card h4, .form-card h4,
+.table-card label, .form-card label {
+  color: var(--dark-color) !important;
+}
+
+.table-card p, .form-card p, .db-stat-card p, .table-card span.text-muted, .form-card span.text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* Table header specific colors */
+.db-table th {
+  background-color: #f8fafc !important;
+  color: var(--dark-color) !important;
+  border-bottom: 2px solid var(--border-color) !important;
+  font-weight: 700 !important;
+}
+
+/* Table cells and text */
+.db-table td {
+  background-color: transparent !important;
+  color: var(--dark-color) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.db-table tr:hover td {
+  background-color: #f8fafc !important;
+}
+
+/* Overriding light-mode text colors inside tables to remain dark slate */
+.db-table td span, 
+.db-table td div span {
+  color: var(--dark-color) !important;
+}
+
+.db-table td span.status-pill {
+  color: #ffffff !important;
+}
+
+.db-table td span[style*="color: rgb(30, 41, 59)"], 
+.db-table td span[style*="color: rgb(51, 65, 85)"],
+.db-table td span[style*="color: #1e293b"],
+.db-table td span[style*="color: #334155"] {
+  color: var(--dark-color) !important;
+}
+
+/* Muted secondary colors inside tables */
+.db-table td span[style*="color: rgb(100, 116, 139)"],
+.db-table td span[style*="color: rgb(148, 163, 184)"],
+.db-table td span[style*="color: #64748b"],
+.db-table td span[style*="color: #94a3b8"] {
+  color: var(--text-muted) !important;
+}
+
+/* Global input fields & select dropdown overrides */
+.table-card input[type="text"], .form-card input[type="text"],
+.table-card input[type="number"], .form-card input[type="number"],
+.table-card input[type="date"], .form-card input[type="date"],
+.table-card input[type="time"], .form-card input[type="time"],
+.table-card select, .form-card select,
+.admin-content-area select, .admin-content-area input[type="text"],
+.cell-date-input, .cell-price-input {
+  background-color: #ffffff !important;
+  color: var(--dark-color) !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+}
+
+.table-card input[type="text"]::placeholder,
+.form-card input[type="text"]::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Dashboard Stat tab containers and widgets */
+.db-grid > div[style*="display: grid"] > div {
+  background-color: #ffffff !important;
+  border: 2px solid transparent !important;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03) !important;
+}
+
+.db-grid > div[style*="display: grid"] > div[style*="border: 2px solid rgb(37, 99, 235)"],
+.db-grid > div[style*="display: grid"] > div[style*="border: 2px solid rgb(79, 70, 229)"],
+.db-grid > div[style*="display: grid"] > div[style*="border: 2px solid rgb(16, 185, 129)"],
+.db-grid > div[style*="display: grid"] > div[style*="border: 2px solid rgb(245, 158, 11)"] {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 6px 15px -3px rgba(180, 138, 29, 0.15) !important;
+  background-color: #fafbfc !important;
+}
+
+.db-grid > div[style*="display: grid"] > div h4 {
+  color: var(--dark-color) !important;
+}
+
+.db-grid > div[style*="display: grid"] > div p {
+  color: var(--text-muted) !important;
+}
+
+/* Makkah clock widget override */
+.db-grid > div[style*="display: flex"][style*="background-color: rgb(255, 255, 255)"],
+.db-grid > div[style*="display: flex"][style*="background: rgb(255, 255, 255)"],
+.db-grid div[style*="background: rgb(255, 255, 255)"][style*="min-width: 220px"],
+.db-grid div[style*="background: #ffffff"][style*="min-width: 220px"] {
+  background-color: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+}
+
+.db-grid div[style*="background: #ffffff"][style*="min-width: 220px"] span[style*="color: rgb(30, 41, 59)"],
+.db-grid div[style*="background: #ffffff"][style*="min-width: 220px"] span[style*="color: #1e293b"] {
+  color: var(--dark-color) !important;
+}
+
+/* General button tweaks to match the light theme */
+.form-btn-back, button[style*="background: rgb(255, 255, 255)"] {
+  background: #ffffff !important;
+  color: var(--dark-color) !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.form-btn-back:hover, button[style*="background: rgb(255, 255, 255)"]:hover {
+  background: #f8fafc !important;
+  color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }

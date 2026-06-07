@@ -15,7 +15,7 @@ interface MenuItem {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { logout, sidebarOpen } = useAuth();
+  const { logout, sidebarOpen, user } = useAuth();
   
   // Track open submenu states
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({
@@ -132,10 +132,8 @@ export default function Sidebar() {
     });
   }, [pathname]);
 
-  if (!sidebarOpen) return null;
-
   return (
-    <div className="admin-sidebar">
+    <div className={`admin-sidebar ${!sidebarOpen ? "collapsed" : "mobile-open"}`}>
       {/* Sidebar Top: Logo Block */}
       <div className="sidebar-logo-container">
         <img src="/logo2.png" alt="Logo" className="sidebar-logo" />
@@ -147,7 +145,7 @@ export default function Sidebar() {
           <div className="profile-avatar">
             <i className="fas fa-user-tie"></i>
           </div>
-          <span className="profile-name">umrahcab</span>
+          <span className="profile-name">{user?.name || user?.username || "umrahcab"}</span>
         </div>
         <button onClick={logout} className="logout-btn" title="Sign Out">
           <i className="fas fa-right-from-bracket"></i>

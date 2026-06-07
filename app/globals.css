@@ -840,15 +840,47 @@ a {
   overflow-y: auto;
 }
 
+/* Desktop collapsed state */
+@media (min-width: 769px) {
+  .admin-sidebar.collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    border-right: none !important;
+    overflow: hidden !important;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* Mobile Sidebar Overlay default styling */
+.mobile-sidebar-overlay {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .admin-sidebar {
     position: fixed;
     left: -260px;
     height: 100vh;
+    z-index: 999;
+    width: 260px;
+    transition: left 0.3s ease;
   }
   
   .admin-sidebar.mobile-open {
     left: 0;
+  }
+
+  .mobile-sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 998;
   }
 
   .admin-content-area {
@@ -2297,6 +2329,36 @@ input[type="checkbox"]:checked + .switch-slider::before {
 .form-card input::placeholder,
 .form-card textarea::placeholder {
   color: #94a3b8 !important;
+}
+
+/* Page transition loader and spinner */
+.page-transition-loader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(244, 247, 250, 0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+}
+
+.spinner-gold {
+  width: 45px;
+  height: 45px;
+  border: 3px solid rgba(180, 138, 29, 0.15);
+  border-radius: 50%;
+  border-top-color: #d4af37;
+  animation: loader-spin 0.75s infinite linear;
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 

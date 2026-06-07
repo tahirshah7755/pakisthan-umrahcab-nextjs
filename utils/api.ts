@@ -4,12 +4,23 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/u
 // Helper to handle requests with fallback to local mock state
 async function request(endpoint: string, options: RequestInit = {}) {
   try {
+    const token = typeof window !== "undefined" ? sessionStorage.getItem("umrahcab_token") : null;
+    
+    const headers = new Headers();
+    headers.append("Content-Type", "application/json");
+    if (token) {
+      headers.append("Authorization", `Bearer ${token}`);
+    }
+    if (options.headers) {
+      const extraHeaders = new Headers(options.headers);
+      extraHeaders.forEach((value, key) => {
+        headers.set(key, value);
+      });
+    }
+
     const res = await fetch(`${API_BASE}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
       ...options,
+      headers,
     });
     if (!res.ok) {
       throw new Error(`HTTP Error: ${res.status}`);

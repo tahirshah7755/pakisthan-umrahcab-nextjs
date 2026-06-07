@@ -5,12 +5,21 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const { login, user } = useAuth();
+  const { login, register, user } = useAuth();
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
+  // Tab State
+  const [mode, setMode] = useState<"login" | "register">("login");
+
+  // Form states
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
@@ -40,26 +49,61 @@ export default function LoginPage() {
     setToast({ show: true, message, type });
     setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
-    }, 3000);
+    }, 3500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (!username || !password) {
-      showToast("Please enter both username and password.", "error");
-      return;
-    }
+    if (mode === "login") {
+      if (!email || !password) {
+        showToast("Please enter both email and password.", "error");
+        setLoading(false);
+        return;
+      }
 
-    const success = login(username, password);
+      const success = await login(email, password);
+      setLoading(false);
 
-    if (success) {
-      showToast("Sign in successful! Redirecting to dashboard...", "success");
-      setTimeout(() => {
-        router.push("/admin/hub");
-      }, 1000);
+      if (success) {
+        showToast("Sign in successful! Redirecting to dashboard...", "success");
+        setTimeout(() => {
+          router.push("/admin/hub");
+        }, 1200);
+      } else {
+        showToast("Invalid email or password. Please try again.", "error");
+      }
     } else {
-      showToast("Invalid username or password. Please try again.", "error");
+      if (!name || !email || !password || !confirmPassword) {
+        showToast("Please fill all required fields.", "error");
+        setLoading(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showToast("Passwords do not match.", "error");
+        setLoading(false);
+        return;
+      }
+
+      if (password.length < 8) {
+        showToast("Password must be at least 8 characters long.", "error");
+        setLoading(false);
+        return;
+      }
+
+      const res = await register(name, email, password, confirmPassword);
+      setLoading(false);
+
+      if (res.success) {
+        showToast(res.message || "Registration successful! Redirecting...", "success");
+        setTimeout(() => {
+          router.push("/admin/hub");
+        }, 1200);
+      } else {
+        showToast(res.message || "Registration failed. Please try again.", "error");
+      }
     }
   };
 
@@ -90,23 +134,85 @@ export default function LoginPage() {
         {/* Right Side: Form */}
         <div className="login-form-side">
           <img src="/logo2.png" className="login-logo" alt="Logo" />
-          <h2 className="login-title">Sign in to your account</h2>
+          
+          {/* Tab Selector */}
+          <div style={{ display: "flex", background: "#0f172a", borderRadius: "10px", padding: "4px", marginBottom: "25px" }}>
+            <button
+              type="button"
+              onClick={() => setMode("login")}
+              style={{
+                flex: 1,
+                padding: "10px",
+                borderRadius: "8px",
+                border: "none",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor: "pointer",
+                background: mode === "login" ? "var(--accent-color)" : "transparent",
+                color: mode === "login" ? "#0f172a" : "#94a3b8",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("register")}
+              style={{
+                flex: 1,
+                padding: "10px",
+                borderRadius: "8px",
+                border: "none",
+                fontWeight: "600",
+                fontSize: "14px",
+                cursor: "pointer",
+                background: mode === "register" ? "var(--accent-color)" : "transparent",
+                color: mode === "register" ? "#0f172a" : "#94a3b8",
+                transition: "all 0.2s ease"
+              }}
+            >
+              Register Admin
+            </button>
+          </div>
+
+          <h2 className="login-title">
+            {mode === "login" ? "Sign in to your account" : "Register a new Administrator"}
+          </h2>
           <p className="login-subtitle">
-            Enter your credentials to access your dashboard
+            {mode === "login"
+              ? "Enter your credentials to access your dashboard"
+              : "Set up a new administrator profile on the database"}
           </p>
 
           <form onSubmit={handleSubmit}>
-            {/* Username field */}
+            {/* Full Name field (Register only) */}
+            {mode === "register" && (
+              <div className="input-container">
+                <span className="login-input-icon">
+                  <i className="fas fa-user"></i>
+                </span>
+                <input
+                  type="text"
+                  className="login-input"
+                  placeholder="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
+            {/* Email field */}
             <div className="input-container">
               <span className="login-input-icon">
-                <i className="fas fa-user"></i>
+                <i className="fas fa-envelope"></i>
               </span>
               <input
-                type="text"
+                type="email"
                 className="login-input"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
@@ -127,6 +233,7 @@ export default function LoginPage() {
               <span
                 className="login-password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
+                style={{ cursor: "pointer" }}
               >
                 <i
                   className={`far ${showPassword ? "fa-eye-slash" : "fa-eye"}`}
@@ -134,19 +241,41 @@ export default function LoginPage() {
               </span>
             </div>
 
-            {/* Empty space matching target layout */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1.5rem",
-              }}
-            ></div>
+            {/* Confirm Password field (Register only) */}
+            {mode === "register" && (
+              <div className="input-container">
+                <span className="login-input-icon">
+                  <i className="fas fa-lock"></i>
+                </span>
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="login-input"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <span
+                  className="login-password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <i
+                    className={`far ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`}
+                  ></i>
+                </span>
+              </div>
+            )}
+
+            <div style={{ marginBottom: "1.5rem" }}></div>
 
             {/* Submit Button */}
-            <button type="submit" className="login-btn">
-              Sign In
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading
+                ? "Processing..."
+                : mode === "login"
+                ? "Sign In"
+                : "Create Admin Account"}
             </button>
           </form>
         </div>

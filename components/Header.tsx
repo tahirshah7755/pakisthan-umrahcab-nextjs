@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function Header() {
-  const { sidebarOpen, setSidebarOpen, searchQuery, setSearchQuery, logout } = useAuth();
+  const { sidebarOpen, setSidebarOpen, searchQuery, setSearchQuery, logout, user } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [searchCategory, setSearchCategory] = useState("All Items");
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
@@ -95,7 +95,7 @@ export default function Header() {
           {profileDropdownOpen && (
             <div className="profile-dropdown-menu">
               <div className="dropdown-header-info">
-                <strong>umrahcab</strong>
+                <strong>{user?.name || user?.username || "umrahcab"}</strong>
                 <span className="user-role">Administrator</span>
               </div>
               <hr />

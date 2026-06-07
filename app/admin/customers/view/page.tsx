@@ -55,10 +55,145 @@ function CustomerViewContent() {
         // 1. Fetch single customer
         const customerProfile = await api.getCustomer(targetId);
         if (customerProfile) {
-          setDbCustomer(customerProfile);
+          if (customerProfile.customer) {
+            setDbCustomer(customerProfile.customer);
+            
+            // Map bookings
+            if (Array.isArray(customerProfile.bookings)) {
+              setBookings(customerProfile.bookings.map((b: any, idx: number) => ({
+                id: b.booking_code || `#BKG-87${idx + 10}`,
+                rawId: b.id ? String(b.id) : `87${idx + 10}`,
+                type: "BKG",
+                date: b.date || "2026-05-25",
+                time: b.time || "10:30 AM",
+                customerName: b.full_name || b.fullName || "Guest",
+                companyName: b.full_name ? "Corporate Account" : "Walk-in",
+                details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
+                vehicle: b.car_type || b.carType || "Sedan (Standard)",
+                phones: [b.phone || b.whatsapp || "+966501234567"],
+                customerId: b.customer_id ? String(b.customer_id) : "1"
+              })));
+            }
+            
+            // Map services
+            if (Array.isArray(customerProfile.services)) {
+              setServices(customerProfile.services.map((s: any) => ({
+                id: s.custom_id || `#SRV-${s.id}`,
+                rawId: s.id,
+                name: s.name,
+                type: s.type,
+                description: s.description,
+                basePrice: parseFloat(s.base_price || 0),
+                status: s.status || "Active",
+                pickup: s.pickup,
+                driverCash: parseFloat(s.driver_cash || 0),
+                date: s.date,
+                time: s.time,
+                customer_id: s.customer_id
+              })));
+            }
+
+            // Map flights
+            if (Array.isArray(customerProfile.flights)) {
+              setFlights(customerProfile.flights.map((f: any) => ({
+                id: f.custom_id || `#FLT-${f.id}`,
+                rawId: f.id,
+                flightNo: f.flight_no || "SV-321",
+                leg: f.leg || "Arrival",
+                date: f.date || "",
+                time: f.time || "",
+                route: f.route || "JED → MAK",
+                status: f.status || "On Time",
+                customer_id: f.customer_id
+              })));
+            }
+
+            // Map trains
+            if (Array.isArray(customerProfile.trains)) {
+              setTrains(customerProfile.trains.map((t: any) => ({
+                id: t.custom_id || `#TRN-${t.id}`,
+                rawId: t.id,
+                train_no: t.train_no || "HHR-1",
+                leg: t.leg || "Departure Only",
+                date: t.date || "",
+                time: t.time || "",
+                route: t.route || "JED → MAK",
+                status: t.status || "Arrived",
+                customer_id: t.customer_id
+              })));
+            }
+          } else {
+            setDbCustomer(customerProfile);
+            
+            // Fallback to fetch all related list if API didn't group them
+            const bkgList = await api.getBookings();
+            if (bkgList) {
+              setBookings(bkgList.map((b: any, idx: number) => ({
+                id: b.booking_code || `#BKG-87${idx + 10}`,
+                rawId: b.id ? String(b.id) : `87${idx + 10}`,
+                type: "BKG",
+                date: b.date || "2026-05-25",
+                time: b.time || "10:30 AM",
+                customerName: b.fullName || "Guest",
+                companyName: b.fullName ? "Corporate Account" : "Walk-in",
+                details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
+                vehicle: b.carType || "Sedan (Standard)",
+                phones: [b.phone || "+966501234567"],
+                customerId: b.customer_id ? String(b.customer_id) : "1"
+              })));
+            }
+
+            const srvList = await api.getServices();
+            if (srvList) {
+              setServices(srvList.map((s: any) => ({
+                id: s.custom_id || `#SRV-${s.id}`,
+                rawId: s.id,
+                name: s.name,
+                type: s.type,
+                description: s.description,
+                basePrice: parseFloat(s.base_price || 0),
+                status: s.status || "Active",
+                pickup: s.pickup,
+                driverCash: parseFloat(s.driver_cash || 0),
+                date: s.date,
+                time: s.time,
+                customer_id: s.customer_id
+              })));
+            }
+
+            const fltList = await api.getFlights();
+            if (fltList) {
+              setFlights(fltList.map((f: any) => ({
+                id: f.custom_id || `#FLT-${f.id}`,
+                rawId: f.id,
+                flightNo: f.flight_no || "SV-321",
+                leg: f.leg || "Arrival",
+                date: f.date || "",
+                time: f.time || "",
+                route: f.route || "JED → MAK",
+                status: f.status || "On Time",
+                customer_id: f.customer_id
+              })));
+            }
+
+            const trnList = await api.getTrains();
+            if (trnList) {
+              setTrains(trnList.map((t: any) => ({
+                id: t.custom_id || `#TRN-${t.id}`,
+                rawId: t.id,
+                train_no: t.train_no || "HHR-1",
+                leg: t.leg || "Departure Only",
+                date: t.date || "",
+                time: t.time || "",
+                route: t.route || "JED → MAK",
+                status: t.status || "Arrived",
+                customer_id: t.customer_id
+              })));
+            }
+          }
         }
 
-        // 2. Fetch all customers list (for fallback and search)
+        // Fetch all customers list (for search dropdown, etc.)
         const allCustomers = await api.getCustomers();
         if (allCustomers && Array.isArray(allCustomers)) {
           setCustomers(allCustomers.map((c: any) => ({
@@ -82,75 +217,6 @@ function CustomerViewContent() {
           })));
         }
 
-        // 3. Fetch related Bookings
-        const bkgList = await api.getBookings();
-        if (bkgList) {
-          setBookings(bkgList.map((b: any, idx: number) => ({
-            id: b.booking_code || `#BKG-87${idx + 10}`,
-            rawId: b.id ? String(b.id) : `87${idx + 10}`,
-            type: "BKG",
-            date: b.date || "2026-05-25",
-            time: b.time || "10:30 AM",
-            customerName: b.fullName || "Guest",
-            companyName: b.fullName ? "Corporate Account" : "Walk-in",
-            details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
-            vehicle: b.carType || "Sedan (Standard)",
-            phones: [b.phone || "+966501234567"],
-            customerId: b.customer_id ? `#CST-${b.customer_id}` : `#CST-1`
-          })));
-        }
-
-        // 4. Fetch related Services
-        const srvList = await api.getServices();
-        if (srvList) {
-          setServices(srvList.map((s: any) => ({
-            id: s.custom_id || `#SRV-${s.id}`,
-            rawId: s.id,
-            name: s.name,
-            type: s.type,
-            description: s.description,
-            basePrice: parseFloat(s.base_price || 0),
-            status: s.status || "Active",
-            pickup: s.pickup,
-            driverCash: parseFloat(s.driver_cash || 0),
-            date: s.date,
-            time: s.time,
-            customer_id: s.customer_id
-          })));
-        }
-
-        // 5. Fetch Flights
-        const fltList = await api.getFlights();
-        if (fltList) {
-          setFlights(fltList.map((f: any) => ({
-            id: f.custom_id || `#FLT-${f.id}`,
-            rawId: f.id,
-            flightNo: f.flight_no || "SV-321",
-            leg: f.leg || "Arrival",
-            date: f.date || "",
-            time: f.time || "",
-            route: f.route || "JED → MAK",
-            status: f.status || "On Time",
-            customer_id: f.customer_id
-          })));
-        }
-
-        // 6. Fetch Trains
-        const trnList = await api.getTrains();
-        if (trnList) {
-          setTrains(trnList.map((t: any) => ({
-            id: t.custom_id || `#TRN-${t.id}`,
-            rawId: t.id,
-            train_no: t.train_no || "HHR-1",
-            leg: t.leg || "Departure Only",
-            date: t.date || "",
-            time: t.time || "",
-            route: t.route || "JED → MAK",
-            status: t.status || "Arrived",
-            customer_id: t.customer_id
-          })));
-        }
-
       } catch (err) {
         console.error(err);
         showToast("Error loading customer profile.", "error");
@@ -165,7 +231,7 @@ function CustomerViewContent() {
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
-        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #7c3aed", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d97706", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
       </div>
     );
   }

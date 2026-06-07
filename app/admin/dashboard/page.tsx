@@ -105,24 +105,24 @@ export default function OperationsDashboard() {
         
         // Define fallback seeds matching exactly the legacy PHP datasets
         const legacyBookingsToday: BookingRecord[] = [
-          { id: "#BKG-9843", time: "10:30 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", route: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", price: 300.00, costAgent: 100.00, status: "Active Dispatch", tafweej: "T-091A", customerId: "#CST-1" },
-          { id: "#BKG-9844", time: "04:00 PM", customerName: "Abdul Rahman", companyName: "Al-Latif Group", route: "Makkah Hotel → Jeddah Airport", vehicle: "GMC Yukon XL", price: 550.00, costAgent: 180.00, status: "Confirmed Booking", tafweej: "T-091B", customerId: "#CST-2" },
-          { id: "#BKG-9848", time: "11:15 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", route: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", price: 300.00, costAgent: 100.00, status: "Completed", tafweej: "T-098A", customerId: "#CST-1" },
-          { id: "#BKG-9849", time: "09:00 PM", customerName: "Mohammed Siddique", companyName: "Al-Latif Group", route: "Madinah Hotel → Jeddah Airport", vehicle: "GMC Yukon XL", price: 550.00, costAgent: 180.00, status: "Cancelled", tafweej: "T-098B", customerId: "#CST-3" }
+          { id: "#BKG-9843", time: "10:30 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", route: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", price: 300.00, costAgent: 100.00, status: "Active Dispatch", tafweej: "T-091A", customerId: "1" },
+          { id: "#BKG-9844", time: "04:00 PM", customerName: "Abdul Rahman", companyName: "Al-Latif Group", route: "Makkah Hotel → Jeddah Airport", vehicle: "GMC Yukon XL", price: 550.00, costAgent: 180.00, status: "Confirmed Booking", tafweej: "T-091B", customerId: "2" },
+          { id: "#BKG-9848", time: "11:15 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", route: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", price: 300.00, costAgent: 100.00, status: "Completed", tafweej: "T-098A", customerId: "1" },
+          { id: "#BKG-9849", time: "09:00 PM", customerName: "Mohammed Siddique", companyName: "Al-Latif Group", route: "Madinah Hotel → Jeddah Airport", vehicle: "GMC Yukon XL", price: 550.00, costAgent: 180.00, status: "Cancelled", tafweej: "T-098B", customerId: "3" }
         ];
 
         const legacyBookingsTomorrow: BookingRecord[] = [
-          { id: "#BKG-9845", time: "08:00 AM", customerName: "Imran Khan", companyName: "Zahid Travels", route: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", price: 650.00, costAgent: 220.00, status: "Pending Check", tafweej: "T-092A", customerId: "#CST-1" }
+          { id: "#BKG-9845", time: "08:00 AM", customerName: "Imran Khan", companyName: "Zahid Travels", route: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", price: 650.00, costAgent: 220.00, status: "Pending Check", tafweej: "T-092A", customerId: "1" }
         ];
 
         const legacyServicesToday: ServiceRecord[] = [
-          { id: "#SRV-1", time: "12:00 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", serviceName: "Premium Umrah Visa Service", details: "Electronic Umrah visa compilation (Juice, Cake & Lays)", price: 450.00, costAgent: 150.00, status: "Pending", customerId: "#CST-1" },
-          { id: "#SRV-2", time: "02:00 PM", customerName: "Abu Bakar", companyName: "Al-Latif Group", serviceName: "Private Makkah Ziyarah Tour", details: "Guided tour to Jabal al-Nour", price: 250.00, costAgent: 100.00, status: "Active", customerId: "#CST-3" },
-          { id: "#SRV-4", time: "10:00 AM", customerName: "Abu Bakar", companyName: "Al-Latif Group", serviceName: "Private Makkah Ziyarah Tour", details: "Ziyarah Completed", price: 250.00, costAgent: 100.00, status: "Completed", customerId: "#CST-3" }
+          { id: "#SRV-1", time: "12:00 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", serviceName: "Premium Umrah Visa Service", details: "Electronic Umrah visa compilation (Juice, Cake & Lays)", price: 450.00, costAgent: 150.00, status: "Pending", customerId: "1" },
+          { id: "#SRV-2", time: "02:00 PM", customerName: "Abu Bakar", companyName: "Al-Latif Group", serviceName: "Private Makkah Ziyarah Tour", details: "Guided tour to Jabal al-Nour", price: 250.00, costAgent: 100.00, status: "Active", customerId: "3" },
+          { id: "#SRV-4", time: "10:00 AM", customerName: "Abu Bakar", companyName: "Al-Latif Group", serviceName: "Private Makkah Ziyarah Tour", details: "Ziyarah Completed", price: 250.00, costAgent: 100.00, status: "Completed", customerId: "3" }
         ];
 
         const legacyServicesTomorrow: ServiceRecord[] = [
-          { id: "#SRV-3", time: "09:30 AM", customerName: "Amjad", companyName: "Zahid Travels", serviceName: "VIP Makkah Meet & Greet", details: "Airport Fast-track service", price: 350.00, costAgent: 120.00, status: "Pending", customerId: "#CST-2" }
+          { id: "#SRV-3", time: "09:30 AM", customerName: "Amjad", companyName: "Zahid Travels", serviceName: "VIP Makkah Meet & Greet", details: "Airport Fast-track service", price: 350.00, costAgent: 120.00, status: "Pending", customerId: "2" }
         ];
 
         // Hydrate from live DB if valid elements are present
@@ -141,7 +141,7 @@ export default function OperationsDashboard() {
               costAgent: parseFloat(b.carPrice || 300) * 0.4,
               status: b.status || "Confirmed Booking",
               tafweej: `T-0${idx + 90}X`,
-              customerId: matchedCust ? (matchedCust.custom_id || `#CST-${matchedCust.id}`) : `#CST-1`
+              customerId: matchedCust ? String(matchedCust.id) : "1"
             };
           });
 
@@ -288,6 +288,14 @@ export default function OperationsDashboard() {
     }
     return true;
   });
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "450px" }}>
+        <div className="spinner-gold" style={{ width: "50px", height: "50px" }}></div>
+      </div>
+    );
+  }
 
   return (
     <div className="db-grid" style={{ display: "flex", flexDirection: "column", gap: "25px", padding: "5px" }}>

@@ -2103,9 +2103,19 @@ input:checked + .slider:before {
   color: var(--dark-color) !important;
 }
 
+/* Status pill readability overrides */
 .db-table td span.status-pill {
-  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  border-radius: 20px !important;
+  padding: 4px 12px !important;
+  font-size: 11px !important;
 }
+
+.db-table td span.status-pill.active { background: #eff6ff !important; color: #2563eb !important; }
+.db-table td span.status-pill.completed { background: #dcfce7 !important; color: #16a34a !important; }
+.db-table td span.status-pill.cancelled { background: #fee2e2 !important; color: #dc2626 !important; }
+.db-table td span.status-pill.pending { background: #fef3c7 !important; color: #d97706 !important; }
 
 .db-table td span[style*="color: rgb(30, 41, 59)"], 
 .db-table td span[style*="color: rgb(51, 65, 85)"],

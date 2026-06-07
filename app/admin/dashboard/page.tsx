@@ -54,13 +54,13 @@ export default function OperationsDashboard() {
   const [topPackageFilter, setTopPackageFilter] = useState("All");
   const [topVehicleFilter, setTopVehicleFilter] = useState("All");
   const [topSearchTerm, setTopSearchTerm] = useState("");
-  const [topEntriesLimit, setTopEntriesLimit] = useState(100);
+  const [topEntriesLimit, setTopEntriesLimit] = useState(10);
 
   // Bottom Table (Completed & Cancelled) Controls & Filter State
   const [bottomPackageFilter, setBottomPackageFilter] = useState("All");
   const [bottomVehicleFilter, setBottomVehicleFilter] = useState("All");
   const [bottomSearchTerm, setBottomSearchTerm] = useState("");
-  const [bottomEntriesLimit, setBottomEntriesLimit] = useState(100);
+  const [bottomEntriesLimit, setBottomEntriesLimit] = useState(10);
 
   // Toast handler helper
   const showToast = (message: string, type: "success" | "error" = "success") => {
@@ -202,6 +202,15 @@ export default function OperationsDashboard() {
   // Export alerts simulation
   const triggerExport = (format: string) => {
     showToast(`Dashboard view successfully exported as ${format}!`, "success");
+  };
+
+  // Helper to determine status badge CSS class
+  const getStatusClass = (status: string) => {
+    const s = status.toLowerCase();
+    if (s.includes("completed")) return "completed";
+    if (s.includes("cancel")) return "cancelled";
+    if (s.includes("pending")) return "pending";
+    return "active";
   };
 
   // 1. SELECT DATA LIST BASE ON THE TAB SELECTION
@@ -614,7 +623,7 @@ export default function OperationsDashboard() {
                         </div>
                       </td>
                       <td>
-                        <span className="status-pill active">{b.status}</span>
+                        <span className={`status-pill ${getStatusClass(b.status)}`}>{b.status}</span>
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
@@ -658,7 +667,7 @@ export default function OperationsDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td><span className="status-pill pending">{s.status}</span></td>
+                      <td><span className={`status-pill ${getStatusClass(s.status)}`}>{s.status}</span></td>
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                           <button onClick={() => handleTriggerWhatsAppAlert(s, false, "start")} title="Start Alert" style={{ background: "#eff6ff", border: "none", color: "#2563eb", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-play"></i></button>
@@ -833,7 +842,7 @@ export default function OperationsDashboard() {
                         </div>
                       </td>
                       <td>
-                        <span className={`status-pill ${isCompleted ? "completed" : "cancelled"}`}>{b.status}</span>
+                        <span className={`status-pill ${getStatusClass(b.status)}`}>{b.status}</span>
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
@@ -875,7 +884,7 @@ export default function OperationsDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td><span className={`status-pill ${isCompleted ? "completed" : "cancelled"}`}>{s.status}</span></td>
+                      <td><span className={`status-pill ${getStatusClass(s.status)}`}>{s.status}</span></td>
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                           <button onClick={() => router.push(`/admin/services/view?id=${s.id}`)} title="View Details" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-eye"></i></button>

@@ -16,6 +16,7 @@ interface CompanyItem {
   tomorrow_reminder?: boolean;
   exempt_bulk_lock?: boolean;
   ledger_frequency?: string;
+  agent_username?: string;
 }
 
 function CompanyProfileContent() {
@@ -65,7 +66,8 @@ function CompanyProfileContent() {
             invoice: !!found.invoice,
             tomorrow_reminder: !!found.tomorrow_reminder,
             exempt_bulk_lock: !!found.exempt_bulk_lock,
-            ledger_frequency: found.ledger_frequency || "Monday"
+            ledger_frequency: found.ledger_frequency || "Monday",
+            agent_username: found.agent_username || ""
           });
 
           if (customersList) {
@@ -87,7 +89,8 @@ function CompanyProfileContent() {
             invoice: true,
             tomorrow_reminder: true,
             exempt_bulk_lock: false,
-            ledger_frequency: "Monday"
+            ledger_frequency: "Monday",
+            agent_username: "zahid_travels"
           });
         }
       } catch (err) {
@@ -189,6 +192,14 @@ function CompanyProfileContent() {
           </span>
 
           <div style={{ width: "100%", textAlign: "left", display: "flex", flexDirection: "column", gap: "20px", borderTop: "1px solid #f1f5f9", paddingTop: "25px" }}>
+            <div>
+              <span style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", marginBottom: "5px" }}>Agent Username</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#475569" }}>
+                <i className="fas fa-user" style={{ color: "#2563eb", width: "16px" }}></i>
+                <span style={{ fontSize: "14px" }}>{company.agent_username || "—"}</span>
+              </div>
+            </div>
+
             <div>
               <span style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", marginBottom: "5px" }}>Official Email</span>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#475569" }}>

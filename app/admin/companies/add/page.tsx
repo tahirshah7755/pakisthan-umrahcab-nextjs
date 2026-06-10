@@ -9,6 +9,8 @@ export default function RegisterCompanyPage() {
 
   // Form states
   const [compName, setCompName] = useState("");
+  const [agentUsername, setAgentUsername] = useState("");
+  const [agentPassword, setAgentPassword] = useState("");
   const [compPhone, setCompPhone] = useState("");
   const [compEmail, setCompEmail] = useState("");
   const [compWeb, setCompWeb] = useState("");
@@ -40,9 +42,15 @@ export default function RegisterCompanyPage() {
       showToast("Company Name is required.", "error");
       return;
     }
+    if (!agentUsername || !agentPassword) {
+      showToast("Agent Username and Password are required.", "error");
+      return;
+    }
     try {
       const newComp = {
         name: compName,
+        agent_username: agentUsername,
+        agent_password: agentPassword,
         phone: compPhone || "N/A",
         email: compEmail || "N/A",
         website: compWeb || "N/A",
@@ -116,6 +124,41 @@ export default function RegisterCompanyPage() {
                 required 
                 style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
               />
+            </div>
+          </div>
+
+          {/* Agent Username & Password */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div>
+              <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Agent Username *</label>
+              <div className="form-input-wrapper">
+                <i className="fas fa-user form-icon" style={{ color: "#2563eb" }}></i>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Enter Username" 
+                  value={agentUsername} 
+                  onChange={(e) => setAgentUsername(e.target.value)} 
+                  required 
+                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Agent Password *</label>
+              <div className="form-input-wrapper">
+                <i className="fas fa-lock form-icon" style={{ color: "#2563eb" }}></i>
+                <input 
+                  type="password" 
+                  className="form-input" 
+                  placeholder="Enter Password" 
+                  value={agentPassword} 
+                  onChange={(e) => setAgentPassword(e.target.value)} 
+                  required 
+                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+                />
+              </div>
             </div>
           </div>
 

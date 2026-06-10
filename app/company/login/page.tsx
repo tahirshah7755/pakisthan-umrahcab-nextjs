@@ -56,16 +56,16 @@ export default function CompanyLoginPage() {
       return;
     }
 
-    const success = await companyLogin(username, password);
+    const res = await companyLogin(username, password);
     setLoading(false);
 
-    if (success) {
+    if (res.success) {
       showToast("B2B Sign in successful! Redirecting...", "success");
       setTimeout(() => {
         router.push("/company/dashboard");
       }, 1200);
     } else {
-      showToast("Invalid username or password. Please try again.", "error");
+      showToast(res.message || "Invalid username or password. Please try again.", "error");
     }
   };
 

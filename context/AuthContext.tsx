@@ -5,12 +5,12 @@ import { useRouter, usePathname } from "next/navigation";
 
 interface AuthContextType {
   user: { email: string; name?: string; username?: string } | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, password: string, passwordConfirm: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   // B2B Company Auth
   companyUser: { id: string; name: string; agent_username: string; email: string; logo_path?: string } | null;
-  companyLogin: (agent_username: string, agent_password: string) => Promise<boolean>;
+  companyLogin: (agent_username: string, agent_password: string) => Promise<{ success: boolean; message?: string }>;
   companyLogout: () => void;
   
   extrasUnlocked: boolean;
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
       const loginUrl = apiBase.endsWith("/")
@@ -104,11 +104,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
+      const resData = await response.json();
+
       if (!response.ok) {
-        return false;
+        return { success: false, message: resData.message || "Invalid email or password" };
       }
 
-      const resData = await response.json();
       const dataObj = resData?.data || resData;
       const token = dataObj?.token;
       const admin = dataObj?.admin;
@@ -122,12 +123,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(newUser);
         sessionStorage.setItem("umrahcab_user", JSON.stringify(newUser));
         sessionStorage.setItem("umrahcab_token", token);
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (err) {
+      return { success: false, message: "Authentication failed. No token returned." };
+    } catch (err: any) {
       console.error("Admin login API call failed:", err);
-      return false;
+      return { success: false, message: err?.message || "Failed to connect to login server." };
     }
   };
 
@@ -191,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
-  const companyLogin = async (agent_username: string, agent_password: string): Promise<boolean> => {
+  const companyLogin = async (agent_username: string, agent_password: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
       const loginUrl = apiBase.endsWith("/")
@@ -206,11 +207,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ agent_username, agent_password }),
       });
 
+      const resData = await response.json();
+
       if (!response.ok) {
-        return false;
+        return { success: false, message: resData.message || "Invalid agent username or password" };
       }
 
-      const resData = await response.json();
       const dataObj = resData?.data || resData;
       const token = dataObj?.token;
       const company = dataObj?.company;
@@ -226,12 +228,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCompanyUser(newCompanyUser);
         sessionStorage.setItem("umrahcab_company_user", JSON.stringify(newCompanyUser));
         sessionStorage.setItem("umrahcab_company_token", token);
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (err) {
+      return { success: false, message: "Authentication failed. No token returned." };
+    } catch (err: any) {
       console.error("Company login API call failed:", err);
-      return false;
+      return { success: false, message: err?.message || "Failed to connect to B2B login server." };
     }
   };
 

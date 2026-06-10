@@ -63,16 +63,16 @@ export default function LoginPage() {
         return;
       }
 
-      const success = await login(email, password);
+      const res = await login(email, password);
       setLoading(false);
 
-      if (success) {
+      if (res.success) {
         showToast("Sign in successful! Redirecting to dashboard...", "success");
         setTimeout(() => {
           router.push("/admin/hub");
         }, 1200);
       } else {
-        showToast("Invalid email or password. Please try again.", "error");
+        showToast(res.message || "Invalid email or password. Please try again.", "error");
       }
     } else {
       if (!name || !email || !password || !confirmPassword) {

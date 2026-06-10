@@ -41,6 +41,7 @@ export default function CompanySidebar() {
       color: "#f59e0b",
       submenu: [
         { name: "View All", href: "/company/bookings" },
+        { name: "Create Booking", href: "/company/bookings/add" },
       ],
     },
     {

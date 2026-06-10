@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
+import Link from "next/link";
 
 interface BookingRecord {
   id: string;
@@ -76,6 +77,25 @@ export default function CompanyBookingsPage() {
           <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>My Bookings</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>List of bookings requested under your agent account.</p>
         </div>
+        <Link 
+          href="/company/bookings/add" 
+          style={{ 
+            background: "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", 
+            color: "#0f172a", 
+            border: "none", 
+            borderRadius: "8px", 
+            padding: "10px 20px", 
+            fontSize: "14px", 
+            fontWeight: "700", 
+            cursor: "pointer", 
+            textDecoration: "none",
+            display: "flex", 
+            alignItems: "center", 
+            gap: "8px" 
+          }}
+        >
+          <i className="fas fa-plus"></i> Create Booking
+        </Link>
       </div>
 
       {/* Bookings Grid Card */}

@@ -62,6 +62,7 @@ export default function CompanySidebar() {
     { name: "Ledgers", icon: "fa-book", color: "#d946ef", href: "/company/ledger" },
     { name: "Payments", icon: "fa-money-bill-transfer", color: "#22c55e", href: "/company/payments" },
     { name: "Agent Report", icon: "fa-chart-line", color: "#3b82f6", href: "/company/reports" },
+    { name: "Chat Support", icon: "fa-headset", color: "#fb923c", href: "/company/chat" },
   ];
 
   // Check if a route is active

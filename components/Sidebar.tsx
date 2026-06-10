@@ -77,6 +77,7 @@ export default function Sidebar() {
       ],
     },
     { name: "Agent Follow-ups", icon: "fa-headset", color: "#14b8a6", href: "/admin/agent-followups" },
+    { name: "Chat Support", icon: "fa-comments", color: "#60a5fa", href: "/admin/chat" },
     { name: "Balance Statement", icon: "fa-file-invoice-dollar", color: "#f97316", href: "/admin/balance" },
     { name: "Invoices", icon: "fa-file-invoice", color: "#ef4444", href: "/admin/invoices" },
     { name: "Ledgers", icon: "fa-book", color: "#d946ef", href: "/admin/ledgers" },

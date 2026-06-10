@@ -6,16 +6,16 @@ async function request(endpoint: string, options: RequestInit = {}) {
   try {
     let token = null;
     if (typeof window !== "undefined") {
-      const isCompanyRoute = window.location.pathname.startsWith("/company") || 
-                             endpoint.startsWith("/company-panel") || 
-                             endpoint.startsWith("company-panel");
+      const isCompanyRoute = window.location.pathname.startsWith("/company") ||
+        endpoint.startsWith("/company-panel") ||
+        endpoint.startsWith("company-panel");
       if (isCompanyRoute) {
         token = sessionStorage.getItem("umrahcab_company_token") || sessionStorage.getItem("umrahcab_token");
       } else {
         token = sessionStorage.getItem("umrahcab_token") || sessionStorage.getItem("umrahcab_company_token");
       }
     }
-    
+
     const headers = new Headers();
     if (!(options.body instanceof FormData)) {
       headers.append("Content-Type", "application/json");
@@ -470,6 +470,41 @@ export const api = {
     const data = await request(`/payments`, {
       method: "POST",
       body: isFormData ? payload : JSON.stringify(payload),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  // Chat Support - B2B Agent
+  async getCompanyChatMessages() {
+    const data = await request(`/company-panel/chat`);
+    return data || [];
+  },
+
+  async sendCompanyChatMessage(formData: FormData) {
+    const data = await request(`/company-panel/chat`, {
+      method: "POST",
+      body: formData,
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  // Chat Support - Admin
+  async getAdminChatRooms() {
+    const data = await request(`/chat/admin`);
+    return data || [];
+  },
+
+  async getAdminChatMessages(companyId: number | string) {
+    const data = await request(`/chat/admin/${companyId}`);
+    return data || [];
+  },
+
+  async sendAdminChatMessage(companyId: number | string, formData: FormData) {
+    const data = await request(`/chat/admin/${companyId}`, {
+      method: "POST",
+      body: formData,
     });
     if (data) return { success: true, data };
     return { success: false, error: "API connection failed" };

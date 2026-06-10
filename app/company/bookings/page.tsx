@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { api } from "@/utils/api";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface BookingRecord {
   id: string;
@@ -21,7 +22,10 @@ interface BookingRecord {
   status: string;
 }
 
-export default function CompanyBookingsPage() {
+function CompanyBookingsContent() {
+  const searchParams = useSearchParams();
+  const filter = searchParams.get("filter") || "";
+
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -37,11 +41,62 @@ export default function CompanyBookingsPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const getPageTitle = () => {
+    switch (filter) {
+      case "current":
+        return "Current Bookings";
+      case "upcoming":
+        return "Upcoming Bookings";
+      case "cancelled":
+        return "Cancelled Bookings";
+      default:
+        return "My Bookings";
+    }
+  };
+
+  const getPageDesc = () => {
+    switch (filter) {
+      case "current":
+        return "List of active or ongoing bookings scheduled for today or currently dispatching.";
+      case "upcoming":
+        return "List of bookings confirmed for future dates.";
+      case "cancelled":
+        return "List of bookings that have been cancelled.";
+      default:
+        return "List of bookings requested under your agent account.";
+    }
+  };
+
   const loadBookings = async () => {
     try {
       setLoading(true);
       const data = await api.getCompanyBookings(search);
-      setBookings(data);
+      
+      // Filter locally
+      let filtered = data || [];
+      if (filter) {
+        const today = new Date().toISOString().split("T")[0];
+        filtered = filtered.filter((b: BookingRecord) => {
+          const status = b.status.toLowerCase();
+          if (filter === "cancelled") {
+            return status.includes("cancel") || status.includes("cancelled");
+          }
+          if (filter === "current") {
+            const isPastOrToday = b.date <= today;
+            const isActiveStatus = status.includes("dispatch") || status.includes("pending") || status.includes("confirm");
+            const isCancelledOrCompleted = status.includes("cancel") || status.includes("completed");
+            return (b.date === today || (isPastOrToday && isActiveStatus)) && !isCancelledOrCompleted;
+          }
+          if (filter === "upcoming") {
+            const isFuture = b.date > today;
+            const isCancelledOrCompleted = status.includes("cancel") || status.includes("completed");
+            return isFuture && !isCancelledOrCompleted;
+          }
+          return true;
+        });
+      }
+      
+      setBookings(filtered);
     } catch (err) {
       console.error(err);
       showToast("Failed to retrieve B2B bookings.", "error");
@@ -52,7 +107,7 @@ export default function CompanyBookingsPage() {
 
   useEffect(() => {
     loadBookings();
-  }, [search]);
+  }, [search, filter]);
 
   const getStatusClass = (status: string) => {
     const s = status.toLowerCase();
@@ -74,8 +129,8 @@ export default function CompanyBookingsPage() {
       {/* Header Banner */}
       <div className="form-header-card mobile-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>My Bookings</h2>
-          <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>List of bookings requested under your agent account.</p>
+          <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>{getPageTitle()}</h2>
+          <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>{getPageDesc()}</p>
         </div>
         <Link 
           href="/company/bookings/add" 
@@ -221,5 +276,18 @@ export default function CompanyBookingsPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function CompanyBookingsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    }>
+      <CompanyBookingsContent />
+    </Suspense>
   );
 }

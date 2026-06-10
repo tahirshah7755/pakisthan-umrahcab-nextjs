@@ -49,6 +49,17 @@ export default function PriceListMatrix() {
   const [packages, setPackages] = useState<PackageRow[]>([]);
   const [search, setSearch] = useState("");
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [lastPage, setLastPage] = useState(1);
+
+  // Reset page on search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   // Date Tool State
   const [validFrom, setValidFrom] = useState("");
   const [validTo, setValidTo] = useState("");
@@ -64,7 +75,11 @@ export default function PriceListMatrix() {
     type: "success",
   });
 
-  const { data: priceListData, isLoading: isFetching } = useGetPriceListQuery(undefined, {
+  const { data: priceListData, isLoading: isFetching } = useGetPriceListQuery({
+    page: currentPage,
+    per_page: itemsPerPage,
+    search: search
+  }, {
     skip: !extrasUnlocked,
   });
 
@@ -72,8 +87,30 @@ export default function PriceListMatrix() {
   const [applyBulkPriceList, { isLoading: isApplyingBulk }] = useApplyBulkPriceListMutation();
 
   useEffect(() => {
-    if (priceListData && Array.isArray(priceListData)) {
-      const mapped = priceListData.map((b: any) => {
+    if (!priceListData) return;
+
+    let rawData: any[] = [];
+    let total = 0;
+    let lastPg = 1;
+
+    // Handle nested data envelope
+    const rootData = priceListData.data !== undefined ? priceListData.data : priceListData;
+
+    if (rootData) {
+      if (Array.isArray(rootData)) {
+        rawData = rootData;
+        total = rootData.length;
+        lastPg = 1;
+      } else if (rootData.data && Array.isArray(rootData.data)) {
+        // Laravel LengthAwarePaginator structure
+        rawData = rootData.data;
+        total = rootData.total || 0;
+        lastPg = rootData.last_page || 1;
+      }
+    }
+
+    if (Array.isArray(rawData)) {
+      const mapped = rawData.map((b: any) => {
         const sedanDates = b.sedan_dates || "2026-06-01 to 2026-08-31";
         const parts = sedanDates.split(" to ");
         const fromDate = parts[0] || "2026-06-01";
@@ -97,6 +134,8 @@ export default function PriceListMatrix() {
         };
       });
       setPackages(mapped);
+      setTotalRecords(total);
+      setLastPage(lastPg);
     }
   }, [priceListData]);
 
@@ -203,11 +242,31 @@ export default function PriceListMatrix() {
     }
   };
 
-  // Filter package rows based on search
-  const filteredPackages = packages.filter((pkg) =>
-    pkg.englishName.toLowerCase().includes(search.toLowerCase()) ||
-    pkg.shortCode.toLowerCase().includes(search.toLowerCase())
-  );
+  // Pagination calculation
+  const totalPages = lastPage;
+  const paginatedPackages = packages;
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("...");
+      
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (currentPage < totalPages - 2) pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   if (!extrasUnlocked) return null;
 
@@ -304,7 +363,8 @@ export default function PriceListMatrix() {
             <p style={{ marginTop: "12px", fontWeight: "600" }}>Loading standard matrix pricing...</p>
           </div>
         ) : (
-          <div className="matrix-table-wrapper">
+          <>
+            <div className="matrix-table-wrapper">
             <table className="matrix-table">
               <thead>
                 <tr>
@@ -322,7 +382,7 @@ export default function PriceListMatrix() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPackages.map((pkg) => (
+                {paginatedPackages.map((pkg) => (
                   <tr key={pkg.id}>
                     {/* Sticky leftmost column */}
                     <td>
@@ -375,7 +435,7 @@ export default function PriceListMatrix() {
                     })}
                   </tr>
                 ))}
-                {filteredPackages.length === 0 && (
+                {packages.length === 0 && (
                   <tr>
                     <td
                       colSpan={VEHICLES.length + 1}
@@ -393,6 +453,120 @@ export default function PriceListMatrix() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Footer */}
+          {totalPages > 1 && (
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 20px",
+              borderTop: "1px solid #f1f5f9",
+              background: "#ffffff",
+              flexWrap: "wrap",
+              gap: "12px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#64748b" }}>
+                <span>Show</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    padding: "6px 10px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    background: "#ffffff",
+                    outline: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  {[5, 10, 20, 50].map((num) => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+                <span>entries</span>
+                <span style={{ marginLeft: "12px" }}>
+                  Showing {totalRecords === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
+                </span>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    background: currentPage === 1 ? "#f8fafc" : "#ffffff",
+                    color: currentPage === 1 ? "#94a3b8" : "#2563eb",
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <i className="fas fa-chevron-left"></i> Prev
+                </button>
+
+                {getPageNumbers().map((pageNum, idx) => {
+                  if (pageNum === "...") {
+                    return (
+                      <span key={`dots-${idx}`} style={{ padding: "0 8px", color: "#64748b" }}>
+                        ...
+                      </span>
+                    );
+                  }
+                  const isSelected = pageNum === currentPage;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(Number(pageNum))}
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        border: isSelected ? "none" : "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        background: isSelected ? "#2563eb" : "#ffffff",
+                        color: isSelected ? "#ffffff" : "#334155",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: "700"
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    background: currentPage === totalPages ? "#f8fafc" : "#ffffff",
+                    color: currentPage === totalPages ? "#94a3b8" : "#2563eb",
+                    cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  Next <i className="fas fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

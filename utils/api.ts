@@ -394,7 +394,7 @@ export const api = {
 
   // Price List
   async getPriceList() {
-    const data = await request(`/price-list`);
+    const data = await request(`/price-list?paginate=false`);
     return data || [];
   },
 

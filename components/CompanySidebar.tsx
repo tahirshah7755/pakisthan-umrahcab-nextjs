@@ -24,6 +24,7 @@ export default function CompanySidebar() {
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({
     Customers: false,
     Bookings: false,
+    "Fares & Rates": false,
   });
 
   const toggleSubmenu = (name: string) => {
@@ -40,8 +41,11 @@ export default function CompanySidebar() {
       icon: "fa-calendar-check",
       color: "#f59e0b",
       submenu: [
-        { name: "View All", href: "/company/bookings" },
         { name: "Create Booking", href: "/company/bookings/add" },
+        { name: "View All Bookings", href: "/company/bookings" },
+        { name: "Current Bookings", href: "/company/bookings?filter=current" },
+        { name: "Upcoming Bookings", href: "/company/bookings?filter=upcoming" },
+        { name: "Cancelled Bookings", href: "/company/bookings?filter=cancelled" },
       ],
     },
     {
@@ -52,9 +56,19 @@ export default function CompanySidebar() {
         { name: "View All", href: "/company/customers" },
       ],
     },
+    {
+      name: "Fares & Rates",
+      icon: "fa-tags",
+      color: "#d4af37",
+      submenu: [
+        { name: "Routes & Fare List", href: "/company/routes-fare" },
+        { name: "Calendar Routes Fare", href: "/company/calendar-fare" },
+      ],
+    },
     { name: "Invoices", icon: "fa-file-invoice", color: "#ef4444", href: "/company/invoices" },
     { name: "Ledgers", icon: "fa-book", color: "#d946ef", href: "/company/ledger" },
     { name: "Payments", icon: "fa-money-bill-transfer", color: "#22c55e", href: "/company/payments" },
+    { name: "Agent Report", icon: "fa-chart-line", color: "#3b82f6", href: "/company/reports" },
   ];
 
   // Check if a route is active

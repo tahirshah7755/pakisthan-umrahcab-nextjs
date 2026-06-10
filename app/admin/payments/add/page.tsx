@@ -74,16 +74,20 @@ export default function AddPaymentPage() {
     }
 
     try {
+      const parts = [];
+      if (bankFrom) parts.push(`Bank From: ${bankFrom}`);
+      if (bankTo) parts.push(`Bank To: ${bankTo}`);
+      if (internalNotes) parts.push(`Internal Notes: ${internalNotes}`);
+      if (externalNotes) parts.push(`External Notes: ${externalNotes}`);
+
       const payload = {
         company: pmtCompany,
         method: pmtMethod,
         amount: pmtAmount,
         currency: pmtCurrency,
-        // Optional/additional details are simulated/saved inside standard logs or parameters
-        bank_from: bankFrom,
-        bank_to: bankTo,
-        reference: reference,
-        notes: internalNotes || externalNotes,
+        transaction_ref: reference || undefined,
+        proof_details: parts.length > 0 ? parts.join(" | ") : undefined,
+        proof_file: screenshot1 || file1 || undefined,
         date: new Date().toISOString().split("T")[0],
       };
 

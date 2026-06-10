@@ -47,60 +47,60 @@ function CompanyProfileContent() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  useEffect(() => {
-    const fetchCompanyProfile = async () => {
-      try {
-        setLoading(true);
-        if (!targetId) return;
+  const fetchCompanyProfile = async () => {
+    try {
+      setLoading(true);
+      if (!targetId) return;
 
-        const result = await api.getCompany(targetId);
-        if (result && result.company) {
-          const found = result.company;
-          setCompany({
-            id: found.custom_id || `#COM-${found.id}`,
-            name: found.name,
-            email: found.email || "N/A",
-            phone: found.phone || "N/A",
-            address: found.address || "N/A",
-            vouchers: !!found.vouchers,
-            reminders: !!found.reminders,
-            invoice: !!found.invoice,
-            tomorrow_reminder: !!found.tomorrow_reminder,
-            exempt_bulk_lock: !!found.exempt_bulk_lock,
-            ledger_frequency: found.ledger_frequency || "Monday",
-            agent_username: found.agent_username || "",
-            logo_path: found.logo_path || ""
-          });
+      const result = await api.getCompany(targetId);
+      if (result && result.company) {
+        const found = result.company;
+        setCompany({
+          id: found.custom_id || `#COM-${found.id}`,
+          name: found.name,
+          email: found.email || "N/A",
+          phone: found.phone || "N/A",
+          address: found.address || "N/A",
+          vouchers: !!found.vouchers,
+          reminders: !!found.reminders,
+          invoice: !!found.invoice,
+          tomorrow_reminder: !!found.tomorrow_reminder,
+          exempt_bulk_lock: !!found.exempt_bulk_lock,
+          ledger_frequency: found.ledger_frequency || "Monday",
+          agent_username: found.agent_username || "",
+          logo_path: found.logo_path || ""
+        });
 
-          setCompanyCustomers(result.customers || []);
-          setCompanyBookings(result.bookings || []);
-          setCompanyLedgers(result.ledgers || []);
-          setCompanyPayments(result.payments || []);
-        } else {
-          // Fallback template
-          setCompany({
-            id: `#COM-${targetId || "1"}`,
-            name: "Zahid Travels",
-            email: "zahid@travels.com",
-            phone: "+966501234567",
-            address: "Jeddah, Saudi Arabia",
-            vouchers: true,
-            reminders: true,
-            invoice: true,
-            tomorrow_reminder: true,
-            exempt_bulk_lock: false,
-            ledger_frequency: "Monday",
-            agent_username: "zahid_travels"
-          });
-        }
-      } catch (err) {
-        console.error(err);
-        showToast("Error loading company profile details", "error");
-      } finally {
-        setLoading(false);
+        setCompanyCustomers(result.customers || []);
+        setCompanyBookings(result.bookings || []);
+        setCompanyLedgers(result.ledgers || []);
+        setCompanyPayments(result.payments || []);
+      } else {
+        // Fallback template
+        setCompany({
+          id: `#COM-${targetId || "1"}`,
+          name: "Zahid Travels",
+          email: "zahid@travels.com",
+          phone: "+966501234567",
+          address: "Jeddah, Saudi Arabia",
+          vouchers: true,
+          reminders: true,
+          invoice: true,
+          tomorrow_reminder: true,
+          exempt_bulk_lock: false,
+          ledger_frequency: "Monday",
+          agent_username: "zahid_travels"
+        });
       }
-    };
+    } catch (err) {
+      console.error(err);
+      showToast("Error loading company profile details", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCompanyProfile();
   }, [targetId]);
 
@@ -436,16 +436,67 @@ function CompanyProfileContent() {
                     <tr key={pm.id}>
                       <td style={{ fontWeight: 700 }}>{pm.custom_id || `#PAY-${pm.id}`}</td>
                       <td>{pm.date}</td>
-                      <td>{pm.method}</td>
+                      <td>
+                        <div style={{ fontWeight: "600" }}>{pm.method}</div>
+                        {pm.transaction_ref && (
+                          <div style={{ fontSize: "11px", color: "#475569", marginTop: "2px" }}>
+                            <strong>Ref:</strong> <code style={{ background: "#f1f5f9", padding: "1px 4px", borderRadius: "3px" }}>{pm.transaction_ref}</code>
+                          </div>
+                        )}
+                        {pm.proof_details && (
+                          <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                            <strong>Notes:</strong> {pm.proof_details}
+                          </div>
+                        )}
+                        {pm.proof_file && (
+                          <div style={{ marginTop: "4px" }}>
+                            <a 
+                              href={`http://localhost:8000${pm.proof_file}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              style={{ 
+                                display: "inline-flex", 
+                                alignItems: "center", 
+                                gap: "4px", 
+                                fontSize: "11px", 
+                                color: "#2563eb", 
+                                textDecoration: "none",
+                                fontWeight: "700" 
+                              }}
+                            >
+                              <i className="fas fa-file-invoice"></i> View Receipt
+                            </a>
+                          </div>
+                        )}
+                      </td>
                       <td style={{ color: "#16a34a", fontWeight: "600" }}>{pm.currency || "SAR"} {Number(pm.amount).toFixed(2)}</td>
                       <td>
-                        <span style={{
-                          background: pm.status === "Approved" || pm.status === "Success" ? "#dcfce7" : pm.status === "Pending" ? "#fef3c7" : "#fee2e2",
-                          color: pm.status === "Approved" || pm.status === "Success" ? "#166534" : pm.status === "Pending" ? "#92400e" : "#991b1b",
-                          padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700"
-                        }}>
-                          {pm.status}
-                        </span>
+                        <select
+                          value={pm.status || "Pending"}
+                          onChange={async (e) => {
+                            try {
+                              const res = await api.updatePaymentStatus(pm.id, e.target.value);
+                              if (res.success) {
+                                showToast(`Payment ${pm.custom_id || `PAY-${pm.id}`} status updated to ${e.target.value}!`, "success");
+                                fetchCompanyProfile();
+                              } else {
+                                showToast(res.error || "Failed to update status", "error");
+                              }
+                            } catch (err) {
+                              console.error(err);
+                              showToast("Failed to update status", "error");
+                            }
+                          }}
+                          style={{
+                            background: pm.status === "Approved" || pm.status === "Success" || pm.status === "Verified" ? "#e6f4ea" : pm.status === "Pending" ? "#fef3c7" : "#fce8e6",
+                            color: pm.status === "Approved" || pm.status === "Success" || pm.status === "Verified" ? "#137333" : pm.status === "Pending" ? "#b06000" : "#c5221f",
+                            padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", border: "1px solid rgba(0,0,0,0.05)", cursor: "pointer", outline: "none"
+                          }}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Failed">Failed</option>
+                        </select>
                       </td>
                     </tr>
                   ))

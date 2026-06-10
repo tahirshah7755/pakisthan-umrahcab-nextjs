@@ -4,12 +4,22 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/u
 // Helper to handle requests with fallback to local mock state
 async function request(endpoint: string, options: RequestInit = {}) {
   try {
-    const token = typeof window !== "undefined" 
-      ? (sessionStorage.getItem("umrahcab_token") || sessionStorage.getItem("umrahcab_company_token")) 
-      : null;
+    let token = null;
+    if (typeof window !== "undefined") {
+      const isCompanyRoute = window.location.pathname.startsWith("/company") || 
+                             endpoint.startsWith("/company-panel") || 
+                             endpoint.startsWith("company-panel");
+      if (isCompanyRoute) {
+        token = sessionStorage.getItem("umrahcab_company_token") || sessionStorage.getItem("umrahcab_token");
+      } else {
+        token = sessionStorage.getItem("umrahcab_token") || sessionStorage.getItem("umrahcab_company_token");
+      }
+    }
     
     const headers = new Headers();
-    headers.append("Content-Type", "application/json");
+    if (!(options.body instanceof FormData)) {
+      headers.append("Content-Type", "application/json");
+    }
     if (token) {
       headers.append("Authorization", `Bearer ${token}`);
     }
@@ -435,5 +445,24 @@ export const api = {
   async getCompanyPayments() {
     const data = await request(`/company-panel/payments`);
     return data || [];
+  },
+
+  async updatePaymentStatus(id: string, status: string) {
+    const data = await request(`/payments/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async createCompanyPayment(payload: FormData | any) {
+    const isFormData = payload instanceof FormData;
+    const data = await request(`/payments`, {
+      method: "POST",
+      body: isFormData ? payload : JSON.stringify(payload),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
   }
 };

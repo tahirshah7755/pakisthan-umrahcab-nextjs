@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGetPaymentsQuery } from "@/store/api/paymentsApi";
+import { useGetPaymentsQuery, useUpdatePaymentStatusMutation } from "@/store/api/paymentsApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 
 const fmt = (n: number, curr = "SAR") =>
@@ -44,6 +44,7 @@ export default function PaymentsPage() {
   // RTK Queries
   const { data: paymentsData, isLoading, isFetching } = useGetPaymentsQuery(undefined);
   const { data: companiesData } = useGetCompaniesQuery(undefined);
+  const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
 
   const companies = Array.isArray(companiesData)
     ? companiesData
@@ -349,8 +350,38 @@ export default function PaymentsPage() {
                       <td>
                         {p.date ? new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"}
                       </td>
-                      <td style={{ fontWeight: "600" }}>
-                        {p.method}
+                      <td>
+                        <div style={{ fontWeight: "600" }}>{p.method}</div>
+                        {p.transaction_ref && (
+                          <div style={{ fontSize: "11px", color: "#475569", marginTop: "2px" }}>
+                            <strong>Ref:</strong> <code style={{ background: "#f1f5f9", padding: "1px 4px", borderRadius: "3px" }}>{p.transaction_ref}</code>
+                          </div>
+                        )}
+                        {p.proof_details && (
+                          <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                            <strong>Notes:</strong> {p.proof_details}
+                          </div>
+                        )}
+                        {p.proof_file && (
+                          <div style={{ marginTop: "4px" }}>
+                            <a 
+                              href={`http://localhost:8000${p.proof_file}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              style={{ 
+                                display: "inline-flex", 
+                                alignItems: "center", 
+                                gap: "4px", 
+                                fontSize: "11px", 
+                                color: "#0d9488", 
+                                textDecoration: "none",
+                                fontWeight: "700" 
+                              }}
+                            >
+                              <i className="fas fa-file-invoice"></i> View Receipt
+                            </a>
+                          </div>
+                        )}
                       </td>
                       <td style={{ fontWeight: 800, color: p.amount < 0 ? "#dc2626" : "#059669" }}>
                         {fmt(p.amount, p.currency)}
@@ -359,9 +390,27 @@ export default function PaymentsPage() {
                         {p.currency}
                       </td>
                       <td>
-                        <span className={`status-pill ${String(p.status).toLowerCase() === "verified" || String(p.status).toLowerCase() === "completed" ? "completed" : "pending"}`}>
-                          {p.status || "Pending"}
-                        </span>
+                        <select
+                          value={p.status || "Pending"}
+                          onChange={async (e) => {
+                            try {
+                              await updatePaymentStatus({ id: p.id, status: e.target.value }).unwrap();
+                              showToast(`Payment ${p.custom_id || `PAY-${p.id}`} marked as ${e.target.value}!`, "success");
+                            } catch (err) {
+                              console.error(err);
+                              showToast("Failed to update payment status.", "error");
+                            }
+                          }}
+                          style={{
+                            background: p.status === "Approved" || p.status === "Success" || p.status === "Verified" ? "#e6f4ea" : p.status === "Pending" ? "#fef3c7" : "#fce8e6",
+                            color: p.status === "Approved" || p.status === "Success" || p.status === "Verified" ? "#137333" : p.status === "Pending" ? "#b06000" : "#c5221f",
+                            padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", border: "1px solid rgba(0,0,0,0.05)", cursor: "pointer", outline: "none"
+                          }}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Approved">Approved</option>
+                          <option value="Failed">Failed</option>
+                        </select>
                       </td>
                       <td style={{ paddingRight: "16px", textAlign: "right" }}>
                         <button

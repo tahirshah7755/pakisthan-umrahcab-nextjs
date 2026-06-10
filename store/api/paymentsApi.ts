@@ -14,10 +14,19 @@ export const paymentsApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Payments"],
     }),
+    updatePaymentStatus: builder.mutation({
+      query: ({ id, status }) => ({
+        url: `/payments/${id}/status`,
+        method: "PUT",
+        body: { status },
+      }),
+      invalidatesTags: ["Payments", "Companies"],
+    }),
   }),
 });
 
 export const {
   useGetPaymentsQuery,
   useCreatePaymentMutation,
+  useUpdatePaymentStatusMutation,
 } = paymentsApi;

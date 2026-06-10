@@ -39,6 +39,9 @@ export default function CompanyDashboardPage() {
     total_credit: 0,
     current_balance: 0,
   });
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
+  const [pendingPaymentsTotal, setPendingPaymentsTotal] = useState(0);
+  const [pendingPaymentsList, setPendingPaymentsList] = useState<any[]>([]);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -93,6 +96,9 @@ export default function CompanyDashboardPage() {
           setPendingBookings(res.pending_bookings || 0);
           setLatestBookings(res.latest_bookings || []);
           setLedgerSummary(res.ledger_summary || { total_debit: 0, total_credit: 0, current_balance: 0 });
+          setPendingPaymentsCount(res.pending_payments_count || 0);
+          setPendingPaymentsTotal(res.pending_payments_total || 0);
+          setPendingPaymentsList(res.pending_payments_list || []);
         }
       } catch (err) {
         console.error("Failed to load company dashboard summary:", err);
@@ -204,7 +210,21 @@ export default function CompanyDashboardPage() {
           </div>
           <div style={{ marginTop: "15px" }}>
             <h4 style={{ fontSize: "14px", fontWeight: 500, color: "#64748b", margin: 0 }}>Current Balance</h4>
-            <p style={{ fontSize: "22px", fontWeight: "800", color: "#1e293b", margin: "4px 0 0 0" }}>SAR {parseFloat(ledgerSummary?.current_balance || 0).toFixed(2)}</p>
+            <p style={{ fontSize: "22px", fontWeight: "800", color: "#1e293b", margin: "4px 0 0 0" }}>SAR {Number(ledgerSummary?.current_balance || 0).toFixed(2)}</p>
+          </div>
+        </div>
+
+        {/* Pending Payments Card */}
+        <div style={{ background: "#ffffff", borderRadius: "12px", padding: "20px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", borderLeft: "4px solid #f97316" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ width: "44px", height: "44px", borderRadius: "8px", background: "rgba(249, 115, 22, 0.1)", color: "#f97316", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+              <i className="fas fa-clock"></i>
+            </div>
+            <span style={{ color: "#f97316", fontWeight: 800, fontSize: "12px", background: "rgba(249, 115, 22, 0.15)", padding: "2px 8px", borderRadius: "6px" }}>PENDING CLEARANCE</span>
+          </div>
+          <div style={{ marginTop: "15px" }}>
+            <h4 style={{ fontSize: "14px", fontWeight: 500, color: "#64748b", margin: 0 }}>Pending Payments ({pendingPaymentsCount})</h4>
+            <p style={{ fontSize: "22px", fontWeight: "800", color: "#1e293b", margin: "4px 0 0 0" }}>SAR {Number(pendingPaymentsTotal || 0).toFixed(2)}</p>
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface PaymentRecord {
   id: string;
@@ -11,11 +12,27 @@ interface PaymentRecord {
   amount: number;
   currency: string;
   status: string;
+  transaction_ref?: string;
+  proof_details?: string;
+  proof_file?: string;
 }
 
 export default function CompanyPaymentsPage() {
+  const { companyUser } = useAuth();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Deposit Request Form States
+  const [showModal, setShowModal] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("SAR");
+  const [method, setMethod] = useState("Bank Transfer");
+  const [transactionRef, setTransactionRef] = useState("");
+  const [proofDetails, setProofDetails] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [bankFrom, setBankFrom] = useState("");
+  const [bankTo, setBankTo] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -44,6 +61,63 @@ export default function CompanyPaymentsPage() {
   useEffect(() => {
     loadPayments();
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!companyUser) {
+      showToast("Authentication error: Logged in company user not found.", "error");
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      showToast("Please enter a valid amount.", "error");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const formData = new FormData();
+      formData.append("company", companyUser.name);
+      formData.append("method", method);
+      formData.append("amount", amount);
+      formData.append("currency", currency);
+      if (transactionRef) {
+        formData.append("transaction_ref", transactionRef);
+      }
+      
+      const parts = [];
+      if (bankFrom) parts.push(`Bank From: ${bankFrom}`);
+      if (bankTo) parts.push(`Bank To: ${bankTo}`);
+      if (proofDetails) parts.push(`Notes: ${proofDetails}`);
+      
+      if (parts.length > 0) {
+        formData.append("proof_details", parts.join(" | "));
+      }
+
+      if (proofFile) {
+        formData.append("proof_file", proofFile);
+      }
+
+      const res = await api.createCompanyPayment(formData);
+      if (res.success) {
+        showToast("Deposit request submitted successfully!", "success");
+        setShowModal(false);
+        setAmount("");
+        setTransactionRef("");
+        setProofDetails("");
+        setBankFrom("");
+        setBankTo("");
+        setProofFile(null);
+        loadPayments();
+      } else {
+        showToast(res.error || "Failed to submit deposit request.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("An unexpected error occurred.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const getStatusClass = (status: string) => {
     const s = status.toLowerCase();
@@ -84,6 +158,26 @@ export default function CompanyPaymentsPage() {
               </button>
             ))}
           </div>
+
+          <button
+            onClick={() => setShowModal(true)}
+            style={{
+              background: "linear-gradient(135deg, #b48a1d 0%, #d4af37 100%)",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "8px 18px",
+              fontSize: "13px",
+              fontWeight: "700",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              boxShadow: "0 2px 4px rgba(212, 175, 55, 0.2)"
+            }}
+          >
+            <i className="fas fa-wallet"></i> Request Deposit
+          </button>
         </div>
 
         {loading ? (
@@ -98,6 +192,7 @@ export default function CompanyPaymentsPage() {
                   <th>Payment ID</th>
                   <th>Date</th>
                   <th>Payment Method</th>
+                  <th>Transaction ID</th>
                   <th>Amount</th>
                   <th>Currency</th>
                   <th>Status</th>
@@ -106,14 +201,42 @@ export default function CompanyPaymentsPage() {
               <tbody>
                 {payments.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No payments registered under this corporate account.</td>
+                    <td colSpan={7} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No payments registered under this corporate account.</td>
                   </tr>
                 ) : (
                   payments.map((p) => (
                     <tr key={p.id}>
                       <td style={{ fontWeight: 700, color: "#1e293b" }}>{p.custom_id}</td>
                       <td>{p.date}</td>
-                      <td style={{ fontWeight: 600 }}>{p.method}</td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{p.method}</div>
+                        {p.proof_details && (
+                          <div style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                            <strong>Notes:</strong> {p.proof_details}
+                          </div>
+                        )}
+                        {p.proof_file && (
+                          <div style={{ marginTop: "6px" }}>
+                            <a 
+                              href={`http://localhost:8000${p.proof_file}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              style={{ 
+                                display: "inline-flex", 
+                                alignItems: "center", 
+                                gap: "4px", 
+                                fontSize: "11px", 
+                                color: "#b48a1d", 
+                                textDecoration: "none",
+                                fontWeight: "700" 
+                              }}
+                            >
+                              <i className="fas fa-file-invoice"></i> View Receipt/Proof
+                            </a>
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ fontFamily: "monospace", fontSize: "13px" }}>{p.transaction_ref || "N/A"}</td>
                       <td style={{ fontWeight: 700, color: "#10b981" }}>SAR {parseFloat(p.amount as any).toFixed(2)}</td>
                       <td>{p.currency}</td>
                       <td>
@@ -127,6 +250,183 @@ export default function CompanyPaymentsPage() {
           </div>
         )}
       </div>
+
+      {/* Deposit Request Modal */}
+      {showModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", zIndex: 10000,
+          display: "flex", justifyContent: "center", alignItems: "center",
+          padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff", borderRadius: "12px", width: "100%", maxWidth: "500px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            overflow: "hidden", display: "flex", flexDirection: "column"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center"
+            }}>
+              <h3 style={{ margin: 0, color: "#ffffff", fontSize: "18px", fontWeight: "700" }}>
+                <i className="fas fa-wallet" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+                Request Deposit
+              </h3>
+              <button 
+                onClick={() => setShowModal(false)}
+                style={{ background: "none", border: "none", color: "#ffffff", fontSize: "18px", cursor: "pointer" }}
+              >
+                &times;
+              </button>
+            </div>
+            
+            {/* Modal Form */}
+            <form onSubmit={handleSubmit} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Amount & Currency row */}
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 2 }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Amount *</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    min="1"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Currency</label>
+                  <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", background: "#ffffff" }}
+                  >
+                    <option value="SAR">SAR</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Payment Method *</label>
+                <select
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", background: "#ffffff" }}
+                >
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash Receipt">Cash Deposit (Physical)</option>
+                  <option value="Online Gateway">Online Checkout Card</option>
+                </select>
+              </div>
+
+              {/* Bank Details */}
+              <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Bank Transferred From</label>
+                  <input
+                    type="text"
+                    value={bankFrom}
+                    onChange={(e) => setBankFrom(e.target.value)}
+                    placeholder="e.g. Al-Rajhi Bank"
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Receiving Bank / Wallet</label>
+                  <input
+                    type="text"
+                    value={bankTo}
+                    onChange={(e) => setBankTo(e.target.value)}
+                    placeholder="e.g. SNB Al-Ahli"
+                    style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                  />
+                </div>
+              </div>
+
+              {/* Transaction ID / Ref */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Transaction ID / Reference</label>
+                <input
+                  type="text"
+                  value={transactionRef}
+                  onChange={(e) => setTransactionRef(e.target.value)}
+                  placeholder="e.g. Bank Reference / TXN ID"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px" }}
+                />
+              </div>
+
+              {/* Proof File (Image/PDF) */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Upload Proof (Image or PDF)</label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setProofFile(e.target.files[0]);
+                    }
+                  }}
+                  style={{ width: "100%", fontSize: "13px" }}
+                />
+              </div>
+
+              {/* Proof Details / Notes */}
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Proof Details / Notes</label>
+                <textarea
+                  value={proofDetails}
+                  onChange={(e) => setProofDetails(e.target.value)}
+                  placeholder="e.g. Sender bank account number, date/time of transfer, or extra verification info"
+                  rows={3}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", resize: "none", fontFamily: "sans-serif" }}
+                />
+              </div>
+
+              {/* Form Actions */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  style={{ padding: "10px 20px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{
+                    padding: "10px 20px",
+                    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    cursor: submitting ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  {submitting ? (
+                    <>
+                      <div style={{ border: "2px solid rgba(255,255,255,0.2)", borderTop: "2px solid #ffffff", borderRadius: "50%", width: "14px", height: "14px", animation: "spin 1s linear infinite" }}></div>
+                      Submitting...
+                    </>
+                  ) : "Submit Request"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes spin { 
           0% { transform: rotate(0deg); } 

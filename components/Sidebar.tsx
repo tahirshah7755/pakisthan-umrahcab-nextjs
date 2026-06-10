@@ -17,20 +17,11 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { logout, sidebarOpen, user } = useAuth();
   
-  // Track open submenu states
-  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({
-    Customers: false,
-    Bookings: false,
-    Services: false,
-    Flights: false,
-    Trains: false,
-  });
+  // Track open submenu states (Accordion behavior - only one open at a time)
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
   const toggleSubmenu = (name: string) => {
-    setOpenSubmenus((prev) => ({
-      ...prev,
-      [name]: !prev[name],
-    }));
+    setOpenSubmenu((prev) => (prev === name ? null : name));
   };
 
   const menuItems: MenuItem[] = [
@@ -114,22 +105,20 @@ export default function Sidebar() {
 
   // Auto-open submenu based on current pathname
   useEffect(() => {
-    setOpenSubmenus((prev) => {
-      const updated = { ...prev };
-      let changed = false;
-      menuItems.forEach((item) => {
-        if (item.submenu) {
-          const hasActiveChild = item.submenu.some((sub) =>
-            isRouteActive(sub.href, item)
-          );
-          if (hasActiveChild && !prev[item.name]) {
-            updated[item.name] = true;
-            changed = true;
-          }
+    let activeItemName: string | null = null;
+    menuItems.forEach((item) => {
+      if (item.submenu) {
+        const hasActiveChild = item.submenu.some((sub) =>
+          isRouteActive(sub.href, item)
+        );
+        if (hasActiveChild) {
+          activeItemName = item.name;
         }
-      });
-      return changed ? updated : prev;
+      }
     });
+    if (activeItemName) {
+      setOpenSubmenu(activeItemName);
+    }
   }, [pathname]);
 
   return (
@@ -156,7 +145,7 @@ export default function Sidebar() {
       <div className="sidebar-nav">
         {menuItems.map((item, idx) => {
           const hasSubmenu = !!item.submenu;
-          const isOpen = openSubmenus[item.name] || false;
+          const isOpen = openSubmenu === item.name;
           const isActive = item.href ? isRouteActive(item.href, item) : false;
           const hasActiveChild = item.submenu?.some((sub) =>
             isRouteActive(sub.href, item)
@@ -185,8 +174,8 @@ export default function Sidebar() {
                       }`}
                     ></i>
                   </div>
-                  {isOpen && (
-                    <div className="submenu-list">
+                  <div className={`submenu-list ${isOpen ? "open" : ""}`}>
+                    <div className="submenu-wrapper">
                       {item.submenu?.map((sub, sIdx) => {
                         const isSubActive = isRouteActive(sub.href, item);
                         return (
@@ -202,7 +191,7 @@ export default function Sidebar() {
                         );
                       })}
                     </div>
-                  )}
+                  </div>
                 </>
               ) : (
                 <Link

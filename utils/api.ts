@@ -4,7 +4,9 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/u
 // Helper to handle requests with fallback to local mock state
 async function request(endpoint: string, options: RequestInit = {}) {
   try {
-    const token = typeof window !== "undefined" ? sessionStorage.getItem("umrahcab_token") : null;
+    const token = typeof window !== "undefined" 
+      ? (sessionStorage.getItem("umrahcab_token") || sessionStorage.getItem("umrahcab_company_token")) 
+      : null;
     
     const headers = new Headers();
     headers.append("Content-Type", "application/json");
@@ -397,5 +399,36 @@ export const api = {
     });
     if (data) return { success: true, data };
     return { success: false, error: "API connection failed" };
+  },
+
+  // B2B Company Agent specific methods
+  async getCompanyDashboardSummary() {
+    const data = await request(`/company-panel/dashboard-summary`);
+    return data || null;
+  },
+
+  async getCompanyBookings(search?: string) {
+    const data = await request(`/company-panel/bookings${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+    return data || [];
+  },
+
+  async getCompanyCustomers(search?: string) {
+    const data = await request(`/company-panel/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+    return data || [];
+  },
+
+  async getCompanyInvoices() {
+    const data = await request(`/company-panel/invoices`);
+    return data || [];
+  },
+
+  async getCompanyLedgers() {
+    const data = await request(`/company-panel/ledgers`);
+    return data || [];
+  },
+
+  async getCompanyPayments() {
+    const data = await request(`/company-panel/payments`);
+    return data || [];
   }
 };

@@ -8,6 +8,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string, passwordConfirm: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
+  // B2B Company Auth
+  companyUser: { id: string; name: string; agent_username: string; email: string } | null;
+  companyLogin: (agent_username: string, agent_password: string) => Promise<boolean>;
+  companyLogout: () => void;
+  
   extrasUnlocked: boolean;
   unlockExtras: (pin: string) => boolean;
   lockExtras: () => void;
@@ -21,6 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ email: string; name?: string; username?: string } | null>(null);
+  const [companyUser, setCompanyUser] = useState<{ id: string; name: string; agent_username: string; email: string } | null>(null);
   const [extrasUnlocked, setExtrasUnlocked] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -30,10 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Load state from sessionStorage on mount
   useEffect(() => {
     const savedUser = sessionStorage.getItem("umrahcab_user");
+    const savedCompanyUser = sessionStorage.getItem("umrahcab_company_user");
     const savedExtras = sessionStorage.getItem("umrahcab_extras_unlocked");
     
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+    }
+    if (savedCompanyUser) {
+      setCompanyUser(JSON.parse(savedCompanyUser));
     }
     if (savedExtras === "true") {
       setExtrasUnlocked(true);
@@ -61,13 +71,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
-  // Protect admin routes
+  // Protect routes
   useEffect(() => {
-    const isPublicRoute = pathname === "/" || pathname === "/login";
     const savedUser = sessionStorage.getItem("umrahcab_user");
+    const savedCompanyUser = sessionStorage.getItem("umrahcab_company_user");
     
-    if (!savedUser && !isPublicRoute) {
-      router.push("/login");
+    if (pathname.startsWith("/company")) {
+      const isCompanyPublicRoute = pathname === "/company/login";
+      if (!savedCompanyUser && !isCompanyPublicRoute) {
+        router.push("/company/login");
+      }
+    } else {
+      const isPublicRoute = pathname === "/" || pathname === "/login";
+      if (!savedUser && !isPublicRoute) {
+        router.push("/login");
+      }
     }
   }, [pathname, router]);
 
@@ -173,6 +191,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
+  const companyLogin = async (agent_username: string, agent_password: string): Promise<boolean> => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+      const loginUrl = apiBase.endsWith("/")
+        ? apiBase.replace(/umrahcab\/?$/, "auth/company/login")
+        : apiBase.replace("umrahcab", "auth/company/login");
+
+      const response = await fetch(loginUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ agent_username, agent_password }),
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const resData = await response.json();
+      const dataObj = resData?.data || resData;
+      const token = dataObj?.token;
+      const company = dataObj?.company;
+
+      if (token) {
+        const newCompanyUser = {
+          id: String(company?.id),
+          name: company?.name || "B2B Agent",
+          agent_username: company?.agent_username || agent_username,
+          email: company?.email || ""
+        };
+        setCompanyUser(newCompanyUser);
+        sessionStorage.setItem("umrahcab_company_user", JSON.stringify(newCompanyUser));
+        sessionStorage.setItem("umrahcab_company_token", token);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Company login API call failed:", err);
+      return false;
+    }
+  };
+
+  const companyLogout = () => {
+    setCompanyUser(null);
+    sessionStorage.removeItem("umrahcab_company_user");
+    sessionStorage.removeItem("umrahcab_company_token");
+    router.push("/company/login");
+  };
+
   const unlockExtras = (pin: string): boolean => {
     if (pin === "786") {
       setExtrasUnlocked(true);
@@ -194,6 +262,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
+        companyUser,
+        companyLogin,
+        companyLogout,
         extrasUnlocked,
         unlockExtras,
         lockExtras,

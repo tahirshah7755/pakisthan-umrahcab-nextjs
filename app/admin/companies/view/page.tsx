@@ -4,6 +4,9 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
+
 interface CompanyItem {
   id: string;
   name: string;
@@ -17,6 +20,7 @@ interface CompanyItem {
   exempt_bulk_lock?: boolean;
   ledger_frequency?: string;
   agent_username?: string;
+  logo_path?: string;
 }
 
 function CompanyProfileContent() {
@@ -26,6 +30,9 @@ function CompanyProfileContent() {
 
   const [company, setCompany] = useState<CompanyItem | null>(null);
   const [companyCustomers, setCompanyCustomers] = useState<any[]>([]);
+  const [companyBookings, setCompanyBookings] = useState<any[]>([]);
+  const [companyLedgers, setCompanyLedgers] = useState<any[]>([]);
+  const [companyPayments, setCompanyPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Toast notification
@@ -44,17 +51,11 @@ function CompanyProfileContent() {
     const fetchCompanyProfile = async () => {
       try {
         setLoading(true);
-        const [companiesList, customersList] = await Promise.all([
-          api.getCompanies(),
-          api.getCustomers()
-        ]);
+        if (!targetId) return;
 
-        const found = companiesList?.find((com: any) => 
-          String(com.id) === targetId || 
-          com.custom_id?.replace("#COM-", "").replace("#CMP-", "") === targetId
-        );
-
-        if (found) {
+        const result = await api.getCompany(targetId);
+        if (result && result.company) {
+          const found = result.company;
           setCompany({
             id: found.custom_id || `#COM-${found.id}`,
             name: found.name,
@@ -67,15 +68,14 @@ function CompanyProfileContent() {
             tomorrow_reminder: !!found.tomorrow_reminder,
             exempt_bulk_lock: !!found.exempt_bulk_lock,
             ledger_frequency: found.ledger_frequency || "Monday",
-            agent_username: found.agent_username || ""
+            agent_username: found.agent_username || "",
+            logo_path: found.logo_path || ""
           });
 
-          if (customersList) {
-            const linked = customersList.filter((cust: any) => 
-              cust.company && cust.company.toLowerCase() === found.name.toLowerCase()
-            );
-            setCompanyCustomers(linked);
-          }
+          setCompanyCustomers(result.customers || []);
+          setCompanyBookings(result.bookings || []);
+          setCompanyLedgers(result.ledgers || []);
+          setCompanyPayments(result.payments || []);
         } else {
           // Fallback template
           setCompany({
@@ -180,8 +180,12 @@ function CompanyProfileContent() {
       <div style={{ display: "flex", gap: "25px", flexWrap: "wrap" }}>
         {/* Left Card: Profile Summary */}
         <div style={{ width: "320px", background: "#ffffff", padding: "30px 20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-          <div style={{ width: "100px", height: "100px", background: "#f1f5f9", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "20px" }}>
-            <i className="fas fa-building" style={{ fontSize: "40px", color: "#64748b" }}></i>
+          <div style={{ width: "100px", height: "100px", background: "#f1f5f9", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "20px", overflow: "hidden" }}>
+            {company.logo_path ? (
+              <img src={`${IMAGE_BASE}/${company.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            ) : (
+              <i className="fas fa-building" style={{ fontSize: "40px", color: "#64748b" }}></i>
+            )}
           </div>
           
           <h3 style={{ margin: "0 0 5px 0", fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>{company.name}</h3>
@@ -235,9 +239,11 @@ function CompanyProfileContent() {
             </div>
             <div>
               <span style={{ display: "block", fontSize: "12px", color: "#166534", fontWeight: "600" }}>Wallet Balance (PW)</span>
-              <h4 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: "800", color: "#14532d" }}>SAR 0.00</h4>
+              <h4 style={{ margin: "2px 0 0 0", fontSize: "22px", fontWeight: "800", color: "#14532d" }}>
+                SAR {companyLedgers[0]?.balance ? Number(companyLedgers[0].balance).toFixed(2) : "0.00"}
+              </h4>
               <span style={{ display: "block", fontSize: "11px", color: "#15803d", marginTop: "3px" }}>
-                VW Balance: <strong>SAR 0.00</strong> (Wallet) | PW: Pick-up Wise | VW: Voucher Wise
+                VW Balance: <strong>SAR {companyLedgers[0]?.balance ? Number(companyLedgers[0].balance).toFixed(2) : "0.00"}</strong> (Wallet) | PW: Pick-up Wise | VW: Voucher Wise
               </span>
             </div>
           </div>
@@ -246,7 +252,7 @@ function CompanyProfileContent() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
             <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", borderLeft: "4px solid #3b82f6" }}>
               <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "500" }}>Booking Volume</span>
-              <h5 style={{ margin: "5px 0", fontSize: "24px", fontWeight: "700", color: "#1e293b" }}>0</h5>
+              <h5 style={{ margin: "5px 0", fontSize: "24px", fontWeight: "700", color: "#1e293b" }}>{companyBookings.length}</h5>
               <span style={{ fontSize: "11px", color: "#94a3b8" }}>Total Lifetime Bookings</span>
             </div>
             
@@ -258,7 +264,9 @@ function CompanyProfileContent() {
 
             <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", borderLeft: "4px solid #64748b" }}>
               <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "500" }}>Business Volume</span>
-              <h5 style={{ margin: "5px 0", fontSize: "24px", fontWeight: "700", color: "#1e293b" }}>SAR 0</h5>
+              <h5 style={{ margin: "5px 0", fontSize: "24px", fontWeight: "700", color: "#1e293b" }}>
+                SAR {companyLedgers.reduce((acc, curr) => acc + Number(curr.debit || 0), 0).toFixed(2)}
+              </h5>
               <span style={{ fontSize: "11px", color: "#94a3b8" }}>Lifetime Gross Revenue</span>
             </div>
           </div>
@@ -407,8 +415,43 @@ function CompanyProfileContent() {
             <i className="fas fa-credit-card" style={{ color: "#2563eb" }}></i>
             <span>Recent Corporate Payments</span>
           </h4>
-          <div className="table-responsive" style={{ textAlign: "center", padding: "40px 10px", color: "#94a3b8" }}>
-            No recent payment transactions recorded.
+          <div className="table-responsive">
+            <table className="db-table" style={{ width: "100%" }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Method</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {companyPayments.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center", color: "#94a3b8", padding: "20px 0" }}>No payments recorded.</td>
+                  </tr>
+                ) : (
+                  companyPayments.map(pm => (
+                    <tr key={pm.id}>
+                      <td style={{ fontWeight: 700 }}>{pm.custom_id || `#PAY-${pm.id}`}</td>
+                      <td>{pm.date}</td>
+                      <td>{pm.method}</td>
+                      <td style={{ color: "#16a34a", fontWeight: "600" }}>{pm.currency || "SAR"} {Number(pm.amount).toFixed(2)}</td>
+                      <td>
+                        <span style={{
+                          background: pm.status === "Approved" || pm.status === "Success" ? "#dcfce7" : pm.status === "Pending" ? "#fef3c7" : "#fee2e2",
+                          color: pm.status === "Approved" || pm.status === "Success" ? "#166534" : pm.status === "Pending" ? "#92400e" : "#991b1b",
+                          padding: "2px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: "700"
+                        }}>
+                          {pm.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

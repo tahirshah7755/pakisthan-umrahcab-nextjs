@@ -17,6 +17,7 @@ function EditCompanyContent() {
   const [compEmail, setCompEmail] = useState("");
   const [compWeb, setCompWeb] = useState("");
   const [compLogoName, setCompLogoName] = useState("");
+  const [compLogoBase64, setCompLogoBase64] = useState("");
   const [compAddress, setCompAddress] = useState("");
   const [compVouchers, setCompVouchers] = useState(true);
   const [compReminders, setCompReminders] = useState(true);
@@ -43,11 +44,10 @@ function EditCompanyContent() {
     const fetchCompanyData = async () => {
       try {
         setLoading(true);
-        const list = await api.getCompanies();
-        const found = list?.find((com: any) => 
-          String(com.id) === targetId || 
-          com.custom_id?.replace("#COM-", "").replace("#CMP-", "") === targetId
-        );
+        if (!targetId) return;
+
+        const result = await api.getCompany(targetId);
+        const found = result?.company;
 
         if (found) {
           setCompName(found.name || "");
@@ -101,7 +101,7 @@ function EditCompanyContent() {
         tomorrow_reminder: compTomorrowReminder ? 1 : 0,
         exempt_bulk_lock: compExemptBulkLock ? 1 : 0,
         remarks: compRemarks || "",
-        logo_path: compLogoName || ""
+        logo_path: compLogoBase64 || compLogoName || ""
       };
       await api.updateCompany(targetId, updated);
       showToast("Company profile updated successfully!", "success");
@@ -266,7 +266,14 @@ function EditCompanyContent() {
                   type="file" 
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) setCompLogoName(file.name);
+                    if (file) {
+                      setCompLogoName(file.name);
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setCompLogoBase64(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
                   }}
                   style={{ opacity: 0, position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 10 }} 
                 />

@@ -9,7 +9,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, passwordConfirm: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   // B2B Company Auth
-  companyUser: { id: string; name: string; agent_username: string; email: string } | null;
+  companyUser: { id: string; name: string; agent_username: string; email: string; logo_path?: string } | null;
   companyLogin: (agent_username: string, agent_password: string) => Promise<boolean>;
   companyLogout: () => void;
   
@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ email: string; name?: string; username?: string } | null>(null);
-  const [companyUser, setCompanyUser] = useState<{ id: string; name: string; agent_username: string; email: string } | null>(null);
+  const [companyUser, setCompanyUser] = useState<{ id: string; name: string; agent_username: string; email: string; logo_path?: string } | null>(null);
   const [extrasUnlocked, setExtrasUnlocked] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -220,7 +220,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: String(company?.id),
           name: company?.name || "B2B Agent",
           agent_username: company?.agent_username || agent_username,
-          email: company?.email || ""
+          email: company?.email || "",
+          logo_path: company?.logo_path || ""
         };
         setCompanyUser(newCompanyUser);
         sessionStorage.setItem("umrahcab_company_user", JSON.stringify(newCompanyUser));

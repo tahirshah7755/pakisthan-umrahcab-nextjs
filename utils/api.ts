@@ -120,6 +120,11 @@ export const api = {
     return data || [];
   },
 
+  async getCompany(id: string) {
+    const data = await request(`/companies/${id}`);
+    return data || null;
+  },
+
   async createCompany(comp: any) {
     const data = await request(`/companies`, {
       method: "POST",

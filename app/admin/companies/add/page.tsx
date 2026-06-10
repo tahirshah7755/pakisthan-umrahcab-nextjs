@@ -15,6 +15,7 @@ export default function RegisterCompanyPage() {
   const [compEmail, setCompEmail] = useState("");
   const [compWeb, setCompWeb] = useState("");
   const [compLogoName, setCompLogoName] = useState("");
+  const [compLogoBase64, setCompLogoBase64] = useState("");
   const [compAddress, setCompAddress] = useState("");
   const [compVouchers, setCompVouchers] = useState(true);
   const [compReminders, setCompReminders] = useState(true);
@@ -62,7 +63,7 @@ export default function RegisterCompanyPage() {
         tomorrow_reminder: compTomorrowReminder ? 1 : 0,
         exempt_bulk_lock: compExemptBulkLock ? 1 : 0,
         remarks: compRemarks || "",
-        logo_path: compLogoName || ""
+        logo_path: compLogoBase64 || ""
       };
       await api.createCompany(newComp);
       showToast("Company registered successfully!", "success");
@@ -220,7 +221,14 @@ export default function RegisterCompanyPage() {
                   type="file" 
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) setCompLogoName(file.name);
+                    if (file) {
+                      setCompLogoName(file.name);
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setCompLogoBase64(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
                   }}
                   style={{ opacity: 0, position: "absolute", top: 0, left: 0, width: "100%", height: "100%", cursor: "pointer", zIndex: 10 }} 
                 />

@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
+
 export default function CompanyHeader() {
   const { sidebarOpen, setSidebarOpen, companyLogout, companyUser } = useAuth();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -40,9 +43,13 @@ export default function CompanyHeader() {
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
             className="user-profile-btn"
             title="User Settings"
-            style={{ color: "#d4af37" }}
+            style={{ color: "#d4af37", width: "32px", height: "32px", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", padding: 0 }}
           >
-            <i className="fas fa-user-circle"></i>
+            {companyUser?.logo_path ? (
+              <img src={`${IMAGE_BASE}/${companyUser.logo_path}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            ) : (
+              <i className="fas fa-user-circle" style={{ fontSize: "24px" }}></i>
+            )}
           </button>
 
           {profileDropdownOpen && (

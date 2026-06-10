@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
+
 interface MenuItem {
   name: string;
   icon: string;
@@ -99,8 +102,12 @@ export default function CompanySidebar() {
       {/* Profile Card */}
       <div className="sidebar-profile-card" style={{ background: "#1e293b", margin: "15px", borderRadius: "10px" }}>
         <div className="profile-info">
-          <div className="profile-avatar" style={{ background: "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)" }}>
-            <i className="fas fa-handshake" style={{ color: "#0f172a" }}></i>
+          <div className="profile-avatar" style={{ background: companyUser?.logo_path ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {companyUser?.logo_path ? (
+              <img src={`${IMAGE_BASE}/${companyUser.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            ) : (
+              <i className="fas fa-handshake" style={{ color: "#0f172a" }}></i>
+            )}
           </div>
           <span className="profile-name" style={{ color: "#ffffff" }}>{companyUser?.name || "B2B Agent"}</span>
         </div>

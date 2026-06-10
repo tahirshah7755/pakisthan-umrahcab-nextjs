@@ -432,6 +432,15 @@ export const api = {
     return data || [];
   },
 
+  async createCompanyCustomer(cust: { name: string; contact?: string }) {
+    const data = await request(`/company-panel/customers`, {
+      method: "POST",
+      body: JSON.stringify(cust),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
   async getCompanyInvoices() {
     const data = await request(`/company-panel/invoices`);
     return data || [];

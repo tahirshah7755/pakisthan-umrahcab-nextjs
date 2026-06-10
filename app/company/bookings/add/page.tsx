@@ -36,6 +36,15 @@ export default function AddNewBooking() {
   const [customersList, setCustomersList] = useState<any[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
 
+  // Add Customer Modal States
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustMobile, setNewCustMobile] = useState("");
+  const [newCustEmail, setNewCustEmail] = useState("");
+  const [newCustPassport, setNewCustPassport] = useState("");
+  const [newCustNotes, setNewCustNotes] = useState("");
+  const [savingCustomer, setSavingCustomer] = useState(false);
+
   // Dynamic Dropdown Lists from API
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
   const [packagesList, setPackagesList] = useState<string[]>([]);
@@ -124,6 +133,54 @@ export default function AddNewBooking() {
     setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
     }, 3000);
+  };
+
+  const handleAddCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustName.trim()) {
+      showToast("Customer name is required.", "error");
+      return;
+    }
+    try {
+      setSavingCustomer(true);
+      
+      const phones = [newCustMobile].filter(Boolean).join(" / ");
+      const emailInfo = newCustEmail ? ` | Email: ${newCustEmail}` : "";
+      const passportInfo = newCustPassport ? ` | Passport: ${newCustPassport}` : "";
+      const notesInfo = newCustNotes ? ` | Notes: ${newCustNotes}` : "";
+      const consolidatedContact = `${phones || "N/A"}${emailInfo}${passportInfo}${notesInfo}`;
+
+      const res = await api.createCompanyCustomer({
+        name: newCustName,
+        contact: consolidatedContact
+      });
+      if (res.success && res.data) {
+        showToast("Customer registered successfully!", "success");
+        setShowAddModal(false);
+        setNewCustName("");
+        setNewCustMobile("");
+        setNewCustEmail("");
+        setNewCustPassport("");
+        setNewCustNotes("");
+        
+        // Auto-select newly created customer
+        const newCustObj = res.data;
+        setCustomer(String(newCustObj.id));
+        setSelectedCustomerObj(newCustObj);
+        setIsOpen(false);
+        
+        // Refresh customer list
+        const updatedList = await api.getCompanyCustomers("");
+        setCustomersList(updatedList || []);
+      } else {
+        showToast(res.error || "Failed to register customer.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("An unexpected error occurred.", "error");
+    } finally {
+      setSavingCustomer(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -281,6 +338,28 @@ export default function AddNewBooking() {
 
                 {/* Customers List Box */}
                 <div style={{ maxHeight: "200px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      background: "rgba(212, 175, 55, 0.1)",
+                      color: "#b48a1d",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "6px",
+                      border: "1px dashed rgba(212, 175, 55, 0.4)"
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAddModal(true);
+                    }}
+                  >
+                    <i className="fas fa-plus"></i> Add New Customer...
+                  </div>
                   {loadingCustomers ? (
                     <div style={{ padding: "12px", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>
                       <i className="fas fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Loading customers...
@@ -657,6 +736,116 @@ export default function AddNewBooking() {
           </div>
         </form>
       </div>
+      {/* Add Customer Modal */}
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", zIndex: 10000,
+          display: "flex", justifyContent: "center", alignItems: "center",
+          padding: "20px"
+        }} onClick={(e) => e.stopPropagation()}>
+          <div style={{
+            background: "#ffffff", borderRadius: "12px", width: "100%", maxWidth: "450px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+            overflowY: "auto", display: "flex", flexDirection: "column", maxHeight: "90vh"
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center"
+            }}>
+              <h3 style={{ margin: 0, color: "#ffffff", fontSize: "18px", fontWeight: "700" }}>
+                <i className="fas fa-user-plus" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+                Add New Customer
+              </h3>
+              <button 
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", color: "#ffffff", fontSize: "18px", cursor: "pointer" }}
+              >
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleAddCustomerSubmit} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Customer Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newCustName}
+                  onChange={(e) => setNewCustName(e.target.value)}
+                  placeholder="Enter full name"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>WhatsApp / Mobile</label>
+                <input
+                  type="text"
+                  value={newCustMobile}
+                  onChange={(e) => setNewCustMobile(e.target.value)}
+                  placeholder="e.g. +966500000000"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Email Address</label>
+                <input
+                  type="email"
+                  value={newCustEmail}
+                  onChange={(e) => setNewCustEmail(e.target.value)}
+                  placeholder="customer@example.com"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Passport Number</label>
+                <input
+                  type="text"
+                  value={newCustPassport}
+                  onChange={(e) => setNewCustPassport(e.target.value)}
+                  placeholder="e.g. PK1234567"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Notes / Extra Details</label>
+                <textarea
+                  value={newCustNotes}
+                  onChange={(e) => setNewCustNotes(e.target.value)}
+                  placeholder="Any extra info..."
+                  rows={2}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", resize: "none", background: "#ffffff", color: "#000000" }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{ padding: "10px 20px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCustomer}
+                  style={{
+                    padding: "10px 20px",
+                    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    cursor: savingCustomer ? "not-allowed" : "pointer"
+                  }}
+                >
+                  {savingCustomer ? "Saving..." : "Save Customer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

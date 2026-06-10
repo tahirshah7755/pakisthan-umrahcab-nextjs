@@ -136,7 +136,7 @@ export default function CompanyPaymentsPage() {
       )}
 
       {/* Header Banner */}
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="form-header-card mobile-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>Payments History</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>View detailed records of all deposits and processed balance payments.</p>
@@ -144,10 +144,10 @@ export default function CompanyPaymentsPage() {
       </div>
 
       {/* Payments Table Card */}
-      <div className="table-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+      <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
         {/* Toolbar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
-          <div style={{ display: "flex", gap: "6px" }}>
+          <div className="mobile-toolbar" style={{ display: "flex", gap: "6px" }}>
             {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
               <button
                 key={fmt}
@@ -161,6 +161,7 @@ export default function CompanyPaymentsPage() {
 
           <button
             onClick={() => setShowModal(true)}
+            className="mobile-wallet-btn"
             style={{
               background: "linear-gradient(135deg, #b48a1d 0%, #d4af37 100%)",
               color: "#ffffff",
@@ -170,7 +171,7 @@ export default function CompanyPaymentsPage() {
               fontSize: "13px",
               fontWeight: "700",
               cursor: "pointer",
-              display: "flex",
+              display: "inline-flex",
               alignItems: "center",
               gap: "6px",
               boxShadow: "0 2px 4px rgba(212, 175, 55, 0.2)"
@@ -262,7 +263,7 @@ export default function CompanyPaymentsPage() {
           <div style={{
             background: "#ffffff", borderRadius: "12px", width: "100%", maxWidth: "500px",
             boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            overflow: "hidden", display: "flex", flexDirection: "column"
+            overflowY: "auto", display: "flex", flexDirection: "column", maxHeight: "90vh"
           }}>
             {/* Modal Header */}
             <div style={{
@@ -431,6 +432,33 @@ export default function CompanyPaymentsPage() {
         @keyframes spin { 
           0% { transform: rotate(0deg); } 
           100% { transform: rotate(360deg); } 
+        }
+        @media (max-width: 768px) {
+          .mobile-header-card {
+            padding: 15px 20px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 15px !important;
+            text-align: center !important;
+          }
+          .mobile-card {
+            padding: 15px !important;
+          }
+          .mobile-toolbar {
+            width: 100% !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+          }
+          .mobile-toolbar button {
+            flex: 1 !important;
+            min-width: 70px !important;
+            padding: 6px 10px !important;
+            font-size: 11px !important;
+          }
+          .mobile-wallet-btn {
+            width: 100% !important;
+            justify-content: center !important;
+          }
         }
       `}</style>
     </div>

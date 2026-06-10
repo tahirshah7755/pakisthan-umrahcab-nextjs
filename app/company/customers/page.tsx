@@ -17,6 +17,15 @@ export default function CompanyCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
+  // Add Customer Modal States
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustMobile, setNewCustMobile] = useState("");
+  const [newCustEmail, setNewCustEmail] = useState("");
+  const [newCustPassport, setNewCustPassport] = useState("");
+  const [newCustNotes, setNewCustNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
     message: "",
@@ -26,6 +35,45 @@ export default function CompanyCustomersPage() {
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const handleAddCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustName.trim()) {
+      showToast("Customer name is required.", "error");
+      return;
+    }
+    try {
+      setSubmitting(true);
+      
+      const phones = [newCustMobile].filter(Boolean).join(" / ");
+      const emailInfo = newCustEmail ? ` | Email: ${newCustEmail}` : "";
+      const passportInfo = newCustPassport ? ` | Passport: ${newCustPassport}` : "";
+      const notesInfo = newCustNotes ? ` | Notes: ${newCustNotes}` : "";
+      const consolidatedContact = `${phones || "N/A"}${emailInfo}${passportInfo}${notesInfo}`;
+
+      const res = await api.createCompanyCustomer({
+        name: newCustName,
+        contact: consolidatedContact
+      });
+      if (res.success) {
+        showToast("Customer added successfully!", "success");
+        setShowAddModal(false);
+        setNewCustName("");
+        setNewCustMobile("");
+        setNewCustEmail("");
+        setNewCustPassport("");
+        setNewCustNotes("");
+        loadCustomers();
+      } else {
+        showToast(res.error || "Failed to create customer.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("An unexpected error occurred.", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const loadCustomers = async () => {
@@ -55,18 +103,36 @@ export default function CompanyCustomersPage() {
       )}
 
       {/* Header Banner */}
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="form-header-card mobile-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>My Customers</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>List of customers associated with your corporate account.</p>
         </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          style={{ 
+            background: "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", 
+            color: "#0f172a", 
+            border: "none", 
+            borderRadius: "8px", 
+            padding: "10px 20px", 
+            fontSize: "14px", 
+            fontWeight: "700", 
+            cursor: "pointer", 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "8px" 
+          }}
+        >
+          <i className="fas fa-plus"></i> Add Customer
+        </button>
       </div>
 
       {/* Customers Table Card */}
-      <div className="table-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+      <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
         {/* Toolbar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
-          <div style={{ display: "flex", gap: "6px" }}>
+          <div className="mobile-toolbar" style={{ display: "flex", gap: "6px" }}>
             {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
               <button
                 key={fmt}
@@ -78,7 +144,7 @@ export default function CompanyCustomersPage() {
             ))}
           </div>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className="mobile-search-box" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>Search:</span>
             <input
               type="text"
@@ -132,7 +198,148 @@ export default function CompanyCustomersPage() {
           0% { transform: rotate(0deg); } 
           100% { transform: rotate(360deg); } 
         }
+        @media (max-width: 768px) {
+          .mobile-header-card {
+            padding: 15px 20px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 15px !important;
+            text-align: center !important;
+          }
+          .mobile-card {
+            padding: 15px !important;
+          }
+          .mobile-toolbar {
+            width: 100% !important;
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+          }
+          .mobile-toolbar button {
+            flex: 1 !important;
+            min-width: 70px !important;
+            padding: 6px 10px !important;
+            font-size: 11px !important;
+          }
+          .mobile-search-box {
+            width: 100% !important;
+            justify-content: space-between !important;
+          }
+          .mobile-search-box input {
+            flex-grow: 1 !important;
+            width: auto !important;
+          }
+        }
       `}</style>
+
+      {/* Add Customer Modal */}
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.5)", zIndex: 10000,
+          display: "flex", justifyContent: "center", alignItems: "center",
+          padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff", borderRadius: "12px", width: "100%", maxWidth: "450px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+            overflowY: "auto", display: "flex", flexDirection: "column", maxHeight: "90vh"
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center"
+            }}>
+              <h3 style={{ margin: 0, color: "#ffffff", fontSize: "18px", fontWeight: "700" }}>
+                <i className="fas fa-user-plus" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+                Add New Customer
+              </h3>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                style={{ background: "none", border: "none", color: "#ffffff", fontSize: "18px", cursor: "pointer" }}
+              >
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleAddCustomerSubmit} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Customer Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newCustName}
+                  onChange={(e) => setNewCustName(e.target.value)}
+                  placeholder="Enter full name"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", color: "#000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>WhatsApp / Mobile</label>
+                <input
+                  type="text"
+                  value={newCustMobile}
+                  onChange={(e) => setNewCustMobile(e.target.value)}
+                  placeholder="e.g. +966500000000"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", color: "#000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Email Address</label>
+                <input
+                  type="email"
+                  value={newCustEmail}
+                  onChange={(e) => setNewCustEmail(e.target.value)}
+                  placeholder="customer@example.com"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", color: "#000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Passport Number</label>
+                <input
+                  type="text"
+                  value={newCustPassport}
+                  onChange={(e) => setNewCustPassport(e.target.value)}
+                  placeholder="e.g. PK1234567"
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", color: "#000" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Notes / Extra Details</label>
+                <textarea
+                  value={newCustNotes}
+                  onChange={(e) => setNewCustNotes(e.target.value)}
+                  placeholder="Any extra info..."
+                  rows={2}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", resize: "none", color: "#000" }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{ padding: "10px 20px", background: "#f1f5f9", color: "#475569", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{
+                    padding: "10px 20px",
+                    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    cursor: submitting ? "not-allowed" : "pointer"
+                  }}
+                >
+                  {submitting ? "Saving..." : "Save Customer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

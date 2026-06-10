@@ -139,7 +139,7 @@ export default function CompanyDashboardPage() {
 
       {/* 🚀 Welcome Header Banner */}
       <div 
-        className="form-header-card" 
+        className="form-header-card mobile-header-card" 
         style={{ 
           background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", 
           padding: "30px 40px", 
@@ -154,13 +154,13 @@ export default function CompanyDashboardPage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: "25px", flex: 1, minWidth: "280px", flexWrap: "wrap" }}>
           {companyInfo?.logo_path && (
-            <div style={{ width: "80px", height: "80px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div className="mobile-header-logo-container" style={{ width: "80px", height: "80px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
               <img src={`${IMAGE_BASE}/${companyInfo.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
           )}
           <div>
             <span style={{ color: "#d4af37", fontWeight: "700", textTransform: "uppercase", fontSize: "12px", letterSpacing: "1px" }}>Welcome Back Agent</span>
-            <h2 style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", margin: "5px 0 8px 0", letterSpacing: "-0.5px" }}>
+            <h2 className="mobile-header-title" style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", margin: "5px 0 8px 0", letterSpacing: "-0.5px" }}>
               {companyInfo?.name || "Corporate Partner"}
             </h2>
             <p style={{ color: "#94a3b8", fontSize: "14px", margin: 0 }}>
@@ -171,6 +171,7 @@ export default function CompanyDashboardPage() {
 
         {/* Makkah Clock Widget */}
         <div 
+          className="mobile-clock-widget"
           style={{ 
             background: "#1e293b", 
             borderRadius: "12px", 
@@ -273,7 +274,7 @@ export default function CompanyDashboardPage() {
       </div>
 
       {/* Profile & Settings Details Card */}
-      <div className="table-card" style={{ padding: "25px", borderRadius: "12px", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+      <div className="table-card mobile-card" style={{ padding: "25px", borderRadius: "12px", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
         <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#1e293b", margin: "0 0 15px 0", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
           <i className="fas fa-building-user" style={{ color: "#d4af37", marginRight: "8px" }}></i>
           Corporate Account Details
@@ -314,8 +315,8 @@ export default function CompanyDashboardPage() {
       </div>
 
       {/* 📋 Latest Bookings Table */}
-      <div className="table-card" style={{ padding: "25px", borderRadius: "12px", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+      <div className="table-card mobile-card" style={{ padding: "25px", borderRadius: "12px", background: "#ffffff", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+        <div className="mobile-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <div>
             <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#1e293b", margin: 0 }}>
               <i className="fas fa-list" style={{ color: "#3b82f6", marginRight: "8px" }}></i>
@@ -378,6 +379,39 @@ export default function CompanyDashboardPage() {
           </table>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-header-card {
+            padding: 20px 15px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 15px !important;
+          }
+          .mobile-header-logo-container {
+            width: 60px !important;
+            height: 60px !important;
+          }
+          .mobile-header-title {
+            font-size: 20px !important;
+          }
+          .mobile-clock-widget {
+            min-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .mobile-card {
+            padding: 15px !important;
+          }
+          .mobile-card-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+          .mobile-card-header button {
+            width: 100% !important;
+            text-align: center !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -176,7 +176,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Legacy Quick Filters row */}
-      <div className="filter-card" style={{ padding: "20px" }}>
+      <div className="form-card" style={{ padding: "18px 24px" }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", alignItems: "center" }}>
           <span style={{ fontSize: "12px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>Quick Date Range</span>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -188,47 +188,71 @@ export default function PaymentsPage() {
       </div>
 
       {/* Advanced Filters */}
-      <div className="filter-card">
-        <div className="filter-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+      <div className="form-card" style={{ padding: "18px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", alignItems: "flex-end" }}>
           <div>
-            <label className="filter-label">Company Account</label>
-            <div className="filter-input-wrapper">
-              <i className="fas fa-building filter-icon"></i>
-              <select className="filter-input filter-select" value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)}>
+            <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>Company Account</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-building form-icon" style={{ fontSize: "13px" }}></i>
+              <select 
+                className="form-input form-select" 
+                style={{ height: "38px", paddingLeft: "38px", fontSize: "13px", borderRadius: "6px" }}
+                value={companyFilter} 
+                onChange={(e) => setCompanyFilter(e.target.value)}
+              >
                 <option value="">All Companies</option>
                 {companies.map((c: any) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
+              <i className="fas fa-chevron-down select-arrow" style={{ fontSize: "10px" }}></i>
             </div>
           </div>
 
           <div>
-            <label className="filter-label">Gateway / Method</label>
-            <div className="filter-input-wrapper">
-              <i className="fas fa-credit-card filter-icon"></i>
-              <select className="filter-input filter-select" value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)}>
+            <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>Gateway / Method</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-credit-card form-icon" style={{ fontSize: "13px" }}></i>
+              <select 
+                className="form-input form-select" 
+                style={{ height: "38px", paddingLeft: "38px", fontSize: "13px", borderRadius: "6px" }}
+                value={methodFilter} 
+                onChange={(e) => setMethodFilter(e.target.value)}
+              >
                 <option value="all">All Methods</option>
                 <option value="Bank Transfer">Bank Transfer</option>
                 <option value="Cash Receipt">Cash Deposit (Physical)</option>
                 <option value="Online Gateway">Online Checkout Card</option>
               </select>
+              <i className="fas fa-chevron-down select-arrow" style={{ fontSize: "10px" }}></i>
             </div>
           </div>
 
           <div>
-            <label className="filter-label">Date From</label>
-            <div className="filter-input-wrapper">
-              <i className="fas fa-calendar-alt filter-icon"></i>
-              <input type="date" className="filter-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>Date From</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-calendar-alt form-icon" style={{ fontSize: "13px" }}></i>
+              <input 
+                type="date" 
+                className="form-input" 
+                style={{ height: "38px", paddingLeft: "38px", fontSize: "13px", borderRadius: "6px" }}
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)} 
+              />
             </div>
           </div>
 
           <div>
-            <label className="filter-label">Date To</label>
-            <div className="filter-input-wrapper">
-              <i className="fas fa-calendar-alt filter-icon"></i>
-              <input type="date" className="filter-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>Date To</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-calendar-alt form-icon" style={{ fontSize: "13px" }}></i>
+              <input 
+                type="date" 
+                className="form-input" 
+                style={{ height: "38px", paddingLeft: "38px", fontSize: "13px", borderRadius: "6px" }}
+                value={endDate} 
+                onChange={(e) => setEndDate(e.target.value)} 
+              />
             </div>
           </div>
 
@@ -242,14 +266,15 @@ export default function PaymentsPage() {
                 borderRadius: "6px",
                 height: "38px",
                 padding: "0 20px",
-                fontWeight: "600",
+                fontWeight: "700",
                 fontSize: "13px",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "8px",
                 flex: 1,
-                justifyContent: "center"
+                justifyContent: "center",
+                boxShadow: "0 2px 4px rgba(13, 148, 136, 0.2)"
               }}
             >
               <i className="fas fa-filter"></i> Apply

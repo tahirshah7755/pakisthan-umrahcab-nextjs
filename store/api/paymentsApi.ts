@@ -3,7 +3,10 @@ import { apiSlice } from "./apiSlice";
 export const paymentsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getPayments: builder.query({
-      query: () => `/payments`,
+      query: (params) => ({
+        url: `/payments`,
+        params,
+      }),
       providesTags: ["Payments"],
     }),
     createPayment: builder.mutation({

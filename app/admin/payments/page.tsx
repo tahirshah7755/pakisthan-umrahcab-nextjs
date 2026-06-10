@@ -26,8 +26,18 @@ export default function PaymentsPage() {
   });
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Debounce search input to avoid hitting backend too frequently
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -42,7 +52,15 @@ export default function PaymentsPage() {
   };
 
   // RTK Queries
-  const { data: paymentsData, isLoading, isFetching } = useGetPaymentsQuery(undefined);
+  const { data: paymentsData, isLoading, isFetching } = useGetPaymentsQuery({
+    page: currentPage,
+    per_page: rowsPerPage,
+    search: debouncedSearch || undefined,
+    company: appliedFilters.company || undefined,
+    method: appliedFilters.method !== "all" ? appliedFilters.method : undefined,
+    start_date: appliedFilters.start_date || undefined,
+    end_date: appliedFilters.end_date || undefined,
+  });
   const { data: companiesData } = useGetCompaniesQuery(undefined);
   const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
 
@@ -50,46 +68,38 @@ export default function PaymentsPage() {
     ? companiesData
     : (Array.isArray((companiesData as any)?.data) ? (companiesData as any).data : []);
 
-  const paymentsRaw = Array.isArray(paymentsData) ? paymentsData : [];
+  // Robust paginator and list resolver supporting nested structures
+  let paginatorObj: any = null;
+  let paymentsRaw: any[] = [];
 
-  // Filter logic
-  const filteredPayments = paymentsRaw.filter((item: any) => {
-    // Search
-    if (search) {
-      const s = search.toLowerCase();
-      const matchCompany = String(item.company || "").toLowerCase().includes(s);
-      const matchId = String(item.custom_id || "").toLowerCase().includes(s);
-      const matchMethod = String(item.method || "").toLowerCase().includes(s);
-      if (!matchCompany && !matchId && !matchMethod) return false;
+  if (paymentsData) {
+    if (Array.isArray(paymentsData)) {
+      paymentsRaw = paymentsData;
+    } else if (typeof paymentsData === "object") {
+      const pObj = paymentsData as any;
+      if (pObj.current_page !== undefined && Array.isArray(pObj.data)) {
+        paginatorObj = pObj;
+        paymentsRaw = pObj.data;
+      } else if (pObj.data && typeof pObj.data === "object") {
+        const nested = pObj.data;
+        if (nested.current_page !== undefined && Array.isArray(nested.data)) {
+          paginatorObj = nested;
+          paymentsRaw = nested.data;
+        } else if (Array.isArray(nested)) {
+          paymentsRaw = nested;
+        }
+      } else if (Array.isArray(pObj.data)) {
+        paymentsRaw = pObj.data;
+      }
     }
+  }
 
-    // Company filter
-    if (appliedFilters.company && item.company !== appliedFilters.company) {
-      return false;
-    }
-
-    // Method filter
-    if (appliedFilters.method !== "all" && item.method !== appliedFilters.method) {
-      return false;
-    }
-
-    // Date range filter
-    if (appliedFilters.start_date && item.date && item.date < appliedFilters.start_date) {
-      return false;
-    }
-    if (appliedFilters.end_date && item.date && item.date > appliedFilters.end_date) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // Pagination
-  const totalRows = filteredPayments.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
-  const fromRow = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
-  const toRow = Math.min(currentPage * rowsPerPage, totalRows);
-  const paginatedPayments = filteredPayments.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  // Server-side pagination parameters
+  const totalRows = paginatorObj?.total ?? paymentsRaw.length;
+  const totalPages = paginatorObj?.last_page ?? (Math.ceil(totalRows / rowsPerPage) || 1);
+  const fromRow = paginatorObj?.from ?? (totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1);
+  const toRow = paginatorObj?.to ?? Math.min(currentPage * rowsPerPage, totalRows);
+  const paginatedPayments = paymentsRaw;
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -342,11 +352,43 @@ export default function PaymentsPage() {
             <span style={{ marginLeft: "12px", color: "#64748b", fontWeight: "600" }}>Loading Payments logs...</span>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="db-table" style={{ margin: 0, fontSize: "12px" }}>
-              <thead>
-                <tr>
-                  <th style={{ paddingLeft: "16px" }}>Ref ID</th>
+          <div style={{ position: "relative" }}>
+            {/* Loading Overlay during page/search/filter change */}
+            {isFetching && (
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 10,
+                backdropFilter: "blur(1px)",
+                borderRadius: "8px"
+              }}>
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "10px",
+                  background: "#ffffff",
+                  padding: "16px 24px",
+                  borderRadius: "12px",
+                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                }}>
+                  <div className="spinner" style={{ width: "24px", height: "24px", borderWidth: "3px", borderTopColor: "#0d9488" }}></div>
+                  <span style={{ fontSize: "12px", color: "#475569", fontWeight: "600" }}>Updating Payments...</span>
+                </div>
+              </div>
+            )}
+            <div className="table-responsive">
+              <table className="db-table" style={{ margin: 0, fontSize: "12px" }}>
+                <thead>
+                  <tr>
+                    <th style={{ paddingLeft: "16px" }}>Ref ID</th>
                   <th>Company</th>
                   <th>Date</th>
                   <th>Payment Method</th>
@@ -451,6 +493,7 @@ export default function PaymentsPage() {
                 )}
               </tbody>
             </table>
+          </div>
           </div>
         )}
 

@@ -58,7 +58,7 @@ export default function InvoicesPage() {
       inv.remarks || "",
       inv.entered_by || "System Admin"
     ]);
-    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    const text = [headers.join("\t"), ...textRows.map((r: any) => r.join("\t"))].join("\n");
     navigator.clipboard.writeText(text)
       .then(() => showToast("Copied invoices to clipboard!", "success"))
       .catch(() => showToast("Failed to copy!", "error"));
@@ -116,7 +116,7 @@ export default function InvoicesPage() {
     
     const excelContent = [
       headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
+      ...textRows.map((r: any) => r.join("\t"))
     ].join("\r\n");
 
     const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });

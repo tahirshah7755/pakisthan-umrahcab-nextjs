@@ -160,7 +160,7 @@ export default function LedgersPage() {
       ld.balance || 0,
       ld.description || ""
     ]);
-    const text = [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\n");
+    const text = [headers.join("\t"), ...rows.map((r: any) => r.join("\t"))].join("\n");
     navigator.clipboard.writeText(text)
       .then(() => showToast("Copied ledger list to clipboard!", "success"))
       .catch(() => showToast("Failed to copy!", "error"));
@@ -216,7 +216,7 @@ export default function LedgersPage() {
     
     const excelContent = [
       headers.join("\t"),
-      ...rows.map(r => r.join("\t"))
+      ...rows.map((r: any) => r.join("\t"))
     ].join("\r\n");
 
     const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });

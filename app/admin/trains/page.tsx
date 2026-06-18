@@ -45,6 +45,176 @@ export default function TrainsDirectory() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleCopy = () => {
+    if (trains.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["ID", "Train #", "Passenger", "Company", "Type", "Station / City", "Date", "Time"];
+    const textRows = trains.map((t: any) => [
+      t.id,
+      t.trainNo || "",
+      t.customer ? t.customer.name : "Walk-in Passenger",
+      t.customer ? t.customer.company : "UmrahCab Admin",
+      t.leg || "",
+      t.route || "",
+      t.date ? formatScheduleDate(t.date) : "N/A",
+      t.time ? formatTime12h(t.time) : "N/A"
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied trains list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (trains.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Train #", "Passenger", "Company", "Type", "Station / City", "Date", "Time"];
+    const csvContent = [
+      headers.join(","),
+      ...trains.map((t: any) => [
+        `"${(t.id || "").replace(/"/g, '""')}"`,
+        `"${(t.trainNo || "").replace(/"/g, '""')}"`,
+        `"${(t.customer ? t.customer.name : "Walk-in Passenger").replace(/"/g, '""')}"`,
+        `"${(t.customer ? t.customer.company : "UmrahCab Admin").replace(/"/g, '""')}"`,
+        `"${(t.leg || "").replace(/"/g, '""')}"`,
+        `"${(t.route || "").replace(/"/g, '""')}"`,
+        `"${(t.date ? formatScheduleDate(t.date) : "N/A").replace(/"/g, '""')}"`,
+        `"${(t.time ? formatTime12h(t.time) : "N/A").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `trains_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (trains.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Train #", "Passenger", "Company", "Type", "Station / City", "Date", "Time"];
+    const textRows = trains.map((t: any) => [
+      t.id,
+      t.trainNo || "",
+      t.customer ? t.customer.name : "Walk-in Passenger",
+      t.customer ? t.customer.company : "UmrahCab Admin",
+      t.leg || "",
+      t.route || "",
+      t.date ? formatScheduleDate(t.date) : "N/A",
+      t.time ? formatTime12h(t.time) : "N/A"
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `trains_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Train Passenger Directory") => {
+    if (trains.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = trains.map((t: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #db2777;">${t.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${t.trainNo || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <div style="font-weight: 700;">${t.customer ? t.customer.name : "Walk-in Passenger"}</div>
+          <div style="font-size: 10px; color: #64748b;">${t.customer ? t.customer.company : "UmrahCab Admin"}</div>
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${t.leg || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${t.route || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${t.date ? formatScheduleDate(t.date) : "N/A"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${t.time ? formatTime12h(t.time) : "N/A"}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #db2777; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #db2777; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Train Passenger Directory</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Train Records:</strong> ${trains.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Train #</th>
+                <th>Passenger</th>
+                <th>Type</th>
+                <th>Station / City</th>
+                <th>Date</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const fetchTrainsList = async () => {
     try {
       setLoading(true);
@@ -247,27 +417,21 @@ export default function TrainsDirectory() {
       {/* Export & Search Toolbar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px", marginTop: "10px" }}>
         <div style={{ display: "flex", gap: "8px" }}>
-          {["Copy", "CSV", "Excel", "PDF", "Print"].map((exportOpt, idx) => (
-            <button
-              key={idx}
-              onClick={() => showToast(`${exportOpt} exported successfully!`, "success")}
-              style={{
-                background: "#4f46e5",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.15s ease"
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}
-            >
-              {exportOpt}
-            </button>
-          ))}
+          <button onClick={handleCopy} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            Copy
+          </button>
+          <button onClick={handleExportCSV} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            CSV
+          </button>
+          <button onClick={handleExportExcel} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            Excel
+          </button>
+          <button onClick={() => handlePrint("Trains Directory - PDF Report")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            PDF
+          </button>
+          <button onClick={() => handlePrint("Train Passenger Directory")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            Print
+          </button>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

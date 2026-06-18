@@ -53,6 +53,160 @@ export default function UsersManagementPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleCopy = () => {
+    if (filteredUsers.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
+    const textRows = filteredUsers.map((u: any) => [
+      `#${u.id}`,
+      u.username || "",
+      u.user_type || "",
+      u.company ? u.company.name : "System Operator (No Company)",
+      u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied users list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (filteredUsers.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredUsers.map((u: any) => [
+        `"#${u.id}"`,
+        `"${(u.username || "").replace(/"/g, '""')}"`,
+        `"${(u.user_type || "").replace(/"/g, '""')}"`,
+        `"${(u.company ? u.company.name : "System Operator (No Company)").replace(/"/g, '""')}"`,
+        `"${u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (filteredUsers.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
+    const textRows = filteredUsers.map((u: any) => [
+      `#${u.id}`,
+      u.username || "",
+      u.user_type || "",
+      u.company ? u.company.name : "System Operator (No Company)",
+      u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "User Accounts Directory") => {
+    if (filteredUsers.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = filteredUsers.map((u: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #475569;">#${u.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${u.username || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${u.user_type || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${u.company ? u.company.name : "System Operator (No Company)"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #475569; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #475569; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Platform User Registrar</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Registered Users:</strong> ${filteredUsers.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Username</th>
+                <th>User Role Badge</th>
+                <th>Associated Company</th>
+                <th>Registered On</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const handleCreateUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername.trim()) {
@@ -173,8 +327,8 @@ export default function UsersManagementPage() {
       </div>
 
       {/* Filter and Search Section */}
-      <div className="matrix-search-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px" }}>
-        <div className="matrix-search-input-wrapper" style={{ flex: 1, maxWidth: "400px" }}>
+      <div className="matrix-search-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", flexWrap: "wrap", gap: "15px" }}>
+        <div className="matrix-search-input-wrapper" style={{ flex: 1, maxWidth: "400px", marginBottom: 0 }}>
           <i className="fas fa-search matrix-search-icon" style={{ color: "#475569" }}></i>
           <input
             type="text"
@@ -184,12 +338,30 @@ export default function UsersManagementPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {isFetching && (
-          <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
-            <div className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px", borderTopColor: "#475569" }}></div>
-            Updating...
-          </span>
-        )}
+        
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <button onClick={handleCopy} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            Copy
+          </button>
+          <button onClick={handleExportCSV} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            CSV
+          </button>
+          <button onClick={handleExportExcel} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            Excel
+          </button>
+          <button onClick={() => handlePrint("User Accounts Registry - PDF Report")} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            PDF
+          </button>
+          <button onClick={() => handlePrint("User Accounts Directory")} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            Print
+          </button>
+          {isFetching && (
+            <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}>
+              <div className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px", borderTopColor: "#475569" }}></div>
+              Updating...
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Users List Table */}

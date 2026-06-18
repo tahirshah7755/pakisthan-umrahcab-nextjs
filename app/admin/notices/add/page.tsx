@@ -2,7 +2,7 @@
 
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api } from "@/utils/api";
+import { useCreateNoticeMutation } from "@/store/api/noticesApi";
 
 function AddNoticeContent() {
   const router = useRouter();
@@ -12,7 +12,9 @@ function AddNoticeContent() {
   const [ntcTitle, setNtcTitle] = useState("");
   const [ntcPriority, setNtcPriority] = useState<"Low" | "Medium" | "High">("Medium");
   const [ntcContent, setNtcContent] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+
+  // RTK Query mutation hook
+  const [createNotice, { isLoading: submitting }] = useCreateNoticeMutation();
 
   // Toast notification
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -33,33 +35,36 @@ function AddNoticeContent() {
       return;
     }
     try {
-      setSubmitting(true);
       const newNotice = {
         title: ntcTitle,
-        date: new Date().toISOString().split("T")[0],
         priority: ntcPriority,
         target: targetGroup,
         content: ntcContent
       };
-      await api.createNotice(newNotice);
-      showToast("System announcement published successfully!", "success");
-      setNtcTitle(""); 
-      setNtcContent("");
-      setTimeout(() => {
-        router.push(`/admin/notices?tab=${targetGroup.toLowerCase()}`);
-      }, 1000);
-    } catch (err) {
+      
+      const res = await createNotice(newNotice).unwrap();
+      const isSuccess = res && (res.success || res.data || res.title || (typeof res === "object" && Object.keys(res).length > 0));
+      
+      if (isSuccess) {
+        showToast("System announcement published successfully!", "success");
+        setNtcTitle(""); 
+        setNtcContent("");
+        setTimeout(() => {
+          router.push(`/admin/notices?tab=${targetGroup.toLowerCase()}`);
+        }, 1000);
+      } else {
+        showToast("Failed to publish announcement notice.", "error");
+      }
+    } catch (err: any) {
       console.error(err);
-      showToast("Failed to publish announcement notice.", "error");
-    } finally {
-      setSubmitting(false);
+      showToast(err?.data?.message || "Failed to publish announcement notice.", "error");
     }
   };
 
   const isAgent = targetGroup === "Agent";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "25px", maxWidth: "900px", margin: "0 auto", padding: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
       {/* Toast Notification */}
       {toast.show && (
         <div style={{
@@ -87,7 +92,7 @@ function AddNoticeContent() {
         </div>
         <button 
           onClick={() => router.push(`/admin/notices?tab=${targetGroup.toLowerCase()}`)} 
-          style={{ background: "rgba(0,0,0,0.15)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+          style={{ background: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
         >
           <i className="fas fa-arrow-left"></i>
           <span>Back to Board</span>
@@ -188,7 +193,7 @@ export default function AddNoticePage() {
   return (
     <Suspense fallback={
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "250px" }}>
-        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #ea580c", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+        <div className="spinner" style={{ borderTopColor: "#ea580c" }}></div>
       </div>
     }>
       <AddNoticeContent />

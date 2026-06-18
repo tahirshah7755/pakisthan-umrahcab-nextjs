@@ -1,54 +1,94 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/utils/api";
+import { useGetAuditsQuery } from "@/store/api/auditsApi";
 
 interface AuditItem {
-  id: string;
-  user_session: string;
-  ip_location: string;
+  id: number | string;
+  custom_id?: string;
+  user_session?: string;
+  ip_location?: string;
   performed_action: string;
   created_at: string;
 }
 
 export default function AuditTrailPage() {
   const router = useRouter();
-  const [audits, setAudits] = useState<AuditItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
 
-  useEffect(() => {
-    const fetchAuditLogs = async () => {
-      try {
-        setLoading(true);
-        const audList = await api.getAudits();
-        if (audList) {
-          setAudits(audList.map((a: any) => ({
-            id: a.custom_id || `#AUD-${a.id}`,
-            user_session: a.user_session || "umrahcab",
-            ip_location: a.ip_location || "127.0.0.1",
-            performed_action: a.performed_action,
-            created_at: a.created_at || new Date().toISOString()
-          })));
-        } else {
-          // Mock data template fallback
-          setAudits([
-            { id: "#AUD-1002", user_session: "umrahcab", ip_location: "192.168.1.5", performed_action: "Unlocked Ledger balance for #CMP-1", created_at: "2026-05-23T14:06:00.000Z" },
-            { id: "#AUD-1001", user_session: "umrahcab", ip_location: "192.168.1.5", performed_action: "Registered new company Al-Saudia Travel", created_at: "2026-05-23T12:40:00.000Z" }
-          ]);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  // RTK Query hook with page params
+  const { data: auditsResponse, isLoading } = useGetAuditsQuery({ page: currentPage, perPage });
+
+  // Robust parsing of nested data structure
+  const paginator = auditsResponse && typeof auditsResponse === "object" && "data" in auditsResponse && auditsResponse.data && !Array.isArray(auditsResponse.data)
+    ? auditsResponse.data
+    : auditsResponse;
+
+  const auditsList: AuditItem[] = paginator && typeof paginator === "object" && Array.isArray(paginator.data)
+    ? paginator.data
+    : Array.isArray(paginator)
+      ? paginator
+      : [];
+
+  const totalPages = paginator && typeof paginator === "object" && paginator.last_page
+    ? paginator.last_page
+    : 1;
+
+  const totalItems = paginator && typeof paginator === "object" && paginator.total
+    ? paginator.total
+    : auditsList.length;
+
+  const formatTimestamp = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    try {
+      return dateStr.substring(0, 19).replace("T", " ");
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  // Professional sliding window pagination logic
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
       }
-    };
-
-    fetchAuditLogs();
-  }, []);
+    } else {
+      pages.push(1);
+      
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      
+      if (currentPage <= 2) {
+        end = 4;
+      } else if (currentPage >= totalPages - 1) {
+        start = totalPages - 3;
+      }
+      
+      if (start > 2) {
+        pages.push("ellipsis-start");
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (end < totalPages - 1) {
+        pages.push("ellipsis-end");
+      }
+      
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "25px", maxWidth: "1100px", margin: "0 auto", padding: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
       {/* Header Card */}
       <div className="form-header-card" style={{ background: "linear-gradient(135deg, #374151 0%, #1f2937 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
@@ -56,66 +96,156 @@ export default function AuditTrailPage() {
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>Track administrator dashboard log-ins, pricing updates, and booking registrations.</p>
         </div>
         <button 
-          onClick={() => router.push("/admin/extras")} 
+          onClick={() => router.push("/admin/hub")} 
           style={{ background: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
         >
           <i className="fas fa-arrow-left"></i>
-          <span>Back to Utilities</span>
+          <span>Back to Hub</span>
         </button>
       </div>
 
       {/* Main Table Panel */}
       <div className="table-card" style={{ background: "#ffffff", padding: "30px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
-        {loading ? (
+        {isLoading ? (
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
-            <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #374151", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+            <div className="spinner" style={{ borderTopColor: "#374151" }}></div>
+            <span style={{ marginLeft: "12px", color: "#64748b", fontWeight: "600" }}>Loading Audit Logs...</span>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="db-table" style={{ width: "100%" }}>
-              <thead>
-                <tr>
-                  <th>Audit ID</th>
-                  <th>User Session</th>
-                  <th>IP Location</th>
-                  <th>Performed Action</th>
-                  <th>Timestamp</th>
-                </tr>
-              </thead>
-              <tbody>
-                {audits.length === 0 ? (
+          <>
+            <div className="table-responsive">
+              <table className="db-table" style={{ width: "100%" }}>
+                <thead>
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8" }}>
-                      No audit log records found in the database.
-                    </td>
+                    <th>Audit ID</th>
+                    <th>User Session</th>
+                    <th>IP Location</th>
+                    <th>Performed Action</th>
+                    <th>Timestamp</th>
                   </tr>
-                ) : (
-                  audits.map((a) => (
-                    <tr key={a.id}>
-                      <td style={{ fontWeight: 700 }}>{a.id}</td>
-                      <td style={{ fontWeight: 600 }}>{a.user_session}</td>
-                      <td>{a.ip_location}</td>
-                      <td style={{ 
-                        color: a.performed_action.includes("Unlocked") ? "#10b981" : 
-                               a.performed_action.includes("Registered") ? "#3b82f6" : "#1e293b", 
-                        fontWeight: "600" 
-                      }}>
-                        {a.performed_action}
+                </thead>
+                <tbody>
+                  {auditsList.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8" }}>
+                        No audit log records found in the database.
                       </td>
-                      <td>{a.created_at.substring(0, 19).replace("T", " ")}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    auditsList.map((a) => (
+                      <tr key={a.id}>
+                        <td style={{ fontWeight: 700 }}>{a.custom_id || `#AUD-${a.id}`}</td>
+                        <td style={{ fontWeight: 600 }}>{a.user_session || "umrahcab"}</td>
+                        <td>{a.ip_location || "127.0.0.1"}</td>
+                        <td style={{ 
+                          color: a.performed_action.includes("Unlocked") ? "#10b981" : 
+                                 a.performed_action.includes("Registered") ? "#3b82f6" : "#1e293b", 
+                          fontWeight: "600" 
+                        }}>
+                          {a.performed_action}
+                        </td>
+                        <td>{formatTimestamp(a.created_at)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {!isLoading && totalPages > 1 && (
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                marginTop: "20px", padding: "20px 0 0 0", borderTop: "1px solid #e2e8f0"
+              }}>
+                <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>
+                  Showing <strong style={{ color: "#334155" }}>{((currentPage - 1) * perPage) + 1}</strong> to <strong style={{ color: "#334155" }}>{Math.min(currentPage * perPage, totalItems)}</strong> of <strong style={{ color: "#334155" }}>{totalItems}</strong> entries
+                </span>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      height: "38px", padding: "0 14px", background: currentPage === 1 ? "#f8fafc" : "#ffffff",
+                      border: "1px solid #cbd5e1", borderRadius: "6px", cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      color: currentPage === 1 ? "#94a3b8" : "#475569", fontWeight: "600", fontSize: "13px",
+                      display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s"
+                    }}
+                    className="pagination-btn"
+                  >
+                    <i className="fas fa-chevron-left" style={{ fontSize: "10px" }}></i>
+                    <span>Prev</span>
+                  </button>
+                  
+                  {/* Page Numbers */}
+                  {getPageNumbers().map((p, idx) => {
+                    if (p === "ellipsis-start" || p === "ellipsis-end") {
+                      return (
+                        <span 
+                          key={`ellipsis-${idx}`} 
+                          style={{ padding: "0 10px", color: "#94a3b8", fontWeight: "600", fontSize: "14px" }}
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    
+                    const isPageActive = currentPage === p;
+                    return (
+                      <button
+                        key={`page-${p}`}
+                        onClick={() => setCurrentPage(Number(p))}
+                        style={{
+                          height: "38px", width: "38px",
+                          background: isPageActive ? "#15803d" : "#ffffff",
+                          color: isPageActive ? "#ffffff" : "#475569",
+                          border: isPageActive ? "1px solid #15803d" : "1px solid #cbd5e1", 
+                          borderRadius: "6px", cursor: "pointer",
+                          fontWeight: "600", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center",
+                          transition: "all 0.2s"
+                        }}
+                        className={`pagination-number-btn ${isPageActive ? "active" : ""}`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                  
+                  {/* Next Button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      height: "38px", padding: "0 14px", background: currentPage === totalPages ? "#f8fafc" : "#ffffff",
+                      border: "1px solid #cbd5e1", borderRadius: "6px", cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      color: currentPage === totalPages ? "#94a3b8" : "#475569", fontWeight: "600", fontSize: "13px",
+                      display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s"
+                    }}
+                    className="pagination-btn"
+                  >
+                    <span>Next</span>
+                    <i className="fas fa-chevron-right" style={{ fontSize: "10px" }}></i>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
-
+      
+      {/* Dynamic CSS styles for Pagination Buttons Hover effects */}
       <style>{`
-        @keyframes spin { 
-          0% { transform: rotate(0deg); } 
-          100% { transform: rotate(360deg); } 
+        .pagination-btn:not(:disabled):hover {
+          background-color: #f1f5f9 !important;
+          border-color: #94a3b8 !important;
+          color: #1e293b !important;
+        }
+        .pagination-number-btn:not(.active):hover {
+          background-color: #f1f5f9 !important;
+          border-color: #94a3b8 !important;
+          color: #1e293b !important;
         }
       `}</style>
     </div>

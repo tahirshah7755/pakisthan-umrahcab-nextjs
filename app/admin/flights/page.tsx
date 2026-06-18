@@ -45,6 +45,176 @@ export default function FlightsDirectory() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleCopy = () => {
+    if (flights.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["ID", "Flight #", "Passenger", "Associated Company", "Type", "Port / City", "Date", "Time"];
+    const textRows = flights.map((f: any) => [
+      f.custom_id || `#FLT-${f.id}`,
+      f.flightNo || "",
+      f.customer ? f.customer.name : "Walk-in Passenger",
+      f.customer && f.customer.company ? f.customer.company : "",
+      f.leg || "",
+      f.route || "",
+      formatDateString(f.date),
+      formatTimeString(f.time)
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied flights to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (flights.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Flight #", "Passenger", "Associated Company", "Type", "Port / City", "Date", "Time"];
+    const csvContent = [
+      headers.join(","),
+      ...flights.map((f: any) => [
+        `"${(f.custom_id || `#FLT-${f.id}`).replace(/"/g, '""')}"`,
+        `"${(f.flightNo || "").replace(/"/g, '""')}"`,
+        `"${(f.customer ? f.customer.name : "Walk-in Passenger").replace(/"/g, '""')}"`,
+        `"${(f.customer && f.customer.company ? f.customer.company : "").replace(/"/g, '""')}"`,
+        `"${(f.leg || "").replace(/"/g, '""')}"`,
+        `"${(f.route || "").replace(/"/g, '""')}"`,
+        `"${formatDateString(f.date).replace(/"/g, '""')}"`,
+        `"${formatTimeString(f.time).replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `flights_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (flights.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Flight #", "Passenger", "Associated Company", "Type", "Port / City", "Date", "Time"];
+    const textRows = flights.map((f: any) => [
+      f.custom_id || `#FLT-${f.id}`,
+      f.flightNo || "",
+      f.customer ? f.customer.name : "Walk-in Passenger",
+      f.customer && f.customer.company ? f.customer.company : "",
+      f.leg || "",
+      f.route || "",
+      formatDateString(f.date),
+      formatTimeString(f.time)
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `flights_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Flight Passenger Directory") => {
+    if (flights.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = flights.map((f: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0284c7;">${f.custom_id || `#FLT-${f.id}`}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${f.flightNo || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <div style="font-weight: 700;">${f.customer ? f.customer.name : "Walk-in Passenger"}</div>
+          ${f.customer && f.customer.company ? `<div style="font-size: 10px; color: #64748b;">${f.customer.company}</div>` : ""}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${f.leg || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${f.route || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${formatDateString(f.date)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${formatTimeString(f.time)}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0284c7; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #0284c7; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Flight Passenger Directory</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Flights:</strong> ${flights.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Flight #</th>
+                <th>Passenger</th>
+                <th>Type</th>
+                <th>Port / City</th>
+                <th>Date</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const fetchFlightsList = async () => {
     try {
       setLoading(true);
@@ -265,25 +435,21 @@ export default function FlightsDirectory() {
       {/* Export & Search Toolbar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px", marginTop: "10px" }}>
         <div style={{ display: "flex", gap: "8px" }}>
-          {["Copy", "CSV", "Excel", "PDF", "Print"].map((exportOpt, idx) => (
-            <button
-              key={idx}
-              onClick={() => showToast(`${exportOpt} exported successfully!`, "success")}
-              style={{
-                background: "#2563eb",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: "pointer",
-                boxShadow: "0 2px 4px rgba(37,99,235,0.2)"
-              }}
-            >
-              {exportOpt}
-            </button>
-          ))}
+          <button onClick={handleCopy} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", boxShadow: "0 2px 4px rgba(37,99,235,0.2)" }}>
+            Copy
+          </button>
+          <button onClick={handleExportCSV} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", boxShadow: "0 2px 4px rgba(37,99,235,0.2)" }}>
+            CSV
+          </button>
+          <button onClick={handleExportExcel} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", boxShadow: "0 2px 4px rgba(37,99,235,0.2)" }}>
+            Excel
+          </button>
+          <button onClick={() => handlePrint("Flight Directory - PDF Report")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", boxShadow: "0 2px 4px rgba(37,99,235,0.2)" }}>
+            PDF
+          </button>
+          <button onClick={() => handlePrint("Flight Passenger Directory")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", boxShadow: "0 2px 4px rgba(37,99,235,0.2)" }}>
+            Print
+          </button>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

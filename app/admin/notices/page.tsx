@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api } from "@/utils/api";
+import { useGetNoticesQuery } from "@/store/api/noticesApi";
 
 interface NoticeItem {
-  id: string;
+  id: string | number;
+  custom_id?: string;
   title: string;
   date: string;
   priority: "Low" | "Medium" | "High";
@@ -19,71 +20,19 @@ function NoticesContent() {
   const initialTab = searchParams.get("tab") === "agent" ? "Agent" : "Admin";
 
   const [activeTab, setActiveTab] = useState<"Admin" | "Agent">(initialTab);
-  const [notices, setNotices] = useState<NoticeItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Toast notification
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
-    show: false,
-    message: "",
-    type: "success",
-  });
+  // RTK Query hook fetching notices by target
+  const { data: noticesResponse, isLoading } = useGetNoticesQuery(activeTab);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
-  };
-
-  const fetchNotices = async () => {
-    try {
-      setLoading(true);
-      const notList = await api.getNotices();
-      if (notList) {
-        setNotices(notList.map((n: any) => ({
-          id: n.custom_id || `NTC-${n.id}`,
-          title: n.title,
-          date: n.date || new Date().toISOString().split("T")[0],
-          priority: n.priority || "Medium",
-          target: n.target || "Admin",
-          content: n.content
-        })));
-      } else {
-        // Fallback default announcements
-        setNotices([
-          { id: "NTC-101", title: "Umrah Route Maintenance Scheduled", date: "2026-05-25", priority: "High", target: "Admin", content: "Main database server and booking logs will undergo system maintenance from 02:00 AM to 04:00 AM UTC. Please finalize all pending vouchers before this period." },
-          { id: "NTC-102", title: "New Transport Fleet Booking Guide", date: "2026-05-24", priority: "Medium", target: "Agent", content: "We have updated the active inventory allocation rules for Staria and GMC classes. Please review the updated fleet policies page under Utilities before dispatching bookings." },
-        ]);
-      }
-    } catch (err) {
-      console.error(err);
-      showToast("Error loading announcements list", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotices();
-  }, []);
-
-  const filteredNotices = notices.filter((n) => n.target === activeTab);
+  // Parse response list
+  const noticesList: NoticeItem[] = Array.isArray(noticesResponse)
+    ? noticesResponse
+    : (noticesResponse && typeof noticesResponse === "object" && Array.isArray((noticesResponse as any).data)
+        ? (noticesResponse as any).data
+        : []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "25px", maxWidth: "1000px", margin: "0 auto", padding: "10px" }}>
-      {/* Toast Notification */}
-      {toast.show && (
-        <div style={{
-          position: "fixed", top: "20px", right: "20px", zIndex: 9999,
-          background: toast.type === "success" ? "#10b981" : "#ef4444",
-          color: "#ffffff", padding: "12px 24px", borderRadius: "8px",
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", fontWeight: "600",
-          fontSize: "14px", display: "flex", alignItems: "center", gap: "10px",
-        }}>
-          <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
-          <span>{toast.message}</span>
-        </div>
-      )}
-
+    <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
       {/* Dynamic Header Banner */}
       <div className="form-header-card" style={{ 
         background: activeTab === "Agent" ? "linear-gradient(135deg, #ea580c 0%, #f97316 100%)" : "linear-gradient(135deg, #ca8a04 0%, #eab308 100%)",
@@ -107,11 +56,11 @@ function NoticesContent() {
             <span>Create Announcement</span>
           </button>
           <button 
-            onClick={() => router.push("/admin/extras")} 
-            style={{ background: "rgba(0, 0, 0, 0.15)", color: "#ffffff", border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+            onClick={() => router.push("/admin/hub")} 
+            style={{ background: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
           >
             <i className="fas fa-arrow-left"></i>
-            <span>Back to Utilities</span>
+            <span>Back to Hub</span>
           </button>
         </div>
       </div>
@@ -148,17 +97,17 @@ function NoticesContent() {
 
       {/* Notices Stream Panel */}
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        {loading ? (
+        {isLoading ? (
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
-            <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: `4px solid ${activeTab === "Agent" ? "#ea580c" : "#ca8a04"}`, borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+            <div className="spinner" style={{ borderTopColor: activeTab === "Agent" ? "#ea580c" : "#ca8a04" }}></div>
           </div>
-        ) : filteredNotices.length === 0 ? (
+        ) : noticesList.length === 0 ? (
           <div className="form-card" style={{ background: "#ffffff", padding: "50px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)", textAlign: "center", color: "#64748b" }}>
             <i className="fas fa-folder-open" style={{ fontSize: "40px", color: "#cbd5e1", marginBottom: "15px", display: "block" }}></i>
             <span style={{ fontSize: "14px" }}>No active announcements published on this board.</span>
           </div>
         ) : (
-          filteredNotices.map((n) => (
+          noticesList.map((n) => (
             <div 
               key={n.id} 
               className="form-card" 
@@ -179,20 +128,13 @@ function NoticesContent() {
               </div>
               <p style={{ fontSize: "14px", color: "#475569", lineHeight: "1.6", margin: "0 0 15px 0" }}>{n.content}</p>
               <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "12px", fontSize: "12px", color: "#94a3b8", display: "flex", justifyContent: "space-between" }}>
-                <span>Broadcast ID: <strong style={{ color: "#475569" }}>{n.id}</strong></span>
+                <span>Broadcast ID: <strong style={{ color: "#475569" }}>{n.custom_id || `NTC-${n.id}`}</strong></span>
                 <span>Published: <strong style={{ color: "#475569" }}>{n.date}</strong></span>
               </div>
             </div>
           ))
         )}
       </div>
-
-      <style>{`
-        @keyframes spin { 
-          0% { transform: rotate(0deg); } 
-          100% { transform: rotate(360deg); } 
-        }
-      `}</style>
     </div>
   );
 }
@@ -201,7 +143,7 @@ export default function NoticesPage() {
   return (
     <Suspense fallback={
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "250px" }}>
-        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #ea580c", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+        <div className="spinner" style={{ borderTopColor: "#ea580c" }}></div>
       </div>
     }>
       <NoticesContent />

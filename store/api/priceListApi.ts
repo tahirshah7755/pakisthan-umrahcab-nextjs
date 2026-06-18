@@ -13,11 +13,26 @@ export const priceListApi = apiSlice.injectEndpoints({
       },
       providesTags: ["PriceList"],
     }),
+    createPriceList: builder.mutation({
+      query: (pkg) => ({
+        url: `/price-list`,
+        method: "POST",
+        body: pkg,
+      }),
+      invalidatesTags: ["PriceList"],
+    }),
     updatePriceList: builder.mutation({
       query: ({ id, ...prices }) => ({
         url: `/price-list/${id}`,
         method: "PUT",
         body: prices,
+      }),
+      invalidatesTags: ["PriceList"],
+    }),
+    deletePriceList: builder.mutation({
+      query: (id) => ({
+        url: `/price-list/${id}`,
+        method: "DELETE",
       }),
       invalidatesTags: ["PriceList"],
     }),
@@ -34,6 +49,8 @@ export const priceListApi = apiSlice.injectEndpoints({
 
 export const {
   useGetPriceListQuery,
+  useCreatePriceListMutation,
   useUpdatePriceListMutation,
+  useDeletePriceListMutation,
   useApplyBulkPriceListMutation,
 } = priceListApi;

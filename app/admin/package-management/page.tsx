@@ -1,8 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGetPriceListQuery } from "@/store/api/priceListApi";
+import { 
+  useGetPriceListQuery,
+  useCreatePriceListMutation,
+  useDeletePriceListMutation
+} from "@/store/api/priceListApi";
 
 // Helper to translate route dynamically to Urdu mapping
 const translateToUrdu = (route: string) => {
@@ -29,26 +33,118 @@ const generateRouteCode = (route: string) => {
 export default function PackageManagementPage() {
   const router = useRouter();
   const { data: routesData, isLoading } = useGetPriceListQuery(undefined);
+  
+  const [createPriceList] = useCreatePriceListMutation();
+  const [deletePriceList] = useDeletePriceListMutation();
 
-  const routes = Array.isArray(routesData)
-    ? routesData
-    : (routesData && typeof routesData === "object" && Array.isArray((routesData as any).data) ? (routesData as any).data : []);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRoute, setNewRoute] = useState("");
+
+  // Toast notification state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const handleCreateRouteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoute.trim()) {
+      showToast("Please enter a route name.", "error");
+      return;
+    }
+    try {
+      await createPriceList({
+        route: newRoute.trim(),
+        sedan_price: 300,
+        sedan_dates: "2026-06-01 to 2026-08-31",
+        suv_price: 700,
+        suv_dates: "2026-06-01 to 2026-08-31",
+        van_price: 500,
+        van_dates: "2026-06-01 to 2026-08-31",
+        coach_price: 1200,
+        coach_dates: "2026-06-01 to 2026-08-31",
+      }).unwrap();
+      
+      showToast("New route package added successfully!", "success");
+      setNewRoute("");
+      setShowAddModal(false);
+    } catch (err: any) {
+      console.error(err);
+      showToast(err?.data?.message || "Failed to add route package.", "error");
+    }
+  };
+
+  const handleDeleteRoute = async (id: string, routeName: string) => {
+    if (!confirm(`Are you sure you want to delete route "${routeName}"?`)) {
+      return;
+    }
+    try {
+      await deletePriceList(parseInt(id)).unwrap();
+      showToast(`Route "${routeName}" deleted successfully!`, "success");
+    } catch (err: any) {
+      console.error(err);
+      showToast(err?.data?.message || "Failed to delete route.", "error");
+    }
+  };
+
+  let routes: any[] = [];
+  if (routesData) {
+    if (Array.isArray(routesData)) {
+      routes = routesData;
+    } else if (typeof routesData === "object") {
+      const rootData = (routesData as any).data;
+      if (Array.isArray(rootData)) {
+        routes = rootData;
+      } else if (rootData && Array.isArray(rootData.data)) {
+        routes = rootData.data;
+      }
+    }
+  }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "25px", maxWidth: "1000px", margin: "0 auto", padding: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
+      {/* Toast Notification */}
+      {toast.show && (
+        <div style={{
+          position: "fixed", top: "20px", right: "20px", zIndex: 9999,
+          background: toast.type === "success" ? "#10b981" : "#ef4444",
+          color: "#ffffff", padding: "12px 24px", borderRadius: "8px",
+          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", fontWeight: "600",
+          fontSize: "14px", display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
       {/* Header Card */}
       <div className="form-header-card" style={{ background: "linear-gradient(135deg, #065f46 0%, #059669 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>Route Trip Packages</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>Setup standard transportation routes, codes, and target statuses.</p>
         </div>
-        <button 
-          onClick={() => router.push("/admin/extras")} 
-          style={{ background: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-        >
-          <i className="fas fa-arrow-left"></i>
-          <span>Back to Utilities</span>
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button 
+            onClick={() => setShowAddModal(true)} 
+            style={{ background: "#ffffff", color: "#059669", border: "none", borderRadius: "6px", padding: "10px 18px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <i className="fas fa-plus"></i>
+            <span>Add Route Package</span>
+          </button>
+          <button 
+            onClick={() => router.push("/admin/hub")} 
+            style={{ background: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <i className="fas fa-arrow-left"></i>
+            <span>Back to Hub</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Table Card */}
@@ -68,12 +164,13 @@ export default function PackageManagementPage() {
                   <th>Urdu Mapping</th>
                   <th>Unique Code</th>
                   <th>Package Status</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {routes.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                    <td colSpan={6} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
                       No routes registered in the system.
                     </td>
                   </tr>
@@ -95,6 +192,15 @@ export default function PackageManagementPage() {
                           Core Route
                         </span>
                       </td>
+                      <td style={{ textAlign: "right" }}>
+                        <button 
+                          onClick={() => handleDeleteRoute(item.id, item.route)}
+                          title="Delete Route"
+                          style={{ background: "#fee2e2", border: "none", borderRadius: "6px", color: "#dc2626", width: "32px", height: "32px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                        >
+                          <i className="fas fa-trash-can" style={{ fontSize: "14px" }}></i>
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -103,6 +209,63 @@ export default function PackageManagementPage() {
           </div>
         )}
       </div>
+
+      {/* Add Route Package Modal */}
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+        }}>
+          <div className="form-card" style={{ width: "100%", maxWidth: "500px", margin: "20px", borderTop: "6px solid #059669", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1e293b", margin: 0 }}>
+                <i className="fas fa-route" style={{ marginRight: "8px", color: "#059669" }}></i> Add New Route Package
+              </h3>
+              <button onClick={() => setShowAddModal(false)} style={{ background: "transparent", border: "none", fontSize: "18px", cursor: "pointer", color: "#94a3b8" }}>
+                &times;
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateRouteSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label className="form-label">Route Name *</label>
+                <div className="form-input-wrapper">
+                  <i className="fas fa-map-pin form-icon" style={{ color: "#059669" }}></i>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Jeddah Airport To Makkah Hotel"
+                    value={newRoute}
+                    onChange={(e) => setNewRoute(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <small style={{ color: "#64748b", display: "block", marginTop: "5px" }}>
+                  Example format: <strong>From City To To City</strong> (e.g. Makkah Hotel To Madinah Hotel)
+                </small>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{
+                    background: "transparent", color: "#64748b", border: "1px solid #cbd5e1",
+                    borderRadius: "6px", padding: "8px 20px", fontSize: "13px", fontWeight: "600", cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-submit" style={{ background: "linear-gradient(135deg, #059669 0%, #047857 100%)", width: "auto" }}>
+                  Add Package
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

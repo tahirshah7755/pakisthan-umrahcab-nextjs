@@ -51,6 +51,174 @@ export default function PaymentsPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleCopy = () => {
+    if (paginatedPayments.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["Ref ID", "Company", "Date", "Payment Method", "Transaction Ref", "Deposited Amount", "Currency", "Audit Status"];
+    const textRows = paginatedPayments.map((p: any) => [
+      p.custom_id || `PAY-${p.id}`,
+      p.company || "",
+      p.date ? new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+      p.method || "",
+      p.transaction_ref || "",
+      p.amount || 0,
+      p.currency || "SAR",
+      p.status || "Pending"
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied payments list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (paginatedPayments.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Ref ID", "Company", "Date", "Payment Method", "Transaction Ref", "Deposited Amount", "Currency", "Audit Status"];
+    const csvContent = [
+      headers.join(","),
+      ...paginatedPayments.map((p: any) => [
+        `"${(p.custom_id || `PAY-${p.id}`).replace(/"/g, '""')}"`,
+        `"${(p.company || "").replace(/"/g, '""')}"`,
+        `"${p.date ? new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : ""}"`,
+        `"${(p.method || "").replace(/"/g, '""')}"`,
+        `"${(p.transaction_ref || "").replace(/"/g, '""')}"`,
+        p.amount || 0,
+        `"${(p.currency || "SAR").replace(/"/g, '""')}"`,
+        `"${(p.status || "Pending").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `payments_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (paginatedPayments.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Ref ID", "Company", "Date", "Payment Method", "Transaction Ref", "Deposited Amount", "Currency", "Audit Status"];
+    const textRows = paginatedPayments.map((p: any) => [
+      p.custom_id || `PAY-${p.id}`,
+      p.company || "",
+      p.date ? new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+      p.method || "",
+      p.transaction_ref || "",
+      p.amount || 0,
+      p.currency || "SAR",
+      p.status || "Pending"
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `payments_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Corporate Payments Audit Ledger") => {
+    if (paginatedPayments.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = paginatedPayments.map((p: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0d9488;">${p.custom_id || `PAY-${p.id}`}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #334155;">${p.company || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${p.date ? new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <div>${p.method || ""}</div>
+          ${p.transaction_ref ? `<div style="font-size: 10px; color: #64748b;">Ref: ${p.transaction_ref}</div>` : ""}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: ${p.amount < 0 ? "#dc2626" : "#059669"};">${fmt(p.amount, p.currency)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${p.status || "Pending"}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d9488; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #0d9488; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Payments Ledger Registry</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Transactions:</strong> ${paginatedPayments.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Ref ID</th>
+                <th>Company</th>
+                <th>Date</th>
+                <th>Payment Method</th>
+                <th style="text-align: right;">Deposited Amount</th>
+                <th>Audit Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // RTK Queries
   const { data: paymentsData, isLoading, isFetching } = useGetPaymentsQuery({
     page: currentPage,
@@ -314,11 +482,21 @@ export default function PaymentsPage() {
       <div className="table-card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap", gap: "10px" }}>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            {["Copy", "CSV", "Excel", "PDF", "Print"].map((btn) => (
-              <button key={btn} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                {btn}
-              </button>
-            ))}
+            <button onClick={handleCopy} style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Copy
+            </button>
+            <button onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              CSV
+            </button>
+            <button onClick={handleExportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Excel
+            </button>
+            <button onClick={() => handlePrint("Payments Registry - PDF Audit Report")} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              PDF
+            </button>
+            <button onClick={() => handlePrint("Corporate Payments Audit Ledger")} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Print
+            </button>
             {isFetching && (
               <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
                 <div className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px", borderTopColor: "#0d9488" }}></div>

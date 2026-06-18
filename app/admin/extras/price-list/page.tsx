@@ -7,6 +7,8 @@ import {
   useGetPriceListQuery,
   useUpdatePriceListMutation,
   useApplyBulkPriceListMutation,
+  useCreatePriceListMutation,
+  useDeletePriceListMutation,
 } from "@/store/api/priceListApi";
 
 interface PriceCell {
@@ -85,6 +87,52 @@ export default function PriceListMatrix() {
 
   const [updatePriceList, { isLoading: isUpdating }] = useUpdatePriceListMutation();
   const [applyBulkPriceList, { isLoading: isApplyingBulk }] = useApplyBulkPriceListMutation();
+  const [createPriceList] = useCreatePriceListMutation();
+  const [deletePriceList] = useDeletePriceListMutation();
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRoute, setNewRoute] = useState("");
+
+  const handleCreateRouteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoute.trim()) {
+      showToast("Please enter a route name.", "error");
+      return;
+    }
+    try {
+      await createPriceList({
+        route: newRoute.trim(),
+        sedan_price: 300,
+        sedan_dates: "2026-06-01 to 2026-08-31",
+        suv_price: 700,
+        suv_dates: "2026-06-01 to 2026-08-31",
+        van_price: 500,
+        van_dates: "2026-06-01 to 2026-08-31",
+        coach_price: 1200,
+        coach_dates: "2026-06-01 to 2026-08-31",
+      }).unwrap();
+      
+      showToast("New route package added successfully!", "success");
+      setNewRoute("");
+      setShowAddModal(false);
+    } catch (err: any) {
+      console.error(err);
+      showToast(err?.data?.message || "Failed to add route package.", "error");
+    }
+  };
+
+  const handleDeleteRoute = async (id: string, routeName: string) => {
+    if (!confirm(`Are you sure you want to delete route "${routeName}"?`)) {
+      return;
+    }
+    try {
+      await deletePriceList(parseInt(id)).unwrap();
+      showToast(`Route "${routeName}" deleted successfully!`, "success");
+    } catch (err: any) {
+      console.error(err);
+      showToast(err?.data?.message || "Failed to delete route.", "error");
+    }
+  };
 
   useEffect(() => {
     if (!priceListData) return;
@@ -295,6 +343,10 @@ export default function PriceListMatrix() {
           <p>Update standard pricing for all vehicle models and route packages.</p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
+          <button onClick={() => setShowAddModal(true)} className="form-btn-back" style={{ background: "#10b981", color: "#ffffff", fontWeight: "700", border: "none" }}>
+            <i className="fas fa-plus"></i>
+            <span>Add Route Package</span>
+          </button>
           <button onClick={savePricingMatrix} disabled={isUpdating} className="form-btn-back" style={{ background: "#ffffff", color: "#1d4ed8", fontWeight: "700", border: "1px solid #cbd5e1" }}>
             <i className="fas fa-floppy-disk" style={{ color: "#1d4ed8" }}></i>
             <span>{isUpdating ? "Saving Matrix..." : "Save Matrix Pricing"}</span>
@@ -386,10 +438,19 @@ export default function PriceListMatrix() {
                   <tr key={pkg.id}>
                     {/* Sticky leftmost column */}
                     <td>
-                      <div className="package-name-cell">
-                        <span className="package-english" style={{ color: "#2563eb" }}>{pkg.englishName}</span>
-                        <span className="package-short" style={{ background: "#e5e7eb", color: "#4b5563", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", display: "inline-block", width: "fit-content" }}>{pkg.shortCode}</span>
-                        <span className="package-urdu">{pkg.urduName}</span>
+                      <div className="package-name-cell" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", width: "100%" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span className="package-english" style={{ color: "#2563eb", fontWeight: "700" }}>{pkg.englishName}</span>
+                          <span className="package-short" style={{ background: "#e5e7eb", color: "#4b5563", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: "700", display: "inline-block", width: "fit-content" }}>{pkg.shortCode}</span>
+                          <span className="package-urdu">{pkg.urduName}</span>
+                        </div>
+                        <button 
+                          onClick={() => handleDeleteRoute(pkg.id, pkg.englishName)}
+                          title="Delete Route"
+                          style={{ background: "#fee2e2", border: "none", borderRadius: "6px", color: "#dc2626", width: "26px", height: "26px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                        >
+                          <i className="fas fa-trash-can" style={{ fontSize: "12px" }}></i>
+                        </button>
                       </div>
                     </td>
 
@@ -569,6 +630,62 @@ export default function PriceListMatrix() {
           </>
         )}
       </div>
+      {/* Add Route Package Modal */}
+      {showAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+        }}>
+          <div className="form-card" style={{ width: "100%", maxWidth: "500px", margin: "20px", borderTop: "6px solid #2563eb", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1e293b", margin: 0 }}>
+                <i className="fas fa-route" style={{ marginRight: "8px", color: "#2563eb" }}></i> Add New Route Package
+              </h3>
+              <button onClick={() => setShowAddModal(false)} style={{ background: "transparent", border: "none", fontSize: "18px", cursor: "pointer", color: "#94a3b8" }}>
+                &times;
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateRouteSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <label className="form-label">Route Name *</label>
+                <div className="form-input-wrapper">
+                  <i className="fas fa-map-pin form-icon" style={{ color: "#2563eb" }}></i>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. Jeddah Airport To Makkah Hotel"
+                    value={newRoute}
+                    onChange={(e) => setNewRoute(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <small style={{ color: "#64748b", display: "block", marginTop: "5px" }}>
+                  Example format: <strong>From City To To City</strong> (e.g. Makkah Hotel To Madinah Hotel)
+                </small>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{
+                    background: "transparent", color: "#64748b", border: "1px solid #cbd5e1",
+                    borderRadius: "6px", padding: "8px 20px", fontSize: "13px", fontWeight: "600", cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-submit" style={{ background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)", width: "auto" }}>
+                  Add Package
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

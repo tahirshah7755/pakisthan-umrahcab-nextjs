@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/utils/api";
 
 export default function BulkDownloadsPage() {
   const router = useRouter();
@@ -24,23 +25,73 @@ export default function BulkDownloadsPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  const handleBulkExport = (e: React.FormEvent) => {
+  const handleBulkExport = async (e: React.FormEvent) => {
     e.preventDefault();
-    setExportProgress(0);
-    const interval = setInterval(() => {
-      setExportProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          showToast("Export download completed successfully!", "success");
-          return -1;
+    if (!dlBookings && !dlCustomers && !dlPayments) {
+      showToast("Please select at least one database table to export!", "error");
+      return;
+    }
+
+    setExportProgress(10);
+    try {
+      const backupData: any = {
+        metadata: {
+          timestamp: new Date().toISOString(),
+          version: "2.0",
+          tablesExported: []
         }
-        return p + 20;
-      });
-    }, 300);
+      };
+
+      if (dlBookings) {
+        setExportProgress(30);
+        const bookings = await api.getBookings();
+        backupData.bookings = bookings;
+        backupData.metadata.tablesExported.push("bookings");
+      }
+
+      if (dlCustomers) {
+        setExportProgress(60);
+        const customersResponse = await api.getCustomers();
+        const customers = Array.isArray(customersResponse) 
+          ? customersResponse 
+          : (customersResponse?.data || []);
+        backupData.customers = customers;
+        backupData.metadata.tablesExported.push("customers");
+      }
+
+      if (dlPayments) {
+        setExportProgress(80);
+        const payments = await api.getPayments();
+        backupData.payments = payments;
+        backupData.metadata.tablesExported.push("payments");
+      }
+
+      setExportProgress(95);
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `umrahcab_backup_${new Date().toISOString().split("T")[0]}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setExportProgress(100);
+      setTimeout(() => {
+        setExportProgress(-1);
+        showToast("Backup archive generated and downloaded successfully!", "success");
+      }, 500);
+
+    } catch (error) {
+      console.error(error);
+      setExportProgress(-1);
+      showToast("Failed to compile bulk export backup data.", "error");
+    }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "25px", maxWidth: "900px", margin: "0 auto", padding: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
       {/* Toast Notification */}
       {toast.show && (
         <div style={{
@@ -62,11 +113,11 @@ export default function BulkDownloadsPage() {
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>Select directories to compile and download as consolidated database backups.</p>
         </div>
         <button 
-          onClick={() => router.push("/admin/extras")} 
+          onClick={() => router.push("/admin/hub")} 
           style={{ background: "rgba(255,255,255,0.1)", color: "#ffffff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "6px", padding: "10px 18px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
         >
           <i className="fas fa-arrow-left"></i>
-          <span>Back to Utilities</span>
+          <span>Back to Hub</span>
         </button>
       </div>
 

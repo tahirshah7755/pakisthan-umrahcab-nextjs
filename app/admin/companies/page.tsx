@@ -37,6 +37,160 @@ export default function CompaniesPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleCopy = () => {
+    if (filteredCompanies.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["ID", "Company Name", "Contact Email", "Phone", "Address"];
+    const textRows = filteredCompanies.map((c: any) => [
+      c.id,
+      c.name || "",
+      c.email || "",
+      c.phone || "",
+      c.address || ""
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied companies list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (filteredCompanies.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Company Name", "Contact Email", "Phone", "Address"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredCompanies.map((c: any) => [
+        `"${(c.id || "").replace(/"/g, '""')}"`,
+        `"${(c.name || "").replace(/"/g, '""')}"`,
+        `"${(c.email || "").replace(/"/g, '""')}"`,
+        `"${(c.phone || "").replace(/"/g, '""')}"`,
+        `"${(c.address || "").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `companies_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (filteredCompanies.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Company Name", "Contact Email", "Phone", "Address"];
+    const textRows = filteredCompanies.map((c: any) => [
+      c.id,
+      c.name || "",
+      c.email || "",
+      c.phone || "",
+      c.address || ""
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `companies_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Corporate Account Statement") => {
+    if (filteredCompanies.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = filteredCompanies.map((c: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${c.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-weight: 600;">${c.name || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.email || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.phone || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.address || ""}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #2563eb; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Corporate Registry</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Companies:</strong> ${filteredCompanies.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Company Name</th>
+                <th>Contact Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   useEffect(() => {
     const loadCompanies = async () => {
       try {
@@ -133,24 +287,21 @@ export default function CompaniesPage() {
         {/* Toolbar Row */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
           <div style={{ display: "flex", gap: "6px" }}>
-            {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
-              <button
-                key={fmt}
-                onClick={() => showToast(`${fmt} Export Triggered!`, "success")}
-                style={{
-                  background: "#2563eb",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "6px",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer"
-                }}
-              >
-                {fmt}
-              </button>
-            ))}
+            <button onClick={handleCopy} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              Copy
+            </button>
+            <button onClick={handleExportCSV} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              CSV
+            </button>
+            <button onClick={handleExportExcel} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              Excel
+            </button>
+            <button onClick={() => handlePrint("Corporate Registry - PDF Statement")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              PDF
+            </button>
+            <button onClick={() => handlePrint("Corporate Registry Statement")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+              Print
+            </button>
           </div>
           
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

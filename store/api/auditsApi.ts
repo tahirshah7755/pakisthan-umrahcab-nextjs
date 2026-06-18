@@ -3,7 +3,7 @@ import { apiSlice } from "./apiSlice";
 export const auditsApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getAudits: builder.query({
-      query: () => `/audits`,
+      query: ({ page = 1, perPage = 10 } = {}) => `/audits?page=${page}&per_page=${perPage}`,
       providesTags: ["Audits"],
     }),
     logAudit: builder.mutation({

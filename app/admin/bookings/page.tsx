@@ -37,6 +37,179 @@ export default function BookingsList() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleCopy = () => {
+    if (filteredBookings.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["Booking ID", "Customer", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle", "Price (SR)", "Status"];
+    const textRows = filteredBookings.map((b: any) => [
+      b.id,
+      b.customerName || "Guest",
+      b.pickupDate || "",
+      b.pickupTime || "",
+      b.pickupLocation || "",
+      b.dropoffLocation || "",
+      b.vehicle || "",
+      b.finalPrice || 0,
+      b.status || ""
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied bookings list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (filteredBookings.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Booking ID", "Customer", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle", "Price (SR)", "Status"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredBookings.map((b: any) => [
+        `"${(b.id || "").replace(/"/g, '""')}"`,
+        `"${(b.customerName || "Guest").replace(/"/g, '""')}"`,
+        `"${(b.pickupDate || "").replace(/"/g, '""')}"`,
+        `"${(b.pickupTime || "").replace(/"/g, '""')}"`,
+        `"${(b.pickupLocation || "").replace(/"/g, '""')}"`,
+        `"${(b.dropoffLocation || "").replace(/"/g, '""')}"`,
+        `"${(b.vehicle || "").replace(/"/g, '""')}"`,
+        b.finalPrice || 0,
+        `"${(b.status || "").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `bookings_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (filteredBookings.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Booking ID", "Customer", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle", "Price (SR)", "Status"];
+    const textRows = filteredBookings.map((b: any) => [
+      b.id,
+      b.customerName || "Guest",
+      b.pickupDate || "",
+      b.pickupTime || "",
+      b.pickupLocation || "",
+      b.dropoffLocation || "",
+      b.vehicle || "",
+      b.finalPrice || 0,
+      b.status || ""
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `bookings_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Transportation Bookings Registry") => {
+    if (filteredBookings.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = filteredBookings.map((b: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1f6f8b;">${b.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${b.customerName || "Guest"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <div>${b.pickupDate || ""}</div>
+          <div style="font-size: 10px; color: #64748b;">${b.pickupTime || ""}</div>
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.pickupLocation} &rarr; ${b.dropoffLocation}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.vehicle || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: #10b981;">SR ${b.finalPrice.toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.status}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f6f8b; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #1f6f8b; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Transportation Bookings Registrar</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Bookings:</strong> ${filteredBookings.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Pickup Date/Time</th>
+                <th>Route (From &rarr; To)</th>
+                <th>Vehicle</th>
+                <th style="text-align: right;">Final Price</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -161,8 +334,8 @@ export default function BookingsList() {
       </div>
 
       {/* Search and Filters */}
-      <div className="matrix-search-card" style={{ padding: "20px" }}>
-        <div className="matrix-search-input-wrapper">
+      <div className="matrix-search-card" style={{ padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px" }}>
+        <div className="matrix-search-input-wrapper" style={{ flex: 1, minWidth: "250px", marginBottom: 0 }}>
           <i className="fas fa-search matrix-search-icon"></i>
           <input
             type="text"
@@ -171,6 +344,24 @@ export default function BookingsList() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={handleCopy} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            Copy
+          </button>
+          <button onClick={handleExportCSV} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            CSV
+          </button>
+          <button onClick={handleExportExcel} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            Excel
+          </button>
+          <button onClick={() => handlePrint("Transportation Bookings Registry - PDF Report")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            PDF
+          </button>
+          <button onClick={() => handlePrint("Transportation Bookings Registry")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            Print
+          </button>
         </div>
       </div>
 

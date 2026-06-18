@@ -55,6 +55,187 @@ export default function BalancePage() {
   const [editingRemarks, setEditingRemarks] = useState<number | null>(null);
   const [tempRemarks, setTempRemarks] = useState("");
 
+  // Toast notifications
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const handleCopy = () => {
+    if (rows.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["ID", "Company Name", "Status", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
+    const textRows = rows.map((item: any) => [
+      item.id,
+      item.company || "",
+      item.status || "",
+      item.last_inv_amt || 0,
+      item.total_business || 0,
+      item.total_rec_vw || 0,
+      item.total_rec_pw || 0,
+      item.company_remarks || ""
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied balance summary to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (rows.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Company Name", "Status", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((item: any) => [
+        item.id,
+        `"${(item.company || "").replace(/"/g, '""')}"`,
+        `"${(item.status || "").replace(/"/g, '""')}"`,
+        item.last_inv_amt || 0,
+        item.total_business || 0,
+        item.total_rec_vw || 0,
+        item.total_rec_pw || 0,
+        `"${(item.company_remarks || "").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `balance_statement_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (rows.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Company Name", "Status", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
+    const textRows = rows.map((item: any) => [
+      item.id,
+      item.company || "",
+      item.status || "",
+      item.last_inv_amt || 0,
+      item.total_business || 0,
+      item.total_rec_vw || 0,
+      item.total_rec_pw || 0,
+      item.company_remarks || ""
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `balance_statement_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Balance Statement Report") => {
+    if (rows.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = rows.map((item: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">#${item.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e5cff;">${item.company || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.status || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${fmt(item.last_inv_amt)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${fmt(item.total_business)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${fmt(item.total_rec_vw)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #f97316;">${fmt(item.total_rec_pw)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${item.company_remarks || ""}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e5cff; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #1e5cff; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Balance Statement Registry</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Companies:</strong> ${rows.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Company Name</th>
+                <th>Status</th>
+                <th style="text-align: right;">Last Inv Amt</th>
+                <th style="text-align: right;">Total Business</th>
+                <th style="text-align: right;">Total Rec (VW)</th>
+                <th style="text-align: right;">Total Rec (PW)</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const { data: response, isLoading, isFetching } = useGetBalanceSummaryQuery(
     { company: filterCompany || undefined, tab: activeTab }
   );
@@ -125,6 +306,20 @@ export default function BalancePage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Toast Notification */}
+      {toast.show && (
+        <div style={{
+          position: "fixed", top: "20px", right: "20px", zIndex: 9999,
+          background: toast.type === "success" ? "#10b981" : "#ef4444",
+          color: "#ffffff", padding: "12px 24px", borderRadius: "8px",
+          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", fontWeight: "600",
+          fontSize: "14px", display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #334155 100%)" }}>
         <div>
@@ -195,11 +390,21 @@ export default function BalancePage() {
         {/* Toolbar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap", gap: "10px" }}>
           <div style={{ display: "flex", gap: "8px" }}>
-            {["Copy", "CSV", "Excel", "PDF", "Print"].map((btn) => (
-              <button key={btn} style={{ background: btn === "Copy" ? "#3b82f6" : btn === "Excel" ? "#10b981" : btn === "PDF" ? "#ef4444" : btn === "Print" ? "#6366f1" : "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                {btn}
-              </button>
-            ))}
+            <button onClick={handleCopy} style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Copy
+            </button>
+            <button onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              CSV
+            </button>
+            <button onClick={handleExportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Excel
+            </button>
+            <button onClick={() => handlePrint("Balance Statement PDF Report")} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              PDF
+            </button>
+            <button onClick={() => handlePrint("Balance Statement Report")} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Print
+            </button>
             {isFetching && (
               <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
                 <div className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px", borderTopColor: "#334155" }}></div>

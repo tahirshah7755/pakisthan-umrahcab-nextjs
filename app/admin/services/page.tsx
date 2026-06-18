@@ -46,6 +46,181 @@ export default function ServicesDirectory() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleCopy = () => {
+    if (services.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["ID", "Service Date", "Customer", "Company", "Service Type", "Pickup", "Status", "Total (SAR)", "Cash (Driver)"];
+    const textRows = services.map((svc: any) => [
+      svc.id,
+      svc.date ? formatScheduleDate(svc.date) : "N/A",
+      svc.customerName || "Guest",
+      svc.companyName || "Walk-in",
+      svc.type || "",
+      svc.pickup || "N/A",
+      svc.status || "Active",
+      svc.basePrice || 0,
+      svc.driverCash || 0
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied services list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (services.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Service Date", "Customer", "Company", "Service Type", "Pickup", "Status", "Total (SAR)", "Cash (Driver)"];
+    const csvContent = [
+      headers.join(","),
+      ...services.map((svc: any) => [
+        `"${(svc.id || "").replace(/"/g, '""')}"`,
+        `"${(svc.date ? formatScheduleDate(svc.date) : "N/A").replace(/"/g, '""')}"`,
+        `"${(svc.customerName || "Guest").replace(/"/g, '""')}"`,
+        `"${(svc.companyName || "Walk-in").replace(/"/g, '""')}"`,
+        `"${(svc.type || "").replace(/"/g, '""')}"`,
+        `"${(svc.pickup || "N/A").replace(/"/g, '""')}"`,
+        `"${(svc.status || "Active").replace(/"/g, '""')}"`,
+        svc.basePrice || 0,
+        svc.driverCash || 0
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `services_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (services.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Service Date", "Customer", "Company", "Service Type", "Pickup", "Status", "Total (SAR)", "Cash (Driver)"];
+    const textRows = services.map((svc: any) => [
+      svc.id,
+      svc.date ? formatScheduleDate(svc.date) : "N/A",
+      svc.customerName || "Guest",
+      svc.companyName || "Walk-in",
+      svc.type || "",
+      svc.pickup || "N/A",
+      svc.status || "Active",
+      svc.basePrice || 0,
+      svc.driverCash || 0
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `services_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Supplementary Services Directory") => {
+    if (services.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = services.map((svc: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #7c3aed;">${svc.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${svc.date ? formatScheduleDate(svc.date) : "N/A"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <div style="font-weight: 700;">${svc.customerName || "Guest"}</div>
+          <div style="font-size: 10px; color: #64748b;">${svc.companyName || "Walk-in"}</div>
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #7c3aed;">${svc.type || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${svc.pickup || "N/A"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${svc.status || "Active"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right;">SAR ${svc.basePrice.toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: #0ea5e9;">SAR ${svc.driverCash.toFixed(2)}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #7c3aed; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #7c3aed; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Supplementary Services Registrar</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Services:</strong> ${services.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Service Date</th>
+                <th>Customer</th>
+                <th>Service Type</th>
+                <th>Pickup</th>
+                <th>Status</th>
+                <th style="text-align: right;">Total (SAR)</th>
+                <th style="text-align: right;">Cash (Driver)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const fetchServicesList = async () => {
     try {
       setLoading(true);
@@ -299,27 +474,21 @@ export default function ServicesDirectory() {
       {/* Export & Search Toolbar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px", marginTop: "10px" }}>
         <div style={{ display: "flex", gap: "8px" }}>
-          {["Copy", "CSV", "Excel", "PDF", "Print"].map((exportOpt, idx) => (
-            <button
-              key={idx}
-              onClick={() => showToast(`${exportOpt} exported successfully!`, "success")}
-              style={{
-                background: "#7c3aed",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.15s ease"
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "#6d28d9"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "#7c3aed"}
-            >
-              {exportOpt}
-            </button>
-          ))}
+          <button onClick={handleCopy} style={{ background: "#7c3aed", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#6d28d9"} onMouseLeave={(e) => e.currentTarget.style.background = "#7c3aed"}>
+            Copy
+          </button>
+          <button onClick={handleExportCSV} style={{ background: "#7c3aed", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#6d28d9"} onMouseLeave={(e) => e.currentTarget.style.background = "#7c3aed"}>
+            CSV
+          </button>
+          <button onClick={handleExportExcel} style={{ background: "#7c3aed", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#6d28d9"} onMouseLeave={(e) => e.currentTarget.style.background = "#7c3aed"}>
+            Excel
+          </button>
+          <button onClick={() => handlePrint("Services Directory - PDF Report")} style={{ background: "#7c3aed", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#6d28d9"} onMouseLeave={(e) => e.currentTarget.style.background = "#7c3aed"}>
+            PDF
+          </button>
+          <button onClick={() => handlePrint("Supplementary Services Directory")} style={{ background: "#7c3aed", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#6d28d9"} onMouseLeave={(e) => e.currentTarget.style.background = "#7c3aed"}>
+            Print
+          </button>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

@@ -49,7 +49,9 @@ export default function LedgersPage() {
     ? companiesData
     : (Array.isArray((companiesData as any)?.data) ? (companiesData as any).data : []);
 
-  const ledgersRaw = Array.isArray(ledgersData) ? ledgersData : [];
+  const ledgersRaw = Array.isArray(ledgersData)
+    ? ledgersData
+    : (Array.isArray((ledgersData as any)?.data) ? (ledgersData as any).data : []);
 
   // Filter logic
   const filteredLedgers = ledgersRaw.filter((item: any) => {

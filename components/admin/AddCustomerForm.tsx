@@ -360,7 +360,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
       {/* Toast Notification */}
       {toast.show && (
         <div style={{
@@ -376,7 +376,14 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       )}
 
       {/* Header Banner */}
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%)" }}>
+      <div className="form-header-card" style={{ 
+        background: "linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%)",
+        padding: "20px 30px", 
+        borderRadius: "12px", 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center"
+      }}>
         <div>
           <span style={{ fontSize: "11px", background: "rgba(255,255,255,0.15)", padding: "4px 10px", borderRadius: "12px", display: "inline-block", marginBottom: "8px", fontWeight: "600" }}>
             <i className="fas fa-layer-group" style={{ marginRight: "5px" }}></i> Unified Booking Engine
@@ -391,32 +398,56 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       </div>
 
       {/* Step Indicator Top Tracker */}
-      <div className="wizard-steps" style={{ marginTop: "10px" }}>
+      <div className="wizard-steps" style={{ marginTop: "10px", position: "relative" }}>
+        <div 
+          className="wizard-steps-progress" 
+          style={{ 
+            position: "absolute", 
+            top: "20px", 
+            left: "10%", 
+            height: "3px", 
+            background: "#b48a1d", 
+            zIndex: 1, 
+            width: `${((activeStep - 1) / 4) * 80}%`,
+            transition: "width 0.4s ease"
+          }} 
+        />
+        
         <div className={`step-item ${activeStep >= 1 ? "active" : ""} ${activeStep > 1 ? "completed" : ""}`}>
-          <div className="step-circle">1</div>
+          <div className="step-circle">
+            {activeStep > 1 ? <i className="fas fa-check" style={{ fontSize: "12px" }}></i> : "1"}
+          </div>
           <div className="step-label">Customer</div>
         </div>
         <div className={`step-item ${activeStep >= 2 ? "active" : ""} ${activeStep > 2 ? "completed" : ""}`}>
-          <div className="step-circle">2</div>
+          <div className="step-circle">
+            {activeStep > 2 ? <i className="fas fa-check" style={{ fontSize: "12px" }}></i> : "2"}
+          </div>
           <div className="step-label">Route Setup</div>
         </div>
         <div className={`step-item ${activeStep >= 3 ? "active" : ""} ${activeStep > 3 ? "completed" : ""}`}>
-          <div className="step-circle">3</div>
+          <div className="step-circle">
+            {activeStep > 3 ? <i className="fas fa-check" style={{ fontSize: "12px" }}></i> : "3"}
+          </div>
           <div className="step-label">Flight Details</div>
         </div>
         <div className={`step-item ${activeStep >= 4 ? "active" : ""} ${activeStep > 4 ? "completed" : ""}`}>
-          <div className="step-circle">4</div>
+          <div className="step-circle">
+            {activeStep > 4 ? <i className="fas fa-check" style={{ fontSize: "12px" }}></i> : "4"}
+          </div>
           <div className="step-label">Train Tickets</div>
         </div>
         <div className={`step-item ${activeStep >= 5 ? "active" : ""} ${activeStep > 5 ? "completed" : ""}`}>
-          <div className="step-circle">5</div>
+          <div className="step-circle">
+            {activeStep > 5 ? <i className="fas fa-check" style={{ fontSize: "12px" }}></i> : "5"}
+          </div>
           <div className="step-label">Hotel Booking</div>
         </div>
       </div>
 
       {/* Unified Form container */}
       <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
-        <div className="form-card" style={{ width: "100%", maxWidth: "900px", padding: "35px", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
+        <div className="form-card" style={{ width: "100%", padding: "35px", borderRadius: "16px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05)" }}>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             
             {/* ==================== TAB 1: CUSTOMER SETUP ==================== */}
@@ -935,6 +966,86 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           </form>
         </div>
       </div>
+
+      {/* Scoped CSS Styles for stepper tabs */}
+      <style>{`
+        .wizard-steps {
+          display: flex !important;
+          justify-content: space-between !important;
+          margin-bottom: 30px !important;
+          position: relative !important;
+          max-width: 100% !important;
+          width: 100% !important;
+          padding: 0 10px !important;
+        }
+        
+        .wizard-steps::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 20px !important;
+          left: 10% !important;
+          width: 80% !important;
+          height: 3px !important;
+          background: #cbd5e1 !important;
+          z-index: 1 !important;
+        }
+
+        .step-item {
+          position: relative !important;
+          z-index: 2 !important;
+          text-align: center !important;
+          flex: 1 !important;
+        }
+        
+        .step-circle {
+          width: 40px !important;
+          height: 40px !important;
+          border-radius: 50% !important;
+          background: #ffffff !important;
+          border: 3px solid #cbd5e1 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin: 0 auto 10px auto !important;
+          font-weight: 700 !important;
+          color: #94a3b8 !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+        }
+        
+        .step-item.active .step-circle {
+          border-color: #b48a1d !important;
+          background: #1e1e2d !important;
+          color: #b48a1d !important;
+          box-shadow: 0 0 0 6px rgba(180, 138, 29, 0.15) !important;
+          transform: scale(1.1);
+        }
+        
+        .step-item.completed .step-circle {
+          background: #b48a1d !important;
+          border-color: #b48a1d !important;
+          color: #ffffff !important;
+        }
+        
+        .step-label {
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #94a3b8 !important;
+          transition: color 0.3s ease !important;
+          margin-top: 5px !important;
+          white-space: nowrap !important;
+        }
+        
+        .step-item.active .step-label {
+          color: #1e1e2d !important;
+          font-weight: 700 !important;
+        }
+        
+        .step-item.completed .step-label {
+          color: #b48a1d !important;
+          font-weight: 700 !important;
+        }
+      `}</style>
     </div>
   );
 };

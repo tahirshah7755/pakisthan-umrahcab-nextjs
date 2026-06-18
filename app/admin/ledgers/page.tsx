@@ -142,6 +142,175 @@ export default function LedgersPage() {
     showToast(`Applied ${type} Quick Filter for last ${days} days!`, "success");
   };
 
+  const handleCopy = () => {
+    if (filteredLedgers.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["ID", "Ledger Code", "Company", "Date", "Debit (Dr)", "Credit (Cr)", "Balance", "Remarks"];
+    const rows = filteredLedgers.map((ld: any) => [
+      ld.id,
+      ld.custom_id || `LED-${ld.id}`,
+      ld.company || "",
+      ld.date ? new Date(ld.date).toLocaleDateString("en-GB") : "",
+      ld.debit || 0,
+      ld.credit || 0,
+      ld.balance || 0,
+      ld.description || ""
+    ]);
+    const text = [headers.join("\t"), ...rows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied ledger list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (filteredLedgers.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Ledger Code", "Company", "Date", "Debit (Dr)", "Credit (Cr)", "Balance", "Remarks"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredLedgers.map((ld: any) => [
+        ld.id,
+        `"${(ld.custom_id || `LED-${ld.id}`).replace(/"/g, '""')}"`,
+        `"${(ld.company || "").replace(/"/g, '""')}"`,
+        ld.date ? new Date(ld.date).toLocaleDateString("en-GB") : "",
+        ld.debit || 0,
+        ld.credit || 0,
+        ld.balance || 0,
+        `"${(ld.description || "").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `ledgers_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (filteredLedgers.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["ID", "Ledger Code", "Company", "Date", "Debit (Dr)", "Credit (Cr)", "Balance", "Remarks"];
+    const rows = filteredLedgers.map((ld: any) => [
+      ld.id,
+      ld.custom_id || `LED-${ld.id}`,
+      ld.company || "",
+      ld.date ? new Date(ld.date).toLocaleDateString("en-GB") : "",
+      ld.debit || 0,
+      ld.credit || 0,
+      ld.balance || 0,
+      ld.description || ""
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...rows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `ledgers_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Ledger Audit Report") => {
+    if (filteredLedgers.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = filteredLedgers.map((ld: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">#${ld.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #ea580c;">${ld.custom_id || `LED-${ld.id}`}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${ld.company || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ld.date ? new Date(ld.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${ld.debit > 0 ? fmt(ld.debit) : "--"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #059669;">${ld.credit > 0 ? fmt(ld.credit) : "--"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${fmt(ld.balance)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${ld.description || "—"}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ea580c; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #ea580c; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab Ledger Auditor Registry Statement</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Records:</strong> ${filteredLedgers.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Ledger Code</th>
+                <th>Company</th>
+                <th>Date</th>
+                <th style="text-align: right;">Debit (Dr)</th>
+                <th style="text-align: right;">Credit (Cr)</th>
+                <th style="text-align: right;">New Balance</th>
+                <th>Remarks / Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "10px" }}>
       {/* Toast Notification */}
@@ -182,9 +351,9 @@ export default function LedgersPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>Voucher Wise (VW)</span>
             <div style={{ display: "flex", gap: "6px" }}>
-              <button onClick={() => setQuickDateFilter("VW", 0)} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", background: "#f8fafc", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Today VW</button>
-              <button onClick={() => setQuickDateFilter("VW", 1)} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", background: "#f8fafc", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Yesterday VW</button>
-              <button onClick={() => setQuickDateFilter("VW", 7)} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", background: "#f8fafc", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Last 7 Days VW</button>
+              <button onClick={() => setQuickDateFilter("VW", 0)} className="quick-filter-btn">Today VW</button>
+              <button onClick={() => setQuickDateFilter("VW", 1)} className="quick-filter-btn">Yesterday VW</button>
+              <button onClick={() => setQuickDateFilter("VW", 7)} className="quick-filter-btn">Last 7 Days VW</button>
             </div>
           </div>
 
@@ -193,9 +362,9 @@ export default function LedgersPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>Pickup Wise (PW)</span>
             <div style={{ display: "flex", gap: "6px" }}>
-              <button onClick={() => setQuickDateFilter("PW", 0)} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", background: "#f8fafc", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Today PW</button>
-              <button onClick={() => setQuickDateFilter("PW", 1)} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", background: "#f8fafc", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Yesterday PW</button>
-              <button onClick={() => setQuickDateFilter("PW", 7)} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", background: "#f8fafc", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Last 7 Days PW</button>
+              <button onClick={() => setQuickDateFilter("PW", 0)} className="quick-filter-btn">Today PW</button>
+              <button onClick={() => setQuickDateFilter("PW", 1)} className="quick-filter-btn">Yesterday PW</button>
+              <button onClick={() => setQuickDateFilter("PW", 7)} className="quick-filter-btn">Last 7 Days PW</button>
             </div>
           </div>
         </div>
@@ -203,7 +372,7 @@ export default function LedgersPage() {
 
       {/* Advanced Filters */}
       <div className="filter-card">
-        <div className="filter-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+        <div className="filter-grid">
           <div>
             <label className="filter-label">Corporate Account</label>
             <div className="filter-input-wrapper">
@@ -248,55 +417,41 @@ export default function LedgersPage() {
           <div style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
             <button
               onClick={handleApplyFilters}
-              style={{
-                background: "linear-gradient(135deg, #c2410c 0%, #ea580c 100%)",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "6px",
-                height: "38px",
-                padding: "0 20px",
-                fontWeight: "600",
-                fontSize: "13px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                flex: 1,
-                justifyContent: "center"
-              }}
+              className="filter-btn-apply"
             >
               <i className="fas fa-filter"></i> Apply
             </button>
             <button
               onClick={handleResetFilters}
-              style={{
-                background: "#ffffff",
-                border: "1px solid #cbd5e1",
-                borderRadius: "6px",
-                height: "38px",
-                width: "38px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer"
-              }}
+              className="filter-btn-reset"
               title="Reset Filters"
             >
-              <i className="fas fa-sync-alt" style={{ color: "#64748b" }}></i>
+              <i className="fas fa-sync-alt"></i>
             </button>
           </div>
         </div>
       </div>
 
+
       {/* Table view card */}
       <div className="table-card" style={{ padding: 0, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap", gap: "10px" }}>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            {["Copy", "CSV", "Excel", "PDF", "Print"].map((btn) => (
-              <button key={btn} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-                {btn}
-              </button>
-            ))}
+            <button onClick={handleCopy} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Copy
+            </button>
+            <button onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              CSV
+            </button>
+            <button onClick={handleExportExcel} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Excel
+            </button>
+            <button onClick={() => handlePrint("Ledger Audit Report - PDF Statement")} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              PDF
+            </button>
+            <button onClick={() => handlePrint("Ledger Audit Report")} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+              Print
+            </button>
             {isFetching && (
               <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>
                 <div className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px", borderTopColor: "#ea580c" }}></div>

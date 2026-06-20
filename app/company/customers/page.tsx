@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 
 interface CustomerRecord {
@@ -13,6 +14,7 @@ interface CustomerRecord {
 }
 
 export default function CompanyCustomersPage() {
+  const router = useRouter();
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -109,7 +111,7 @@ export default function CompanyCustomersPage() {
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>List of customers associated with your corporate account.</p>
         </div>
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={() => router.push("/company/customers/add")}
           style={{ 
             background: "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", 
             color: "#0f172a", 

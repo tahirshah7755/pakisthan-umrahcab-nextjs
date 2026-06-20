@@ -16,6 +16,11 @@ interface BookingItem {
   discount: number;
   finalPrice: number;
   status: "Pending" | "Confirmed" | "Completed" | "Cancelled";
+  passengers?: string;
+  email?: string;
+  whatsapp?: string;
+  flightNo?: string;
+  notes?: string;
 }
 
 export default function BookingsList() {
@@ -24,8 +29,6 @@ export default function BookingsList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [selectedBooking, setSelectedBooking] = useState<BookingItem | null>(null);
-  const [editingBooking, setEditingBooking] = useState<BookingItem | null>(null);
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
     message: "",
@@ -210,70 +213,37 @@ export default function BookingsList() {
     printWindow.document.close();
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
+
   useEffect(() => {
-    async function loadData() {
-      try {
-        const data = await api.getBookings();
-        if (data) {
-          const mapped = data.map((b: any) => {
-            let uiStatus: "Pending" | "Confirmed" | "Completed" | "Cancelled" = "Pending";
-            if (b.status === "Active Dispatch") uiStatus = "Confirmed";
-            else if (b.status === "Confirmed Booking") uiStatus = "Confirmed";
-            else if (b.status === "Completed") uiStatus = "Completed";
-            else if (b.status === "Cancelled") uiStatus = "Cancelled";
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
-            return {
-              id: b.booking_code || b.id || "UCB-XXXX",
-              customerName: b.full_name || b.fullName || "Guest",
-              pickupDate: b.date,
-              pickupTime: b.time.substring(0, 5),
-              pickupLocation: b.pickup,
-              dropoffLocation: b.destination,
-              vehicle: b.car_type || b.carType,
-              priceBeforeDiscount: parseFloat(b.car_price || b.carPrice || 0),
-              discount: 0,
-              finalPrice: parseFloat(b.car_price || b.carPrice || 0),
-              status: uiStatus
-            };
-          });
-          setBookings(mapped);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  const handleUpdateBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingBooking) return;
+  const loadData = async () => {
     try {
-      let dbStatus = "Pending Check";
-      if (editingBooking.status === "Confirmed") dbStatus = "Confirmed Booking";
-      else if (editingBooking.status === "Completed") dbStatus = "Completed";
-      else if (editingBooking.status === "Cancelled") dbStatus = "Cancelled";
+      setLoading(true);
+      const response = await api.getBookings(debouncedSearch, currentPage, perPage);
+      if (response) {
+        let rawData = [];
+        if (response.data && Array.isArray(response.data)) {
+          rawData = response.data;
+          setTotalCount(response.total || response.data.length);
+          setTotalPages(response.last_page || 1);
+        } else if (Array.isArray(response)) {
+          rawData = response;
+          setTotalCount(response.length);
+          setTotalPages(1);
+        }
 
-      const updatedFields = {
-        date: editingBooking.pickupDate,
-        time: editingBooking.pickupTime,
-        car_price: editingBooking.finalPrice,
-        status: dbStatus,
-        pickup: editingBooking.pickupLocation,
-        destination: editingBooking.dropoffLocation,
-        full_name: editingBooking.customerName,
-      };
-
-      await api.updateBooking(editingBooking.id, updatedFields);
-      showToast("Booking updated successfully!", "success");
-      setEditingBooking(null);
-
-      // Reload
-      const data = await api.getBookings();
-      if (data) {
-        const mapped = data.map((b: any) => {
+        const mapped = rawData.map((b: any) => {
           let uiStatus: "Pending" | "Confirmed" | "Completed" | "Cancelled" = "Pending";
           if (b.status === "Active Dispatch") uiStatus = "Confirmed";
           else if (b.status === "Confirmed Booking") uiStatus = "Confirmed";
@@ -284,31 +254,35 @@ export default function BookingsList() {
             id: b.booking_code || b.id || "UCB-XXXX",
             customerName: b.full_name || b.fullName || "Guest",
             pickupDate: b.date,
-            pickupTime: b.time.substring(0, 5),
+            pickupTime: b.time ? b.time.substring(0, 5) : "",
             pickupLocation: b.pickup,
             dropoffLocation: b.destination,
             vehicle: b.car_type || b.carType,
             priceBeforeDiscount: parseFloat(b.car_price || b.carPrice || 0),
             discount: 0,
             finalPrice: parseFloat(b.car_price || b.carPrice || 0),
-            status: uiStatus
+            status: uiStatus,
+            passengers: b.passengers || "",
+            email: b.email || "",
+            whatsapp: b.whatsapp || "",
+            flightNo: b.flight_no || "",
+            notes: b.notes || "",
           };
         });
         setBookings(mapped);
       }
     } catch (err) {
       console.error(err);
-      showToast("Failed to update booking.", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredBookings = bookings.filter(
-    (b) =>
-      b.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.pickupLocation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.dropoffLocation.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    loadData();
+  }, [debouncedSearch, currentPage, perPage]);
+
+  const filteredBookings = bookings;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
@@ -365,9 +339,14 @@ export default function BookingsList() {
         </div>
       </div>
 
-      {/* Bookings Table */}
       <div className="table-card">
-        <div className="table-responsive">
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px", flexDirection: "column", gap: "12px" }}>
+            <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid var(--primary-color)", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+            <span style={{ fontSize: "14px", color: "var(--text-muted)", fontWeight: "500" }}>Loading bookings...</span>
+          </div>
+        ) : (
+          <div className="table-responsive">
           <table className="db-table">
             <thead>
               <tr>
@@ -418,7 +397,7 @@ export default function BookingsList() {
                   <td>
                     <div style={{ display: "flex", gap: "8px" }}>
                       <button
-                        onClick={() => setSelectedBooking(b)}
+                        onClick={() => router.push(`/admin/bookings/view?id=${b.id}`)}
                         title="View Details"
                         style={{
                           background: "#f1f5f9",
@@ -433,7 +412,7 @@ export default function BookingsList() {
                         <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                       </button>
                       <button
-                        onClick={() => setEditingBooking(b)}
+                        onClick={() => router.push(`/admin/bookings/edit?id=${b.id}`)}
                         title="Edit Booking"
                         style={{
                           background: "#f1f5f9",
@@ -469,142 +448,94 @@ export default function BookingsList() {
             </tbody>
           </table>
         </div>
+      )}
+
+        {/* Elegant Pagination Controls */}
+        <div 
+          style={{ 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center", 
+            marginTop: "20px", 
+            borderTop: "1px solid #f1f5f9", 
+            paddingTop: "15px",
+            flexWrap: "wrap",
+            gap: "15px"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "13px", color: "#64748b" }}>Show</span>
+            <select 
+              className="tool-date-input" 
+              value={perPage} 
+              onChange={(e) => {
+                setPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              style={{ width: "70px", padding: "4px 8px", height: "auto" }}
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span style={{ fontSize: "13px", color: "#64748b" }}>entries</span>
+          </div>
+
+          <span style={{ fontSize: "13px", color: "#64748b" }}>
+            Showing {totalCount === 0 ? 0 : ((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalCount)} of {totalCount} entries
+          </span>
+
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button 
+              className="form-btn-back" 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{ 
+                background: currentPage === 1 ? "#f1f5f9" : "var(--primary-color)", 
+                color: currentPage === 1 ? "#94a3b8" : "#ffffff", 
+                border: "none",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                padding: "6px 12px",
+                fontWeight: "600",
+                borderRadius: "6px",
+                margin: 0
+              }}
+            >
+              Previous
+            </button>
+            <span style={{ display: "flex", alignItems: "center", padding: "0 10px", fontSize: "13px", fontWeight: "700", color: "#334155" }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button 
+              className="form-btn-back" 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              style={{ 
+                background: (currentPage === totalPages || totalPages === 0) ? "#f1f5f9" : "var(--primary-color)", 
+                color: (currentPage === totalPages || totalPages === 0) ? "#94a3b8" : "#ffffff", 
+                border: "none",
+                cursor: (currentPage === totalPages || totalPages === 0) ? "not-allowed" : "pointer",
+                padding: "6px 12px",
+                fontWeight: "600",
+                borderRadius: "6px",
+                margin: 0
+              }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* View Booking Details Modal */}
-      {selectedBooking && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
-          <div className="form-card" style={{ width: "100%", maxWidth: "550px", margin: "20px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", position: "relative" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid var(--border-color)", paddingBottom: "15px" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary-color)" }}><i className="fas fa-file-invoice"></i> Booking Details ({selectedBooking.id})</h3>
-              <button onClick={() => setSelectedBooking(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>&times;</button>
-            </div>
-            
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-              <div>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Customer Name</span>
-                <span style={{ fontSize: "15px", fontWeight: "600" }}>{selectedBooking.customerName}</span>
-              </div>
-              <div>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Car/Vehicle Model</span>
-                <span style={{ fontSize: "15px", fontWeight: "600" }}>{selectedBooking.vehicle}</span>
-              </div>
-              <div>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Pickup Date</span>
-                <span style={{ fontSize: "15px", fontWeight: "600" }}>{selectedBooking.pickupDate}</span>
-              </div>
-              <div>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Pickup Time</span>
-                <span style={{ fontSize: "15px", fontWeight: "600" }}>{selectedBooking.pickupTime}</span>
-              </div>
-              <div style={{ gridColumn: "span 2" }}>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Route Mapping</span>
-                <span style={{ fontSize: "14px", fontWeight: "600" }}>{selectedBooking.pickupLocation} → {selectedBooking.dropoffLocation}</span>
-              </div>
-              <div>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Billing Value</span>
-                <span style={{ fontSize: "15px", fontWeight: "700", color: "var(--success-color)" }}>SR {selectedBooking.finalPrice.toFixed(2)}</span>
-              </div>
-              <div>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Tracking Status</span>
-                <span className={`status-pill ${selectedBooking.status.toLowerCase()}`}>{selectedBooking.status}</span>
-              </div>
-            </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", borderTop: "1px solid var(--border-color)", paddingTop: "15px" }}>
-              <button onClick={() => setSelectedBooking(null)} className="form-btn-back" style={{ background: "#f1f5f9", color: "#475569", width: "120px", justifyContent: "center" }}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Booking Modal */}
-      {editingBooking && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
-          <div className="form-card" style={{ width: "100%", maxWidth: "550px", margin: "20px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid var(--border-color)", paddingBottom: "15px" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary-color)" }}><i className="fas fa-pen-to-square"></i> Modify Transportation Booking ({editingBooking.id})</h3>
-              <button onClick={() => setEditingBooking(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>&times;</button>
-            </div>
-            
-            <form onSubmit={handleUpdateBooking} className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
-              <div className="form-group-full">
-                <label className="form-label">Customer Full Name *</label>
-                <div className="form-input-wrapper">
-                  <i className="fas fa-user form-icon"></i>
-                  <input type="text" className="form-input" value={editingBooking.customerName} onChange={(e) => setEditingBooking({...editingBooking, customerName: e.target.value})} required />
-                </div>
-              </div>
-              
-              <div>
-                <label className="form-label">Pickup Date *</label>
-                <div className="form-input-wrapper">
-                  <i className="fas fa-calendar form-icon"></i>
-                  <input type="date" className="form-input" value={editingBooking.pickupDate} onChange={(e) => setEditingBooking({...editingBooking, pickupDate: e.target.value})} required />
-                </div>
-              </div>
-              
-              <div>
-                <label className="form-label">Pickup Time *</label>
-                <div className="form-input-wrapper">
-                  <i className="fas fa-clock form-icon"></i>
-                  <input type="time" className="form-input" value={editingBooking.pickupTime} onChange={(e) => setEditingBooking({...editingBooking, pickupTime: e.target.value})} required />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Pickup Location *</label>
-                <div className="form-input-wrapper">
-                  <i className="fas fa-location-dot form-icon"></i>
-                  <input type="text" className="form-input" value={editingBooking.pickupLocation} onChange={(e) => setEditingBooking({...editingBooking, pickupLocation: e.target.value})} required />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Dropoff Destination *</label>
-                <div className="form-input-wrapper">
-                  <i className="fas fa-location-arrow form-icon"></i>
-                  <input type="text" className="form-input" value={editingBooking.dropoffLocation} onChange={(e) => setEditingBooking({...editingBooking, dropoffLocation: e.target.value})} required />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Fare Price (SR) *</label>
-                <div className="form-input-wrapper">
-                  <i className="fas fa-money-bill-wave form-icon"></i>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    className="form-input" 
-                    value={editingBooking.finalPrice || ""} 
-                    onChange={(e) => setEditingBooking({...editingBooking, finalPrice: parseFloat(e.target.value) || 0})} 
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="form-label">Booking Status *</label>
-                <div className="form-input-wrapper">
-                  <i className="fas fa-info-circle form-icon"></i>
-                  <select className="form-input form-select" value={editingBooking.status} onChange={(e) => setEditingBooking({...editingBooking, status: e.target.value as any})} required>
-                    <option value="Pending">Pending</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-                  <i className="fas fa-chevron-down select-arrow"></i>
-                </div>
-              </div>
-
-              <div className="form-group-full" style={{ display: "flex", gap: "12px", marginTop: "15px" }}>
-                <button type="submit" className="btn-submit" style={{ flex: 1 }}>Save Changes</button>
-                <button type="button" onClick={() => setEditingBooking(null)} className="form-btn-back" style={{ flex: 1, justifyContent: "center", background: "#f1f5f9", color: "#475569" }}>Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

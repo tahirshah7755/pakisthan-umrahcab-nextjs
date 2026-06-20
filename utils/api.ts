@@ -51,9 +51,18 @@ async function request(endpoint: string, options: RequestInit = {}) {
 
 export const api = {
   // Bookings
-  async getBookings(search?: string) {
-    const data = await request(`/bookings${search ? `?search=${encodeURIComponent(search)}` : ""}`);
-    return data || [];
+  async getBookings(search?: string, page?: number, perPage?: number) {
+    const q = new URLSearchParams();
+    if (search) q.append("search", search);
+    if (page !== undefined) q.append("page", String(page));
+    if (perPage !== undefined) q.append("per_page", String(perPage));
+    const data = await request(`/bookings?${q.toString()}`);
+    return data;
+  },
+
+  async getBooking(id: string) {
+    const data = await request(`/bookings/${id}`);
+    return data;
   },
 
   async createBooking(bookingData: any) {
@@ -423,9 +432,14 @@ export const api = {
     return data || null;
   },
 
-  async getCompanyBookings(search?: string) {
-    const data = await request(`/company-panel/bookings${search ? `?search=${encodeURIComponent(search)}` : ""}`);
-    return data || [];
+  async getCompanyBookings(search?: string, page?: number, perPage?: number, filter?: string) {
+    const q = new URLSearchParams();
+    if (search) q.append("search", search);
+    if (page !== undefined) q.append("page", String(page));
+    if (perPage !== undefined) q.append("per_page", String(perPage));
+    if (filter) q.append("filter", filter);
+    const data = await request(`/company-panel/bookings?${q.toString()}`);
+    return data;
   },
 
   async getCompanyCustomers(search?: string) {

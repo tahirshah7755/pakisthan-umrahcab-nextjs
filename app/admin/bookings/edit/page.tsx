@@ -1,11 +1,87 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 
-export default function AddNewBooking() {
+function parseNotes(notesStr: string, carPrice: number) {
+  const result = {
+    tripPackage: "",
+    vehicle: "",
+    adults: 0,
+    childrenCount: 0,
+    timingStatus: "Confirmed",
+    bags: 0,
+    priceBeforeDiscount: carPrice,
+    discount: 0,
+    discountReason: "",
+    tafweejRequired: false,
+    cashToReceive: 0,
+    internalNotes: "",
+    externalNotes: "",
+  };
+
+  if (!notesStr) return result;
+
+  const parts = notesStr.split(" | ");
+  let matchedCount = 0;
+
+  parts.forEach((part) => {
+    const cleanPart = part.trim();
+    if (cleanPart.startsWith("Route:")) {
+      result.tripPackage = cleanPart.substring("Route:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Vehicle:")) {
+      result.vehicle = cleanPart.substring("Vehicle:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Passengers:")) {
+      const pStr = cleanPart.substring("Passengers:".length).trim();
+      result.adults = parseInt(pStr) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Timing Status:")) {
+      result.timingStatus = cleanPart.substring("Timing Status:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Bags:")) {
+      result.bags = parseInt(cleanPart.substring("Bags:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Price Before Discount:")) {
+      result.priceBeforeDiscount = parseFloat(cleanPart.substring("Price Before Discount:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Discount:")) {
+      result.discount = parseFloat(cleanPart.substring("Discount:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Discount Reason:")) {
+      result.discountReason = cleanPart.substring("Discount Reason:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Tafweej Required:")) {
+      result.tafweejRequired = cleanPart.substring("Tafweej Required:".length).trim().toLowerCase() === "yes";
+      matchedCount++;
+    } else if (cleanPart.startsWith("Cash to Receive:")) {
+      result.cashToReceive = parseFloat(cleanPart.substring("Cash to Receive:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Internal Notes:")) {
+      result.internalNotes = cleanPart.substring("Internal Notes:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("External Notes:")) {
+      result.externalNotes = cleanPart.substring("External Notes:".length).trim();
+      matchedCount++;
+    }
+  });
+
+  if (matchedCount < 2) {
+    result.externalNotes = notesStr;
+  }
+
+  return result;
+}
+
+function BookingEditContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const targetId = searchParams.get("id") || "";
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Form State
   const [customer, setCustomer] = useState("");
@@ -14,9 +90,10 @@ export default function AddNewBooking() {
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
   const [timingStatus, setTimingStatus] = useState("Confirmed");
-  const [adults, setAdults] = useState(0);
-  const [childrenCount, setChildrenCount] = useState(0);
-  const [bags, setBags] = useState(0);
+  const [bookingStatus, setBookingStatus] = useState("Pending");
+  const [adults, setAdults] = useState<number | "">(0);
+  const [childrenCount, setChildrenCount] = useState<number | "">(0);
+  const [bags, setBags] = useState<number | "">(0);
   const [vehicle, setVehicle] = useState("");
   const [tripPackage, setTripPackage] = useState("");
   const [priceBeforeDiscount, setPriceBeforeDiscount] = useState(0);
@@ -32,33 +109,51 @@ export default function AddNewBooking() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCustomerObj, setSelectedCustomerObj] = useState<any>(null);
 
-  // Loaded Customers List State (scoped to company)
+  // Pagination & Scrolling state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Loaded Customers List State
   const [customersList, setCustomersList] = useState<any[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
-
-  // Add Customer Modal States
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newCustName, setNewCustName] = useState("");
-  const [newCustMobile, setNewCustMobile] = useState("");
-  const [newCustEmail, setNewCustEmail] = useState("");
-  const [newCustPassport, setNewCustPassport] = useState("");
-  const [newCustNotes, setNewCustNotes] = useState("");
-  const [savingCustomer, setSavingCustomer] = useState(false);
 
   // Dynamic Dropdown Lists from API
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
   const [packagesList, setPackagesList] = useState<string[]>([]);
 
+  // Add Customer Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [savingCustomer, setSavingCustomer] = useState(false);
+  const [newCustName, setNewCustName] = useState("");
+  const [newCustCompany, setNewCustCompany] = useState("");
+  const [newCustMobile, setNewCustMobile] = useState("");
+  const [newCustEmail, setNewCustEmail] = useState("");
+  const [newCustPassport, setNewCustPassport] = useState("");
+  const [newCustNotes, setNewCustNotes] = useState("");
+  const [companiesList, setCompaniesList] = useState<any[]>([]);
+
+  // Toast notification
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
   // Fetch dynamic vehicles and packages lists on mount
   useEffect(() => {
     async function loadDynamicDropdowns() {
       try {
-        const [fleetData, priceListData] = await Promise.all([
+        const [fleetData, priceListData, companiesData] = await Promise.all([
           api.getFleet(),
           api.getPriceList(),
+          api.getCompanies()
         ]);
 
-        // Map fleet models dynamically
         if (Array.isArray(fleetData) && fleetData.length > 0) {
           setVehiclesList(fleetData.map((f: any) => f.model));
         } else if (fleetData && Array.isArray(fleetData.data) && fleetData.data.length > 0) {
@@ -77,7 +172,6 @@ export default function AddNewBooking() {
           ]);
         }
 
-        // Map price list routes/packages dynamically
         if (Array.isArray(priceListData) && priceListData.length > 0) {
           setPackagesList(priceListData.map((p: any) => p.route));
         } else if (priceListData && Array.isArray(priceListData.data) && priceListData.data.length > 0) {
@@ -90,6 +184,7 @@ export default function AddNewBooking() {
             "4 in 1 Tour: Kiswah Factory + Makkah Museum + Hira Museum + Holy Quran Museum (ان ۱ ٹور)",
           ]);
         }
+        setCompaniesList(companiesData || []);
       } catch (err) {
         console.error("Failed to load vehicle/package dynamic lists:", err);
       }
@@ -97,48 +192,117 @@ export default function AddNewBooking() {
     loadDynamicDropdowns();
   }, []);
 
-  // Toast State
-  const [toast, setToast] = useState<{
-    show: boolean;
-    message: string;
-    type: "success" | "error";
-  }>({
-    show: false,
-    message: "",
-    type: "success",
-  });
+  // Fetch target booking details
+  useEffect(() => {
+    const loadBookingData = async () => {
+      if (!targetId) return;
+      try {
+        setLoading(true);
+        const b = await api.getBooking(targetId);
+        if (b) {
+          setPickupDate(b.date || "");
+          setPickupTime(b.time ? b.time.substring(0, 5) : "");
+          setPickupLocation(b.pickup || "");
+          setDropoffLocation(b.destination || "");
 
-  // Fetch company-scoped customers list
+          // Map status
+          let uiStatus = "Pending";
+          if (b.status === "Active Dispatch" || b.status === "Confirmed Booking") uiStatus = "Confirmed";
+          else if (b.status === "Completed") uiStatus = "Completed";
+          else if (b.status === "Cancelled") uiStatus = "Cancelled";
+          setBookingStatus(uiStatus);
+
+          const parsed = parseNotes(b.notes, parseFloat(b.car_price || 0));
+          setTripPackage(parsed.tripPackage);
+          setVehicle(parsed.vehicle || b.car_type || "");
+          setTimingStatus(parsed.timingStatus);
+          setAdults(parsed.adults || 0);
+          setChildrenCount(parsed.childrenCount || 0);
+          setBags(parsed.bags || 0);
+          setPriceBeforeDiscount(parsed.priceBeforeDiscount || parseFloat(b.car_price || 0));
+          setDiscount(parsed.discount || 0);
+          setCashToReceive(parsed.cashToReceive || 0);
+          setDiscountReason(parsed.discountReason || "");
+          setTafweejRequired(parsed.tafweejRequired || false);
+          setInternalNotes(parsed.internalNotes || "");
+          setExternalNotes(parsed.externalNotes || "");
+
+          // Get customer details
+          if (b.customer_id) {
+            setCustomer(String(b.customer_id));
+            const custRes = await api.getCustomer(b.customer_id);
+            if (custRes) {
+              setSelectedCustomerObj(custRes);
+            }
+          }
+        } else {
+          showToast("Booking profile not found.", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Error loading booking details.", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBookingData();
+  }, [targetId]);
+
+  // Reset pagination to page 1 whenever the search keyword changes
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+  }, [customerSearch]);
+
+  // Unified Debounced & Paginated API Fetch hook
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       try {
         setLoadingCustomers(true);
-        const data = await api.getCompanyCustomers(customerSearch);
-        setCustomersList(data || []);
+        const data = await api.getCustomers(customerSearch, undefined, page, 10);
+        
+        let newItems: any[] = [];
+        if (data && Array.isArray(data)) {
+          newItems = data;
+        } else if (data && data.data && Array.isArray(data.data)) {
+          newItems = data.data;
+        }
+
+        if (newItems.length < 10) {
+          setHasMore(false);
+        }
+
+        setCustomersList((prev) => {
+          if (page === 1) {
+            return newItems;
+          } else {
+            const existingIds = new Set(prev.map((item) => item.id));
+            const uniqueNewItems = newItems.filter((item) => !existingIds.has(item.id));
+            return [...prev, ...uniqueNewItems];
+          }
+        });
       } catch (err) {
-        console.error("Search API failed:", err);
+        console.error("Search / Pagination API failed:", err);
       } finally {
         setLoadingCustomers(false);
       }
-    }, 300);
+    }, page === 1 ? 300 : 0);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [customerSearch]);
+  }, [customerSearch, page]);
 
   // Calculate final booking price dynamically
   const finalBookingPrice = Math.max(0, priceBeforeDiscount - discount);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, show: false }));
-    }, 3000);
-  };
 
   const handleAddCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustName.trim()) {
       showToast("Customer name is required.", "error");
+      return;
+    }
+    if (!newCustCompany.trim()) {
+      showToast("Company/Agent selection is required.", "error");
       return;
     }
     try {
@@ -150,27 +314,35 @@ export default function AddNewBooking() {
       const notesInfo = newCustNotes ? ` | Notes: ${newCustNotes}` : "";
       const consolidatedContact = `${phones || "N/A"}${emailInfo}${passportInfo}${notesInfo}`;
 
-      const res = await api.createCompanyCustomer({
+      const res = await api.createCustomer({
         name: newCustName,
+        company: newCustCompany,
         contact: consolidatedContact
       });
+      
       if (res.success && res.data) {
         showToast("Customer registered successfully!", "success");
         setShowAddModal(false);
         setNewCustName("");
+        setNewCustCompany("");
         setNewCustMobile("");
         setNewCustEmail("");
         setNewCustPassport("");
         setNewCustNotes("");
         
-        // Auto-select newly created customer
         const newCustObj = res.data;
         setCustomer(String(newCustObj.id));
         setSelectedCustomerObj(newCustObj);
         setIsOpen(false);
         
-        // Refresh customer list
-        const updatedList = await api.getCompanyCustomers("");
+        setPage(1);
+        const updatedListRes = await api.getCustomers("", undefined, 1, 10);
+        let updatedList: any[] = [];
+        if (updatedListRes && Array.isArray(updatedListRes)) {
+          updatedList = updatedListRes;
+        } else if (updatedListRes && updatedListRes.data && Array.isArray(updatedListRes.data)) {
+          updatedList = updatedListRes.data;
+        }
         setCustomersList(updatedList || []);
       } else {
         showToast(res.error || "Failed to register customer.", "error");
@@ -183,8 +355,9 @@ export default function AddNewBooking() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEditBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!targetId) return;
 
     if (!customer) {
       showToast("Please select a customer.", "error");
@@ -203,39 +376,62 @@ export default function AddNewBooking() {
       return;
     }
 
-    // Resolve customer details from selection state securely
-    const fullName = selectedCustomerObj ? selectedCustomerObj.name : "";
-    const whatsappContact = selectedCustomerObj?.contact ? selectedCustomerObj.contact.split(" (")[0] : "+966567799616";
+    try {
+      setSaving(true);
 
-    // Call Laravel Backend API
-    const res = await api.createBooking({
-      customer_id: selectedCustomerObj ? selectedCustomerObj.id : null,
-      pickup: pickupLocation,
-      destination: dropoffLocation,
-      date: pickupDate,
-      time: pickupTime,
-      passengers: `${adults + childrenCount} Passengers`,
-      car_type: vehicle,
-      car_price: finalBookingPrice,
-      full_name: fullName,
-      email: selectedCustomerObj?.contact?.includes("@") ? selectedCustomerObj.contact.split(" (Email)")[0].split("customer").pop() || "" : "",
-      whatsapp: whatsappContact,
-      flight_no: "",
-      notes: internalNotes || externalNotes
-    });
+      let dbStatus = "Pending Check";
+      if (bookingStatus === "Confirmed") dbStatus = "Confirmed Booking";
+      else if (bookingStatus === "Completed") dbStatus = "Completed";
+      else if (bookingStatus === "Cancelled") dbStatus = "Cancelled";
 
-    if (res?.success) {
-      showToast("Booking registered successfully!", "success");
-      setTimeout(() => {
-        router.push("/company/bookings");
-      }, 1500);
-    } else {
-      showToast("Saved with fallback.", "success");
-      setTimeout(() => {
-        router.push("/company/bookings");
-      }, 1500);
+      // Resolve customer details from selection state securely
+      const fullName = selectedCustomerObj ? selectedCustomerObj.name : "";
+      const whatsappContact = selectedCustomerObj?.phone || selectedCustomerObj?.secondary_phone || selectedCustomerObj?.alternative_phone || "+966567799616";
+      const customerEmail = selectedCustomerObj?.email || "";
+
+      const notesField = `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`;
+
+      const updatedFields = {
+        customer_id: selectedCustomerObj ? selectedCustomerObj.id : null,
+        pickup: pickupLocation,
+        destination: dropoffLocation,
+        date: pickupDate,
+        time: pickupTime,
+        passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
+        car_type: vehicle,
+        car_price: finalBookingPrice,
+        full_name: fullName,
+        email: customerEmail,
+        whatsapp: whatsappContact,
+        notes: notesField,
+        status: dbStatus,
+      };
+
+      const res = await api.updateBooking(targetId, updatedFields);
+      if (res?.success) {
+        showToast("Booking updated successfully!", "success");
+        setTimeout(() => {
+          router.push(`/admin/bookings/view?id=${targetId}`);
+        }, 1500);
+      } else {
+        showToast(res?.error || "Failed to update booking.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save changes to booking profile.", "error");
+    } finally {
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid var(--primary-color)", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
@@ -258,18 +454,18 @@ export default function AddNewBooking() {
       {/* Header banner */}
       <div className="form-header-card">
         <div>
-          <h2>Create New Booking</h2>
-          <p>Register a new transportation booking for your clients.</p>
+          <h2>Edit Booking Details</h2>
+          <p>Modify and update transportation booking records.</p>
         </div>
-        <button onClick={() => router.push("/company/bookings")} className="form-btn-back">
+        <button onClick={() => router.push(`/admin/bookings/view?id=${targetId}`)} className="form-btn-back">
           <i className="fas fa-arrow-left"></i>
-          <span>Back to List</span>
+          <span>Back to View</span>
         </button>
       </div>
 
       {/* Form Card */}
       <div className="form-card">
-        <form onSubmit={handleSubmit} className="form-grid">
+        <form onSubmit={handleEditBookingSubmit} className="form-grid">
           {/* Search Customer */}
           <div className="form-group-full" style={{ position: "relative" }}>
             <label className="form-label">Search Customer *</label>
@@ -321,7 +517,6 @@ export default function AddNewBooking() {
                   gap: "8px"
                 }}
               >
-                {/* Search Bar inside Panel */}
                 <div style={{ position: "relative" }}>
                   <i className="fas fa-search" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: "14px" }}></i>
                   <input
@@ -336,8 +531,17 @@ export default function AddNewBooking() {
                   />
                 </div>
 
-                {/* Customers List Box */}
-                <div style={{ maxHeight: "200px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div
+                  style={{ maxHeight: "200px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "2px" }}
+                  onScroll={(e) => {
+                    const target = e.currentTarget;
+                    if (target.scrollHeight - target.scrollTop <= target.clientHeight + 10) {
+                      if (!loadingCustomers && hasMore) {
+                        setPage((prev) => prev + 1);
+                      }
+                    }
+                  }}
+                >
                   <div
                     style={{
                       padding: "8px 12px",
@@ -355,12 +559,12 @@ export default function AddNewBooking() {
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push("/company/customers/add");
+                      setShowAddModal(true);
                     }}
                   >
                     <i className="fas fa-plus"></i> Add New Customer...
                   </div>
-                  {loadingCustomers ? (
+                  {loadingCustomers && customersList.length === 0 ? (
                     <div style={{ padding: "12px", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>
                       <i className="fas fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Loading customers...
                     </div>
@@ -369,47 +573,55 @@ export default function AddNewBooking() {
                       No customers found matching "{customerSearch}"
                     </div>
                   ) : (
-                    customersList.map((c) => (
-                      <div
-                        key={c.id}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          transition: "all 0.15s ease",
-                          background: String(c.id) === String(customer) ? "#f1f5f9" : "transparent",
-                          color: "#1e293b",
-                          fontSize: "14px",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center"
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCustomer(String(c.id));
-                          setSelectedCustomerObj(c);
-                          setIsOpen(false);
-                        }}
-                        onMouseEnter={(e) => {
-                          if (String(c.id) !== String(customer)) {
-                            e.currentTarget.style.background = "#f8fafc";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (String(c.id) !== String(customer)) {
-                            e.currentTarget.style.background = "transparent";
-                          }
-                        }}
-                      >
-                        <div>
-                          <strong style={{ color: "#b48a1d" }}>{c.name}</strong>
-                          <span style={{ fontSize: "12px", color: "#64748b", marginLeft: "8px" }}>({c.company})</span>
+                    <>
+                      {customersList.map((c) => (
+                        <div
+                          key={c.id}
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                            background: String(c.id) === String(customer) ? "#f1f5f9" : "transparent",
+                            color: "#1e293b",
+                            fontSize: "14px",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                          }}
+                          className="customer-dropdown-option"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCustomer(String(c.id));
+                            setSelectedCustomerObj(c);
+                            setIsOpen(false);
+                          }}
+                          onMouseEnter={(e) => {
+                            if (String(c.id) !== String(customer)) {
+                              e.currentTarget.style.background = "#f8fafc";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (String(c.id) !== String(customer)) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
+                        >
+                          <div>
+                            <strong style={{ color: "var(--primary-color)" }}>{c.name}</strong>
+                            <span style={{ fontSize: "12px", color: "#64748b", marginLeft: "8px" }}>({c.company})</span>
+                          </div>
+                          <span style={{ fontSize: "11px", background: "#e2e8f0", padding: "2px 6px", borderRadius: "4px", color: "#475569", fontWeight: 600 }}>
+                            {c.custom_id}
+                          </span>
                         </div>
-                        <span style={{ fontSize: "11px", background: "#e2e8f0", padding: "2px 6px", borderRadius: "4px", color: "#475569", fontWeight: 600 }}>
-                          {c.custom_id}
-                        </span>
-                      </div>
-                    ))
+                      ))}
+                      {loadingCustomers && (
+                        <div style={{ padding: "8px 12px", textAlign: "center", color: "#94a3b8", fontSize: "12px", borderTop: "1px solid #f1f5f9" }}>
+                          <i className="fas fa-spinner fa-spin" style={{ marginRight: "6px" }}></i> Loading more customers...
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -496,6 +708,26 @@ export default function AddNewBooking() {
             </div>
           </div>
 
+          {/* Booking Status */}
+          <div>
+            <label className="form-label">Booking Status *</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-chart-simple form-icon"></i>
+              <select
+                className="form-input form-select"
+                value={bookingStatus}
+                onChange={(e) => setBookingStatus(e.target.value)}
+                required
+              >
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <i className="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
           {/* Adults */}
           <div>
             <label className="form-label">Adults</label>
@@ -506,7 +738,10 @@ export default function AddNewBooking() {
                 min="0"
                 className="form-input"
                 value={adults}
-                onChange={(e) => setAdults(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAdults(val === "" ? "" : parseInt(val) || 0);
+                }}
               />
             </div>
           </div>
@@ -521,7 +756,10 @@ export default function AddNewBooking() {
                 min="0"
                 className="form-input"
                 value={childrenCount}
-                onChange={(e) => setChildrenCount(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setChildrenCount(val === "" ? "" : parseInt(val) || 0);
+                }}
               />
             </div>
           </div>
@@ -536,7 +774,10 @@ export default function AddNewBooking() {
                 min="0"
                 className="form-input"
                 value={bags}
-                onChange={(e) => setBags(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBags(val === "" ? "" : parseInt(val) || 0);
+                }}
               />
             </div>
           </div>
@@ -725,32 +966,32 @@ export default function AddNewBooking() {
           <div className="form-group-full form-submit-row">
             <button
               type="button"
-              onClick={() => router.push("/company/bookings")}
+              onClick={() => router.push(`/admin/bookings/view?id=${targetId}`)}
               className="btn-cancel"
             >
               Cancel
             </button>
-            <button type="submit" className="btn-submit">
-              Save Booking
+            <button type="submit" className="btn-submit" disabled={saving}>
+              {saving ? "Saving Changes..." : "Save Changes"}
             </button>
           </div>
         </form>
       </div>
+
       {/* Add Customer Modal */}
       {showAddModal && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0, 0, 0, 0.5)", zIndex: 10000,
-          display: "flex", justifyContent: "center", alignItems: "center",
-          padding: "20px"
-        }} onClick={(e) => e.stopPropagation()}>
+          background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)",
+          display: "flex", justifyContent: "center", alignItems: "center", zIndex: 9999
+        }} onClick={() => setShowAddModal(false)}>
           <div style={{
-            background: "#ffffff", borderRadius: "12px", width: "100%", maxWidth: "450px",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-            overflowY: "auto", display: "flex", flexDirection: "column", maxHeight: "90vh"
-          }}>
+            background: "#ffffff", width: "100%", maxWidth: "500px",
+            borderRadius: "12px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "90vh"
+          }} onClick={(e) => e.stopPropagation()}>
             <div style={{
-              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              background: "linear-gradient(135deg, #1e1e2d 0%, #2d2d3f 100%)",
               padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center"
             }}>
               <h3 style={{ margin: 0, color: "#ffffff", fontSize: "18px", fontWeight: "700" }}>
@@ -760,12 +1001,29 @@ export default function AddNewBooking() {
               <button 
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                style={{ background: "none", border: "none", color: "#ffffff", fontSize: "18px", cursor: "pointer" }}
+                style={{ background: "none", border: "none", color: "#ffffff", fontSize: "20px", cursor: "pointer", outline: "none" }}
               >
                 &times;
               </button>
             </div>
-            <form onSubmit={handleAddCustomerSubmit} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <form onSubmit={handleAddCustomerSubmit} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px", overflowY: "auto" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Company / Agent *</label>
+                <select
+                  required
+                  value={newCustCompany}
+                  onChange={(e) => setNewCustCompany(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
+                >
+                  <option value="">Select Company / Agent...</option>
+                  <option value="Walk-in Client">Walk-in Client</option>
+                  {companiesList.map((c: any) => (
+                    <option key={c.id || c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Customer Name *</label>
                 <input
@@ -830,7 +1088,7 @@ export default function AddNewBooking() {
                   disabled={savingCustomer}
                   style={{
                     padding: "10px 20px",
-                    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+                    background: "linear-gradient(135deg, #1e1e2d 0%, #2d2d3f 100%)",
                     color: "#ffffff",
                     border: "none",
                     borderRadius: "6px",
@@ -847,5 +1105,17 @@ export default function AddNewBooking() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BookingEditPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid var(--primary-color)", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+      </div>
+    }>
+      <BookingEditContent />
+    </Suspense>
   );
 }

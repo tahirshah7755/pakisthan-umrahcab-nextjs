@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface CompanyItem {
   id: string;
@@ -45,6 +46,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   companies: initialCompanies,
   router,
 }) => {
+  const { companyUser } = useAuth();
   const [activeStep, setActiveStep] = useState(1);
   const [companiesList, setCompaniesList] = useState<CompanyItem[]>(initialCompanies || []);
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [custSecondaryPhone, setCustSecondaryPhone] = useState("");
   const [custAltPhone, setCustAltPhone] = useState("");
   const [custEmail, setCustEmail] = useState("");
+
+  useEffect(() => {
+    if (companyUser?.name) {
+      setCustCompany(companyUser.name);
+    }
+  }, [companyUser]);
 
   // Step 2 States: Route setup (Full booking form integration)
   const [pickupDate, setPickupDate] = useState("");
@@ -413,7 +421,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
       showToast("Unified Umrah File Created Successfully!", "success");
       setTimeout(() => {
-        router.push("/admin/customers");
+        router.push(companyUser ? "/company/customers" : "/admin/customers");
       }, 1500);
 
     } catch (err) {
@@ -533,14 +541,24 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                     <label className="form-label">Select B2B Agent *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-building form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <select className="form-input form-select" value={custCompany} onChange={(e) => setCustCompany(e.target.value)} required style={{ paddingLeft: "42px", width: "100%" }}>
-                        <option value="">Select a Company</option>
-                        {companiesList.map((com) => (
-                          <option key={com.id} value={com.name}>
-                            {com.name}
-                          </option>
-                        ))}
-                      </select>
+                      {companyUser ? (
+                        <input
+                          type="text"
+                          className="form-input form-input-readonly"
+                          value={custCompany}
+                          readOnly
+                          style={{ paddingLeft: "42px", width: "100%", background: "#f1f5f9" }}
+                        />
+                      ) : (
+                        <select className="form-input form-select" value={custCompany} onChange={(e) => setCustCompany(e.target.value)} required style={{ paddingLeft: "42px", width: "100%" }}>
+                          <option value="">Select a Company</option>
+                          {companiesList.map((com) => (
+                            <option key={com.id} value={com.name}>
+                              {com.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </div>
 

@@ -1,0 +1,402 @@
+"use client";
+
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { api } from "@/utils/api";
+
+function parseNotes(notesStr: string, carPrice: number) {
+  const result = {
+    tripPackage: "",
+    vehicle: "",
+    adults: 0,
+    childrenCount: 0,
+    timingStatus: "Confirmed",
+    bags: 0,
+    priceBeforeDiscount: carPrice,
+    discount: 0,
+    discountReason: "",
+    tafweejRequired: false,
+    cashToReceive: 0,
+    internalNotes: "",
+    externalNotes: "",
+  };
+
+  if (!notesStr) return result;
+
+  const parts = notesStr.split(" | ");
+  let matchedCount = 0;
+
+  parts.forEach((part) => {
+    const cleanPart = part.trim();
+    if (cleanPart.startsWith("Route:")) {
+      result.tripPackage = cleanPart.substring("Route:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Vehicle:")) {
+      result.vehicle = cleanPart.substring("Vehicle:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Passengers:")) {
+      const pStr = cleanPart.substring("Passengers:".length).trim();
+      result.adults = parseInt(pStr) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Timing Status:")) {
+      result.timingStatus = cleanPart.substring("Timing Status:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Bags:")) {
+      result.bags = parseInt(cleanPart.substring("Bags:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Price Before Discount:")) {
+      result.priceBeforeDiscount = parseFloat(cleanPart.substring("Price Before Discount:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Discount:")) {
+      result.discount = parseFloat(cleanPart.substring("Discount:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Discount Reason:")) {
+      result.discountReason = cleanPart.substring("Discount Reason:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Tafweej Required:")) {
+      result.tafweejRequired = cleanPart.substring("Tafweej Required:".length).trim().toLowerCase() === "yes";
+      matchedCount++;
+    } else if (cleanPart.startsWith("Cash to Receive:")) {
+      result.cashToReceive = parseFloat(cleanPart.substring("Cash to Receive:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Internal Notes:")) {
+      result.internalNotes = cleanPart.substring("Internal Notes:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("External Notes:")) {
+      result.externalNotes = cleanPart.substring("External Notes:".length).trim();
+      matchedCount++;
+    }
+  });
+
+  if (matchedCount < 2) {
+    result.externalNotes = notesStr;
+  }
+
+  return result;
+}
+
+function BookingViewContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const targetId = searchParams.get("id") || "";
+
+  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState<any | null>(null);
+  const [customerObj, setCustomerObj] = useState<any | null>(null);
+
+  // Toast notifications
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  useEffect(() => {
+    const loadBookingData = async () => {
+      if (!targetId) return;
+      try {
+        setLoading(true);
+        const result = await api.getBooking(targetId);
+        if (result) {
+          setBooking(result);
+          if (result.customer_id) {
+            const cust = await api.getCustomer(result.customer_id);
+            if (cust) {
+              setCustomerObj(cust);
+            }
+          }
+        } else {
+          showToast("Booking details not found.", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Error loading booking details.", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBookingData();
+  }, [targetId]);
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <h3 style={{ color: "#0f172a" }}>Booking Details Not Found</h3>
+        <button onClick={() => router.push("/company/bookings")} className="form-btn-back" style={{ marginTop: "15px", background: "#d4af37", color: "#0f172a", border: "none", padding: "8px 16px", borderRadius: "6px", cursor: "pointer" }}>
+          Back to Bookings
+        </button>
+      </div>
+    );
+  }
+
+  const parsed = parseNotes(booking.notes, parseFloat(booking.car_price || 0));
+
+  const getStatusClass = (status: string) => {
+    const s = (status || "").toLowerCase();
+    if (s.includes("completed")) return "completed";
+    if (s.includes("cancel")) return "cancelled";
+    if (s.includes("pending")) return "pending";
+    return "active";
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "25px", maxWidth: "1000px", margin: "0 auto", padding: "10px" }}>
+      {toast.show && (
+        <div style={{
+          position: "fixed", top: "20px", right: "20px", zIndex: 9999,
+          background: toast.type === "success" ? "#10b981" : "#ef4444",
+          color: "#ffffff", padding: "12px 24px", borderRadius: "8px",
+          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", fontWeight: "600",
+          fontSize: "14px", display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* Header Banner */}
+      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>
+            <i className="fas fa-file-invoice" style={{ marginRight: "10px", color: "#d4af37" }}></i> Booking Details (Agent Panel)
+          </h2>
+          <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>
+            Viewing full details for booking code: <strong style={{ color: "#d4af37" }}>{booking.booking_code || booking.id}</strong>
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button 
+            onClick={() => router.push(`/company/bookings/edit?id=${booking.id || booking.booking_code}`)} 
+            className="btn-submit"
+            style={{ padding: "10px 18px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", background: "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", border: "none", color: "#0f172a", borderRadius: "8px" }}
+          >
+            <i className="fas fa-edit"></i>
+            <span>Edit Booking</span>
+          </button>
+          <button 
+            onClick={() => router.push("/company/bookings")} 
+            className="form-btn-back"
+            style={{ background: "rgba(255, 255, 255, 0.15)", color: "#ffffff", border: "1px solid rgba(255, 255, 255, 0.2)", borderRadius: "8px", padding: "10px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <i className="fas fa-arrow-left"></i>
+            <span>Back to List</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Details Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "25px" }}>
+        
+        {/* Left Side: General Info & Route & Passengers */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
+          
+          {/* Card 1: Route & Schedule */}
+          <div className="form-card" style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", fontSize: "16px", fontWeight: "700" }}>
+              <i className="fas fa-route" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+              Route & Schedule
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Pickup Location</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{booking.pickup || "N/A"}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Dropoff Destination</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{booking.destination || "N/A"}</span>
+              </div>
+              <div style={{ gridColumn: "span 2" }}>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Package / Route Description</span>
+                <span style={{ fontSize: "14px", fontWeight: "700", color: "#b48a1d" }}>{parsed.tripPackage || "N/A"}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Pickup Date</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-calendar" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.date || "N/A"}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Pickup Time</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-clock" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.time || "N/A"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Vehicle & Passengers */}
+          <div className="form-card" style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", fontSize: "16px", fontWeight: "700" }}>
+              <i className="fas fa-car" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+              Vehicle & Passenger Details
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Vehicle Model</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{parsed.vehicle || booking.car_type || "N/A"}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Bags Count</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-briefcase" style={{ marginRight: "6px", color: "#64748b" }}></i> {parsed.bags || 0} Bags</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Passengers Info</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-users" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.passengers || `${parsed.adults} Passengers`}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Is Tafweej Required?</span>
+                <span style={{
+                  fontSize: "12px", fontWeight: "700", display: "inline-block", padding: "4px 8px", borderRadius: "6px",
+                  background: parsed.tafweejRequired ? "#fee2e2" : "#f1f5f9",
+                  color: parsed.tafweejRequired ? "#991b1b" : "#475569"
+                }}>
+                  {parsed.tafweejRequired ? "YES" : "NO"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Notes & Comments */}
+          <div className="form-card" style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", fontSize: "16px", fontWeight: "700" }}>
+              <i className="fas fa-comment-dots" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+              Notes / Special Instructions
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Private Internal Notes (Agency Private)</span>
+                <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", color: "#334155", minHeight: "50px" }}>
+                  {parsed.internalNotes || "No internal notes recorded."}
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Public External Notes</span>
+                <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", color: "#334155", minHeight: "50px" }}>
+                  {parsed.externalNotes || "No external notes provided."}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Side: Customer info & Status & Payment */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
+          
+          {/* Card A: Status & Tracking */}
+          <div className="form-card" style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", fontSize: "16px", fontWeight: "700" }}>
+              <i className="fas fa-clock-rotate-left" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+              Status
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              <div>
+                <span style={{ fontSize: "11px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Booking Status</span>
+                <span className={`status-pill ${getStatusClass(booking.status)}`} style={{ display: "inline-block", fontSize: "12px", fontWeight: "700" }}>{booking.status}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "11px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Timing Status</span>
+                <span style={{ fontSize: "14px", fontWeight: "700", color: "#0f172a" }}>
+                  <i className="fas fa-circle-check" style={{ color: "#10b981", marginRight: "6px" }}></i>
+                  {parsed.timingStatus || "Confirmed"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card B: Customer Profile */}
+          <div className="form-card" style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", fontSize: "16px", fontWeight: "700" }}>
+              <i className="fas fa-user-tie" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+              Customer Profile
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <span style={{ fontSize: "11px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Full Name</span>
+                <span style={{ fontSize: "14px", fontWeight: "700", color: "#0f172a" }}>{booking.full_name || "Guest Customer"}</span>
+              </div>
+              {customerObj && (
+                <>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Agency / Company</span>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b" }}>{customerObj.company || "Walk-in"}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Custom ID</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: "#b48a1d" }}>{customerObj.custom_id || "N/A"}</span>
+                  </div>
+                </>
+              )}
+              <div>
+                <span style={{ fontSize: "11px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700" }}>WhatsApp Contact</span>
+                <span style={{ fontSize: "13px", fontWeight: "600", color: "#0f172a" }}><i className="fab fa-whatsapp" style={{ color: "#10b981", marginRight: "6px" }}></i> {booking.whatsapp || "N/A"}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "11px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700" }}>Email Address</span>
+                <span style={{ fontSize: "13px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-envelope" style={{ color: "#64748b", marginRight: "6px" }}></i> {booking.email || "N/A"}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card C: Fare & Financials */}
+          <div className="form-card" style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", fontSize: "16px", fontWeight: "700" }}>
+              <i className="fas fa-file-invoice-dollar" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+              Fare & Financials
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                <span style={{ color: "#64748b" }}>Before Discount:</span>
+                <span style={{ fontWeight: "600", color: "#334155" }}>SR {parsed.priceBeforeDiscount.toFixed(2)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                <span style={{ color: "#64748b" }}>Discount Applied:</span>
+                <span style={{ fontWeight: "600", color: "#ef4444" }}>- SR {parsed.discount.toFixed(2)}</span>
+              </div>
+              {parsed.discountReason && (
+                <div style={{ background: "#fef2f2", padding: "6px 10px", borderRadius: "6px", fontSize: "11px", color: "#991b1b", border: "1px solid #fee2e2" }}>
+                  <strong>Reason: </strong> {parsed.discountReason}
+                </div>
+              )}
+              <hr style={{ border: 0, borderTop: "1px solid #f1f5f9", margin: "5px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
+                <span style={{ fontWeight: "700", color: "#0f172a" }}>Final Booking Fare:</span>
+                <span style={{ fontWeight: "800", color: "#10b981", fontSize: "16px" }}>SR {parseFloat(booking.car_price || 0).toFixed(2)}</span>
+              </div>
+              <hr style={{ border: 0, borderTop: "1px solid #f1f5f9", margin: "5px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                <span style={{ color: "#64748b" }}>Cash to Receive:</span>
+                <span style={{ fontWeight: "700", color: "#b45309" }}>SR {parsed.cashToReceive.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+export default function BookingViewPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+      </div>
+    }>
+      <BookingViewContent />
+    </Suspense>
+  );
+}

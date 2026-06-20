@@ -47,6 +47,7 @@ export default function CompanySidebar() {
       color: "#10b981",
       submenu: [
         { name: "View All", href: "/company/customers" },
+        { name: "Add Customer", href: "/company/customers/add" },
       ],
     },
     {

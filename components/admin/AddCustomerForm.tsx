@@ -233,6 +233,13 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         name: custName,
         company: custCompany,
         contact: consolidatedContact,
+        phone: custPhone || null,
+        secondary_phone: custSecondaryPhone || null,
+        alternative_phone: custAltPhone || null,
+        email: custEmail || null,
+        passport_no: passportNo || null,
+        hotel_info: requireHotel ? `${mockHotels.find((h) => h.id === hotelId)?.hotel_name || hotelId} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})` : null,
+        notes: custNotes || null,
         registered_by: "umrahcab (Today)",
         last_update: "No edits",
       };

@@ -243,20 +243,61 @@ function CustomerViewContent() {
   let parsedPhones: string[] = ["N/A"];
   let parsedEmail = "No email provided";
   let parsedNotes = "No external notes.";
+  let parsedPassport = "";
+  let parsedHotelInfo = "";
 
-  if (selectedCust && selectedCust.contact) {
-    const contactStr = selectedCust.contact;
-    if (contactStr.includes(" | Notes: ")) {
-      const parts = contactStr.split(" | Notes: ");
-      parsedNotes = parts[1] || "No external notes.";
-    }
-    const mainPart = contactStr.split(" | Notes: ")[0];
-    const contactParts = mainPart.split(" (P), ");
-    if (contactParts[0]) {
-      parsedPhones = contactParts[0].split(" / ");
-    }
-    if (contactParts[1]) {
-      parsedEmail = contactParts[1].replace(" (Email)", "").trim();
+  if (selectedCust) {
+    if (selectedCust.phone || selectedCust.secondary_phone || selectedCust.alternative_phone || selectedCust.email || selectedCust.passport_no || selectedCust.notes || selectedCust.hotel_info) {
+      parsedPhones = [
+        selectedCust.phone,
+        selectedCust.secondary_phone,
+        selectedCust.alternative_phone
+      ].filter(Boolean);
+      if (parsedPhones.length === 0) parsedPhones = ["N/A"];
+      parsedEmail = selectedCust.email || "No email provided";
+      parsedNotes = selectedCust.notes || "No external notes.";
+      parsedPassport = selectedCust.passport_no || "";
+      parsedHotelInfo = selectedCust.hotel_info || "";
+    } else if (selectedCust.contact) {
+      const contactStr = selectedCust.contact;
+      
+      // Extract notes
+      if (contactStr.includes(" | Notes: ")) {
+        const parts = contactStr.split(" | Notes: ");
+        parsedNotes = parts[1] || "No external notes.";
+      }
+      
+      // Extract passport
+      if (contactStr.includes(" | Passport: ")) {
+        const parts = contactStr.split(" | Passport: ");
+        const nextPart = parts[1] || "";
+        parsedPassport = nextPart.split(" | ")[0] || "";
+      }
+
+      // Extract hotel info
+      if (contactStr.includes(" | Hotel: ")) {
+        const parts = contactStr.split(" | Hotel: ");
+        const nextPart = parts[1] || "";
+        parsedHotelInfo = nextPart.split(" | ")[0] || "";
+      }
+
+      const mainPart = contactStr.split(" | Notes: ")[0];
+      const contactParts = mainPart.split(" (P), ");
+      if (contactParts[0]) {
+        parsedPhones = contactParts[0].split(" / ");
+      }
+      if (contactParts[1]) {
+        parsedEmail = contactParts[1].replace(" (Email)", "").trim();
+      } else {
+        const parts = contactStr.split(" | ");
+        if (parts[0]) {
+          parsedPhones = parts[0].split(" / ");
+        }
+        const emailPart = parts.find((p: string) => p.startsWith("Email: "));
+        if (emailPart) {
+          parsedEmail = emailPart.replace("Email: ", "").trim();
+        }
+      }
     }
   }
 
@@ -265,6 +306,8 @@ function CustomerViewContent() {
     name: selectedCust ? selectedCust.name : "Loading profile...",
     email: selectedCust ? parsedEmail : "No email provided",
     phones: selectedCust ? parsedPhones : ["123456789"],
+    passportNo: parsedPassport || undefined,
+    hotelInfo: parsedHotelInfo || undefined,
     company: selectedCust ? selectedCust.company : "Corporate Account",
     meta: {
       registeredBy: selectedCust?.registered_by || selectedCust?.registeredBy || "umrahcab",

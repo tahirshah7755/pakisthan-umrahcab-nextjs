@@ -24,6 +24,46 @@ export interface CompanyItem {
   reminders: boolean;
 }
 
+const formatContact = (contactStr: string) => {
+  if (!contactStr) return "N/A";
+  
+  let phone = "N/A";
+  let email = "";
+  
+  const mainPart = contactStr.split(" | ")[0] || "";
+  if (mainPart && !mainPart.includes("Email:") && !mainPart.includes("Passport:")) {
+    phone = mainPart.split(" / ")[0] || "N/A";
+  } else {
+    const phonePart = contactStr.split(" | Notes: ")[0]?.split(" (P), ")[0];
+    if (phonePart) {
+      phone = phonePart.split(" / ")[0] || "N/A";
+    }
+  }
+
+  if (contactStr.includes("Email: ")) {
+    const emailPart = contactStr.split("Email: ")[1]?.split(" | ")[0];
+    if (emailPart) email = emailPart.trim();
+  } else if (contactStr.includes(" (Email)")) {
+    const emailPart = contactStr.split(" | Notes: ")[0]?.split(" (P), ")[1]?.replace(" (Email)", "");
+    if (emailPart) email = emailPart.trim();
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+      <span style={{ fontWeight: 600, color: "#1e293b", fontSize: "13px" }}>
+        <i className="fas fa-phone" style={{ fontSize: "11px", marginRight: "6px", color: "#0f766e" }}></i>
+        {phone}
+      </span>
+      {email && (
+        <span style={{ fontSize: "11px", color: "#64748b" }}>
+          <i className="fas fa-envelope" style={{ fontSize: "10px", marginRight: "6px", color: "#ef4444" }}></i>
+          {email}
+        </span>
+      )}
+    </div>
+  );
+};
+
 interface CustomerDirectoryProps {
   customers: CustomerItem[];
   companies: CompanyItem[];
@@ -342,7 +382,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
                         {c.company}
                       </span>
                     </td>
-                    <td>{c.contact}</td>
+                    <td>{formatContact(c.contact)}</td>
                     <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.registeredBy}</td>
                     <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.lastUpdate}</td>
                     <td>

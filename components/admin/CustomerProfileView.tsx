@@ -10,6 +10,8 @@ interface CustomerProfileViewProps {
     email: string;
     company: string;
     phones: string[];
+    passportNo?: string;
+    hotelInfo?: string;
     externalRemarks?: string;
     internalRemarks?: string;
     meta: {
@@ -322,6 +324,26 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                     {currentProfile.company}
                   </a>
                 </div>
+
+                {currentProfile.passportNo && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", borderTop: "1px solid #f1f5f9", paddingTop: "15px" }}>
+                    <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Passport Number</span>
+                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>
+                      <i className="fas fa-passport" style={{ color: "#eab308", marginRight: "8px" }}></i>
+                      {currentProfile.passportNo}
+                    </span>
+                  </div>
+                )}
+
+                {currentProfile.hotelInfo && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Hotel / Stay Info</span>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: "#475569" }}>
+                      <i className="fas fa-hotel" style={{ color: "#3b82f6", marginRight: "8px" }}></i>
+                      {currentProfile.hotelInfo}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

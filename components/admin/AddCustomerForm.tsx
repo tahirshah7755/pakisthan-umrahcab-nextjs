@@ -65,7 +65,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
   // Step 2 States: Route setup
   const [bookingRoute, setBookingRoute] = useState("");
-  const [paxCount, setPaxCount] = useState(1);
+  const [paxCount, setPaxCount] = useState<number | "">(1);
   const [vehicleType, setVehicleType] = useState("GMC SUV");
   const [bookingCost, setBookingCost] = useState("");
 
@@ -141,7 +141,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       }
     }
     if (step === 2) {
-      if (!bookingRoute || paxCount < 1) {
+      if (!bookingRoute || !paxCount || Number(paxCount) < 1) {
         showToast("Please select Route and enter valid Passengers count.", "error");
         return false;
       }
@@ -568,7 +568,18 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                     <label className="form-label">Total Passengers (Pax) *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fa-solid fa-users form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="number" className="form-input" min={1} value={paxCount} onChange={(e) => setPaxCount(Number(e.target.value))} required style={{ paddingLeft: "42px", width: "100%" }} />
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        min={1} 
+                        value={paxCount} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPaxCount(val === "" ? "" : Number(val));
+                        }} 
+                        required 
+                        style={{ paddingLeft: "42px", width: "100%" }} 
+                      />
                     </div>
                   </div>
 

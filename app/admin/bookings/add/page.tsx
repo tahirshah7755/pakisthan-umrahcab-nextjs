@@ -15,9 +15,9 @@ export default function AddNewBooking() {
   const [dropoffLocation, setDropoffLocation] = useState("");
   const [timingStatus, setTimingStatus] = useState("Confirmed");
   const [bookingStatus, setBookingStatus] = useState("Pending");
-  const [adults, setAdults] = useState(0);
-  const [childrenCount, setChildrenCount] = useState(0);
-  const [bags, setBags] = useState(0);
+  const [adults, setAdults] = useState<number | "">(0);
+  const [childrenCount, setChildrenCount] = useState<number | "">(0);
+  const [bags, setBags] = useState<number | "">(0);
   const [vehicle, setVehicle] = useState("");
   const [tripPackage, setTripPackage] = useState("");
   const [priceBeforeDiscount, setPriceBeforeDiscount] = useState(0);
@@ -267,7 +267,7 @@ export default function AddNewBooking() {
       destination: dropoffLocation,
       date: pickupDate,
       time: pickupTime,
-      passengers: `${adults + childrenCount} Passengers`,
+      passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
       car_type: vehicle,
       car_price: finalBookingPrice,
       full_name: fullName,
@@ -600,7 +600,10 @@ export default function AddNewBooking() {
                 min="0"
                 className="form-input"
                 value={adults}
-                onChange={(e) => setAdults(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setAdults(val === "" ? "" : parseInt(val) || 0);
+                }}
               />
             </div>
           </div>
@@ -615,7 +618,10 @@ export default function AddNewBooking() {
                 min="0"
                 className="form-input"
                 value={childrenCount}
-                onChange={(e) => setChildrenCount(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setChildrenCount(val === "" ? "" : parseInt(val) || 0);
+                }}
               />
             </div>
           </div>
@@ -630,7 +636,10 @@ export default function AddNewBooking() {
                 min="0"
                 className="form-input"
                 value={bags}
-                onChange={(e) => setBags(parseInt(e.target.value) || 0)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBags(val === "" ? "" : parseInt(val) || 0);
+                }}
               />
             </div>
           </div>

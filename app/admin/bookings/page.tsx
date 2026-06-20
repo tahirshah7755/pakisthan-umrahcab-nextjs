@@ -572,7 +572,14 @@ export default function BookingsList() {
                 <label className="form-label">Fare Price (SR) *</label>
                 <div className="form-input-wrapper">
                   <i className="fas fa-money-bill-wave form-icon"></i>
-                  <input type="number" step="0.01" className="form-input" value={editingBooking.finalPrice} onChange={(e) => setEditingBooking({...editingBooking, finalPrice: parseFloat(e.target.value) || 0})} required />
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className="form-input" 
+                    value={editingBooking.finalPrice || ""} 
+                    onChange={(e) => setEditingBooking({...editingBooking, finalPrice: parseFloat(e.target.value) || 0})} 
+                    required 
+                  />
                 </div>
               </div>
 

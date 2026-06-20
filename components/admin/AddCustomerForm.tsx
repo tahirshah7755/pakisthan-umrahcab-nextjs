@@ -59,6 +59,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     message: "",
     type: "success",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Step 1 States: Customer Setup
   const [custCompany, setCustCompany] = useState("");
@@ -236,61 +237,175 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const finalBookingPrice = Math.max(0, (Number(priceBeforeDiscount) || 0) - (Number(discount) || 0));
 
   const validateStep = (step: number) => {
+    const newErrors: Record<string, string> = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[0-9\s\-()]{7,18}$/;
+
     if (step === 1) {
-      if (!custName || !custCompany) {
-        showToast("Please fill all required customer fields (Agent & Name).", "error");
-        return false;
+      if (!custCompany.trim()) {
+        newErrors.custCompany = "B2B Agent/Company selection is required.";
+      }
+      if (!custName.trim()) {
+        newErrors.custName = "Customer Name is required.";
+      } else if (custName.trim().length < 3) {
+        newErrors.custName = "Customer Name must be at least 3 characters long.";
+      }
+
+      if (!custPhone.trim()) {
+        newErrors.custPhone = "Contact Mobile (WhatsApp number) is required.";
+      } else if (!phoneRegex.test(custPhone)) {
+        newErrors.custPhone = "Please enter a valid phone number (minimum 7 digits).";
+      }
+
+      if (custSecondaryPhone && !phoneRegex.test(custSecondaryPhone)) {
+        newErrors.custSecondaryPhone = "Please enter a valid secondary phone number.";
+      }
+
+      if (custAltPhone && !phoneRegex.test(custAltPhone)) {
+        newErrors.custAltPhone = "Please enter a valid alternative phone number.";
+      }
+
+      if (custEmail && !emailRegex.test(custEmail)) {
+        newErrors.custEmail = "Please enter a valid email address.";
       }
     }
+
     if (step === 2) {
-      if (!pickupDate || !pickupTime) {
-        showToast("Please enter pickup date and time.", "error");
-        return false;
+      if (!pickupDate) {
+        newErrors.pickupDate = "Pick up date is required.";
       }
-      if (!pickupLocation || !dropoffLocation) {
-        showToast("Please enter pickup and drop off locations.", "error");
-        return false;
+      if (!pickupTime) {
+        newErrors.pickupTime = "Pick up time is required.";
       }
-      if (!vehicle || !tripPackage) {
-        showToast("Please choose a vehicle and package.", "error");
-        return false;
+      if (!pickupLocation.trim()) {
+        newErrors.pickupLocation = "Pick up location is required.";
       }
-      if (priceBeforeDiscount === "" || Number(priceBeforeDiscount) < 0) {
-        showToast("Please enter a valid price before discount.", "error");
-        return false;
+      if (!dropoffLocation.trim()) {
+        newErrors.dropoffLocation = "Drop off location is required.";
+      }
+      if (!vehicle) {
+        newErrors.vehicle = "Vehicle selection is required.";
+      }
+      if (!tripPackage) {
+        newErrors.tripPackage = "Package selection is required.";
+      }
+      if (priceBeforeDiscount === "") {
+        newErrors.priceBeforeDiscount = "Price before discount is required.";
+      } else if (Number(priceBeforeDiscount) < 0) {
+        newErrors.priceBeforeDiscount = "Price before discount cannot be negative.";
+      }
+
+      if (discount !== "" && Number(discount) < 0) {
+        newErrors.discount = "Discount cannot be negative.";
+      } else if (discount !== "" && Number(discount) > (Number(priceBeforeDiscount) || 0)) {
+        newErrors.discount = "Discount cannot exceed the price before discount.";
+      }
+
+      if (cashToReceive !== "" && Number(cashToReceive) < 0) {
+        newErrors.cashToReceive = "Cash to receive cannot be negative.";
+      }
+
+      if (adults !== "" && Number(adults) < 0) {
+        newErrors.adults = "Adults count cannot be negative.";
+      }
+      if (childrenCount !== "" && Number(childrenCount) < 0) {
+        newErrors.childrenCount = "Children count cannot be negative.";
+      }
+      if (bags !== "" && Number(bags) < 0) {
+        newErrors.bags = "Bags count cannot be negative.";
       }
     }
+
     if (step === 3) {
       if (requireFlight) {
         if (fltLeg === "Arrival" || fltLeg === "Both Legs") {
-          if (!fltArrFlightNo || !fltArrPlace || !fltArrDate || !fltArrTime) {
-            showToast("Please fill in all Arrival flight details.", "error");
-            return false;
+          if (!fltArrFlightNo.trim()) {
+            newErrors.fltArrFlightNo = "Arrival flight number is required.";
+          }
+          if (!fltArrPlace.trim()) {
+            newErrors.fltArrPlace = "Arrival airport/city is required.";
+          }
+          if (!fltArrDate) {
+            newErrors.fltArrDate = "Arrival date is required.";
+          }
+          if (!fltArrTime) {
+            newErrors.fltArrTime = "Arrival time is required.";
           }
         }
         if (fltLeg === "Departure" || fltLeg === "Both Legs") {
-          if (!fltDepFlightNo || !fltDepPlace || !fltDepDate || !fltDepTime) {
-            showToast("Please fill in all Departure flight details.", "error");
-            return false;
+          if (!fltDepFlightNo.trim()) {
+            newErrors.fltDepFlightNo = "Departure flight number is required.";
+          }
+          if (!fltDepPlace.trim()) {
+            newErrors.fltDepPlace = "Departure airport/city is required.";
+          }
+          if (!fltDepDate) {
+            newErrors.fltDepDate = "Departure date is required.";
+          }
+          if (!fltDepTime) {
+            newErrors.fltDepTime = "Departure time is required.";
           }
         }
       }
     }
+
     if (step === 4) {
       if (requireTrain) {
         if (trnLeg === "Arrival" || trnLeg === "Both Legs") {
-          if (!trnArrTrainNo || !trnArrStation || !trnArrDate || !trnArrTime) {
-            showToast("Please fill in all Arrival train details.", "error");
-            return false;
+          if (!trnArrTrainNo.trim()) {
+            newErrors.trnArrTrainNo = "Arrival train number is required.";
+          }
+          if (!trnArrStation.trim()) {
+            newErrors.trnArrStation = "Arrival station is required.";
+          }
+          if (!trnArrDate) {
+            newErrors.trnArrDate = "Arrival date is required.";
+          }
+          if (!trnArrTime) {
+            newErrors.trnArrTime = "Arrival time is required.";
           }
         }
         if (trnLeg === "Departure" || trnLeg === "Both Legs") {
-          if (!trnDepTrainNo || !trnDepStation || !trnDepDate || !trnDepTime) {
-            showToast("Please fill in all Departure train details.", "error");
-            return false;
+          if (!trnDepTrainNo.trim()) {
+            newErrors.trnDepTrainNo = "Departure train number is required.";
+          }
+          if (!trnDepStation.trim()) {
+            newErrors.trnDepStation = "Departure station is required.";
+          }
+          if (!trnDepDate) {
+            newErrors.trnDepDate = "Departure date is required.";
+          }
+          if (!trnDepTime) {
+            newErrors.trnDepTime = "Departure time is required.";
           }
         }
       }
+    }
+
+    if (step === 5) {
+      if (requireHotel) {
+        if (!hotelCity) {
+          newErrors.hotelCity = "Destination area/city is required.";
+        }
+        if (!hotelId) {
+          newErrors.hotelId = "Hotel selection is required.";
+        }
+        if (!hotelCheckin) {
+          newErrors.hotelCheckin = "Check-in date is required.";
+        }
+        if (!hotelCheckout) {
+          newErrors.hotelCheckout = "Check-out date is required.";
+        } else if (hotelCheckin && new Date(hotelCheckout) < new Date(hotelCheckin)) {
+          newErrors.hotelCheckout = "Check-out date cannot be before Check-in date.";
+        }
+      }
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      showToast(firstError, "error");
+      return false;
     }
     return true;
   };
@@ -309,9 +424,15 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     e.preventDefault();
     if (loading) return;
 
-    if (!validateStep(1) || !validateStep(2)) {
-      return;
+    let allValid = true;
+    for (let s = 1; s <= 5; s++) {
+      if (!validateStep(s)) {
+        setActiveStep(s);
+        allValid = false;
+        break;
+      }
     }
+    if (!allValid) return;
 
     setLoading(true);
 
@@ -586,10 +707,10 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           className="form-input form-input-readonly"
                           value={custCompany}
                           readOnly
-                          style={{ paddingLeft: "42px", width: "100%", background: "#f1f5f9" }}
+                          style={{ paddingLeft: "42px", width: "100%", background: "#f1f5f9", borderColor: errors.custCompany ? "#ef4444" : undefined }}
                         />
                       ) : (
-                        <select className="form-input form-select" value={custCompany} onChange={(e) => setCustCompany(e.target.value)} required style={{ paddingLeft: "42px", width: "100%" }}>
+                        <select className="form-input form-select" value={custCompany} onChange={(e) => setCustCompany(e.target.value)} required style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custCompany ? "#ef4444" : undefined }}>
                           <option value="">Select a Company</option>
                           {companiesList.map((com) => (
                             <option key={com.id} value={com.name}>
@@ -599,54 +720,75 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         </select>
                       )}
                     </div>
+                    {errors.custCompany && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custCompany}</span>
+                    )}
                   </div>
 
                   <div>
                     <label className="form-label">Customer Name *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-user form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="Primary Passenger Name" value={custName} onChange={(e) => setCustName(e.target.value)} required style={{ paddingLeft: "42px", width: "100%" }} />
+                      <input type="text" className="form-input" placeholder="Primary Passenger Name" value={custName} onChange={(e) => setCustName(e.target.value)} required style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custName ? "#ef4444" : undefined }} />
                     </div>
+                    {errors.custName && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custName}</span>
+                    )}
                   </div>
 
                   <div>
                     <label className="form-label">Passport Number</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-passport form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="e.g. PK123456" value={passportNo} onChange={(e) => setPassportNo(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }} />
+                      <input type="text" className="form-input" placeholder="e.g. PK123456" value={passportNo} onChange={(e) => setPassportNo(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.passportNo ? "#ef4444" : undefined }} />
                     </div>
+                    {errors.passportNo && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.passportNo}</span>
+                    )}
                   </div>
 
                   <div>
-                    <label className="form-label">Contact Mobile</label>
+                    <label className="form-label">Contact Mobile *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="WhatsApp Number" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }} />
+                      <input type="text" className="form-input" placeholder="WhatsApp Number" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} required style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custPhone ? "#ef4444" : undefined }} />
                     </div>
+                    {errors.custPhone && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custPhone}</span>
+                    )}
                   </div>
 
                   <div>
                     <label className="form-label">Secondary Phone</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="e.g. +9665XXXXXXXX" value={custSecondaryPhone} onChange={(e) => setCustSecondaryPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }} />
+                      <input type="text" className="form-input" placeholder="e.g. +9665XXXXXXXX" value={custSecondaryPhone} onChange={(e) => setCustSecondaryPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custSecondaryPhone ? "#ef4444" : undefined }} />
                     </div>
+                    {errors.custSecondaryPhone && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custSecondaryPhone}</span>
+                    )}
                   </div>
 
                   <div>
                     <label className="form-label">Alternative Phone</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="e.g. +9665XXXXXXXX" value={custAltPhone} onChange={(e) => setCustAltPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }} />
+                      <input type="text" className="form-input" placeholder="e.g. +9665XXXXXXXX" value={custAltPhone} onChange={(e) => setCustAltPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custAltPhone ? "#ef4444" : undefined }} />
                     </div>
+                    {errors.custAltPhone && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custAltPhone}</span>
+                    )}
                   </div>
 
                   <div className="form-group-full">
                     <label className="form-label">Email Address</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-envelope form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="email" className="form-input" placeholder="customer@example.com" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }} />
+                      <input type="email" className="form-input" placeholder="customer@example.com" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custEmail ? "#ef4444" : undefined }} />
                     </div>
+                    {errors.custEmail && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custEmail}</span>
+                    )}
                   </div>
                 </div>
 
@@ -679,9 +821,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={pickupDate}
                         onChange={(e) => setPickupDate(e.target.value)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.pickupDate ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.pickupDate && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.pickupDate}</span>
+                    )}
                   </div>
 
                   {/* Pickup Time */}
@@ -695,9 +840,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={pickupTime}
                         onChange={(e) => setPickupTime(e.target.value)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.pickupTime ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.pickupTime && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.pickupTime}</span>
+                    )}
                   </div>
 
                   {/* Pickup Location */}
@@ -712,9 +860,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={pickupLocation}
                         onChange={(e) => setPickupLocation(e.target.value)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.pickupLocation ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.pickupLocation && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.pickupLocation}</span>
+                    )}
                   </div>
 
                   {/* Dropoff Location */}
@@ -729,9 +880,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={dropoffLocation}
                         onChange={(e) => setDropoffLocation(e.target.value)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.dropoffLocation ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.dropoffLocation && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.dropoffLocation}</span>
+                    )}
                   </div>
 
                   {/* Timing Status */}
@@ -743,13 +897,16 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         className="form-input form-select"
                         value={timingStatus}
                         onChange={(e) => setTimingStatus(e.target.value)}
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.timingStatus ? "#ef4444" : undefined }}
                       >
                         <option value="Confirmed">Confirmed</option>
                         <option value="Delayed">Delayed</option>
                         <option value="On Time">On Time</option>
                       </select>
                     </div>
+                    {errors.timingStatus && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.timingStatus}</span>
+                    )}
                   </div>
 
                   {/* Booking Status */}
@@ -762,7 +919,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={bookingStatus}
                         onChange={(e) => setBookingStatus(e.target.value)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.bookingStatus ? "#ef4444" : undefined }}
                       >
                         <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
@@ -770,6 +927,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         <option value="Cancelled">Cancelled</option>
                       </select>
                     </div>
+                    {errors.bookingStatus && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.bookingStatus}</span>
+                    )}
                   </div>
 
                   {/* Adults */}
@@ -786,9 +946,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           const val = e.target.value;
                           setAdults(val === "" ? "" : parseInt(val) || 0);
                         }}
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.adults ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.adults && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.adults}</span>
+                    )}
                   </div>
 
                   {/* Children */}
@@ -805,9 +968,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           const val = e.target.value;
                           setChildrenCount(val === "" ? "" : parseInt(val) || 0);
                         }}
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.childrenCount ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.childrenCount && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.childrenCount}</span>
+                    )}
                   </div>
 
                   {/* Bags */}
@@ -824,9 +990,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           const val = e.target.value;
                           setBags(val === "" ? "" : parseInt(val) || 0);
                         }}
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.bags ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.bags && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.bags}</span>
+                    )}
                   </div>
 
                   {/* Vehicle */}
@@ -839,7 +1008,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={vehicle}
                         onChange={(e) => setVehicle(e.target.value)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.vehicle ? "#ef4444" : undefined }}
                       >
                         <option value="">Choose vehicle...</option>
                         {vehiclesList.map((v, i) => (
@@ -849,6 +1018,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         ))}
                       </select>
                     </div>
+                    {errors.vehicle && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.vehicle}</span>
+                    )}
                   </div>
 
                   {/* Package */}
@@ -861,7 +1033,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={tripPackage}
                         onChange={(e) => setTripPackage(e.target.value)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.tripPackage ? "#ef4444" : undefined }}
                       >
                         <option value="">Choose package...</option>
                         {packagesList.map((p, i) => (
@@ -871,6 +1043,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         ))}
                       </select>
                     </div>
+                    {errors.tripPackage && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.tripPackage}</span>
+                    )}
                   </div>
 
                   {/* Price Before Discount */}
@@ -887,9 +1062,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         value={priceBeforeDiscount}
                         onChange={(e) => setPriceBeforeDiscount(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
                         required
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.priceBeforeDiscount ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.priceBeforeDiscount && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.priceBeforeDiscount}</span>
+                    )}
                   </div>
 
                   {/* Discount */}
@@ -905,9 +1083,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         placeholder="0.00"
                         value={discount}
                         onChange={(e) => setDiscount(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.discount ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.discount && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.discount}</span>
+                    )}
                   </div>
 
                   {/* Final Booking Price */}
@@ -938,9 +1119,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         placeholder="0.00"
                         value={cashToReceive}
                         onChange={(e) => setCashToReceive(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
-                        style={{ paddingLeft: "42px", width: "100%" }}
+                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.cashToReceive ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {errors.cashToReceive && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.cashToReceive}</span>
+                    )}
                   </div>
 
                   {/* Discount Reason */}
@@ -1086,23 +1270,35 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                             <label className="form-label" style={{ color: "#475569" }}>Flight Number *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-plane form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. SV-3720" value={fltArrFlightNo} onChange={(e) => setFltArrFlightNo(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. SV-3720" value={fltArrFlightNo} onChange={(e) => setFltArrFlightNo(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ borderColor: errors.fltArrFlightNo ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.fltArrFlightNo && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltArrFlightNo}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Airport / City *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-location-dot form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. JED" value={fltArrPlace} onChange={(e) => setFltArrPlace(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. JED" value={fltArrPlace} onChange={(e) => setFltArrPlace(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ borderColor: errors.fltArrPlace ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.fltArrPlace && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltArrPlace}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Date *</label>
-                            <input type="date" className="form-input" value={fltArrDate} onChange={(e) => setFltArrDate(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="date" className="form-input" value={fltArrDate} onChange={(e) => setFltArrDate(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltArrDate ? "#ef4444" : undefined }} />
+                            {errors.fltArrDate && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltArrDate}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Time *</label>
-                            <input type="time" className="form-input" value={fltArrTime} onChange={(e) => setFltArrTime(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="time" className="form-input" value={fltArrTime} onChange={(e) => setFltArrTime(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltArrTime ? "#ef4444" : undefined }} />
+                            {errors.fltArrTime && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltArrTime}</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1120,23 +1316,35 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                             <label className="form-label" style={{ color: "#475569" }}>Flight Number *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-plane form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. SV-3721" value={fltDepFlightNo} onChange={(e) => setFltDepFlightNo(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. SV-3721" value={fltDepFlightNo} onChange={(e) => setFltDepFlightNo(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ borderColor: errors.fltDepFlightNo ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.fltDepFlightNo && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltDepFlightNo}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Airport / City *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-location-dot form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. MED" value={fltDepPlace} onChange={(e) => setFltDepPlace(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. MED" value={fltDepPlace} onChange={(e) => setFltDepPlace(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ borderColor: errors.fltDepPlace ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.fltDepPlace && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltDepPlace}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Date *</label>
-                            <input type="date" className="form-input" value={fltDepDate} onChange={(e) => setFltDepDate(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="date" className="form-input" value={fltDepDate} onChange={(e) => setFltDepDate(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltDepDate ? "#ef4444" : undefined }} />
+                            {errors.fltDepDate && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltDepDate}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Time *</label>
-                            <input type="time" className="form-input" value={fltDepTime} onChange={(e) => setFltDepTime(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="time" className="form-input" value={fltDepTime} onChange={(e) => setFltDepTime(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltDepTime ? "#ef4444" : undefined }} />
+                            {errors.fltDepTime && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltDepTime}</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1227,23 +1435,35 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                             <label className="form-label" style={{ color: "#475569" }}>Train Number *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-train form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. HHR-5" value={trnArrTrainNo} onChange={(e) => setTrnArrTrainNo(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. HHR-5" value={trnArrTrainNo} onChange={(e) => setTrnArrTrainNo(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ borderColor: errors.trnArrTrainNo ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.trnArrTrainNo && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnArrTrainNo}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Station *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-location-dot form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. Makkah Station" value={trnArrStation} onChange={(e) => setTrnArrStation(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. Makkah Station" value={trnArrStation} onChange={(e) => setTrnArrStation(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ borderColor: errors.trnArrStation ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.trnArrStation && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnArrStation}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Date *</label>
-                            <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnArrDate ? "#ef4444" : undefined }} />
+                            {errors.trnArrDate && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnArrDate}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Time *</label>
-                            <input type="time" className="form-input" value={trnArrTime} onChange={(e) => setTrnArrTime(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="time" className="form-input" value={trnArrTime} onChange={(e) => setTrnArrTime(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnArrTime ? "#ef4444" : undefined }} />
+                            {errors.trnArrTime && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnArrTime}</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1261,23 +1481,35 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                             <label className="form-label" style={{ color: "#475569" }}>Train Number *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-train form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. HHR-10" value={trnDepTrainNo} onChange={(e) => setTrnDepTrainNo(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. HHR-10" value={trnDepTrainNo} onChange={(e) => setTrnDepTrainNo(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ borderColor: errors.trnDepTrainNo ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.trnDepTrainNo && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnDepTrainNo}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Station *</label>
                             <div className="form-input-wrapper">
                               <i className="fas fa-location-dot form-icon"></i>
-                              <input type="text" className="form-input" placeholder="e.g. Medina Station" value={trnDepStation} onChange={(e) => setTrnDepStation(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} />
+                              <input type="text" className="form-input" placeholder="e.g. Medina Station" value={trnDepStation} onChange={(e) => setTrnDepStation(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ borderColor: errors.trnDepStation ? "#ef4444" : undefined }} />
                             </div>
+                            {errors.trnDepStation && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnDepStation}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Date *</label>
-                            <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnDepDate ? "#ef4444" : undefined }} />
+                            {errors.trnDepDate && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnDepDate}</span>
+                            )}
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Time *</label>
-                            <input type="time" className="form-input" value={trnDepTime} onChange={(e) => setTrnDepTime(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px" }} />
+                            <input type="time" className="form-input" value={trnDepTime} onChange={(e) => setTrnDepTime(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnDepTime ? "#ef4444" : undefined }} />
+                            {errors.trnDepTime && (
+                              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnDepTime}</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1316,22 +1548,25 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                 {requireHotel && (
                   <div className="form-grid" style={{ animation: "fadeIn 0.3s ease-in-out", marginBottom: "20px" }}>
                     <div>
-                      <label className="form-label">Select Destination Area/City</label>
+                      <label className="form-label">Select Destination Area/City *</label>
                       <div className="form-input-wrapper" style={{ position: "relative" }}>
                         <i className="fa-solid fa-city form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                        <select className="form-input form-select" value={hotelCity} onChange={(e) => { setHotelCity(e.target.value); setHotelId(""); }} style={{ paddingLeft: "42px", width: "100%" }}>
+                        <select className="form-input form-select" value={hotelCity} onChange={(e) => { setHotelCity(e.target.value); setHotelId(""); }} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.hotelCity ? "#ef4444" : undefined }}>
                           <option value="">-- Choose City --</option>
                           <option value="Makkah">Makkah Mukarramah</option>
                           <option value="Madinah">Madinah Munawwarah</option>
                         </select>
                       </div>
+                      {errors.hotelCity && (
+                        <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.hotelCity}</span>
+                      )}
                     </div>
 
                     <div>
-                      <label className="form-label">Available Property / Hotel</label>
+                      <label className="form-label">Available Property / Hotel *</label>
                       <div className="form-input-wrapper" style={{ position: "relative" }}>
                         <i className="fa-solid fa-building-circle-check form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                        <select className="form-input form-select" value={hotelId} onChange={(e) => setHotelId(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }}>
+                        <select className="form-input form-select" value={hotelId} onChange={(e) => setHotelId(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.hotelId ? "#ef4444" : undefined }}>
                           <option value="">-- Select Hotel --</option>
                           {filteredHotels.map((h) => (
                             <option key={h.id} value={h.id}>
@@ -1340,16 +1575,25 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           ))}
                         </select>
                       </div>
+                      {errors.hotelId && (
+                        <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.hotelId}</span>
+                      )}
                     </div>
 
                     <div>
-                      <label className="form-label">Check-In Date</label>
-                      <input type="date" className="form-input" value={hotelCheckin} onChange={(e) => setHotelCheckin(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <label className="form-label">Check-In Date *</label>
+                      <input type="date" className="form-input" value={hotelCheckin} onChange={(e) => setHotelCheckin(e.target.value)} style={{ paddingLeft: "15px", borderColor: errors.hotelCheckin ? "#ef4444" : undefined }} />
+                      {errors.hotelCheckin && (
+                        <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.hotelCheckin}</span>
+                      )}
                     </div>
 
                     <div>
-                      <label className="form-label">Check-Out Date</label>
-                      <input type="date" className="form-input" value={hotelCheckout} onChange={(e) => setHotelCheckout(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <label className="form-label">Check-Out Date *</label>
+                      <input type="date" className="form-input" value={hotelCheckout} onChange={(e) => setHotelCheckout(e.target.value)} style={{ paddingLeft: "15px", borderColor: errors.hotelCheckout ? "#ef4444" : undefined }} />
+                      {errors.hotelCheckout && (
+                        <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.hotelCheckout}</span>
+                      )}
                     </div>
                   </div>
                 )}

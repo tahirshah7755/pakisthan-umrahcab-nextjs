@@ -33,11 +33,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Load state from sessionStorage on mount
+  // Load state from localStorage on mount
   useEffect(() => {
-    const savedUser = sessionStorage.getItem("umrahcab_user");
-    const savedCompanyUser = sessionStorage.getItem("umrahcab_company_user");
-    const savedExtras = sessionStorage.getItem("umrahcab_extras_unlocked");
+    const savedUser = localStorage.getItem("umrahcab_user");
+    const savedCompanyUser = localStorage.getItem("umrahcab_company_user");
+    const savedExtras = localStorage.getItem("umrahcab_extras_unlocked");
     
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -73,8 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Protect routes
   useEffect(() => {
-    const savedUser = sessionStorage.getItem("umrahcab_user");
-    const savedCompanyUser = sessionStorage.getItem("umrahcab_company_user");
+    const savedUser = localStorage.getItem("umrahcab_user");
+    const savedCompanyUser = localStorage.getItem("umrahcab_company_user");
     
     if (pathname.startsWith("/company")) {
       const isCompanyPublicRoute = pathname === "/company/login";
@@ -102,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
+        credentials: "include",
       });
 
       const resData = await response.json();
@@ -121,8 +122,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           username: admin?.username || ""
         };
         setUser(newUser);
-        sessionStorage.setItem("umrahcab_user", JSON.stringify(newUser));
-        sessionStorage.setItem("umrahcab_token", token);
+        localStorage.setItem("umrahcab_user", JSON.stringify(newUser));
+        localStorage.setItem("umrahcab_token", token);
         return { success: true };
       }
       return { success: false, message: "Authentication failed. No token returned." };
@@ -150,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           password,
           password_confirmation: passwordConfirm
         }),
+        credentials: "include",
       });
 
       const resData = await response.json();
@@ -172,8 +174,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           username: admin?.username || ""
         };
         setUser(newUser);
-        sessionStorage.setItem("umrahcab_user", JSON.stringify(newUser));
-        sessionStorage.setItem("umrahcab_token", token);
+        localStorage.setItem("umrahcab_user", JSON.stringify(newUser));
+        localStorage.setItem("umrahcab_token", token);
         return { success: true, message: resData.message || "Registration successful!" };
       }
       return { success: false, message: "No token returned from server." };
@@ -186,9 +188,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setExtrasUnlocked(false);
-    sessionStorage.removeItem("umrahcab_user");
-    sessionStorage.removeItem("umrahcab_token");
-    sessionStorage.removeItem("umrahcab_extras_unlocked");
+    localStorage.removeItem("umrahcab_user");
+    localStorage.removeItem("umrahcab_token");
+    localStorage.removeItem("umrahcab_extras_unlocked");
     router.push("/login");
   };
 
@@ -205,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ agent_username, agent_password }),
+        credentials: "include",
       });
 
       const resData = await response.json();
@@ -226,8 +229,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           logo_path: company?.logo_path || ""
         };
         setCompanyUser(newCompanyUser);
-        sessionStorage.setItem("umrahcab_company_user", JSON.stringify(newCompanyUser));
-        sessionStorage.setItem("umrahcab_company_token", token);
+        localStorage.setItem("umrahcab_company_user", JSON.stringify(newCompanyUser));
+        localStorage.setItem("umrahcab_company_token", token);
         return { success: true };
       }
       return { success: false, message: "Authentication failed. No token returned." };
@@ -239,15 +242,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const companyLogout = () => {
     setCompanyUser(null);
-    sessionStorage.removeItem("umrahcab_company_user");
-    sessionStorage.removeItem("umrahcab_company_token");
+    localStorage.removeItem("umrahcab_company_user");
+    localStorage.removeItem("umrahcab_company_token");
     router.push("/company/login");
   };
 
   const unlockExtras = (pin: string): boolean => {
     if (pin === "786") {
       setExtrasUnlocked(true);
-      sessionStorage.setItem("umrahcab_extras_unlocked", "true");
+      localStorage.setItem("umrahcab_extras_unlocked", "true");
       return true;
     }
     return false;
@@ -255,7 +258,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const lockExtras = () => {
     setExtrasUnlocked(false);
-    sessionStorage.removeItem("umrahcab_extras_unlocked");
+    localStorage.removeItem("umrahcab_extras_unlocked");
   };
 
   return (

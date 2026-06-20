@@ -10,9 +10,9 @@ async function request(endpoint: string, options: RequestInit = {}) {
         endpoint.startsWith("/company-panel") ||
         endpoint.startsWith("company-panel");
       if (isCompanyRoute) {
-        token = sessionStorage.getItem("umrahcab_company_token") || sessionStorage.getItem("umrahcab_token");
+        token = localStorage.getItem("umrahcab_company_token") || localStorage.getItem("umrahcab_token");
       } else {
-        token = sessionStorage.getItem("umrahcab_token") || sessionStorage.getItem("umrahcab_company_token");
+        token = localStorage.getItem("umrahcab_token") || localStorage.getItem("umrahcab_company_token");
       }
     }
 
@@ -33,6 +33,7 @@ async function request(endpoint: string, options: RequestInit = {}) {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
+      credentials: "include",
     });
     if (!res.ok) {
       throw new Error(`HTTP Error: ${res.status}`);

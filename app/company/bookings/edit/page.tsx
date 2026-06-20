@@ -224,7 +224,7 @@ function BookingEditContent() {
             setCustomer(String(b.customer_id));
             const custRes = await api.getCustomer(b.customer_id);
             if (custRes) {
-              setSelectedCustomerObj(custRes);
+              setSelectedCustomerObj(custRes.customer || custRes);
             }
           }
         } else {

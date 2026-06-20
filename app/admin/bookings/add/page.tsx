@@ -258,7 +258,8 @@ export default function AddNewBooking() {
 
     // Resolve customer details from selection state securely
     const fullName = selectedCustomerObj ? selectedCustomerObj.name : "";
-    const whatsappContact = selectedCustomerObj?.contact ? selectedCustomerObj.contact.split(" (")[0] : "+966567799616";
+    const whatsappContact = selectedCustomerObj?.phone || selectedCustomerObj?.secondary_phone || selectedCustomerObj?.alternative_phone || "+966567799616";
+    const customerEmail = selectedCustomerObj?.email || "";
 
     // Call Laravel Backend API
     const res = await api.createBooking({
@@ -271,7 +272,7 @@ export default function AddNewBooking() {
       car_type: vehicle,
       car_price: finalBookingPrice,
       full_name: fullName,
-      email: selectedCustomerObj?.contact?.includes("@") ? selectedCustomerObj.contact.split(" (Email)")[0].split("customer").pop() || "" : "",
+      email: customerEmail,
       whatsapp: whatsappContact,
       flight_no: "",
       notes: internalNotes || externalNotes

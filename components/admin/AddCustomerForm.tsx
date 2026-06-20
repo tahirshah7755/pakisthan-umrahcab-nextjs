@@ -63,11 +63,28 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [custAltPhone, setCustAltPhone] = useState("");
   const [custEmail, setCustEmail] = useState("");
 
-  // Step 2 States: Route setup
-  const [bookingRoute, setBookingRoute] = useState("");
-  const [paxCount, setPaxCount] = useState<number | "">(1);
-  const [vehicleType, setVehicleType] = useState("GMC SUV");
-  const [bookingCost, setBookingCost] = useState("");
+  // Step 2 States: Route setup (Full booking form integration)
+  const [pickupDate, setPickupDate] = useState("");
+  const [pickupTime, setPickupTime] = useState("");
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [dropoffLocation, setDropoffLocation] = useState("");
+  const [timingStatus, setTimingStatus] = useState("Confirmed");
+  const [bookingStatus, setBookingStatus] = useState("Pending");
+  const [adults, setAdults] = useState<number | "">(0);
+  const [childrenCount, setChildrenCount] = useState<number | "">(0);
+  const [bags, setBags] = useState<number | "">(0);
+  const [vehicle, setVehicle] = useState("");
+  const [tripPackage, setTripPackage] = useState("");
+  const [priceBeforeDiscount, setPriceBeforeDiscount] = useState<number | "">("");
+  const [discount, setDiscount] = useState<number | "">("");
+  const [cashToReceive, setCashToReceive] = useState<number | "">("");
+  const [discountReason, setDiscountReason] = useState("");
+  const [tafweejRequired, setTafweejRequired] = useState(false);
+  const [internalNotes, setInternalNotes] = useState("");
+  const [externalNotes, setExternalNotes] = useState("");
+
+  const [vehiclesList, setVehiclesList] = useState<string[]>([]);
+  const [packagesList, setPackagesList] = useState<string[]>([]);
 
   // Step 3 States: Flight Setup
   const [requireFlight, setRequireFlight] = useState(false);
@@ -108,30 +125,68 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   };
 
   useEffect(() => {
-    if (!initialCompanies || initialCompanies.length === 0) {
-      const fetchCompaniesList = async () => {
-        try {
-          const response = await api.getCompanies();
-          if (response) {
-            setCompaniesList(response.map((c: any) => ({
-              id: c.custom_id || `#CMP-${c.id}`,
-              name: c.name,
-              phone: c.phone || "N/A",
-              email: c.email || "N/A",
-              website: c.website || "N/A",
-              address: c.address || "N/A",
-              invoice: !!c.invoice,
-              vouchers: !!c.vouchers,
-              reminders: !!c.reminders
-            })));
-          }
-        } catch (err) {
-          console.error("Failed to load companies list", err);
+    async function loadData() {
+      try {
+        const [companiesData, fleetData, priceListData] = await Promise.all([
+          (!initialCompanies || initialCompanies.length === 0) ? api.getCompanies() : Promise.resolve(null),
+          api.getFleet(),
+          api.getPriceList()
+        ]);
+
+        if (companiesData) {
+          setCompaniesList(companiesData.map((c: any) => ({
+            id: c.custom_id || `#CMP-${c.id}`,
+            name: c.name,
+            phone: c.phone || "N/A",
+            email: c.email || "N/A",
+            website: c.website || "N/A",
+            address: c.address || "N/A",
+            invoice: !!c.invoice,
+            vouchers: !!c.vouchers,
+            reminders: !!c.reminders
+          })));
         }
-      };
-      fetchCompaniesList();
+
+        // Map fleet models dynamically
+        if (Array.isArray(fleetData) && fleetData.length > 0) {
+          setVehiclesList(fleetData.map((f: any) => f.model));
+        } else if (fleetData && Array.isArray(fleetData.data) && fleetData.data.length > 0) {
+          setVehiclesList(fleetData.data.map((f: any) => f.model));
+        } else {
+          setVehiclesList([
+            "Sedan CORE",
+            "Hyundai Staria CORE",
+            "Hyundai Starex CORE",
+            "GMC XL Yukon CORE",
+            "Hiace Grand Cabin CORE",
+            "Coaster CORE",
+            "Bus CORE",
+            "Luxury Bus CORE",
+            "SUV",
+          ]);
+        }
+
+        // Map price list routes/packages dynamically
+        if (Array.isArray(priceListData) && priceListData.length > 0) {
+          setPackagesList(priceListData.map((p: any) => p.route));
+        } else if (priceListData && Array.isArray(priceListData.data) && priceListData.data.length > 0) {
+          setPackagesList(priceListData.data.map((p: any) => p.route));
+        } else {
+          setPackagesList([
+            "Jeddah Airport to Makkah Hotel ★ (جدہ ایئرپورٹ سے مکہ ہوٹل)",
+            "Makkah Hotel to Jeddah Airport ★ (مکہ ہوٹل سے جدہ ایئرپورٹ)",
+            "Jeddah Airport to Madinah Hotel (جدہ ایئرپورٹ سے مدینہ ہوٹل)",
+            "4 in 1 Tour: Kiswah Factory + Makkah Museum + Hira Museum + Holy Quran Museum (ان ۱ ٹور)",
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to load dynamic data in AddCustomerForm:", err);
+      }
     }
+    loadData();
   }, [initialCompanies]);
+
+  const finalBookingPrice = Math.max(0, (Number(priceBeforeDiscount) || 0) - (Number(discount) || 0));
 
   const validateStep = (step: number) => {
     if (step === 1) {
@@ -141,8 +196,20 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       }
     }
     if (step === 2) {
-      if (!bookingRoute || !paxCount || Number(paxCount) < 1) {
-        showToast("Please select Route and enter valid Passengers count.", "error");
+      if (!pickupDate || !pickupTime) {
+        showToast("Please enter pickup date and time.", "error");
+        return false;
+      }
+      if (!pickupLocation || !dropoffLocation) {
+        showToast("Please enter pickup and drop off locations.", "error");
+        return false;
+      }
+      if (!vehicle || !tripPackage) {
+        showToast("Please choose a vehicle and package.", "error");
+        return false;
+      }
+      if (priceBeforeDiscount === "" || Number(priceBeforeDiscount) < 0) {
+        showToast("Please enter a valid price before discount.", "error");
         return false;
       }
     }
@@ -256,12 +323,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       const customerId = createdCustomer.id;
 
       // 3. Create Booking Record
-      const routeParts = bookingRoute.split(" - ");
-      const pickup = routeParts[0] || bookingRoute;
-      const destination = routeParts.slice(1).join(" - ") || bookingRoute;
-
       const todayStr = new Date().toISOString().split("T")[0];
-      const timeStr = new Date().toTimeString().split(" ")[0].slice(0, 5);
 
       let bookingFlightNo = null;
       if (requireFlight) {
@@ -272,18 +334,18 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
       const bookingData = {
         customer_id: customerId,
-        pickup: pickup,
-        destination: destination,
-        date: todayStr,
-        time: timeStr,
-        passengers: String(paxCount),
-        car_type: vehicleType,
-        car_price: Number(bookingCost) || 0,
+        pickup: pickupLocation,
+        destination: dropoffLocation,
+        date: pickupDate,
+        time: pickupTime,
+        passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
+        car_type: vehicle,
+        car_price: finalBookingPrice,
         full_name: custName,
         email: custEmail || null,
         whatsapp: custPhone || "N/A",
         flight_no: bookingFlightNo,
-        notes: `Route: ${bookingRoute} | Vehicle: ${vehicleType} | Passengers: ${paxCount}${notesInfo}`,
+        notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}${notesInfo}`,
       };
 
       const bookingRes = await api.createBooking(bookingData);
@@ -549,57 +611,347 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                 </div>
 
                 <div className="form-grid">
+                  {/* Pickup Date */}
                   <div>
-                    <label className="form-label">Select Route / Sector *</label>
+                    <label className="form-label">Pick up Date *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fa-solid fa-map-location-dot form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <select className="form-input form-select" value={bookingRoute} onChange={(e) => setBookingRoute(e.target.value)} required style={{ paddingLeft: "42px", width: "100%" }}>
-                        <option value="">-- Select Predefined Route --</option>
-                        {predefinedRoutes.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
+                      <i className="fas fa-calendar-day form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={pickupDate}
+                        onChange={(e) => setPickupDate(e.target.value)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pickup Time */}
+                  <div>
+                    <label className="form-label">Pick up Time *</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="time"
+                        className="form-input"
+                        value={pickupTime}
+                        onChange={(e) => setPickupTime(e.target.value)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pickup Location */}
+                  <div>
+                    <label className="form-label">Pick up Location *</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-location-dot form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Type or select location..."
+                        value={pickupLocation}
+                        onChange={(e) => setPickupLocation(e.target.value)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Dropoff Location */}
+                  <div>
+                    <label className="form-label">Drop off Location *</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-paper-plane form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Type or select location..."
+                        value={dropoffLocation}
+                        onChange={(e) => setDropoffLocation(e.target.value)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Timing Status */}
+                  <div>
+                    <label className="form-label">Timing Status</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-clock-rotate-left form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <select
+                        className="form-input form-select"
+                        value={timingStatus}
+                        onChange={(e) => setTimingStatus(e.target.value)}
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      >
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Delayed">Delayed</option>
+                        <option value="On Time">On Time</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Booking Status */}
+                  <div>
+                    <label className="form-label">Booking Status *</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-chart-simple form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <select
+                        className="form-input form-select"
+                        value={bookingStatus}
+                        onChange={(e) => setBookingStatus(e.target.value)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Adults */}
+                  <div>
+                    <label className="form-label">Adults</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-user-group form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-input"
+                        value={adults}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setAdults(val === "" ? "" : parseInt(val) || 0);
+                        }}
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Children */}
+                  <div>
+                    <label className="form-label">Children</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-child form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-input"
+                        value={childrenCount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setChildrenCount(val === "" ? "" : parseInt(val) || 0);
+                        }}
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bags */}
+                  <div>
+                    <label className="form-label">Bags</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-briefcase form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-input"
+                        value={bags}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBags(val === "" ? "" : parseInt(val) || 0);
+                        }}
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Vehicle */}
+                  <div>
+                    <label className="form-label">Vehicle *</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-bus form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <select
+                        className="form-input form-select"
+                        value={vehicle}
+                        onChange={(e) => setVehicle(e.target.value)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      >
+                        <option value="">Choose vehicle...</option>
+                        {vehiclesList.map((v, i) => (
+                          <option key={i} value={v}>
+                            {v}
                           </option>
                         ))}
                       </select>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="form-label">Total Passengers (Pax) *</label>
+                  {/* Package */}
+                  <div className="form-group-full">
+                    <label className="form-label">Package *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fa-solid fa-users form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input 
-                        type="number" 
-                        className="form-input" 
-                        min={1} 
-                        value={paxCount} 
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setPaxCount(val === "" ? "" : Number(val));
-                        }} 
-                        required 
-                        style={{ paddingLeft: "42px", width: "100%" }} 
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="form-label">Vehicle Category</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fa-solid fa-car form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <select className="form-input form-select" value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }}>
-                        <option value="GMC SUV">GMC / Luxury SUV</option>
-                        <option value="Hyundai H1">Hyundai H1 / HiAce Van</option>
-                        <option value="Coaster">Coaster / Bus</option>
+                      <i className="fas fa-box-archive form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <select
+                        className="form-input form-select"
+                        value={tripPackage}
+                        onChange={(e) => setTripPackage(e.target.value)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      >
+                        <option value="">Choose package...</option>
+                        {packagesList.map((p, i) => (
+                          <option key={i} value={p}>
+                            {p}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
+                  {/* Price Before Discount */}
                   <div>
-                    <label className="form-label">Total Route Price (SAR)</label>
+                    <label className="form-label">Price Before Discount *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fa-solid fa-money-bill-wave form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="number" className="form-input" placeholder="0.00" value={bookingCost} onChange={(e) => setBookingCost(e.target.value)} style={{ paddingLeft: "42px", width: "100%" }} />
+                      <i className="fas fa-money-bill-1 form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        placeholder="0.00"
+                        value={priceBeforeDiscount}
+                        onChange={(e) => setPriceBeforeDiscount(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
+                        required
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Discount */}
+                  <div>
+                    <label className="form-label">Discount</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-scissors form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        placeholder="0.00"
+                        value={discount}
+                        onChange={(e) => setDiscount(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Final Booking Price */}
+                  <div>
+                    <label className="form-label">Final Booking Price</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-calculator form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="text"
+                        className="form-input form-input-readonly"
+                        value={finalBookingPrice.toFixed(2)}
+                        readOnly
+                        style={{ paddingLeft: "42px", width: "100%", background: "#f1f5f9" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Cash to Receive */}
+                  <div>
+                    <label className="form-label">Cash to Receive</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-hand-holding-dollar form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="form-input"
+                        placeholder="0.00"
+                        value={cashToReceive}
+                        onChange={(e) => setCashToReceive(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Discount Reason */}
+                  <div className="form-group-full">
+                    <label className="form-label">Discount Reason</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-quote-left form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Reason for applying discount (if any)..."
+                        value={discountReason}
+                        onChange={(e) => setDiscountReason(e.target.value)}
+                        style={{ paddingLeft: "42px", width: "100%" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tafweej Required Toggle */}
+                  <div className="form-group-full">
+                    <div className="tafweej-box">
+                      <div className="tafweej-row">
+                        <span className="tafweej-toggle-label">Is Tafweej Required?</span>
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={tafweejRequired}
+                            onChange={(e) => setTafweejRequired(e.target.checked)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+                      <div className="tafweej-note">
+                        <i className="fas fa-circle-exclamation"></i>
+                        <span>Tafweej is mandatory if the Umrah visa is obtained on airport arrival.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Internal Notes */}
+                  <div className="form-group-full">
+                    <label className="form-label">Internal Notes</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-lock form-icon" style={{ position: "absolute", left: "14px", top: "16px", color: "#9ca3af" }}></i>
+                      <textarea
+                        className="form-input form-textarea"
+                        placeholder="Private internal notes (not visible to customer)..."
+                        value={internalNotes}
+                        onChange={(e) => setInternalNotes(e.target.value)}
+                        rows={3}
+                        style={{ paddingLeft: "42px", width: "100%", height: "auto", resize: "vertical", paddingTop: "12px" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* External Notes */}
+                  <div className="form-group-full">
+                    <label className="form-label">External Notes</label>
+                    <div className="form-input-wrapper" style={{ position: "relative" }}>
+                      <i className="fas fa-comment form-icon" style={{ position: "absolute", left: "14px", top: "16px", color: "#9ca3af" }}></i>
+                      <textarea
+                        className="form-input form-textarea"
+                        placeholder="Notes for customer/driver..."
+                        value={externalNotes}
+                        onChange={(e) => setExternalNotes(e.target.value)}
+                        rows={3}
+                        style={{ paddingLeft: "42px", width: "100%", height: "auto", resize: "vertical", paddingTop: "12px" }}
+                      />
                     </div>
                   </div>
                 </div>

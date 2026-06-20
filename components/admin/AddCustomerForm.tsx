@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
+import { usePathname } from "next/navigation";
 
 interface CompanyItem {
   id: string;
@@ -47,6 +48,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   router,
 }) => {
   const { companyUser } = useAuth();
+  const pathname = usePathname();
+  const isCompanyPanel = pathname?.startsWith("/company");
+
   const [activeStep, setActiveStep] = useState(1);
   const [companiesList, setCompaniesList] = useState<CompanyItem[]>(initialCompanies || []);
   const [loading, setLoading] = useState(false);
@@ -66,10 +70,10 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [custEmail, setCustEmail] = useState("");
 
   useEffect(() => {
-    if (companyUser?.name) {
+    if (isCompanyPanel && companyUser?.name) {
       setCustCompany(companyUser.name);
     }
-  }, [companyUser]);
+  }, [companyUser, isCompanyPanel]);
 
   // Step 2 States: Route setup (Full booking form integration)
   const [pickupDate, setPickupDate] = useState("");
@@ -93,6 +97,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
   const [packagesList, setPackagesList] = useState<string[]>([]);
+  const [rawPriceList, setRawPriceList] = useState<any[]>([]);
 
   // Step 3 States: Flight Setup
   const [requireFlight, setRequireFlight] = useState(false);
@@ -175,10 +180,16 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         }
 
         // Map price list routes/packages dynamically
-        if (Array.isArray(priceListData) && priceListData.length > 0) {
-          setPackagesList(priceListData.map((p: any) => p.route));
-        } else if (priceListData && Array.isArray(priceListData.data) && priceListData.data.length > 0) {
-          setPackagesList(priceListData.data.map((p: any) => p.route));
+        let rawList: any[] = [];
+        if (Array.isArray(priceListData)) {
+          rawList = priceListData;
+        } else if (priceListData && Array.isArray(priceListData.data)) {
+          rawList = priceListData.data;
+        }
+        setRawPriceList(rawList);
+
+        if (rawList.length > 0) {
+          setPackagesList(rawList.map((p: any) => p.route));
         } else {
           setPackagesList([
             "Jeddah Airport to Makkah Hotel ★ (جدہ ایئرپورٹ سے مکہ ہوٹل)",
@@ -193,6 +204,34 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     }
     loadData();
   }, [initialCompanies]);
+
+  useEffect(() => {
+    if (!vehicle || !tripPackage || rawPriceList.length === 0) return;
+
+    const matchedPackage = rawPriceList.find((p: any) => {
+      if (!p.route) return false;
+      const r1 = p.route.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const r2 = tripPackage.toLowerCase().replace(/[^a-z0-9]/g, "");
+      return r1 === r2 || r1.includes(r2) || r2.includes(r1);
+    });
+
+    if (matchedPackage) {
+      const name = vehicle.toLowerCase();
+      let category: "sedan" | "suv" | "van" | "coach" | null = null;
+      if (name.includes("sedan")) category = "sedan";
+      else if (name.includes("suv") || name.includes("gmc") || name.includes("yukon")) category = "suv";
+      else if (name.includes("van") || name.includes("staria") || name.includes("starex") || name.includes("hiace") || name.includes("grand cabin")) category = "van";
+      else if (name.includes("coaster") || name.includes("bus") || name.includes("coach")) category = "coach";
+
+      if (category) {
+        const priceField = `${category}_price`;
+        const autoPrice = parseFloat(matchedPackage[priceField]);
+        if (!isNaN(autoPrice)) {
+          setPriceBeforeDiscount(autoPrice);
+        }
+      }
+    }
+  }, [vehicle, tripPackage, rawPriceList]);
 
   const finalBookingPrice = Math.max(0, (Number(priceBeforeDiscount) || 0) - (Number(discount) || 0));
 
@@ -421,7 +460,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
       showToast("Unified Umrah File Created Successfully!", "success");
       setTimeout(() => {
-        router.push(companyUser ? "/company/customers" : "/admin/customers");
+        router.push(isCompanyPanel ? "/company/customers" : "/admin/customers");
       }, 1500);
 
     } catch (err) {
@@ -541,7 +580,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                     <label className="form-label">Select B2B Agent *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-building form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      {companyUser ? (
+                      {isCompanyPanel && companyUser ? (
                         <input
                           type="text"
                           className="form-input form-input-readonly"

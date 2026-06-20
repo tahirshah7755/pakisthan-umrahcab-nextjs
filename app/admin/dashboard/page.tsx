@@ -6,6 +6,7 @@ import { api } from "@/utils/api";
 
 interface BookingRecord {
   id: string;
+  dbId: string | number;
   time: string;
   customerName: string;
   companyName: string;
@@ -20,6 +21,7 @@ interface BookingRecord {
 
 interface ServiceRecord {
   id: string;
+  dbId: string | number;
   time: string;
   customerName: string;
   companyName: string;
@@ -100,64 +102,124 @@ export default function OperationsDashboard() {
   useEffect(() => {
     async function loadOperationsData() {
       try {
-        const dbBookings = await api.getBookings();
-        const dbCustomers = await api.getCustomers();
-        
-        // Define fallback seeds matching exactly the legacy PHP datasets
-        const legacyBookingsToday: BookingRecord[] = [
-          { id: "#BKG-9843", time: "10:30 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", route: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", price: 300.00, costAgent: 100.00, status: "Active Dispatch", tafweej: "T-091A", customerId: "1" },
-          { id: "#BKG-9844", time: "04:00 PM", customerName: "Abdul Rahman", companyName: "Al-Latif Group", route: "Makkah Hotel → Jeddah Airport", vehicle: "GMC Yukon XL", price: 550.00, costAgent: 180.00, status: "Confirmed Booking", tafweej: "T-091B", customerId: "2" },
-          { id: "#BKG-9848", time: "11:15 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", route: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", price: 300.00, costAgent: 100.00, status: "Completed", tafweej: "T-098A", customerId: "1" },
-          { id: "#BKG-9849", time: "09:00 PM", customerName: "Mohammed Siddique", companyName: "Al-Latif Group", route: "Madinah Hotel → Jeddah Airport", vehicle: "GMC Yukon XL", price: 550.00, costAgent: 180.00, status: "Cancelled", tafweej: "T-098B", customerId: "3" }
-        ];
+        const [dbBookings, dbCustomers, dbServices] = await Promise.all([
+          api.getBookings(),
+          api.getCustomers(),
+          api.getServices()
+        ]);
 
-        const legacyBookingsTomorrow: BookingRecord[] = [
-          { id: "#BKG-9845", time: "08:00 AM", customerName: "Imran Khan", companyName: "Zahid Travels", route: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", price: 650.00, costAgent: 220.00, status: "Pending Check", tafweej: "T-092A", customerId: "1" }
-        ];
+        const now = new Date();
+        const riyadhDateStr = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Riyadh",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }).format(now); // Output format: "YYYY-MM-DD"
 
-        const legacyServicesToday: ServiceRecord[] = [
-          { id: "#SRV-1", time: "12:00 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", serviceName: "Premium Umrah Visa Service", details: "Electronic Umrah visa compilation (Juice, Cake & Lays)", price: 450.00, costAgent: 150.00, status: "Pending", customerId: "1" },
-          { id: "#SRV-2", time: "02:00 PM", customerName: "Abu Bakar", companyName: "Al-Latif Group", serviceName: "Private Makkah Ziyarah Tour", details: "Guided tour to Jabal al-Nour", price: 250.00, costAgent: 100.00, status: "Active", customerId: "3" },
-          { id: "#SRV-4", time: "10:00 AM", customerName: "Abu Bakar", companyName: "Al-Latif Group", serviceName: "Private Makkah Ziyarah Tour", details: "Ziyarah Completed", price: 250.00, costAgent: 100.00, status: "Completed", customerId: "3" }
-        ];
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const riyadhTomorrowStr = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Riyadh",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }).format(tomorrow); // Output format: "YYYY-MM-DD"
 
-        const legacyServicesTomorrow: ServiceRecord[] = [
-          { id: "#SRV-3", time: "09:30 AM", customerName: "Amjad", companyName: "Zahid Travels", serviceName: "VIP Makkah Meet & Greet", details: "Airport Fast-track service", price: 350.00, costAgent: 120.00, status: "Pending", customerId: "2" }
-        ];
-
-        // Hydrate from live DB if valid elements are present
-        if (dbBookings && dbBookings.length > 0) {
-          // Map database elements dynamically into our dashboard structure
-          const mapped = dbBookings.map((b: any, idx: number) => {
-            const matchedCust = dbCustomers ? dbCustomers.find((c: any) => c.name === b.fullName) : null;
-            return {
-              id: b.booking_code || `#BKG-87${idx + 10}`,
-              time: b.time || "12:00 PM",
-              customerName: b.fullName || "Guest",
-              companyName: matchedCust ? matchedCust.company : "Independent",
-              route: `${b.pickup} → ${b.destination}`,
-              vehicle: b.carType || "Sedan",
-              price: parseFloat(b.carPrice || 300),
-              costAgent: parseFloat(b.carPrice || 300) * 0.4,
-              status: b.status || "Confirmed Booking",
-              tafweej: `T-0${idx + 90}X`,
-              customerId: matchedCust ? String(matchedCust.id) : "1"
-            };
-          });
-
-          // Sort or segregate based on dates if applicable, otherwise merge nicely with legacies
-          setBookingsToday([...legacyBookingsToday, ...mapped.slice(0, 2)]);
-          setBookingsTomorrow([...legacyBookingsTomorrow, ...mapped.slice(2)]);
-        } else {
-          setBookingsToday(legacyBookingsToday);
-          setBookingsTomorrow(legacyBookingsTomorrow);
+        // 1. Process Bookings
+        let bookingsList: any[] = [];
+        if (Array.isArray(dbBookings)) {
+          bookingsList = dbBookings;
+        } else if (dbBookings && Array.isArray(dbBookings.data)) {
+          bookingsList = dbBookings.data;
         }
 
-        setServicesToday(legacyServicesToday);
-        setServicesTomorrow(legacyServicesTomorrow);
+        const mappedBookings = bookingsList.map((b: any, idx: number) => {
+          const matchedCust = dbCustomers ? dbCustomers.find((c: any) => c.name === b.fullName) : null;
+          let tafweejCode = "";
+          const match = b.notes?.match(/T-\d+[A-Z]?/i);
+          if (match) {
+            tafweejCode = match[0];
+          } else {
+            tafweejCode = `T-0${idx + 90}X`;
+          }
+
+          return {
+            id: b.booking_code || `#BKG-87${idx + 10}`,
+            dbId: b.id,
+            time: b.time || "12:00 PM",
+            customerName: b.fullName || "Guest",
+            companyName: matchedCust ? matchedCust.company : "Independent",
+            route: `${b.pickup} → ${b.destination}`,
+            vehicle: b.carType || "Sedan",
+            price: parseFloat(b.carPrice || 300),
+            costAgent: parseFloat(b.carPrice || 300) * 0.4,
+            status: b.status || "Confirmed Booking",
+            tafweej: tafweejCode,
+            customerId: matchedCust ? String(matchedCust.id) : "1",
+            date: b.date
+          };
+        });
+
+        // 2. Process Services
+        let servicesList: any[] = [];
+        if (Array.isArray(dbServices)) {
+          servicesList = dbServices;
+        } else if (dbServices && Array.isArray(dbServices.data)) {
+          servicesList = dbServices.data;
+        }
+
+        const mappedServices = servicesList.map((s: any, idx: number) => {
+          const customerName = s.customer?.name || "Guest";
+          const companyName = s.customer?.company || "Independent";
+          const customerId = s.customer_id ? String(s.customer_id) : "1";
+
+          return {
+            id: s.custom_id || `#SRV-87${idx + 10}`,
+            dbId: s.id,
+            time: s.time || "12:00 PM",
+            customerName: customerName,
+            companyName: companyName,
+            serviceName: s.name || "Service",
+            details: s.description || "",
+            price: parseFloat(s.base_price || 0),
+            costAgent: parseFloat(s.driver_cash || 0),
+            status: s.status || "Pending",
+            customerId: customerId,
+            date: s.date
+          };
+        });
+
+        // 3. Filter Bookings by Date (Today, Overdue vs Tomorrow)
+        const bookingsTodayList = mappedBookings.filter((b: any) => {
+          if (!b.date) return true;
+          const isToday = b.date === riyadhDateStr;
+          const isOverdue = b.date < riyadhDateStr && b.status.toLowerCase() !== "completed" && b.status.toLowerCase() !== "cancelled";
+          return isToday || isOverdue;
+        });
+
+        const bookingsTomorrowList = mappedBookings.filter((b: any) => {
+          return b.date === riyadhTomorrowStr;
+        });
+
+        // 4. Filter Services by Date
+        const servicesTodayList = mappedServices.filter((s: any) => {
+          if (!s.date) return true;
+          const isToday = s.date === riyadhDateStr;
+          const isOverdue = s.date < riyadhDateStr && s.status.toLowerCase() !== "completed" && s.status.toLowerCase() !== "cancelled";
+          return isToday || isOverdue;
+        });
+
+        const servicesTomorrowList = mappedServices.filter((s: any) => {
+          return s.date === riyadhTomorrowStr;
+        });
+
+        setBookingsToday(bookingsTodayList);
+        setBookingsTomorrow(bookingsTomorrowList);
+        setServicesToday(servicesTodayList);
+        setServicesTomorrow(servicesTomorrowList);
 
       } catch (err) {
-        console.error("Dashboard backend load failed, loading fallback metrics.", err);
+        console.error("Dashboard backend load failed.", err);
       } finally {
         setLoading(false);
       }
@@ -188,15 +250,22 @@ export default function OperationsDashboard() {
   };
 
   // Mark completion handler
-  const handleMarkCompleted = (itemId: string, isBooking: boolean) => {
-    if (isBooking) {
-      setBookingsToday(prev => prev.map(b => b.id === itemId ? { ...b, status: "Completed" } : b));
-      setBookingsTomorrow(prev => prev.map(b => b.id === itemId ? { ...b, status: "Completed" } : b));
-    } else {
-      setServicesToday(prev => prev.map(s => s.id === itemId ? { ...s, status: "Completed" } : s));
-      setServicesTomorrow(prev => prev.map(s => s.id === itemId ? { ...s, status: "Completed" } : s));
+  const handleMarkCompleted = async (itemId: string, isBooking: boolean, dbId: string | number) => {
+    try {
+      if (isBooking) {
+        await api.updateBooking(String(dbId), { status: "Completed" });
+        setBookingsToday(prev => prev.map(b => b.id === itemId ? { ...b, status: "Completed" } : b));
+        setBookingsTomorrow(prev => prev.map(b => b.id === itemId ? { ...b, status: "Completed" } : b));
+      } else {
+        await api.updateService(String(dbId), { status: "Completed" });
+        setServicesToday(prev => prev.map(s => s.id === itemId ? { ...s, status: "Completed" } : s));
+        setServicesTomorrow(prev => prev.map(s => s.id === itemId ? { ...s, status: "Completed" } : s));
+      }
+      showToast(`Record ${itemId} marked as Completed!`, "success");
+    } catch (err) {
+      console.error("Failed to update status on server:", err);
+      showToast("Failed to update status on server.", "error");
     }
-    showToast(`Record ${itemId} marked as Completed!`, "success");
   };
 
   // Export alerts simulation
@@ -636,7 +705,7 @@ export default function OperationsDashboard() {
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                           <button onClick={() => handleTriggerWhatsAppAlert(b, true, "start")} title="Start WhatsApp Alert" style={{ background: "#eff6ff", border: "none", color: "#2563eb", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-play"></i></button>
-                          <button onClick={() => { handleTriggerWhatsAppAlert(b, true, "complete"); handleMarkCompleted(b.id, true); }} title="Complete & Alert" style={{ background: "#e0f2fe", border: "none", color: "#0284c7", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-check"></i></button>
+                          <button onClick={() => { handleTriggerWhatsAppAlert(b, true, "complete"); handleMarkCompleted(b.id, true, b.dbId); }} title="Complete & Alert" style={{ background: "#e0f2fe", border: "none", color: "#0284c7", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-check"></i></button>
                           <button onClick={() => router.push(`/admin/customers/view?id=${b.customerId}`)} title="View Profile" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-user"></i></button>
                           <button onClick={() => setSelectedVoucher({ ...b, type: "Transport Voucher" })} title="Transport Voucher (SV)" style={{ background: "#faf5ff", border: "none", color: "#8b5cf6", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-file-invoice"></i></button>
                         </div>
@@ -679,7 +748,7 @@ export default function OperationsDashboard() {
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                           <button onClick={() => handleTriggerWhatsAppAlert(s, false, "start")} title="Start Alert" style={{ background: "#eff6ff", border: "none", color: "#2563eb", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-play"></i></button>
-                          <button onClick={() => { handleTriggerWhatsAppAlert(s, false, "complete"); handleMarkCompleted(s.id, false); }} title="Complete Alert" style={{ background: "#e0f2fe", border: "none", color: "#0284c7", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-check"></i></button>
+                          <button onClick={() => { handleTriggerWhatsAppAlert(s, false, "complete"); handleMarkCompleted(s.id, false, s.dbId); }} title="Complete Alert" style={{ background: "#e0f2fe", border: "none", color: "#0284c7", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-check"></i></button>
                           <button onClick={() => router.push(`/admin/services/view?id=${s.id}`)} title="View Details" style={{ background: "#ecfdf5", border: "none", color: "#10b981", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-eye"></i></button>
                           <button onClick={() => setSelectedVoucher({ ...s, type: "Additional Service Voucher" })} title="Print Service Voucher" style={{ background: "#faf5ff", border: "none", color: "#8b5cf6", borderRadius: "6px", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><i className="fas fa-file-invoice"></i></button>
                         </div>

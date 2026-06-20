@@ -120,6 +120,7 @@ function BookingEditContent() {
   // Dynamic Dropdown Lists from API
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
   const [packagesList, setPackagesList] = useState<string[]>([]);
+  const [rawPriceList, setRawPriceList] = useState<any[]>([]);
 
   // Add Customer Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -172,10 +173,17 @@ function BookingEditContent() {
           ]);
         }
 
-        if (Array.isArray(priceListData) && priceListData.length > 0) {
-          setPackagesList(priceListData.map((p: any) => p.route));
-        } else if (priceListData && Array.isArray(priceListData.data) && priceListData.data.length > 0) {
-          setPackagesList(priceListData.data.map((p: any) => p.route));
+        // Map price list routes/packages dynamically
+        let rawList: any[] = [];
+        if (Array.isArray(priceListData)) {
+          rawList = priceListData;
+        } else if (priceListData && Array.isArray(priceListData.data)) {
+          rawList = priceListData.data;
+        }
+        setRawPriceList(rawList);
+
+        if (rawList.length > 0) {
+          setPackagesList(rawList.map((p: any) => p.route));
         } else {
           setPackagesList([
             "Jeddah Airport to Makkah Hotel ★ (جدہ ایئرپورٹ سے مکہ ہوٹل)",
@@ -191,6 +199,34 @@ function BookingEditContent() {
     }
     loadDynamicDropdowns();
   }, []);
+
+  useEffect(() => {
+    if (!vehicle || !tripPackage || rawPriceList.length === 0) return;
+
+    const matchedPackage = rawPriceList.find((p: any) => {
+      if (!p.route) return false;
+      const r1 = p.route.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const r2 = tripPackage.toLowerCase().replace(/[^a-z0-9]/g, "");
+      return r1 === r2 || r1.includes(r2) || r2.includes(r1);
+    });
+
+    if (matchedPackage) {
+      const name = vehicle.toLowerCase();
+      let category: "sedan" | "suv" | "van" | "coach" | null = null;
+      if (name.includes("sedan")) category = "sedan";
+      else if (name.includes("suv") || name.includes("gmc") || name.includes("yukon")) category = "suv";
+      else if (name.includes("van") || name.includes("staria") || name.includes("starex") || name.includes("hiace") || name.includes("grand cabin")) category = "van";
+      else if (name.includes("coaster") || name.includes("bus") || name.includes("coach")) category = "coach";
+
+      if (category) {
+        const priceField = `${category}_price`;
+        const autoPrice = parseFloat(matchedPackage[priceField]);
+        if (!isNaN(autoPrice)) {
+          setPriceBeforeDiscount(autoPrice);
+        }
+      }
+    }
+  }, [vehicle, tripPackage, rawPriceList]);
 
   // Fetch target booking details
   useEffect(() => {

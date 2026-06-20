@@ -192,7 +192,7 @@ export default function CustomerSearchDropdown({
                   >
                     <div style={{ fontWeight: "700" }}>{c.name}</div>
                     <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                      {c.company} • {c.custom_id || `#CST-${c.id}`} • {c.contact}
+                      {c.company} • {c.custom_id || `#CST-${c.id}`} • {c.phone || c.contact?.split(" | ")[0] || c.contact}
                     </div>
                   </div>
                 ))}

@@ -141,15 +141,8 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
           </button>
           <button
             onClick={() => {
-              const mapped = customers.find(c => c.id === currentProfile.id) || {
-                id: currentProfile.id,
-                name: currentProfile.name,
-                company: "Zahid Travels",
-                contact: currentProfile.phones[0],
-                registeredBy: currentProfile.meta.registeredBy,
-                lastUpdate: currentProfile.meta.lastEditedDate
-              };
-              setEditingCustomer(mapped);
+              const rawId = currentProfile.id.replace("#CST-", "").replace("#Cst-", "");
+              router.push(`/admin/customers/edit?id=${rawId}`);
             }}
             style={{
               background: "#ffffff",
@@ -396,10 +389,10 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               {/* Status Trackers (Linear indicators) */}
               <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "15px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px" }}>
                 {[
-                  { label: "Pending", count: 1, color: "#d97706", bg: "#f59e0b" },
-                  { label: "Confirmed", count: 1, color: "#2563eb", bg: "#3b82f6" },
-                  { label: "Completed", count: 0, color: "#16a34a", bg: "#22c55e" },
-                  { label: "Cancelled", count: 0, color: "#dc2626", bg: "#ef4444" }
+                  { label: "Pending", count: custBookings.filter(b => (b.status || "").toLowerCase() === "pending").length, color: "#d97706", bg: "#f59e0b" },
+                  { label: "Confirmed", count: custBookings.filter(b => (b.status || "").toLowerCase() === "confirmed").length, color: "#2563eb", bg: "#3b82f6" },
+                  { label: "Completed", count: custBookings.filter(b => (b.status || "").toLowerCase() === "completed").length, color: "#16a34a", bg: "#22c55e" },
+                  { label: "Cancelled", count: custBookings.filter(b => (b.status || "").toLowerCase() === "cancelled").length, color: "#dc2626", bg: "#ef4444" }
                 ].map((tracker, idx) => (
                   <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <div style={{ width: "4px", height: "30px", background: tracker.bg, borderRadius: "2px" }}></div>

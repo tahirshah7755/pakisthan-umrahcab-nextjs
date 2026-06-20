@@ -311,16 +311,16 @@ function CustomerViewContent() {
     company: selectedCust ? selectedCust.company : "Corporate Account",
     meta: {
       registeredBy: selectedCust?.registered_by || selectedCust?.registeredBy || "umrahcab",
-      registeredDate: "22 May, 2026 | 08:32 PM",
+      registeredDate: selectedCust?.created_at ? new Date(selectedCust.created_at).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "22 May, 2026 | 08:32 PM",
       lastEditedBy: selectedCust?.registered_by || selectedCust?.registeredBy || "umrahcab",
-      lastEditedDate: selectedCust?.last_update || selectedCust?.lastUpdate || "25 May, 2026 | 09:58 AM"
+      lastEditedDate: selectedCust?.updated_at ? new Date(selectedCust.updated_at).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : (selectedCust?.last_update || selectedCust?.lastUpdate || "No edits")
     },
     externalRemarks: selectedCust ? parsedNotes : "No external notes.",
     internalRemarks: "No internal notes."
   };
 
   // Filter lists down to just this customer's items
-  const custRawId = selectedCust?.rawId || 0;
+  const custRawId = selectedCust?.rawId || selectedCust?.id || 0;
   const filteredBookings = bookings.filter(b => b.customerId === currentProfile.id || String(b.customerId) === String(custRawId));
   const filteredServices = services.filter(s => String(s.customer_id) === String(custRawId));
   const filteredFlights = flights.filter(f => String(f.customer_id) === String(custRawId));

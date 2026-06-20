@@ -406,7 +406,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
                           <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                         </button>
                         <button
-                          onClick={() => setEditingCustomer(c)}
+                          onClick={() => router.push(`/admin/customers/edit?id=${c.rawId || c.id}`)}
                           title="Edit"
                           style={{
                             background: "#f1f5f9",

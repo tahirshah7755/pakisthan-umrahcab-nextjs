@@ -45,6 +45,71 @@ export default function AddNewBooking() {
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
   const [packagesList, setPackagesList] = useState<string[]>([]);
   const [rawPriceList, setRawPriceList] = useState<any[]>([]);
+  const [locationsList, setLocationsList] = useState<string[]>([]);
+  const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
+  const [showDropoffSuggestions, setShowDropoffSuggestions] = useState(false);
+
+  const extractedLocations = React.useMemo(() => {
+    if (locationsList && locationsList.length > 0) {
+      return locationsList;
+    }
+    const fallbackLocations = [
+      "Jeddah Airport (JED) - Terminal 1",
+      "Jeddah Airport (JED) - North Terminal",
+      "Makkah Hotel",
+      "Madinah Hotel",
+      "Jeddah Hotel",
+      "Makkah Station (Haramain)",
+      "Madinah Station (Haramain)",
+      "Jeddah Station (Haramain)",
+      "Madinah Haram",
+      "Makkah Haram",
+      "Yanbu",
+      "Taif"
+    ];
+    return fallbackLocations;
+  }, [locationsList]);
+
+  const [externalPickupLocations, setExternalPickupLocations] = useState<string[]>([]);
+  const [externalDropoffLocations, setExternalDropoffLocations] = useState<string[]>([]);
+
+  const filteredPickupSuggestions = React.useMemo(() => {
+    const localMatches = extractedLocations.filter((loc) =>
+      loc.toLowerCase().includes(pickupLocation.toLowerCase())
+    );
+    return Array.from(new Set([...localMatches, ...externalPickupLocations]));
+  }, [extractedLocations, pickupLocation, externalPickupLocations]);
+
+  const filteredDropoffSuggestions = React.useMemo(() => {
+    const localMatches = extractedLocations.filter((loc) =>
+      loc.toLowerCase().includes(dropoffLocation.toLowerCase())
+    );
+    return Array.from(new Set([...localMatches, ...externalDropoffLocations]));
+  }, [extractedLocations, dropoffLocation, externalDropoffLocations]);
+
+  useEffect(() => {
+    if (!pickupLocation || pickupLocation.trim().length < 3) {
+      setExternalPickupLocations([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      const results = await api.searchExternalLocations(pickupLocation);
+      setExternalPickupLocations(results);
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [pickupLocation]);
+
+  useEffect(() => {
+    if (!dropoffLocation || dropoffLocation.trim().length < 3) {
+      setExternalDropoffLocations([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      const results = await api.searchExternalLocations(dropoffLocation);
+      setExternalDropoffLocations(results);
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [dropoffLocation]);
 
   // Add Customer Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -61,10 +126,11 @@ export default function AddNewBooking() {
   useEffect(() => {
     async function loadDynamicDropdowns() {
       try {
-        const [fleetData, priceListData, companiesData] = await Promise.all([
+        const [fleetData, priceListData, companiesData, locationsData] = await Promise.all([
           api.getFleet(),
           api.getPriceList(),
-          api.getCompanies()
+          api.getCompanies(),
+          api.getLocations()
         ]);
 
         // Map fleet models dynamically
@@ -95,6 +161,10 @@ export default function AddNewBooking() {
           rawList = priceListData.data;
         }
         setRawPriceList(rawList);
+
+        if (locationsData && Array.isArray(locationsData)) {
+          setLocationsList(locationsData);
+        }
 
         if (rawList.length > 0) {
           setPackagesList(rawList.map((p: any) => p.route));
@@ -557,35 +627,119 @@ export default function AddNewBooking() {
           </div>
 
           {/* Pickup Location */}
-          <div>
+          <div style={{ position: "relative" }}>
             <label className="form-label">Pick up Location *</label>
             <div className="form-input-wrapper">
-              <i className="fas fa-location-dot form-icon"></i>
+              <i className="fas fa-location-dot form-icon" style={{ zIndex: 10 }}></i>
               <input
                 type="text"
                 className="form-input"
                 placeholder="Type or select location..."
                 value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
+                onChange={(e) => {
+                  setPickupLocation(e.target.value);
+                  setShowPickupSuggestions(true);
+                }}
+                onFocus={() => setShowPickupSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowPickupSuggestions(false), 200)}
                 required
               />
             </div>
+            {showPickupSuggestions && filteredPickupSuggestions.length > 0 && (
+              <div className="suggestions-box" style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                backgroundColor: "#fff",
+                border: "1px solid #cbd5e1",
+                borderRadius: "8px",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                zIndex: 999,
+                maxHeight: "180px",
+                overflowY: "auto",
+                marginTop: "4px"
+              }}>
+                {filteredPickupSuggestions.map((loc, idx) => (
+                  <div
+                    key={idx}
+                    onMouseDown={() => {
+                      setPickupLocation(loc);
+                      setShowPickupSuggestions(false);
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      color: "#334155",
+                      borderBottom: "1px solid #f1f5f9"
+                    }}
+                    className="suggestion-item"
+                  >
+                    <i className="fas fa-location-dot" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
+                    {loc}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Dropoff Location */}
-          <div>
+          <div style={{ position: "relative" }}>
             <label className="form-label">Drop off Location *</label>
             <div className="form-input-wrapper">
-              <i className="fas fa-paper-plane form-icon"></i>
+              <i className="fas fa-paper-plane form-icon" style={{ zIndex: 10 }}></i>
               <input
                 type="text"
                 className="form-input"
                 placeholder="Type or select location..."
                 value={dropoffLocation}
-                onChange={(e) => setDropoffLocation(e.target.value)}
+                onChange={(e) => {
+                  setDropoffLocation(e.target.value);
+                  setShowDropoffSuggestions(true);
+                }}
+                onFocus={() => setShowDropoffSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowDropoffSuggestions(false), 200)}
                 required
               />
             </div>
+            {showDropoffSuggestions && filteredDropoffSuggestions.length > 0 && (
+              <div className="suggestions-box" style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                backgroundColor: "#fff",
+                border: "1px solid #cbd5e1",
+                borderRadius: "8px",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                zIndex: 999,
+                maxHeight: "180px",
+                overflowY: "auto",
+                marginTop: "4px"
+              }}>
+                {filteredDropoffSuggestions.map((loc, idx) => (
+                  <div
+                    key={idx}
+                    onMouseDown={() => {
+                      setDropoffLocation(loc);
+                      setShowDropoffSuggestions(false);
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      color: "#334155",
+                      borderBottom: "1px solid #f1f5f9"
+                    }}
+                    className="suggestion-item"
+                  >
+                    <i className="fas fa-paper-plane" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
+                    {loc}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Timing Status */}
@@ -1002,6 +1156,16 @@ export default function AddNewBooking() {
           </div>
         </div>
       )}
+      {/* Autocomplete Suggestions hover styling */}
+      <style>{`
+        .suggestion-item {
+          transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        .suggestion-item:hover {
+          background-color: #f8fafc !important;
+          color: #b48a1d !important;
+        }
+      `}</style>
     </div>
   );
 }

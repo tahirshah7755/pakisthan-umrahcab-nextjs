@@ -448,6 +448,11 @@ export const api = {
     return data || [];
   },
 
+  async getLocations() {
+    const data = await request(`/locations`);
+    return data || [];
+  },
+
   async updatePriceList(id: number, prices: any) {
     const data = await request(`/price-list/${id}`, {
       method: "PUT",
@@ -563,5 +568,31 @@ export const api = {
     });
     if (data) return { success: true, data };
     return { success: false, error: "API connection failed" };
+  },
+
+  async searchExternalLocations(query: string): Promise<string[]> {
+    if (!query || query.length < 3) return [];
+    try {
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (data && Array.isArray(data.features)) {
+        const results = data.features.map((f: any) => {
+          const name = f.properties.name || "";
+          const city = f.properties.city || f.properties.state || "";
+          const country = f.properties.country || "";
+          // Remove duplicates within the parts
+          const parts = [name, city, country].filter(Boolean);
+          const uniqueParts = parts.filter((val, index, self) => self.indexOf(val) === index);
+          return uniqueParts.join(", ");
+        });
+        // Remove duplicate full strings from the array
+        return Array.from(new Set(results));
+      }
+      return [];
+    } catch (err) {
+      console.warn("External location search failed:", err);
+      return [];
+    }
   }
 };

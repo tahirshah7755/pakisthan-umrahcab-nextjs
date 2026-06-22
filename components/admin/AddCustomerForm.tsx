@@ -47,6 +47,7 @@ const predefinedRoutes = [
   "MADINAH - MAKKAH - JEDDAH"
 ];
 
+
 export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   companies: initialCompanies,
   router,
@@ -85,6 +86,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [pickupTime, setPickupTime] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
+  const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
+  const [showDropoffSuggestions, setShowDropoffSuggestions] = useState(false);
   const [timingStatus, setTimingStatus] = useState("Confirmed");
   const [bookingStatus, setBookingStatus] = useState("Pending");
   const [adults, setAdults] = useState<number | "">(0);
@@ -99,10 +102,72 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [tafweejRequired, setTafweejRequired] = useState(false);
   const [internalNotes, setInternalNotes] = useState("");
   const [externalNotes, setExternalNotes] = useState("");
-
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
   const [packagesList, setPackagesList] = useState<string[]>([]);
   const [rawPriceList, setRawPriceList] = useState<any[]>([]);
+  const [locationsList, setLocationsList] = useState<string[]>([]);
+
+  const extractedLocations = React.useMemo(() => {
+    if (locationsList && locationsList.length > 0) {
+      return locationsList;
+    }
+    const fallbackLocations = [
+      "Jeddah Airport (JED) - Terminal 1",
+      "Jeddah Airport (JED) - North Terminal",
+      "Makkah Hotel",
+      "Madinah Hotel",
+      "Jeddah Hotel",
+      "Makkah Station (Haramain)",
+      "Madinah Station (Haramain)",
+      "Jeddah Station (Haramain)",
+      "Madinah Haram",
+      "Makkah Haram",
+      "Yanbu",
+      "Taif"
+    ];
+    return fallbackLocations;
+  }, [locationsList]);
+
+  const [externalPickupLocations, setExternalPickupLocations] = useState<string[]>([]);
+  const [externalDropoffLocations, setExternalDropoffLocations] = useState<string[]>([]);
+
+  const filteredPickupSuggestions = React.useMemo(() => {
+    const localMatches = extractedLocations.filter((loc) =>
+      loc.toLowerCase().includes(pickupLocation.toLowerCase())
+    );
+    return Array.from(new Set([...localMatches, ...externalPickupLocations]));
+  }, [extractedLocations, pickupLocation, externalPickupLocations]);
+
+  const filteredDropoffSuggestions = React.useMemo(() => {
+    const localMatches = extractedLocations.filter((loc) =>
+      loc.toLowerCase().includes(dropoffLocation.toLowerCase())
+    );
+    return Array.from(new Set([...localMatches, ...externalDropoffLocations]));
+  }, [extractedLocations, dropoffLocation, externalDropoffLocations]);
+
+  useEffect(() => {
+    if (!pickupLocation || pickupLocation.trim().length < 3) {
+      setExternalPickupLocations([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      const results = await api.searchExternalLocations(pickupLocation);
+      setExternalPickupLocations(results);
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [pickupLocation]);
+
+  useEffect(() => {
+    if (!dropoffLocation || dropoffLocation.trim().length < 3) {
+      setExternalDropoffLocations([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      const results = await api.searchExternalLocations(dropoffLocation);
+      setExternalDropoffLocations(results);
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [dropoffLocation]);
 
   // Step 3 States: Flight Setup
   const [requireFlight, setRequireFlight] = useState(false);
@@ -146,11 +211,12 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   useEffect(() => {
     async function loadData() {
       try {
-        const [companiesData, fleetData, priceListData, hotelsData] = await Promise.all([
+        const [companiesData, fleetData, priceListData, hotelsData, locationsData] = await Promise.all([
           (!initialCompanies || initialCompanies.length === 0) ? api.getCompanies() : Promise.resolve(null),
           api.getFleet(),
           api.getPriceList(),
-          api.getHotels()
+          api.getHotels(),
+          api.getLocations()
         ]);
 
         if (companiesData) {
@@ -194,6 +260,10 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           rawList = priceListData.data;
         }
         setRawPriceList(rawList);
+
+        if (locationsData && Array.isArray(locationsData)) {
+          setLocationsList(locationsData);
+        }
 
         if (rawList.length > 0) {
           setPackagesList(rawList.map((p: any) => p.route));
@@ -864,7 +934,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                   </div>
 
                   {/* Pickup Location */}
-                  <div>
+                  <div style={{ position: "relative" }}>
                     <label className="form-label">Pick up Location *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-location-dot form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
@@ -873,18 +943,60 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         className="form-input"
                         placeholder="Type or select location..."
                         value={pickupLocation}
-                        onChange={(e) => setPickupLocation(e.target.value)}
+                        onChange={(e) => {
+                          setPickupLocation(e.target.value);
+                          setShowPickupSuggestions(true);
+                        }}
+                        onFocus={() => setShowPickupSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowPickupSuggestions(false), 200)}
                         required
                         style={{ paddingLeft: "42px", width: "100%", borderColor: errors.pickupLocation ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {showPickupSuggestions && filteredPickupSuggestions.length > 0 && (
+                      <div className="suggestions-box" style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "#fff",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                        zIndex: 999,
+                        maxHeight: "180px",
+                        overflowY: "auto",
+                        marginTop: "4px"
+                      }}>
+                        {filteredPickupSuggestions.map((loc, idx) => (
+                          <div
+                            key={idx}
+                            onMouseDown={() => {
+                              setPickupLocation(loc);
+                              setShowPickupSuggestions(false);
+                            }}
+                            style={{
+                              padding: "10px 14px",
+                              cursor: "pointer",
+                              fontSize: "13px",
+                              color: "#334155",
+                              borderBottom: "1px solid #f1f5f9"
+                            }}
+                            className="suggestion-item"
+                          >
+                            <i className="fas fa-location-dot" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
+                            {loc}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {errors.pickupLocation && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.pickupLocation}</span>
                     )}
                   </div>
 
                   {/* Dropoff Location */}
-                  <div>
+                  <div style={{ position: "relative" }}>
                     <label className="form-label">Drop off Location *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-paper-plane form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
@@ -893,11 +1005,53 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         className="form-input"
                         placeholder="Type or select location..."
                         value={dropoffLocation}
-                        onChange={(e) => setDropoffLocation(e.target.value)}
+                        onChange={(e) => {
+                          setDropoffLocation(e.target.value);
+                          setShowDropoffSuggestions(true);
+                        }}
+                        onFocus={() => setShowDropoffSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowDropoffSuggestions(false), 200)}
                         required
                         style={{ paddingLeft: "42px", width: "100%", borderColor: errors.dropoffLocation ? "#ef4444" : undefined }}
                       />
                     </div>
+                    {showDropoffSuggestions && filteredDropoffSuggestions.length > 0 && (
+                      <div className="suggestions-box" style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "#fff",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                        zIndex: 999,
+                        maxHeight: "180px",
+                        overflowY: "auto",
+                        marginTop: "4px"
+                      }}>
+                        {filteredDropoffSuggestions.map((loc, idx) => (
+                          <div
+                            key={idx}
+                            onMouseDown={() => {
+                              setDropoffLocation(loc);
+                              setShowDropoffSuggestions(false);
+                            }}
+                            style={{
+                              padding: "10px 14px",
+                              cursor: "pointer",
+                              fontSize: "13px",
+                              color: "#334155",
+                              borderBottom: "1px solid #f1f5f9"
+                            }}
+                            className="suggestion-item"
+                          >
+                            <i className="fas fa-paper-plane" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
+                            {loc}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {errors.dropoffLocation && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.dropoffLocation}</span>
                     )}
@@ -1731,6 +1885,14 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         .step-item.completed .step-label {
           color: #b48a1d !important;
           font-weight: 700 !important;
+        }
+        
+        .suggestion-item {
+          transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        .suggestion-item:hover {
+          background-color: #f8fafc !important;
+          color: #b48a1d !important;
         }
       `}</style>
     </div>

@@ -2703,3 +2703,109 @@ input[type="checkbox"]:checked + .switch-slider::before {
     justify-content: flex-end !important;
   }
 }
+
+/* ==========================================================================
+   RESPONSIVE VIEW PAGES & GRID OVERRIDES
+   ========================================================================== */
+
+@media (max-width: 992px) {
+  /* Stack 2-column details and profile grids (e.g. 1fr 2fr, 1fr 1.5fr) on tablets */
+  *[style*="grid-template-columns: 1fr 2fr"],
+  *[style*="grid-template-columns:1fr 2fr"],
+  *[style*="grid-template-columns: 1fr 1.5fr"],
+  *[style*="grid-template-columns:1fr 1.5fr"],
+  *[style*="grid-template-columns: 2fr 1fr"],
+  *[style*="grid-template-columns:2fr 1fr"],
+  *[style*="grid-template-columns: 1fr 1fr"],
+  *[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Make 4-column summary statistics look clean on tablets */
+  *[style*="grid-template-columns: 1fr 1fr 1fr 1fr"],
+  *[style*="grid-template-columns:1fr 1fr 1fr 1fr"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Force all inline grid configurations to stack into 1 column on mobile */
+  *[style*="grid-template-columns"],
+  *[style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Reset grid-column spans to prevent elements from stretching out of layout bounds */
+  *[style*="grid-column"],
+  *[style*="gridColumn"] {
+    grid-column: span 1 !important;
+  }
+
+  /* Allow flexbox rows to wrap nicely on narrow screens */
+  div[style*="display: flex"],
+  div[style*="display:flex"],
+  form[style*="display: flex"],
+  form[style*="display:flex"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* Override fixed widths & min-widths in details panels to fit mobile screen widths */
+  div[style*="min-width"],
+  div[style*="minWidth"] {
+    min-width: 100% !important;
+  }
+
+  div[style*="width: 320px"],
+  div[style*="width:320px"],
+  div[style*="width: 350px"],
+  div[style*="width:350px"] {
+    width: 100% !important;
+  }
+
+  /* Responsive header panels (title + action buttons stack vertically) */
+  .form-header-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    padding: 18px 20px !important;
+  }
+
+  .form-header-card > div {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  .form-header-card > div:last-child {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Invoice detail page print layout adjustments */
+  #invoice-print-area {
+    padding: 16px !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  #invoice-print-area > div[style*="display: flex"],
+  #invoice-print-area > div[style*="display:flex"] {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  #invoice-print-area > div[style*="display: flex"] > div,
+  #invoice-print-area > div[style*="display:flex"] > div {
+    text-align: left !important;
+  }
+
+  /* Modal responsive sizing */
+  div[style*="position: fixed"][style*="background: rgba(15, 23, 42, 0.6)"] > div,
+  div[style*="position:fixed"][style*="background:rgba(15, 23, 42, 0.6)"] > div {
+    max-width: 95% !important;
+    margin: 10px !important;
+  }
+}
+

@@ -66,7 +66,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
       
-      {/* Header Panel Card (Teal/Emerald Green Gradient) */}
+      {/* Header Panel Card (Teal/Emerald Green Gradient - Restored original colors) */}
       <div 
         style={{ 
           background: "linear-gradient(135deg, #0f766e 0%, #115e59 100%)", 
@@ -141,7 +141,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
           </button>
           <button
             onClick={() => {
-              const rawId = currentProfile.id.replace("#CST-", "").replace("#Cst-", "");
+              const rawId = currentProfile.id.replace("#CST-", "").replace("#Cst-", "").replace("#cst-", "");
               router.push(`/admin/customers/edit?id=${rawId}`);
             }}
             style={{
@@ -229,7 +229,8 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
 
       {/* MAIN TAB PANELS */}
       {activeProfileTab === "overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "25px", alignItems: "start" }}>
+        /* FIXED LAYOUT PROBLEM: Locked left column width to 320px to prevent excessive horizontal stretching on widescreen monitors */
+        <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "25px", alignItems: "start" }}>
           
           {/* Left Column: Customer Details Card */}
           <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
@@ -257,7 +258,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                   {currentProfile.name}
                 </h3>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "600" }}>
-                  Joined: 22 May, 2026 08:32 PM
+                  Joined: {currentProfile.meta.registeredDate.split(" | ")[0] || "22 May, 2026"}
                 </span>
               </div>
 
@@ -276,31 +277,35 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                   </div>
                 </div>
                 
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Secondary Phone</span>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>
-                      <i className="fas fa-phone-volume" style={{ color: "#3b82f6", marginRight: "8px" }}></i>
-                      {currentProfile.phones[1]}
-                    </span>
-                    <button onClick={() => { navigator.clipboard.writeText(currentProfile.phones[1]); showToast("Copied phone!", "success"); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer" }}>
-                      <i className="fas fa-copy"></i>
-                    </button>
+                {currentProfile.phones[1] && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Secondary Phone</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>
+                        <i className="fas fa-phone-volume" style={{ color: "#3b82f6", marginRight: "8px" }}></i>
+                        {currentProfile.phones[1]}
+                      </span>
+                      <button onClick={() => { navigator.clipboard.writeText(currentProfile.phones[1]); showToast("Copied phone!", "success"); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer" }}>
+                        <i className="fas fa-copy"></i>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Alternative Phone</span>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>
-                      <i className="fas fa-phone-flip" style={{ color: "#8b5cf6", marginRight: "8px" }}></i>
-                      {currentProfile.phones[2]}
-                    </span>
-                    <button onClick={() => { navigator.clipboard.writeText(currentProfile.phones[2]); showToast("Copied phone!", "success"); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer" }}>
-                      <i className="fas fa-copy"></i>
-                    </button>
+                {currentProfile.phones[2] && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Alternative Phone</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>
+                        <i className="fas fa-phone-flip" style={{ color: "#8b5cf6", marginRight: "8px" }}></i>
+                        {currentProfile.phones[2]}
+                      </span>
+                      <button onClick={() => { navigator.clipboard.writeText(currentProfile.phones[2]); showToast("Copied phone!", "success"); }} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer" }}>
+                        <i className="fas fa-copy"></i>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", borderTop: "1px solid #f1f5f9", paddingTop: "15px" }}>
                   <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Email Address</span>
@@ -703,7 +708,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                 <td>22 May, 2026 09:59 PM</td>
                 <td style={{ fontWeight: 600 }}>umrahcab</td>
                 <td style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span>Updated customer profile #CST-1: Abu Bakar</span>
+                  <span>Updated customer profile: {currentProfile.name}</span>
                   <span onClick={() => showToast("Loading detailed audit log changeset...", "success")} style={{ color: "#2563eb", cursor: "pointer", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                     <i className="fas fa-circle-info"></i> View Detailed Changes
                   </span>
@@ -712,7 +717,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               <tr>
                 <td>22 May, 2026 08:32 PM</td>
                 <td style={{ fontWeight: 600 }}>umrahcab</td>
-                <td>Added new customer #CST-1: Amjad (123456789)</td>
+                <td>Added new customer: {currentProfile.name} ({currentProfile.phones[0]})</td>
               </tr>
             </tbody>
           </table>
@@ -747,7 +752,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               </div>
               <div style={{ gridColumn: "span 2" }}>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Route Mapping</span>
-                <span style={{ fontSize: "14px", fontWeight: "600" }}>{selectedProfileBooking.pickupLocation} → {selectedProfileBooking.dropoffLocation}</span>
+                <span style={{ fontSize: "14px", fontWeight: "600" }}>{selectedProfileBooking.pickupLocation} &rarr; {selectedProfileBooking.dropoffLocation}</span>
               </div>
               <div>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Billing Value</span>

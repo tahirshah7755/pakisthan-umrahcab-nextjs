@@ -347,35 +347,20 @@ function EditTrainContent() {
               themeColor={TRAIN_PURPLE}
             />
 
-            {/* Leg Type Selector Tabs (Matches exact styling of add page) */}
-            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-              {(["Arrival", "Departure", "Both Legs"] as const).map((leg) => (
-                <button
-                  key={leg}
-                  type="button"
-                  onClick={() => setTrnLeg(leg)}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    padding: "12px 16px",
-                    borderRadius: "8px",
-                    fontWeight: "600",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    border: trnLeg === leg ? "none" : "1px solid #cbd5e1",
-                    background: trnLeg === leg ? TRAIN_PURPLE : "#ffffff",
-                    color: trnLeg === leg ? "#ffffff" : "#64748b",
-                    boxShadow: trnLeg === leg ? `0 4px 6px -1px rgba(124, 58, 237, 0.25)` : "none",
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  <i className="fas fa-train"></i>
-                  <span>{leg}</span>
-                </button>
-              ))}
+            {/* Display Leg Direction Badge */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "5px" }}>
+              <span style={{ fontSize: "13px", fontWeight: "600", color: "#475569" }}>Leg Direction:</span>
+              <span style={{
+                background: trnLeg === "Arrival" ? "#059669" : trnLeg === "Departure" ? "#2563eb" : TRAIN_PURPLE,
+                color: "#ffffff",
+                padding: "6px 12px",
+                borderRadius: "20px",
+                fontSize: "12px",
+                fontWeight: "700"
+              }}>
+                <i className="fas fa-train" style={{ marginRight: "6px" }}></i>
+                {trnLeg}
+              </span>
             </div>
 
             {/* Arrival details section */}

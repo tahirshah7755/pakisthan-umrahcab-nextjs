@@ -2564,6 +2564,142 @@ input[type="checkbox"]:checked + .switch-slider::before {
   transform: translateY(0) !important;
 }
 
+/* ==========================================================================
+   RESPONSIVE TABLE-TO-CARD TRANSFORMATION
+   ========================================================================== */
 
+@media (max-width: 992px) {
+  /* Remove excessive padding/borders of the table container card on small devices */
+  .table-card {
+    padding: 12px 6px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
 
+  .table-responsive {
+    overflow-x: visible !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
 
+  /* Force table element hierarchy to render as block containers */
+  table.db-table,
+  table.matrix-table,
+  .table-responsive table,
+  table.db-table thead,
+  table.db-table tbody,
+  table.db-table tr,
+  table.db-table td,
+  table.matrix-table thead,
+  table.matrix-table tbody,
+  table.matrix-table tr,
+  table.matrix-table td,
+  .table-responsive table thead,
+  .table-responsive table tbody,
+  .table-responsive table tr,
+  .table-responsive table td {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hide the native table headers visually */
+  table.db-table thead,
+  table.matrix-table thead,
+  .table-responsive table thead {
+    display: none !important;
+  }
+
+  /* Style each table row as an independent, sleek card */
+  table.db-table tbody tr,
+  table.matrix-table tbody tr,
+  .table-responsive table tbody tr {
+    background: #ffffff !important;
+    border: 1px solid #edf2f9 !important;
+    border-radius: 14px !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+  }
+
+  table.db-table tbody tr:hover,
+  table.matrix-table tbody tr:hover,
+  .table-responsive table tbody tr:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
+    border-color: var(--primary-color, #b48a1d) !important;
+  }
+
+  /* Style table cells as key-value lines within the card */
+  table.db-table tbody td,
+  table.matrix-table tbody td,
+  .table-responsive table tbody td {
+    border: none !important;
+    border-bottom: 1px dashed #f1f5f9 !important;
+    padding: 12px 0 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    text-align: right !important;
+    min-height: 48px !important;
+    color: var(--dark-color, #2c3e50) !important;
+    background-color: transparent !important;
+  }
+
+  /* Remove border from the last cell in the card */
+  table.db-table tbody tr td:last-child,
+  table.matrix-table tbody tr td:last-child,
+  .table-responsive table tbody tr td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Position data labels dynamically on the left of each cell */
+  table.db-table tbody td[data-label]::before,
+  table.matrix-table tbody td[data-label]::before,
+  .table-responsive table tbody td[data-label]::before {
+    content: attr(data-label) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    font-size: 11px !important;
+    color: var(--text-muted, #8898aa) !important;
+    text-align: left !important;
+    margin-right: 15px !important;
+    min-width: 120px !important;
+    display: inline-block !important;
+  }
+
+  /* Hide pseudo-elements for cells with empty or missing data labels */
+  table.db-table tbody td:not([data-label])::before,
+  table.db-table tbody td[data-label=""]::before,
+  table.matrix-table tbody td:not([data-label])::before,
+  table.matrix-table tbody td[data-label=""]::before,
+  .table-responsive table tbody td:not([data-label])::before,
+  .table-responsive table tbody td[data-label=""]::before {
+    content: none !important;
+    display: none !important;
+    margin-right: 0 !important;
+    min-width: 0 !important;
+  }
+
+  /* Special formatting for actions cell */
+  table.db-table tbody td:last-child,
+  table.matrix-table tbody td:last-child,
+  .table-responsive table tbody td:last-child {
+    margin-top: 6px !important;
+    border-top: 1px solid #edf2f9 !important;
+    padding-top: 14px !important;
+  }
+
+  /* Keep inner action layout flex and aligned correctly */
+  table.db-table tbody td div,
+  table.matrix-table tbody td div,
+  .table-responsive table tbody td div {
+    justify-content: flex-end !important;
+  }
+}

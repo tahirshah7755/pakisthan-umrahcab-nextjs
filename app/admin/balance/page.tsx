@@ -56,6 +56,7 @@ export default function BalancePage() {
   const [tempRemarks, setTempRemarks] = useState("");
   const [localStatuses, setLocalStatuses] = useState<Record<number, string>>({});
   const [localLocks, setLocalLocks] = useState<Record<number, boolean>>({});
+  const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({});
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -458,209 +459,467 @@ export default function BalancePage() {
             <span style={{ marginLeft: "12px", color: "#64748b", fontWeight: "600" }}>Calculating Balances...</span>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="db-table" style={{ margin: 0, fontSize: "12px" }}>
-              <thead>
-                <tr>
-                  <th style={{ paddingLeft: "16px" }}>Lock</th>
-                  <th>Status</th>
-                  <th>ID</th>
-                  <th>Company Name</th>
-                  <th>Last Inv. Amt</th>
-                  <th>Inv. Period</th>
-                  <th>Last Followup</th>
-                  <th>Followup Remarks</th>
-                  <th>Total Business</th>
-                  <th>Last Pay Date</th>
-                  <th>Last Pay Amt</th>
-                  <th>Last Pickup</th>
-                  <th>Last Service</th>
-                  <th>Next Pickup</th>
-                  <th>Next Service</th>
-                  <th>Total Rec. (VW)</th>
-                  <th>Total Rec. (PW)</th>
-                  <th>Company Remarks</th>
-                  <th style={{ paddingRight: "16px" }}>Statement Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
+          <>
+            <style>{`
+              .desktop-only-table {
+                display: block !important;
+              }
+              .mobile-only-cards {
+                display: none !important;
+              }
+              @media (max-width: 991px) {
+                .desktop-only-table {
+                  display: none !important;
+                }
+                .mobile-only-cards {
+                  display: flex !important;
+                  flex-direction: column;
+                  gap: 16px;
+                  padding: 16px;
+                  background: #f8fafc;
+                }
+              }
+            `}</style>
+
+            {/* Desktop Table View */}
+            <div className="table-responsive desktop-only-table">
+              <table className="db-table" style={{ margin: 0, fontSize: "12px" }}>
+                <thead>
                   <tr>
-                    <td colSpan={19} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
-                      No company records found for this filter.
-                    </td>
+                    <th style={{ paddingLeft: "16px" }}>Lock</th>
+                    <th>Status</th>
+                    <th>ID</th>
+                    <th>Company Name</th>
+                    <th>Last Inv. Amt</th>
+                    <th>Inv. Period</th>
+                    <th>Last Followup</th>
+                    <th>Followup Remarks</th>
+                    <th>Total Business</th>
+                    <th>Last Pay Date</th>
+                    <th>Last Pay Amt</th>
+                    <th>Last Pickup</th>
+                    <th>Last Service</th>
+                    <th>Next Pickup</th>
+                    <th>Next Service</th>
+                    <th>Total Rec. (VW)</th>
+                    <th>Total Rec. (PW)</th>
+                    <th>Company Remarks</th>
+                    <th style={{ paddingRight: "16px" }}>Statement Status</th>
                   </tr>
-                ) : (
-                  rows.map((item: any, idx: number) => {
-                    const relativeFollowup = formatRelativeDate(item.last_followup);
-                    return (
-                      <tr key={idx}>
-                        <td style={{ paddingLeft: "16px" }}>
-                          <button
-                            onClick={() => handleToggleLock(item)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              color: (localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "#10b981" : "#94a3b8",
-                              fontSize: "14px"
-                            }}
-                            title={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "Vouchers Unlocked" : "Vouchers Locked"}
-                          >
-                            <i className={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "fas fa-lock-open" : "fas fa-lock"}></i>
-                          </button>
-                        </td>
-                        <td>
-                          <span style={{
-                            display: "inline-block", padding: "3px 10px", borderRadius: "9999px",
-                            fontSize: "10px", fontWeight: "800", textTransform: "uppercase",
-                            background: item.status === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-                            color: item.status === "CLEARED" ? "#10b981" : "#ef4444",
-                          }}>
-                            {item.status}
-                          </span>
-                        </td>
-                        <td style={{ color: "#64748b", fontWeight: "600" }}>
-                          #{item.id}
-                        </td>
-                        <td style={{ fontWeight: 700, color: "#1e5cff", whiteSpace: "nowrap" }}>
-                          {item.company}
-                        </td>
-                        <td style={{ color: "#475569", fontWeight: 600 }}>
-                          {fmt(item.last_inv_amt)}
-                        </td>
-                        <td style={{ color: "#64748b", fontSize: "11px" }}>
-                          {item.inv_period ?? "N/A"}
-                        </td>
-                        <td style={{ color: "#64748b", fontSize: "11px", whiteSpace: "nowrap" }}>
-                          {relativeFollowup ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                              <span>{relativeFollowup.date}</span>
-                              <span style={{ fontSize: "10px", color: "#1e5cff", fontWeight: "700" }}>{relativeFollowup.relative}</span>
-                            </div>
-                          ) : (
-                            "Never"
-                          )}
-                        </td>
-                        <td style={{ color: "#475569", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {item.followup_remarks || "No remarks"}
-                        </td>
-                        <td style={{ fontWeight: 700, color: "#1e293b" }}>
-                          {fmt(item.total_business)}
-                        </td>
-                        <td style={{ color: "#64748b", fontSize: "11px", whiteSpace: "nowrap" }}>
-                          {formatDateSimple(item.last_pay_date)}
-                        </td>
-                        <td style={{ fontWeight: 600, color: "#10b981" }}>
-                          {item.last_pay_amt > 0 ? fmt(item.last_pay_amt) : "0.00"}
-                        </td>
-                        <td style={{ color: "#64748b", fontSize: "11px" }}>
-                          {formatDateSimple(item.last_pickup)}
-                        </td>
-                        <td style={{ color: "#64748b", fontSize: "11px" }}>
-                          {formatDateSimple(item.last_service)}
-                        </td>
-                        <td style={{ fontSize: "11px" }}>
-                          {item.next_pickup ? (
-                            <span style={{ color: "#1e5cff", fontWeight: "600", textDecoration: "underline", cursor: "pointer" }}>
-                              {formatDateSimple(item.next_pickup)}
-                            </span>
-                          ) : (
-                            "--"
-                          )}
-                        </td>
-                        <td style={{ fontSize: "11px" }}>
-                          {item.next_service ? (
-                            <span style={{ color: "#1e5cff", fontWeight: "600", textDecoration: "underline", cursor: "pointer" }}>
-                              {formatDateSimple(item.next_service)}
-                            </span>
-                          ) : (
-                            "--"
-                          )}
-                        </td>
-                        <td style={{ fontWeight: 700, color: item.total_rec_vw > 0 ? "#ef4444" : "#64748b" }}>
-                          {fmt(item.total_rec_vw)}
-                        </td>
-                        <td style={{ fontWeight: 700, color: item.total_rec_pw > 0 ? "#f97316" : "#64748b" }}>
-                          {fmt(item.total_rec_pw)}
-                        </td>
-                        <td style={{ minWidth: "150px" }}>
-                          {editingRemarks === item.id ? (
-                            <div style={{ display: "flex", gap: "4px" }}>
-                              <input
-                                type="text"
-                                value={tempRemarks}
-                                onChange={(e) => setTempRemarks(e.target.value)}
-                                className="form-input"
-                                style={{ padding: "2px 6px", fontSize: "11px", height: "24px" }}
-                                autoFocus
-                              />
-                              <button
-                                onClick={() => handleSaveRemarks(item)}
-                                style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "4px", padding: "0 8px", cursor: "pointer" }}
-                              >
-                                <i className="fas fa-check" style={{ fontSize: "10px" }}></i>
-                              </button>
-                              <button
-                                onClick={() => setEditingRemarks(null)}
-                                style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "0 8px", cursor: "pointer" }}
-                              >
-                                <i className="fas fa-times" style={{ fontSize: "10px" }}></i>
-                              </button>
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => {
-                                setEditingRemarks(item.id);
-                                setTempRemarks(item.company_remarks || "");
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={19} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+                        No company records found for this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((item: any, idx: number) => {
+                      const relativeFollowup = formatRelativeDate(item.last_followup);
+                      return (
+                        <tr key={idx}>
+                          <td style={{ paddingLeft: "16px" }}>
+                            <button
+                              onClick={() => handleToggleLock(item)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: (localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "#10b981" : "#94a3b8",
+                                fontSize: "14px"
                               }}
-                              style={{ cursor: "pointer", minHeight: "18px", color: item.company_remarks ? "#334155" : "#94a3b8", fontSize: "11px" }}
-                              title="Click to Edit Remarks"
+                              title={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "Vouchers Unlocked" : "Vouchers Locked"}
                             >
-                              {item.company_remarks || "Click to add remarks"}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ paddingRight: "16px" }}>
-                          <select
-                            value={localStatuses[item.id] !== undefined ? localStatuses[item.id] : (item.statement_status || "Pending")}
-                            onChange={(e) => handleChangeStatementStatus(item, e.target.value)}
-                            style={{
-                              padding: "4px 8px",
-                              borderRadius: "6px",
-                              fontSize: "11px",
-                              fontWeight: "600",
-                              border: "1px solid #cbd5e1",
-                              background: "#fff",
-                              color: "#334155",
-                              cursor: "pointer"
-                            }}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Awaiting FeedBack">Awaiting FeedBack</option>
-                            <option value="Done">Done</option>
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })
+                              <i className={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "fas fa-lock-open" : "fas fa-lock"}></i>
+                            </button>
+                          </td>
+                          <td>
+                            <span style={{
+                              display: "inline-block", padding: "3px 10px", borderRadius: "9999px",
+                              fontSize: "10px", fontWeight: "800", textTransform: "uppercase",
+                              background: item.status === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                              color: item.status === "CLEARED" ? "#10b981" : "#ef4444",
+                            }}>
+                              {item.status}
+                            </span>
+                          </td>
+                          <td style={{ color: "#64748b", fontWeight: "600" }}>
+                            #{item.id}
+                          </td>
+                          <td style={{ fontWeight: 700, color: "#1e5cff", whiteSpace: "nowrap" }}>
+                            {item.company}
+                          </td>
+                          <td style={{ color: "#475569", fontWeight: 600 }}>
+                            {fmt(item.last_inv_amt)}
+                          </td>
+                          <td style={{ color: "#64748b", fontSize: "11px" }}>
+                            {item.inv_period ?? "N/A"}
+                          </td>
+                          <td style={{ color: "#64748b", fontSize: "11px", whiteSpace: "nowrap" }}>
+                            {relativeFollowup ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                <span>{relativeFollowup.date}</span>
+                                <span style={{ fontSize: "10px", color: "#1e5cff", fontWeight: "700" }}>{relativeFollowup.relative}</span>
+                              </div>
+                            ) : (
+                              "Never"
+                            )}
+                          </td>
+                          <td style={{ color: "#475569", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {item.followup_remarks || "No remarks"}
+                          </td>
+                          <td style={{ fontWeight: 700, color: "#1e293b" }}>
+                            {fmt(item.total_business)}
+                          </td>
+                          <td style={{ color: "#64748b", fontSize: "11px", whiteSpace: "nowrap" }}>
+                            {formatDateSimple(item.last_pay_date)}
+                          </td>
+                          <td style={{ fontWeight: 600, color: "#10b981" }}>
+                            {item.last_pay_amt > 0 ? fmt(item.last_pay_amt) : "0.00"}
+                          </td>
+                          <td style={{ color: "#64748b", fontSize: "11px" }}>
+                            {formatDateSimple(item.last_pickup)}
+                          </td>
+                          <td style={{ color: "#64748b", fontSize: "11px" }}>
+                            {formatDateSimple(item.last_service)}
+                          </td>
+                          <td style={{ fontSize: "11px" }}>
+                            {item.next_pickup ? (
+                              <span style={{ color: "#1e5cff", fontWeight: "600", textDecoration: "underline", cursor: "pointer" }}>
+                                {formatDateSimple(item.next_pickup)}
+                              </span>
+                            ) : (
+                              "--"
+                            )}
+                          </td>
+                          <td style={{ fontSize: "11px" }}>
+                            {item.next_service ? (
+                              <span style={{ color: "#1e5cff", fontWeight: "600", textDecoration: "underline", cursor: "pointer" }}>
+                                {formatDateSimple(item.next_service)}
+                              </span>
+                            ) : (
+                              "--"
+                            )}
+                          </td>
+                          <td style={{ fontWeight: 700, color: item.total_rec_vw > 0 ? "#ef4444" : "#64748b" }}>
+                            {fmt(item.total_rec_vw)}
+                          </td>
+                          <td style={{ fontWeight: 700, color: item.total_rec_pw > 0 ? "#f97316" : "#64748b" }}>
+                            {fmt(item.total_rec_pw)}
+                          </td>
+                          <td style={{ minWidth: "150px" }}>
+                            {editingRemarks === item.id ? (
+                              <div style={{ display: "flex", gap: "4px" }}>
+                                <input
+                                  type="text"
+                                  value={tempRemarks}
+                                  onChange={(e) => setTempRemarks(e.target.value)}
+                                  className="form-input"
+                                  style={{ padding: "2px 6px", fontSize: "11px", height: "24px" }}
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleSaveRemarks(item)}
+                                  style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "4px", padding: "0 8px", cursor: "pointer" }}
+                                >
+                                  <i className="fas fa-check" style={{ fontSize: "10px" }}></i>
+                                </button>
+                                <button
+                                  onClick={() => setEditingRemarks(null)}
+                                  style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "4px", padding: "0 8px", cursor: "pointer" }}
+                                >
+                                  <i className="fas fa-times" style={{ fontSize: "10px" }}></i>
+                                </button>
+                              </div>
+                            ) : (
+                              <div
+                                onClick={() => {
+                                  setEditingRemarks(item.id);
+                                  setTempRemarks(item.company_remarks || "");
+                                }}
+                                style={{ cursor: "pointer", minHeight: "18px", color: item.company_remarks ? "#334155" : "#94a3b8", fontSize: "11px" }}
+                                title="Click to Edit Remarks"
+                              >
+                                {item.company_remarks || "Click to add remarks"}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ paddingRight: "16px" }}>
+                            <select
+                              value={localStatuses[item.id] !== undefined ? localStatuses[item.id] : (item.statement_status || "Pending")}
+                              onChange={(e) => handleChangeStatementStatus(item, e.target.value)}
+                              style={{
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                border: "1px solid #cbd5e1",
+                                background: "#fff",
+                                color: "#334155",
+                                cursor: "pointer"
+                              }}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Awaiting FeedBack">Awaiting FeedBack</option>
+                              <option value="Done">Done</option>
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+                {rows.length > 0 && (
+                  <tfoot>
+                    <tr style={{ background: "#f8fafc", borderTop: "2px solid #e2e8f0", fontWeight: 800 }}>
+                      <td style={{ paddingLeft: "16px", color: "#0f172a" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
+                      <td colSpan={4}></td>
+                      <td style={{ color: "#1e293b" }}>{fmt(totals.total_business)}</td>
+                      <td colSpan={6}></td>
+                      <td style={{ color: "#ef4444" }}>{fmt(totals.total_rec_vw)}</td>
+                      <td style={{ color: "#f97316" }}>{fmt(totals.total_rec_pw)}</td>
+                      <td colSpan={2} style={{ paddingRight: "16px" }}></td>
+                    </tr>
+                  </tfoot>
                 )}
-              </tbody>
-              {rows.length > 0 && (
-                <tfoot>
-                  <tr style={{ background: "#f8fafc", borderTop: "2px solid #e2e8f0", fontWeight: 800 }}>
-                    <td style={{ paddingLeft: "16px", color: "#0f172a" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
-                    <td colSpan={4}></td>
-                    <td style={{ color: "#1e293b" }}>{fmt(totals.total_business)}</td>
-                    <td colSpan={6}></td>
-                    <td style={{ color: "#ef4444" }}>{fmt(totals.total_rec_vw)}</td>
-                    <td style={{ color: "#f97316" }}>{fmt(totals.total_rec_pw)}</td>
-                    <td colSpan={2} style={{ paddingRight: "16px" }}></td>
-                  </tr>
-                </tfoot>
+              </table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="mobile-only-cards">
+              {rows.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: "#64748b", background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                  No company records found for this filter.
+                </div>
+              ) : (
+                <>
+                  {rows.map((item: any, idx: number) => {
+                    const relativeFollowup = formatRelativeDate(item.last_followup);
+                    const isExpanded = !!expandedCards[item.id];
+                    return (
+                      <div key={idx} style={{
+                        background: "#ffffff",
+                        borderRadius: "12px",
+                        border: "1px solid #e2e8f0",
+                        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                        padding: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                        color: "#334155"
+                      }}>
+                        {/* Header */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontSize: "14px", fontWeight: "700", color: "#1e5cff" }}>{item.company}</span>
+                            <span style={{ fontSize: "11px", color: "#94a3b8" }}>#{item.id}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <button
+                              onClick={() => handleToggleLock(item)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: (localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "#10b981" : "#94a3b8",
+                                fontSize: "14px"
+                              }}
+                            >
+                              <i className={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "fas fa-lock-open" : "fas fa-lock"}></i>
+                            </button>
+                            <span style={{
+                              display: "inline-block", padding: "3px 8px", borderRadius: "9999px",
+                              fontSize: "9px", fontWeight: "800", textTransform: "uppercase",
+                              background: item.status === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                              color: item.status === "CLEARED" ? "#10b981" : "#ef4444",
+                            }}>
+                              {item.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Mini Stats Grid */}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span style={{ fontSize: "9px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Total Business</span>
+                            <span style={{ fontSize: "12px", fontWeight: "700", color: "#1e293b" }}>{fmt(item.total_business)}</span>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span style={{ fontSize: "9px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Rec. (VW)</span>
+                            <span style={{ fontSize: "12px", fontWeight: "700", color: item.total_rec_vw > 0 ? "#ef4444" : "#475569" }}>{fmt(item.total_rec_vw)}</span>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span style={{ fontSize: "9px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Rec. (PW)</span>
+                            <span style={{ fontSize: "12px", fontWeight: "700", color: item.total_rec_pw > 0 ? "#f97316" : "#475569" }}>{fmt(item.total_rec_pw)}</span>
+                          </div>
+                        </div>
+
+                        {/* Expandable Section */}
+                        {isExpanded && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "10px", borderTop: "1px solid #f1f5f9", paddingTop: "12px", fontSize: "12px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Last Inv. Amt:</span>
+                              <span style={{ fontWeight: "600", color: "#334155" }}>{fmt(item.last_inv_amt)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Inv. Period:</span>
+                              <span style={{ fontWeight: "600", color: "#334155" }}>{item.inv_period ?? "N/A"}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Last Followup:</span>
+                              <span style={{ fontWeight: "600", color: "#334155" }}>
+                                {relativeFollowup ? `${relativeFollowup.date} (${relativeFollowup.relative})` : "Never"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Followup Remarks:</span>
+                              <span style={{ background: "#f8fafc", padding: "6px", borderRadius: "6px", color: "#475569", fontSize: "11px" }}>
+                                {item.followup_remarks || "No remarks"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Last Payment:</span>
+                              <span style={{ fontWeight: "600", color: "#10b981" }}>
+                                {item.last_pay_amt > 0 ? `${fmt(item.last_pay_amt)} on ${formatDateSimple(item.last_pay_date)}` : "SAR 0.00"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Last Service:</span>
+                              <span style={{ fontWeight: "600", color: "#334155" }}>{formatDateSimple(item.last_service)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Next Pickup:</span>
+                              <span style={{ fontWeight: "600", color: "#1e5cff" }}>{item.next_pickup ? formatDateSimple(item.next_pickup) : "--"}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Next Service:</span>
+                              <span style={{ fontWeight: "600", color: "#1e5cff" }}>{item.next_service ? formatDateSimple(item.next_service) : "--"}</span>
+                            </div>
+                            
+                            {/* Company Remarks Editing */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Company Remarks:</span>
+                              {editingRemarks === item.id ? (
+                                <div style={{ display: "flex", gap: "4px" }}>
+                                  <input
+                                    type="text"
+                                    value={tempRemarks}
+                                    onChange={(e) => setTempRemarks(e.target.value)}
+                                    className="form-input"
+                                    style={{ padding: "4px 8px", fontSize: "11px", height: "30px", flexGrow: 1 }}
+                                    autoFocus
+                                  />
+                                  <button
+                                    onClick={() => handleSaveRemarks(item)}
+                                    style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", width: "30px", height: "30px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  >
+                                    <i className="fas fa-check" style={{ fontSize: "12px" }}></i>
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingRemarks(null)}
+                                    style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", width: "30px", height: "30px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                  >
+                                    <i className="fas fa-times" style={{ fontSize: "12px" }}></i>
+                                  </button>
+                                </div>
+                              ) : (
+                                <div
+                                  onClick={() => {
+                                    setEditingRemarks(item.id);
+                                    setTempRemarks(item.company_remarks || "");
+                                  }}
+                                  style={{ cursor: "pointer", padding: "8px", background: "#f8fafc", borderRadius: "6px", border: "1px dashed #cbd5e1", color: item.company_remarks ? "#334155" : "#94a3b8", fontSize: "11px" }}
+                                  title="Click to Edit Remarks"
+                                >
+                                  {item.company_remarks || "Click to add remarks"}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Statement Status Dropdown */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Statement Status:</span>
+                              <select
+                                value={localStatuses[item.id] !== undefined ? localStatuses[item.id] : (item.statement_status || "Pending")}
+                                onChange={(e) => handleChangeStatementStatus(item, e.target.value)}
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "6px",
+                                  fontSize: "12px",
+                                  fontWeight: "600",
+                                  border: "1px solid #cbd5e1",
+                                  background: "#fff",
+                                  color: "#334155",
+                                  cursor: "pointer"
+                                }}
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="Awaiting FeedBack">Awaiting FeedBack</option>
+                                <option value="Done">Done</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Toggle Button */}
+                        <button
+                          onClick={() => setExpandedCards(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                          style={{
+                            width: "100%",
+                            background: "#f8fafc",
+                            border: "1px solid #e2e8f0",
+                            padding: "8px",
+                            borderRadius: "8px",
+                            fontSize: "11px",
+                            color: "#475569",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                            marginTop: "4px"
+                          }}
+                        >
+                          <span>{isExpanded ? "Hide Detailed Metrics" : "Show Detailed Metrics"}</span>
+                          <i className={isExpanded ? "fas fa-chevron-up" : "fas fa-chevron-down"}></i>
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {/* Mobile Totals Card */}
+                  <div style={{
+                    background: "#0f172a",
+                    color: "#ffffff",
+                    borderRadius: "12px",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                    marginTop: "8px"
+                  }}>
+                    <span style={{ fontSize: "14px", fontWeight: "800", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "8px" }}>
+                      TOTALS ({rows.length} Companies)
+                    </span>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                      <span style={{ opacity: 0.8 }}>Total Business:</span>
+                      <span style={{ fontWeight: "700" }}>{fmt(totals.total_business)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                      <span style={{ opacity: 0.8 }}>Total Rec. (VW):</span>
+                      <span style={{ fontWeight: "700", color: "#ef4444" }}>{fmt(totals.total_rec_vw)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                      <span style={{ opacity: 0.8 }}>Total Rec. (PW):</span>
+                      <span style={{ fontWeight: "700", color: "#f97316" }}>{fmt(totals.total_rec_pw)}</span>
+                    </div>
+                  </div>
+                </>
               )}
-            </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>

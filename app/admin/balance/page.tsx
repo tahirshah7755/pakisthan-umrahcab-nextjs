@@ -54,6 +54,8 @@ export default function BalancePage() {
   const [search,        setSearch]        = useState("");
   const [editingRemarks, setEditingRemarks] = useState<number | null>(null);
   const [tempRemarks, setTempRemarks] = useState("");
+  const [localStatuses, setLocalStatuses] = useState<Record<number, string>>({});
+  const [localLocks, setLocalLocks] = useState<Record<number, boolean>>({});
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -267,26 +269,35 @@ export default function BalancePage() {
   const handleToggleLock = async (item: any) => {
     const originalCompany = companies.find((c: any) => c.id === item.id);
     if (!originalCompany) return;
+    const nextVal = !item.vouchers_lock;
+    setLocalLocks(prev => ({ ...prev, [item.id]: nextVal }));
     try {
       await updateCompany({
         ...originalCompany,
-        vouchers: !item.vouchers_lock,
+        vouchers: nextVal,
       }).unwrap();
+      showToast(`Voucher lock status updated for ${item.company}!`, "success");
     } catch (err) {
       console.error("Failed to toggle lock status:", err);
+      showToast("Failed to toggle lock status.", "error");
+      setLocalLocks(prev => ({ ...prev, [item.id]: item.vouchers_lock }));
     }
   };
 
   const handleChangeStatementStatus = async (item: any, status: string) => {
     const originalCompany = companies.find((c: any) => c.id === item.id);
     if (!originalCompany) return;
+    setLocalStatuses(prev => ({ ...prev, [item.id]: status }));
     try {
       await updateCompany({
         ...originalCompany,
         statement_status: status,
       }).unwrap();
+      showToast(`Statement status updated to "${status}" for ${item.company}`, "success");
     } catch (err) {
       console.error("Failed to update statement status:", err);
+      showToast("Failed to update statement status.", "error");
+      setLocalStatuses(prev => ({ ...prev, [item.id]: item.statement_status || "Pending" }));
     }
   };
 
@@ -299,8 +310,10 @@ export default function BalancePage() {
         remarks: tempRemarks,
       }).unwrap();
       setEditingRemarks(null);
+      showToast(`Remarks updated for ${item.company}!`, "success");
     } catch (err) {
       console.error("Failed to update company remarks:", err);
+      showToast("Failed to update company remarks.", "error");
     }
   };
 
@@ -489,12 +502,12 @@ export default function BalancePage() {
                               background: "none",
                               border: "none",
                               cursor: "pointer",
-                              color: item.vouchers_lock ? "#10b981" : "#94a3b8",
+                              color: (localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "#10b981" : "#94a3b8",
                               fontSize: "14px"
                             }}
-                            title={item.vouchers_lock ? "Vouchers Unlocked" : "Vouchers Locked"}
+                            title={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "Vouchers Unlocked" : "Vouchers Locked"}
                           >
-                            <i className={item.vouchers_lock ? "fas fa-lock-open" : "fas fa-lock"}></i>
+                            <i className={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "fas fa-lock-open" : "fas fa-lock"}></i>
                           </button>
                         </td>
                         <td>
@@ -610,7 +623,7 @@ export default function BalancePage() {
                         </td>
                         <td style={{ paddingRight: "16px" }}>
                           <select
-                            value={item.statement_status || "Pending"}
+                            value={localStatuses[item.id] !== undefined ? localStatuses[item.id] : (item.statement_status || "Pending")}
                             onChange={(e) => handleChangeStatementStatus(item, e.target.value)}
                             style={{
                               padding: "4px 8px",

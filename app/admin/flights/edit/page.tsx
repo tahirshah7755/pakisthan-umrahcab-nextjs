@@ -221,7 +221,7 @@ function EditFlightContent() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <label className="form-label" style={{ fontWeight: "600", fontSize: "14px", color: "#475569" }}>Leg Type <span style={{ color: "#ef4444" }}>*</span></label>
               <div style={{ display: "flex", gap: "10px" }}>
-                {["Arrival", "Departure", "Both Legs"].map((legType) => (
+                {["Arrival", "Departure"].map((legType) => (
                   <button
                     key={legType}
                     type="button"
@@ -241,7 +241,6 @@ function EditFlightContent() {
                   >
                     {legType === "Arrival" && <i className="fas fa-plane-arrival" style={{ marginRight: "6px" }}></i>}
                     {legType === "Departure" && <i className="fas fa-plane-departure" style={{ marginRight: "6px" }}></i>}
-                    {legType === "Both Legs" && <i className="fas fa-arrows-left-right" style={{ marginRight: "6px" }}></i>}
                     {legType}
                   </button>
                 ))}

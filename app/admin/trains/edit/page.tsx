@@ -79,17 +79,16 @@ function EditTrainContent() {
           setTrnLeg(leg);
           setEditTrnStatus(res.status || "Scheduled");
 
-          if (leg === "Arrival") {
-            setTrnArrTrainNo(res.train_no || "");
-            setTrnArrStation(res.route || "");
-            setTrnArrDate(res.date || "");
-            setTrnArrTime(res.time ? res.time.substring(0, 5) : "");
-          } else {
-            setTrnDepTrainNo(res.train_no || "");
-            setTrnDepStation(res.route || "");
-            setTrnDepDate(res.date || "");
-            setTrnDepTime(res.time ? res.time.substring(0, 5) : "");
-          }
+          // Pre-populate both sets so switching tabs doesn't show empty fields
+          setTrnArrTrainNo(res.train_no || "");
+          setTrnArrStation(res.route || "");
+          setTrnArrDate(res.date || "");
+          setTrnArrTime(res.time ? res.time.substring(0, 5) : "");
+
+          setTrnDepTrainNo(res.train_no || "");
+          setTrnDepStation(res.route || "");
+          setTrnDepDate(res.date || "");
+          setTrnDepTime(res.time ? res.time.substring(0, 5) : "");
         } else {
           setSingleTrnError("Failed to load train details.");
         }

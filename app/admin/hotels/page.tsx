@@ -1,30 +1,60 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 
 interface HotelItem {
   id: number;
+  customer_id?: number;
+  custom_id?: string;
+  customer?: any;
   name: string;
   city: string;
   active: number;
+  check_in?: string;
+  check_out?: string;
   created_at?: string;
   updated_at?: string;
 }
+
+const mockHotels = [
+  { id: "m1", name: "Makkah Clock Royal Tower (Fairmont)", city: "Makkah" },
+  { id: "m2", name: "Pullman ZamZam Makkah", city: "Makkah" },
+  { id: "m3", name: "Swissôtel Makkah", city: "Makkah" },
+  { id: "m4", name: "Hilton Suites Makkah", city: "Makkah" },
+  { id: "m5", name: "Anjum Hotel Makkah", city: "Makkah" },
+  { id: "m6", name: "Oberoi Madinah", city: "Madinah" },
+  { id: "m7", name: "Madinah Hilton", city: "Madinah" },
+  { id: "m8", name: "Anwar Al Madinah Mövenpick", city: "Madinah" },
+  { id: "m9", name: "Pullman Zamzam Madinah", city: "Madinah" },
+  { id: "m10", name: "Dar Al Taqwa Hotel Madinah", city: "Madinah" },
+  { id: "m11", name: "Jeddah Hilton", city: "Jeddah" },
+  { id: "m12", name: "InterContinental Jeddah", city: "Jeddah" },
+  { id: "m13", name: "Sheraton Jeddah Hotel", city: "Jeddah" },
+  { id: "m14", name: "Rosewood Jeddah", city: "Jeddah" }
+];
 
 export default function HotelsDirectory() {
   const router = useRouter();
   const [hotels, setHotels] = useState<HotelItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [availableHotels, setAvailableHotels] = useState<any[]>([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHotel, setEditingHotel] = useState<HotelItem | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [hotelName, setHotelName] = useState("");
   const [hotelCity, setHotelCity] = useState("Makkah");
   const [hotelActive, setHotelActive] = useState(1);
+  const [hotelId, setHotelId] = useState("");
+  const [isCustomHotel, setIsCustomHotel] = useState(false);
+  const [customHotelName, setCustomHotelName] = useState("");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -44,6 +74,8 @@ export default function HotelsDirectory() {
       const data = await api.getHotels(undefined, searchQuery);
       if (data) {
         setHotels(data);
+        // Keep all hotels for dropdown options to extract unique hotel names
+        setAvailableHotels(data);
       }
     } catch (err) {
       console.error("Failed to load hotels list:", err);
@@ -57,34 +89,99 @@ export default function HotelsDirectory() {
     fetchHotels();
   }, [searchQuery]);
 
+  // Compute available properties for the selected city
+  const cityHotels = useMemo(() => {
+    // 1. Get all unique hotel names from database for the selected city
+    const dbHotelNames = availableHotels
+      .filter((h) => h.city?.toLowerCase() === hotelCity?.toLowerCase() && h.name)
+      .map((h) => h.name.trim());
+
+    // 2. Get static mock hotels for the selected city
+    const mockHotelNames = mockHotels
+      .filter((h) => h.city.toLowerCase() === hotelCity?.toLowerCase())
+      .map((h) => h.name.trim());
+
+    // 3. Merge them and deduplicate
+    const allNames = Array.from(new Set([...dbHotelNames, ...mockHotelNames]));
+
+    // 4. Map to options
+    return allNames.map((name) => ({
+      id: name,
+      name: name
+    }));
+  }, [availableHotels, hotelCity]);
+
   const handleOpenAddModal = () => {
     setEditingHotel(null);
     setHotelName("");
+    setHotelId("");
+    setCustomHotelName("");
+    setIsCustomHotel(false);
     setHotelCity("Makkah");
     setHotelActive(1);
+    setSelectedCustomer(null);
+    setCheckIn("");
+    setCheckOut("");
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (hotel: HotelItem) => {
     setEditingHotel(hotel);
-    setHotelName(hotel.name);
     setHotelCity(hotel.city);
     setHotelActive(hotel.active);
+    setSelectedCustomer(hotel.customer || null);
+    setCheckIn(hotel.check_in || "");
+    setCheckOut(hotel.check_out || "");
+
+    const exists = cityHotels.some(
+      (h) => h.name.toLowerCase() === hotel.name.trim().toLowerCase()
+    );
+    if (exists) {
+      setHotelId(hotel.name.trim());
+      setHotelName(hotel.name.trim());
+      setIsCustomHotel(false);
+      setCustomHotelName("");
+    } else {
+      setHotelId("custom");
+      setHotelName(hotel.name.trim());
+      setIsCustomHotel(true);
+      setCustomHotelName(hotel.name.trim());
+    }
     setIsModalOpen(true);
+  };
+
+  const handleHotelSelect = (val: string) => {
+    setHotelId(val);
+    if (val === "custom") {
+      setIsCustomHotel(true);
+      setHotelName("");
+    } else {
+      setIsCustomHotel(false);
+      setHotelName(val);
+    }
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hotelName.trim()) {
+    if (!selectedCustomer) {
+      showToast("Please select a customer first.", "error");
+      return;
+    }
+
+    const finalHotelName = isCustomHotel ? customHotelName : hotelName;
+    if (!finalHotelName.trim()) {
       showToast("Hotel name is required.", "error");
       return;
     }
 
     try {
       const payload = {
-        name: hotelName,
+        customer_id: selectedCustomer.id,
+        name: finalHotelName.trim(),
         city: hotelCity,
         active: hotelActive,
+        check_in: checkIn || null,
+        check_out: checkOut || null,
       };
 
       let res;
@@ -210,7 +307,10 @@ export default function HotelsDirectory() {
               <tr>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "80px" }}>ID</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Property Name</th>
+                <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Customer</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>City / Area</th>
+                <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Check-In</th>
+                <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Check-Out</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Status</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "120px", textAlign: "center" }}>Action</th>
               </tr>
@@ -218,23 +318,29 @@ export default function HotelsDirectory() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
                     <i className="fas fa-spinner fa-spin" style={{ marginRight: "8px" }}></i> Loading properties...
                   </td>
                 </tr>
               ) : hotels.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
                     No hotel records found.
                   </td>
                 </tr>
               ) : (
                 hotels.map((h) => (
                   <tr key={h.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ fontWeight: 600, color: "#64748b" }}>#HTL-{h.id}</td>
+                    <td style={{ fontWeight: 600, color: "#64748b" }}>{h.custom_id || `#HTL-${h.id}`}</td>
                     <td style={{ fontWeight: 700, color: "#0f172a" }}>
                       <i className="fa-solid fa-hotel" style={{ color: "#7c3aed", marginRight: "10px" }}></i>
                       {h.name}
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{h.customer ? h.customer.name : "N/A"}</div>
+                      {h.customer && h.customer.company && (
+                        <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>{h.customer.company}</div>
+                      )}
                     </td>
                     <td>
                       <span style={{
@@ -251,6 +357,16 @@ export default function HotelsDirectory() {
                         <i className="fa-solid fa-city" style={{ fontSize: "10px" }}></i>
                         {h.city}
                       </span>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "#475569" }}>
+                        {h.check_in ? h.check_in : "—"}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "#475569" }}>
+                        {h.check_out ? h.check_out : "—"}
+                      </div>
                     </td>
                     <td>
                       {h.active === 1 ? (
@@ -332,21 +448,12 @@ export default function HotelsDirectory() {
             </div>
             
             <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div>
-                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Hotel / Property Name *</label>
-                <div className="form-input-wrapper" style={{ position: "relative" }}>
-                  <i className="fa-solid fa-hotel form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Hilton Suites Makkah"
-                    value={hotelName}
-                    onChange={(e) => setHotelName(e.target.value)}
-                    style={{ paddingLeft: "42px", width: "100%" }}
-                    required
-                  />
-                </div>
-              </div>
+              {/* Search Customer Dropdown Component */}
+              <CustomerSearchDropdown
+                selectedCustomer={selectedCustomer}
+                onSelectCustomer={setSelectedCustomer}
+                themeColor="#7c3aed"
+              />
 
               <div>
                 <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>City / Area *</label>
@@ -355,7 +462,11 @@ export default function HotelsDirectory() {
                   <select
                     className="form-input form-select"
                     value={hotelCity}
-                    onChange={(e) => setHotelCity(e.target.value)}
+                    onChange={(e) => {
+                      setHotelCity(e.target.value);
+                      setHotelId("");
+                      setHotelName("");
+                    }}
                     style={{ paddingLeft: "42px", width: "100%" }}
                     required
                   >
@@ -363,6 +474,65 @@ export default function HotelsDirectory() {
                     <option value="Madinah">Madinah Munawwarah</option>
                     <option value="Jeddah">Jeddah</option>
                   </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Hotel / Property Name *</label>
+                <div className="form-input-wrapper" style={{ position: "relative", marginBottom: isCustomHotel ? "10px" : "0" }}>
+                  <i className="fa-solid fa-building-circle-check form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+                  <select
+                    className="form-input form-select"
+                    value={hotelId}
+                    onChange={(e) => handleHotelSelect(e.target.value)}
+                    style={{ paddingLeft: "42px", width: "100%" }}
+                    required
+                  >
+                    <option value="">-- Select Hotel --</option>
+                    {cityHotels.map((h) => (
+                      <option key={h.id} value={h.id}>
+                        {h.name}
+                      </option>
+                    ))}
+                    <option value="custom">-- Other / Custom Hotel --</option>
+                  </select>
+                </div>
+                {isCustomHotel && (
+                  <div className="form-input-wrapper" style={{ position: "relative", marginTop: "10px" }}>
+                    <i className="fa-solid fa-hotel form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Enter custom hotel name..."
+                      value={customHotelName}
+                      onChange={(e) => setCustomHotelName(e.target.value)}
+                      style={{ paddingLeft: "42px", width: "100%" }}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-In Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={checkIn}
+                    onChange={(e) => setCheckIn(e.target.value)}
+                    style={{ width: "100%", paddingLeft: "12px" }}
+                  />
+                </div>
+                <div>
+                  <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-Out Date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={checkOut}
+                    onChange={(e) => setCheckOut(e.target.value)}
+                    style={{ width: "100%", paddingLeft: "12px" }}
+                  />
                 </div>
               </div>
 

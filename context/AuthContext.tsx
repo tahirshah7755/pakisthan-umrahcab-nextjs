@@ -25,9 +25,26 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ email: string; name?: string; username?: string } | null>(null);
-  const [companyUser, setCompanyUser] = useState<{ id: string; name: string; agent_username: string; email: string; logo_path?: string } | null>(null);
-  const [extrasUnlocked, setExtrasUnlocked] = useState<boolean>(false);
+  const [user, setUser] = useState<{ email: string; name?: string; username?: string } | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("umrahcab_user");
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
+  const [companyUser, setCompanyUser] = useState<{ id: string; name: string; agent_username: string; email: string; logo_path?: string } | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("umrahcab_company_user");
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
+  const [extrasUnlocked, setExtrasUnlocked] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("umrahcab_extras_unlocked") === "true";
+    }
+    return false;
+  });
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const router = useRouter();

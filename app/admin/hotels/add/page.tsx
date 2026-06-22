@@ -1,14 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
+
+const mockHotels = [
+  { id: "m1", name: "Makkah Clock Royal Tower (Fairmont)", city: "Makkah" },
+  { id: "m2", name: "Pullman ZamZam Makkah", city: "Makkah" },
+  { id: "m3", name: "Swissôtel Makkah", city: "Makkah" },
+  { id: "m4", name: "Hilton Suites Makkah", city: "Makkah" },
+  { id: "m5", name: "Anjum Hotel Makkah", city: "Makkah" },
+  { id: "m6", name: "Oberoi Madinah", city: "Madinah" },
+  { id: "m7", name: "Madinah Hilton", city: "Madinah" },
+  { id: "m8", name: "Anwar Al Madinah Mövenpick", city: "Madinah" },
+  { id: "m9", name: "Pullman Zamzam Madinah", city: "Madinah" },
+  { id: "m10", name: "Dar Al Taqwa Hotel Madinah", city: "Madinah" },
+  { id: "m11", name: "Jeddah Hilton", city: "Jeddah" },
+  { id: "m12", name: "InterContinental Jeddah", city: "Jeddah" },
+  { id: "m13", name: "Sheraton Jeddah Hotel", city: "Jeddah" },
+  { id: "m14", name: "Rosewood Jeddah", city: "Jeddah" }
+];
 
 export default function AddHotel() {
   const router = useRouter();
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [hotelName, setHotelName] = useState("");
   const [hotelCity, setHotelCity] = useState("Makkah");
   const [hotelActive, setHotelActive] = useState(1);
+  const [availableHotels, setAvailableHotels] = useState<any[]>([]);
+  const [hotelId, setHotelId] = useState("");
+  const [isCustomHotel, setIsCustomHotel] = useState(false);
+  const [customHotelName, setCustomHotelName] = useState("");
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -22,18 +47,75 @@ export default function AddHotel() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  useEffect(() => {
+    const fetchHotels = async () => {
+      try {
+        const data = await api.getHotels();
+        if (data) {
+          // Keep all hotels for dropdown options to extract unique hotel names
+          setAvailableHotels(data);
+        }
+      } catch (err) {
+        console.error("Failed to load hotels list:", err);
+      }
+    };
+    fetchHotels();
+  }, []);
+
+  // Compute available properties for the selected city
+  const cityHotels = useMemo(() => {
+    // 1. Get all unique hotel names from database for the selected city
+    const dbHotelNames = availableHotels
+      .filter((h) => h.city?.toLowerCase() === hotelCity?.toLowerCase() && h.name)
+      .map((h) => h.name.trim());
+
+    // 2. Get static mock hotels for the selected city
+    const mockHotelNames = mockHotels
+      .filter((h) => h.city.toLowerCase() === hotelCity?.toLowerCase())
+      .map((h) => h.name.trim());
+
+    // 3. Merge them and deduplicate
+    const allNames = Array.from(new Set([...dbHotelNames, ...mockHotelNames]));
+
+    // 4. Map to options
+    return allNames.map((name) => ({
+      id: name,
+      name: name
+    }));
+  }, [availableHotels, hotelCity]);
+
+  const handleHotelSelect = (val: string) => {
+    setHotelId(val);
+    if (val === "custom") {
+      setIsCustomHotel(true);
+      setHotelName("");
+    } else {
+      setIsCustomHotel(false);
+      setHotelName(val);
+    }
+  };
+
   const handleAddHotel = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hotelName.trim()) {
+    if (!selectedCustomer) {
+      showToast("Please select a customer first.", "error");
+      return;
+    }
+
+    const finalHotelName = isCustomHotel ? customHotelName : hotelName;
+    if (!finalHotelName.trim()) {
       showToast("Hotel name is required.", "error");
       return;
     }
 
     try {
       const payload = {
-        name: hotelName,
+        customer_id: selectedCustomer.id,
+        name: finalHotelName.trim(),
         city: hotelCity,
         active: hotelActive,
+        check_in: checkIn || null,
+        check_out: checkOut || null,
       };
 
       const res = await api.createHotel(payload);
@@ -41,8 +123,14 @@ export default function AddHotel() {
       if (res && res.success) {
         showToast("Hotel added successfully!", "success");
         setHotelName("");
+        setHotelId("");
+        setCustomHotelName("");
+        setIsCustomHotel(false);
         setHotelCity("Makkah");
         setHotelActive(1);
+        setSelectedCustomer(null);
+        setCheckIn("");
+        setCheckOut("");
         setTimeout(() => {
           router.push("/admin/hotels");
         }, 1500);
@@ -98,21 +186,12 @@ export default function AddHotel() {
         <div className="form-card" style={{ maxWidth: "600px", width: "100%", background: "#ffffff", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", padding: "30px", border: "1px solid #e2e8f0" }}>
           <form onSubmit={handleAddHotel} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             
-            <div>
-              <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Hotel / Property Name *</label>
-              <div className="form-input-wrapper" style={{ position: "relative" }}>
-                <i className="fa-solid fa-hotel form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Hilton Suites Makkah"
-                  value={hotelName}
-                  onChange={(e) => setHotelName(e.target.value)}
-                  style={{ paddingLeft: "42px", width: "100%" }}
-                  required
-                />
-              </div>
-            </div>
+            {/* Search Customer Dropdown Component */}
+            <CustomerSearchDropdown
+              selectedCustomer={selectedCustomer}
+              onSelectCustomer={setSelectedCustomer}
+              themeColor={HOTEL_PURPLE}
+            />
 
             <div>
               <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>City / Area *</label>
@@ -121,7 +200,11 @@ export default function AddHotel() {
                 <select
                   className="form-input form-select"
                   value={hotelCity}
-                  onChange={(e) => setHotelCity(e.target.value)}
+                  onChange={(e) => {
+                    setHotelCity(e.target.value);
+                    setHotelId("");
+                    setHotelName("");
+                  }}
                   style={{ paddingLeft: "42px", width: "100%" }}
                   required
                 >
@@ -129,6 +212,65 @@ export default function AddHotel() {
                   <option value="Madinah">Madinah Munawwarah</option>
                   <option value="Jeddah">Jeddah</option>
                 </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Hotel / Property Name *</label>
+              <div className="form-input-wrapper" style={{ position: "relative", marginBottom: isCustomHotel ? "10px" : "0" }}>
+                <i className="fa-solid fa-building-circle-check form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+                <select
+                  className="form-input form-select"
+                  value={hotelId}
+                  onChange={(e) => handleHotelSelect(e.target.value)}
+                  style={{ paddingLeft: "42px", width: "100%" }}
+                  required
+                >
+                  <option value="">-- Select Hotel --</option>
+                  {cityHotels.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.name}
+                    </option>
+                  ))}
+                  <option value="custom">-- Other / Custom Hotel --</option>
+                </select>
+              </div>
+              {isCustomHotel && (
+                <div className="form-input-wrapper" style={{ position: "relative", marginTop: "10px" }}>
+                  <i className="fa-solid fa-hotel form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter custom hotel name..."
+                    value={customHotelName}
+                    onChange={(e) => setCustomHotelName(e.target.value)}
+                    style={{ paddingLeft: "42px", width: "100%" }}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div>
+                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-In Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  style={{ width: "100%", paddingLeft: "12px" }}
+                />
+              </div>
+              <div>
+                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-Out Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  style={{ width: "100%", paddingLeft: "12px" }}
+                />
               </div>
             </div>
 

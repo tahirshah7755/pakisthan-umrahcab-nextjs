@@ -20,6 +20,14 @@ function EditCustomerContent() {
   const [hotelInfo, setHotelInfo] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [requireHotel, setRequireHotel] = useState(false);
+  const [hotelCity, setHotelCity] = useState("Makkah");
+  const [hotelId, setHotelId] = useState("");
+  const [hotelName, setHotelName] = useState("");
+  const [hotelCheckin, setHotelCheckin] = useState("");
+  const [hotelCheckout, setHotelCheckout] = useState("");
+  const [availableHotels, setAvailableHotels] = useState<any[]>([]);
+
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,11 +43,32 @@ function EditCustomerContent() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const parseHotelInfo = (info: string) => {
+    if (!info) return { name: "", city: "", checkin: "", checkout: "" };
+    const regex = /^(.*) in (Makkah|Madinah|Jeddah) \(In: ([\d-]+), Out: ([\d-]+)\)$/i;
+    const match = info.match(regex);
+    if (match) {
+      return {
+        name: match[1].trim(),
+        city: match[2].trim(),
+        checkin: match[3].trim(),
+        checkout: match[4].trim()
+      };
+    }
+    return { name: info, city: "", checkin: "", checkout: "" };
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         if (!targetId) return;
+
+        // Fetch hotels list
+        const hotelsData = await api.getHotels();
+        if (hotelsData) {
+          setAvailableHotels(hotelsData);
+        }
 
         // Fetch customer profile
         const result = await api.getCustomer(targetId);
@@ -53,8 +82,29 @@ function EditCustomerContent() {
           setCustAltPhone(found.alternative_phone || "");
           setCustEmail(found.email || "");
           setPassportNo(found.passport_no || "");
-          setHotelInfo(found.hotel_info || "");
           setNotes(found.notes || "");
+          
+          const rawHotelInfo = found.hotel_info || "";
+          setHotelInfo(rawHotelInfo);
+
+          if (rawHotelInfo) {
+            const parsed = parseHotelInfo(rawHotelInfo);
+            setHotelCity(parsed.city || "Makkah");
+            setHotelName(parsed.name);
+            setHotelCheckin(parsed.checkin);
+            setHotelCheckout(parsed.checkout);
+            setRequireHotel(true);
+
+            if (hotelsData && parsed.name) {
+              const matched = hotelsData.find(
+                (h: any) =>
+                  (h.name || h.hotel_name)?.toLowerCase() === parsed.name.toLowerCase()
+              );
+              if (matched) {
+                setHotelId(String(matched.id));
+              }
+            }
+          }
         }
 
         // Fetch companies list for dropdown selector
@@ -76,7 +126,27 @@ function EditCustomerContent() {
   const handleEditCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetId) return;
+
     try {
+      let compiledHotelInfo = "";
+      if (requireHotel) {
+        if (!hotelCity || !hotelCheckin || !hotelCheckout) {
+          showToast("Please fill all required hotel fields", "error");
+          return;
+        }
+        let nameToUse = hotelName;
+        if (hotelId) {
+          const selectedH = availableHotels.find((h) => String(h.id) === String(hotelId));
+          if (selectedH) {
+            nameToUse = selectedH.name || selectedH.hotel_name;
+          }
+        } else {
+          showToast("Please select a hotel property", "error");
+          return;
+        }
+        compiledHotelInfo = `${nameToUse} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})`;
+      }
+
       const updated = {
         name: custName,
         company: custCompany,
@@ -85,13 +155,53 @@ function EditCustomerContent() {
         alternative_phone: custAltPhone || "",
         email: custEmail || "",
         passport_no: passportNo || "",
-        hotel_info: hotelInfo || "",
+        hotel_info: compiledHotelInfo,
         notes: notes || "",
         contact: "" // Allow controller to auto-compile formatted contact field
       };
       
       const response = await api.updateCustomer(targetId, updated);
       if (response && response.success) {
+        // Also update or create the hotel record referencing this customer in uc_hotels
+        try {
+          if (requireHotel) {
+            let nameToUse = hotelName;
+            if (hotelId) {
+              const selectedH = availableHotels.find((h) => String(h.id) === String(hotelId));
+              if (selectedH) {
+                nameToUse = selectedH.name || selectedH.hotel_name;
+              }
+            }
+            const existingHotels = await api.getHotels();
+            const existingCustomerHotel = existingHotels.find(
+              (h: any) => h.customer_id === Number(targetId)
+            );
+
+            const hotelPayload = {
+              customer_id: Number(targetId),
+              name: nameToUse,
+              city: hotelCity,
+              active: 1
+            };
+
+            if (existingCustomerHotel) {
+              await api.updateHotel(existingCustomerHotel.id, hotelPayload);
+            } else {
+              await api.createHotel(hotelPayload);
+            }
+          } else {
+            const existingHotels = await api.getHotels();
+            const existingCustomerHotel = existingHotels.find(
+              (h: any) => h.customer_id === Number(targetId)
+            );
+            if (existingCustomerHotel) {
+              await api.deleteHotel(existingCustomerHotel.id);
+            }
+          }
+        } catch (hotelErr) {
+          console.error("Failed to sync customer hotel record:", hotelErr);
+        }
+
         showToast("Customer profile updated successfully!", "success");
         setTimeout(() => {
           router.push(`/admin/customers/view?id=${targetId}`);
@@ -247,8 +357,8 @@ function EditCustomerContent() {
                   type="email" 
                   className="form-input" 
                   placeholder="e.g. customer@email.com" 
-                  value={custEmail} 
-                  onChange={(e) => setCustEmail(e.target.value)} 
+                  value={custEmail}
+                  onChange={(e) => setCustEmail(e.target.value)}
                   style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
                 />
               </div>
@@ -261,9 +371,9 @@ function EditCustomerContent() {
                 <input 
                   type="text" 
                   className="form-input" 
-                  placeholder="e.g. AA1234567" 
-                  value={passportNo} 
-                  onChange={(e) => setPassportNo(e.target.value)} 
+                  placeholder="e.g. A1234567" 
+                  value={passportNo}
+                  onChange={(e) => setPassportNo(e.target.value)}
                   style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
                 />
               </div>
@@ -271,19 +381,103 @@ function EditCustomerContent() {
           </div>
 
           {/* Hotel Stay info */}
-          <div style={{ width: "100%" }}>
-            <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Hotel / Stay Info</label>
-            <div className="form-input-wrapper">
-              <i className="fas fa-hotel form-icon" style={{ color: "#0f766e" }}></i>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="e.g. Makkah Fairmont Tower, Room 1024" 
-                value={hotelInfo} 
-                onChange={(e) => setHotelInfo(e.target.value)} 
-                style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
-              />
+          <div style={{ width: "100%", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "16px", background: "#f8fafc" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "15px" }}>
+              <span style={{ fontWeight: "700", color: "#334155", fontSize: "14px" }}>
+                <i className="fas fa-hotel" style={{ marginRight: "8px", color: "#0f766e" }}></i> Include Hotel Reservation?
+              </span>
+              <label className="switch" style={{ position: "relative", display: "inline-block", width: "44px", height: "24px" }}>
+                <input
+                  type="checkbox"
+                  checked={requireHotel}
+                  onChange={(e) => setRequireHotel(e.target.checked)}
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span className="slider" style={{
+                  position: "absolute", cursor: "pointer", top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: requireHotel ? "#0f766e" : "#ccc", transition: ".4s", borderRadius: "24px"
+                }}>
+                  <span style={{
+                    position: "absolute", content: '""', height: "16px", width: "16px", left: "4px", bottom: "4px",
+                    backgroundColor: "white", transition: ".4s", borderRadius: "50%",
+                    transform: requireHotel ? "translateX(20px)" : "none"
+                  }}></span>
+                </span>
+              </label>
             </div>
+
+            {requireHotel && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "15px" }}>
+                <div>
+                  <label className="form-label" style={{ fontWeight: "600", color: "#475569", display: "block", marginBottom: "8px", fontSize: "13px" }}>Select Destination Area/City *</label>
+                  <div className="form-input-wrapper">
+                    <i className="fa-solid fa-city form-icon" style={{ color: "#0f766e" }}></i>
+                    <select
+                      className="form-input form-select"
+                      value={hotelCity}
+                      onChange={(e) => {
+                        setHotelCity(e.target.value);
+                        setHotelId("");
+                      }}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px", paddingLeft: "45px" }}
+                      required={requireHotel}
+                    >
+                      <option value="">-- Choose City --</option>
+                      <option value="Makkah">Makkah Mukarramah</option>
+                      <option value="Madinah">Madinah Munawwarah</option>
+                      <option value="Jeddah">Jeddah</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontWeight: "600", color: "#475569", display: "block", marginBottom: "8px", fontSize: "13px" }}>Available Property / Hotel *</label>
+                  <div className="form-input-wrapper">
+                    <i className="fa-solid fa-building-circle-check form-icon" style={{ color: "#0f766e" }}></i>
+                    <select
+                      className="form-input form-select"
+                      value={hotelId}
+                      onChange={(e) => setHotelId(e.target.value)}
+                      style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px", paddingLeft: "45px" }}
+                      required={requireHotel}
+                    >
+                      <option value="">-- Select Hotel --</option>
+                      {availableHotels
+                        .filter((h) => h.city.toLowerCase() === hotelCity.toLowerCase())
+                        .map((h) => (
+                          <option key={h.id} value={h.id}>
+                            {h.name || h.hotel_name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontWeight: "600", color: "#475569", display: "block", marginBottom: "8px", fontSize: "13px" }}>Check-In Date *</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={hotelCheckin}
+                    onChange={(e) => setHotelCheckin(e.target.value)}
+                    style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px", paddingLeft: "15px" }}
+                    required={requireHotel}
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontWeight: "600", color: "#475569", display: "block", marginBottom: "8px", fontSize: "13px" }}>Check-Out Date *</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={hotelCheckout}
+                    onChange={(e) => setHotelCheckout(e.target.value)}
+                    style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px", paddingLeft: "15px" }}
+                    required={requireHotel}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* External Notes / Remarks */}
@@ -304,7 +498,10 @@ function EditCustomerContent() {
 
           {/* Submit Button */}
           <div style={{ marginTop: "15px" }}>
-            <button type="submit" style={{ width: "100%", background: "#0f172a", color: "#ffffff", border: "none", borderRadius: "6px", height: "50px", fontWeight: "600", fontSize: "15px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+            <button 
+              type="submit" 
+              style={{ background: "#0f766e", color: "#ffffff", border: "none", borderRadius: "8px", padding: "14px 28px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", width: "100%", justifyContent: "center", fontSize: "16px" }}
+            >
               <i className="fas fa-check"></i>
               <span>Save Changes</span>
             </button>

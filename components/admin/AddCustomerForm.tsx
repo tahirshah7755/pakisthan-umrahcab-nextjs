@@ -664,6 +664,19 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         }
       }
 
+      // 6. Create Hotel (if requireHotel is active)
+      if (requireHotel && hotelId) {
+        const hotelData = {
+          customer_id: customerId,
+          name: hotelId,
+          city: hotelCity,
+          active: 1,
+          check_in: hotelCheckin || null,
+          check_out: hotelCheckout || null
+        };
+        await api.createHotel(hotelData);
+      }
+
       showToast("Unified Umrah File Created Successfully!", "success");
       setTimeout(() => {
         router.push(isCompanyPanel ? "/company/customers" : "/admin/customers");
@@ -676,10 +689,28 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     }
   };
 
-  // Filter Hotels dynamically based on selected city
-  const filteredHotels = hotelsList.filter(
-    (h) => !hotelCity || h.city.toLowerCase() === hotelCity.toLowerCase()
-  );
+  // Filter Hotels dynamically based on selected city (unique list of names)
+  const filteredHotels = React.useMemo(() => {
+    // 1. Get all unique hotel names from database for the selected city
+    const dbHotelNames = hotelsList
+      .filter((h) => h.city?.toLowerCase() === hotelCity?.toLowerCase() && (h.name || h.hotel_name))
+      .map((h) => (h.name || h.hotel_name).trim());
+
+    // 2. Get static mock hotels for the selected city
+    const mockHotelNames = mockHotels
+      .filter((h) => h.city.toLowerCase() === hotelCity?.toLowerCase())
+      .map((h) => h.hotel_name.trim());
+
+    // 3. Merge them and deduplicate
+    const allNames = Array.from(new Set([...dbHotelNames, ...mockHotelNames]));
+
+    // 4. Map to options
+    return allNames.map((name) => ({
+      id: name,
+      name: name,
+      city: hotelCity
+    }));
+  }, [hotelsList, hotelCity]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
@@ -1740,7 +1771,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           <option value="">-- Select Hotel --</option>
                           {filteredHotels.map((h) => (
                             <option key={h.id} value={h.id}>
-                              [{h.city.toUpperCase()}] {h.name || h.hotel_name}
+                              [{h.city.toUpperCase()}] {h.name}
                             </option>
                           ))}
                         </select>

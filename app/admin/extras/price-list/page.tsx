@@ -42,7 +42,8 @@ export default function PriceListMatrix() {
 
   // Redirect if extras not unlocked
   useEffect(() => {
-    if (!extrasUnlocked) {
+    const savedExtras = typeof window !== "undefined" ? localStorage.getItem("umrahcab_extras_unlocked") : null;
+    if (!extrasUnlocked && savedExtras !== "true") {
       router.push("/admin/extras");
     }
   }, [extrasUnlocked, router]);

@@ -84,6 +84,10 @@ function BookingViewContent() {
   const [booking, setBooking] = useState<any | null>(null);
   const [customerObj, setCustomerObj] = useState<any | null>(null);
 
+  const [isDebited, setIsDebited] = useState(false);
+  const [checkingLedger, setCheckingLedger] = useState(false);
+  const [submittingDebit, setSubmittingDebit] = useState(false);
+
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -107,7 +111,24 @@ function BookingViewContent() {
           if (result.customer_id) {
             const cust = await api.getCustomer(result.customer_id);
             if (cust) {
-              setCustomerObj(cust);
+              const actualCust = cust.customer || cust;
+              setCustomerObj(actualCust);
+              if (actualCust.company) {
+                try {
+                  setCheckingLedger(true);
+                  const ledgers = await api.getLedgers();
+                  const code = result.booking_code || result.id;
+                  const alreadyDebited = ledgers.some((ld: any) => 
+                    ld.company === actualCust.company && 
+                    (ld.description || "").includes(code)
+                  );
+                  setIsDebited(alreadyDebited);
+                } catch (e) {
+                  console.error("Failed to check ledger status", e);
+                } finally {
+                  setCheckingLedger(false);
+                }
+              }
             }
           }
         } else {
@@ -123,6 +144,31 @@ function BookingViewContent() {
 
     loadBookingData();
   }, [targetId]);
+
+  const handleDebitLedger = async () => {
+    if (!booking || !customerObj?.company) return;
+    try {
+      setSubmittingDebit(true);
+      const code = booking.booking_code || booking.id;
+      const res = await api.createLedger({
+        company: customerObj.company,
+        description: `Booking Debit: ${code}`,
+        debit: parseFloat(booking.car_price || 0),
+        credit: 0
+      });
+      if (res && res.success) {
+        showToast(`Successfully debited SR ${parseFloat(booking.car_price || 0).toFixed(2)} from ${customerObj.company}'s Ledger!`, "success");
+        setIsDebited(true);
+      } else {
+        showToast(res?.error || "Failed to create ledger entry.", "error");
+      }
+    } catch (e) {
+      console.error(e);
+      showToast("Error debiting ledger.", "error");
+    } finally {
+      setSubmittingDebit(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -379,6 +425,70 @@ function BookingViewContent() {
                 <span style={{ color: "#64748b" }}>Cash to Receive:</span>
                 <span style={{ fontWeight: "700", color: "#b45309" }}>SR {parsed.cashToReceive.toFixed(2)}</span>
               </div>
+
+              {customerObj?.company && (
+                <>
+                  <hr style={{ border: 0, borderTop: "1px solid #f1f5f9", margin: "10px 0" }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "block", textTransform: "uppercase", fontWeight: "600" }}>
+                      Corporate Billing ({customerObj.company})
+                    </span>
+                    {isDebited ? (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "#ecfdf5",
+                        color: "#047857",
+                        padding: "10px",
+                        borderRadius: "8px",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        border: "1px solid #a7f3d0"
+                      }}>
+                        <i className="fas fa-check-circle" style={{ fontSize: "15px" }}></i>
+                        <span>Debited to Company Ledger</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleDebitLedger}
+                        disabled={submittingDebit || checkingLedger}
+                        style={{
+                          width: "100%",
+                          background: checkingLedger ? "#cbd5e1" : (submittingDebit ? "#93c5fd" : "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"),
+                          color: "#ffffff",
+                          border: "none",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          fontWeight: "700",
+                          cursor: (submittingDebit || checkingLedger) ? "not-allowed" : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px",
+                          boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {submittingDebit ? (
+                          <>
+                            <div className="spinner" style={{ width: "12px", height: "12px", borderWidth: "2px", borderTopColor: "#fff" }}></div>
+                            <span>Processing Debit...</span>
+                          </>
+                        ) : checkingLedger ? (
+                          <span>Checking Ledger Status...</span>
+                        ) : (
+                          <>
+                            <i className="fas fa-file-invoice-dollar"></i>
+                            <span>Debit SR {parseFloat(booking.car_price || 0).toFixed(2)} to Ledger</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

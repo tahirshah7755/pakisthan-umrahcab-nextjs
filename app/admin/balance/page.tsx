@@ -75,11 +75,12 @@ export default function BalancePage() {
       showToast("No data to copy!", "error");
       return;
     }
-    const headers = ["ID", "Company Name", "Status", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
+    const headers = ["ID", "Company Name", "Status", "Ledger Balance", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
     const textRows = rows.map((item: any) => [
       item.id,
       item.company || "",
       item.status || "",
+      item.ledger_balance || 0,
       item.last_inv_amt || 0,
       item.total_business || 0,
       item.total_rec_vw || 0,
@@ -97,13 +98,14 @@ export default function BalancePage() {
       showToast("No data to export!", "error");
       return;
     }
-    const headers = ["ID", "Company Name", "Status", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
+    const headers = ["ID", "Company Name", "Status", "Ledger Balance", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
     const csvContent = [
       headers.join(","),
       ...rows.map((item: any) => [
         item.id,
         `"${(item.company || "").replace(/"/g, '""')}"`,
         `"${(item.status || "").replace(/"/g, '""')}"`,
+        item.ledger_balance || 0,
         item.last_inv_amt || 0,
         item.total_business || 0,
         item.total_rec_vw || 0,
@@ -128,11 +130,12 @@ export default function BalancePage() {
       showToast("No data to export!", "error");
       return;
     }
-    const headers = ["ID", "Company Name", "Status", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
+    const headers = ["ID", "Company Name", "Status", "Ledger Balance", "Last Inv Amt", "Total Business", "Total Rec (VW)", "Total Rec (PW)", "Remarks"];
     const textRows = rows.map((item: any) => [
       item.id,
       item.company || "",
       item.status || "",
+      item.ledger_balance || 0,
       item.last_inv_amt || 0,
       item.total_business || 0,
       item.total_rec_vw || 0,
@@ -175,6 +178,7 @@ export default function BalancePage() {
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">#${item.id}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e5cff;">${item.company || ""}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.status || ""}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${fmt(item.ledger_balance)}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${fmt(item.last_inv_amt)}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">${fmt(item.total_business)}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${fmt(item.total_rec_vw)}</td>
@@ -216,6 +220,7 @@ export default function BalancePage() {
                 <th>ID</th>
                 <th>Company Name</th>
                 <th>Status</th>
+                <th style="text-align: right;">Ledger Balance</th>
                 <th style="text-align: right;">Last Inv Amt</th>
                 <th style="text-align: right;">Total Business</th>
                 <th style="text-align: right;">Total Rec (VW)</th>
@@ -266,6 +271,8 @@ export default function BalancePage() {
   const rows = allRows.filter((r) =>
     !search || r.company?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalLedgerBalance = rows.reduce((s: number, r: any) => s + Number(r.ledger_balance || 0), 0);
 
   const handleToggleLock = async (item: any) => {
     const originalCompany = companies.find((c: any) => c.id === item.id);
@@ -490,6 +497,7 @@ export default function BalancePage() {
                     <th>Status</th>
                     <th>ID</th>
                     <th>Company Name</th>
+                    <th>Ledger Balance</th>
                     <th>Last Inv. Amt</th>
                     <th>Inv. Period</th>
                     <th>Last Followup</th>
@@ -510,7 +518,7 @@ export default function BalancePage() {
                 <tbody>
                   {rows.length === 0 ? (
                     <tr>
-                      <td colSpan={19} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+                      <td colSpan={20} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
                         No company records found for this filter.
                       </td>
                     </tr>
@@ -549,6 +557,9 @@ export default function BalancePage() {
                           </td>
                           <td style={{ fontWeight: 700, color: "#1e5cff", whiteSpace: "nowrap" }}>
                             {item.company}
+                          </td>
+                          <td style={{ fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap" }}>
+                            {fmt(item.ledger_balance)}
                           </td>
                           <td style={{ color: "#475569", fontWeight: 600 }}>
                             {fmt(item.last_inv_amt)}
@@ -674,6 +685,7 @@ export default function BalancePage() {
                   <tfoot>
                     <tr style={{ background: "#f8fafc", borderTop: "2px solid #e2e8f0", fontWeight: 800 }}>
                       <td style={{ paddingLeft: "16px", color: "#0f172a" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
+                      <td style={{ color: "#0f172a" }}>{fmt(totalLedgerBalance)}</td>
                       <td colSpan={4}></td>
                       <td style={{ color: "#1e293b" }}>{fmt(totals.total_business)}</td>
                       <td colSpan={6}></td>
@@ -740,7 +752,11 @@ export default function BalancePage() {
                         </div>
 
                         {/* Mini Stats Grid */}
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span style={{ fontSize: "9px", color: "#1e5cff", fontWeight: "700", textTransform: "uppercase" }}>Ledger Bal</span>
+                            <span style={{ fontSize: "12px", fontWeight: "800", color: "#1e5cff" }}>{fmt(item.ledger_balance)}</span>
+                          </div>
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                             <span style={{ fontSize: "9px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Total Business</span>
                             <span style={{ fontSize: "12px", fontWeight: "700", color: "#1e293b" }}>{fmt(item.total_business)}</span>
@@ -758,6 +774,10 @@ export default function BalancePage() {
                         {/* Expandable Section */}
                         {isExpanded && (
                           <div style={{ display: "flex", flexDirection: "column", gap: "10px", borderTop: "1px solid #f1f5f9", paddingTop: "12px", fontSize: "12px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ color: "#64748b", fontWeight: "500" }}>Ledger Balance:</span>
+                              <span style={{ fontWeight: "700", color: "#1e5cff" }}>{fmt(item.ledger_balance)}</span>
+                            </div>
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
                               <span style={{ color: "#64748b", fontWeight: "500" }}>Last Inv. Amt:</span>
                               <span style={{ fontWeight: "600", color: "#334155" }}>{fmt(item.last_inv_amt)}</span>

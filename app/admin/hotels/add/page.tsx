@@ -331,7 +331,7 @@ export default function AddHotel() {
                 }}
               >
                 <i className="fas fa-check"></i>
-                <span>Save Hotel</span>
+                <span>Save</span>
               </button>
             </div>
           </form>

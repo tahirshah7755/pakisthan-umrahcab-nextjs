@@ -565,7 +565,7 @@ export default function HotelsDirectory() {
                   Cancel
                 </button>
                 <button type="submit" className="btn-submit" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)", width: "auto", color: "#ffffff", padding: "8px 20px", borderRadius: "6px", border: "none", fontWeight: "700", cursor: "pointer" }}>
-                  {editingHotel ? "Save Changes" : "Add Hotel"}
+                  Save
                 </button>
               </div>
             </form>

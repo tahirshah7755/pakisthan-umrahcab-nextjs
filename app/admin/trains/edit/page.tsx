@@ -33,20 +33,21 @@ function EditTrainContent() {
   const [singleTrnError, setSingleTrnError] = useState("");
 
   const [trnSelectedCustomerObj, setTrnSelectedCustomerObj] = useState<any | null>(null);
-  const [trnLeg, setTrnLeg] = useState<"Arrival" | "Departure">("Arrival");
-  const [editTrnStatus, setEditTrnStatus] = useState("Scheduled");
+  const [trnLeg, setTrnLeg] = useState<"Arrival" | "Departure" | "Both Legs">("Arrival");
 
   // Arrival states
   const [trnArrTrainNo, setTrnArrTrainNo] = useState("");
   const [trnArrStation, setTrnArrStation] = useState("");
   const [trnArrDate, setTrnArrDate] = useState("");
   const [trnArrTime, setTrnArrTime] = useState("");
+  const [trnArrStatus, setTrnArrStatus] = useState("Scheduled");
 
   // Departure states
   const [trnDepTrainNo, setTrnDepTrainNo] = useState("");
   const [trnDepStation, setTrnDepStation] = useState("");
   const [trnDepDate, setTrnDepDate] = useState("");
   const [trnDepTime, setTrnDepTime] = useState("");
+  const [trnDepStatus, setTrnDepStatus] = useState("Scheduled");
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -75,20 +76,51 @@ function EditTrainContent() {
         if (res && res.id) {
           setTrnSelected(res);
           setTrnSelectedCustomerObj(res.customer || null);
-          const leg = res.leg === "Departure" ? "Departure" : "Arrival";
-          setTrnLeg(leg);
-          setEditTrnStatus(res.status || "Scheduled");
+          const currentLeg = res.leg || "Arrival";
+          setTrnLeg(currentLeg);
 
-          // Pre-populate both sets so switching tabs doesn't show empty fields
-          setTrnArrTrainNo(res.train_no || "");
-          setTrnArrStation(res.route || "");
-          setTrnArrDate(res.date || "");
-          setTrnArrTime(res.time ? res.time.substring(0, 5) : "");
+          const timeVal = res.time ? res.time.substring(0, 5) : "";
 
-          setTrnDepTrainNo(res.train_no || "");
-          setTrnDepStation(res.route || "");
-          setTrnDepDate(res.date || "");
-          setTrnDepTime(res.time ? res.time.substring(0, 5) : "");
+          if (currentLeg === "Arrival") {
+            setTrnArrTrainNo(res.train_no || "");
+            setTrnArrStation(res.route || "");
+            setTrnArrDate(res.date || "");
+            setTrnArrTime(timeVal);
+            setTrnArrStatus(res.status || "Scheduled");
+
+            // Clear departure
+            setTrnDepTrainNo("");
+            setTrnDepStation("");
+            setTrnDepDate("");
+            setTrnDepTime("");
+            setTrnDepStatus("Scheduled");
+          } else if (currentLeg === "Departure") {
+            setTrnDepTrainNo(res.train_no || "");
+            setTrnDepStation(res.route || "");
+            setTrnDepDate(res.date || "");
+            setTrnDepTime(timeVal);
+            setTrnDepStatus(res.status || "Scheduled");
+
+            // Clear arrival
+            setTrnArrTrainNo("");
+            setTrnArrStation("");
+            setTrnArrDate("");
+            setTrnArrTime("");
+            setTrnArrStatus("Scheduled");
+          } else {
+            // Both Legs
+            setTrnArrTrainNo(res.train_no || "");
+            setTrnArrStation(res.route || "");
+            setTrnArrDate(res.date || "");
+            setTrnArrTime(timeVal);
+            setTrnArrStatus(res.status || "Scheduled");
+
+            setTrnDepTrainNo(res.train_no || "");
+            setTrnDepStation(res.route || "");
+            setTrnDepDate(res.date || "");
+            setTrnDepTime(timeVal);
+            setTrnDepStatus(res.status || "Scheduled");
+          }
         } else {
           setSingleTrnError("Failed to load train details.");
         }
@@ -110,71 +142,132 @@ function EditTrainContent() {
       return;
     }
 
-    let payload: any = {
-      customer_id: trnSelectedCustomerObj.id,
-      status: editTrnStatus
-    };
-
-    if (trnLeg === "Arrival") {
-      if (!trnArrTrainNo || !trnArrDate || !trnArrTime || !trnArrStation) {
-        showToast("Please fill in all Arrival details.", "error");
-        return;
-      }
-      payload = {
-        ...payload,
-        train_no: trnArrTrainNo,
-        leg: "Arrival",
-        date: trnArrDate,
-        time: trnArrTime,
-        route: trnArrStation
-      };
-    } else {
-      if (!trnDepTrainNo || !trnDepDate || !trnDepTime || !trnDepStation) {
-        showToast("Please fill in all Departure details.", "error");
-        return;
-      }
-      payload = {
-        ...payload,
-        train_no: trnDepTrainNo,
-        leg: "Departure",
-        date: trnDepDate,
-        time: trnDepTime,
-        route: trnDepStation
-      };
-    }
-
     try {
-      const res = await api.updateTrain(trnSelected.id, payload);
+      if (trnLeg === "Arrival") {
+        if (!trnArrTrainNo || !trnArrDate || !trnArrTime || !trnArrStation) {
+          showToast("Please fill in all Arrival details.", "error");
+          return;
+        }
+        const res = await api.updateTrain(trnSelected.id, {
+          customer_id: trnSelectedCustomerObj.id,
+          train_no: trnArrTrainNo,
+          leg: "Arrival",
+          date: trnArrDate,
+          time: trnArrTime,
+          route: trnArrStation,
+          status: trnArrStatus
+        });
+        if (!res?.success) {
+          showToast(res?.error || "Failed to update train details.", "error");
+          return;
+        }
+      } else if (trnLeg === "Departure") {
+        if (!trnDepTrainNo || !trnDepDate || !trnDepTime || !trnDepStation) {
+          showToast("Please fill in all Departure details.", "error");
+          return;
+        }
+        const res = await api.updateTrain(trnSelected.id, {
+          customer_id: trnSelectedCustomerObj.id,
+          train_no: trnDepTrainNo,
+          leg: "Departure",
+          date: trnDepDate,
+          time: trnDepTime,
+          route: trnDepStation,
+          status: trnDepStatus
+        });
+        if (!res?.success) {
+          showToast(res?.error || "Failed to update train details.", "error");
+          return;
+        }
+      } else if (trnLeg === "Both Legs") {
+        if (
+          !trnArrTrainNo || !trnArrDate || !trnArrTime || !trnArrStation ||
+          !trnDepTrainNo || !trnDepDate || !trnDepTime || !trnDepStation
+        ) {
+          showToast("Please fill in both Arrival and Departure details.", "error");
+          return;
+        }
 
-      if (res && res.success) {
-        showToast("Train record updated successfully", "success");
-        setTimeout(() => {
-          router.push(`/admin/trains/view?id=${trnSelected.id}`);
-        }, 1000);
-      } else {
-        showToast(res?.error || "Failed to update train record", "error");
+        if (trnSelected.leg === "Departure") {
+          // Update Departure leg (current record)
+          const res1 = await api.updateTrain(trnSelected.id, {
+            customer_id: trnSelectedCustomerObj.id,
+            train_no: trnDepTrainNo,
+            leg: "Departure",
+            date: trnDepDate,
+            time: trnDepTime,
+            route: trnDepStation,
+            status: trnDepStatus
+          });
+          // Create Arrival leg (new record)
+          const res2 = await api.createTrain({
+            customer_id: trnSelectedCustomerObj.id,
+            train_no: trnArrTrainNo,
+            leg: "Arrival",
+            date: trnArrDate,
+            time: trnArrTime,
+            route: trnArrStation,
+            status: trnArrStatus
+          });
+          if (!res1?.success || !res2?.success) {
+            showToast("Failed to save some train details.", "error");
+            return;
+          }
+        } else {
+          // Default: original was Arrival (or Both). Update Arrival leg (current record)
+          const res1 = await api.updateTrain(trnSelected.id, {
+            customer_id: trnSelectedCustomerObj.id,
+            train_no: trnArrTrainNo,
+            leg: "Arrival",
+            date: trnArrDate,
+            time: trnArrTime,
+            route: trnArrStation,
+            status: trnArrStatus
+          });
+          // Create Departure leg (new record)
+          const res2 = await api.createTrain({
+            customer_id: trnSelectedCustomerObj.id,
+            train_no: trnDepTrainNo,
+            leg: "Departure",
+            date: trnDepDate,
+            time: trnDepTime,
+            route: trnDepStation,
+            status: trnDepStatus
+          });
+          if (!res1?.success || !res2?.success) {
+            showToast("Failed to save some train details.", "error");
+            return;
+          }
+        }
       }
+
+      showToast("Train journey details saved!", "success");
+      setTimeout(() => {
+        router.push(`/admin/trains/view?id=${trnSelected.id}`);
+      }, 1000);
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || "Error updating train record", "error");
+      showToast(err.message || "Failed to update train record.", "error");
     }
   };
+
+  const TRAIN_PURPLE = "#7c3aed";
 
   if (singleTrnLoading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <div className="form-header-card" style={{ background: "linear-gradient(135deg, #db2777 0%, #be185d 100%)" }}>
+        <div className="form-header-card" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)" }}>
           <div>
             <h2>Edit Train Record</h2>
             <p>Modify scheduling and passenger details for the train record.</p>
           </div>
           <button onClick={() => router.push("/admin/trains")} className="form-btn-back">
-            <i className="fas fa-arrow-left"></i>
-            <span>Back to Trains Registry</span>
+            <i className="fas fa-list"></i>
+            <span>Trains List</span>
           </button>
         </div>
         <div className="form-card" style={{ textAlign: "center", padding: "40px", color: "#64748b", background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
-          <i className="fas fa-spinner fa-spin" style={{ fontSize: "40px", color: "#db2777", marginBottom: "15px" }}></i>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: "40px", color: TRAIN_PURPLE, marginBottom: "15px" }}></i>
           <h3>Loading Train Record Details...</h3>
         </div>
       </div>
@@ -190,8 +283,8 @@ function EditTrainContent() {
             <p>{singleTrnError || "Train record could not be found."}</p>
           </div>
           <button onClick={() => router.push("/admin/trains")} className="form-btn-back">
-            <i className="fas fa-arrow-left"></i>
-            <span>Back to Trains Registry</span>
+            <i className="fas fa-list"></i>
+            <span>Trains List</span>
           </button>
         </div>
         <div className="form-card" style={{ textAlign: "center", padding: "40px", color: "#64748b", background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
@@ -205,8 +298,6 @@ function EditTrainContent() {
       </div>
     );
   }
-
-  const TRAIN_PURPLE = "#db2777";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -234,14 +325,14 @@ function EditTrainContent() {
         </div>
       )}
 
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #db2777 0%, #be185d 100%)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h2>Edit Train Record: {trnSelected.custom_id || `#TRN-${trnSelected.id}`}</h2>
           <p>Modify scheduling, direction and passenger information.</p>
         </div>
         <button onClick={() => router.push(`/admin/trains/view?id=${trnSelected.id}`)} className="form-btn-back">
-          <i className="fas fa-arrow-left"></i>
-          <span>Back to Details</span>
+          <i className="fas fa-list"></i>
+          <span>Trains List</span>
         </button>
       </div>
 
@@ -256,9 +347,9 @@ function EditTrainContent() {
               themeColor={TRAIN_PURPLE}
             />
 
-            {/* Leg Type Tab Buttons */}
-            <div style={{ display: "flex", gap: "10px", marginTop: "10px", marginBottom: "10px" }}>
-              {(["Arrival", "Departure"] as const).map((leg) => (
+            {/* Leg Type Selector Tabs (Matches exact styling of add page) */}
+            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              {(["Arrival", "Departure", "Both Legs"] as const).map((leg) => (
                 <button
                   key={leg}
                   type="button"
@@ -277,67 +368,66 @@ function EditTrainContent() {
                     border: trnLeg === leg ? "none" : "1px solid #cbd5e1",
                     background: trnLeg === leg ? TRAIN_PURPLE : "#ffffff",
                     color: trnLeg === leg ? "#ffffff" : "#64748b",
-                    boxShadow: trnLeg === leg ? `0 4px 6px -1px rgba(219, 39, 119, 0.25)` : "none",
+                    boxShadow: trnLeg === leg ? `0 4px 6px -1px rgba(124, 58, 237, 0.25)` : "none",
                     transition: "all 0.2s ease"
                   }}
                 >
-                  <i className={leg === "Arrival" ? "fas fa-train" : "fas fa-train-tram"}></i>
+                  <i className="fas fa-train"></i>
                   <span>{leg}</span>
                 </button>
               ))}
             </div>
 
-            {/* Status Dropdown */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Journey Status <span style={{ color: "#ef4444" }}>*</span></label>
-              <div className="form-input-wrapper">
-                <i className="fas fa-info-circle form-icon" style={{ zIndex: 10 }}></i>
-                <select
-                  className="form-input form-select"
-                  value={editTrnStatus}
-                  onChange={(e) => setEditTrnStatus(e.target.value)}
-                  style={{ paddingLeft: "45px" }}
-                  required
-                >
-                  <option value="Scheduled">Scheduled</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-                <i className="fas fa-chevron-down select-arrow"></i>
-              </div>
-            </div>
-
-            {/* Arrival details */}
-            {trnLeg === "Arrival" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            {/* Arrival details section */}
+            {(trnLeg === "Arrival" || trnLeg === "Both Legs") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "10px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
                   <i className="fas fa-train" style={{ color: TRAIN_PURPLE }}></i>
-                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Arrival Details</span>
+                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Arrival Train Details</span>
                 </div>
+                
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Train Serial / Code <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Train Number <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
                     <i className="fas fa-train form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. HHR-4012" value={trnArrTrainNo} onChange={(e) => setTrnArrTrainNo(e.target.value)} />
+                    <input type="text" className="form-input" placeholder="e.g. HHR-5" value={trnArrTrainNo} onChange={(e) => setTrnArrTrainNo(e.target.value)} />
                   </div>
                 </div>
+
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Station</label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Journey Status <span style={{ color: "#ef4444" }}>*</span></label>
+                  <div className="form-input-wrapper">
+                    <i className="fas fa-info-circle form-icon"></i>
+                    <select 
+                      className="form-input form-select" 
+                      value={trnArrStatus} 
+                      onChange={(e) => setTrnArrStatus(e.target.value)}
+                    >
+                      <option value="Scheduled">Scheduled</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Station <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
                     <i className="fas fa-location-dot form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. Madinah Station" value={trnArrStation} onChange={(e) => setTrnArrStation(e.target.value)} />
+                    <input type="text" className="form-input" placeholder="e.g. Makkah Station (MAK)" value={trnArrStation} onChange={(e) => setTrnArrStation(e.target.value)} />
                   </div>
                 </div>
+
                 <div style={{ display: "flex", gap: "15px" }}>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Date</label>
+                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
                       <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Time</label>
+                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Time <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
                       <input type="time" className="form-input" value={trnArrTime} onChange={(e) => setTrnArrTime(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
@@ -346,36 +436,56 @@ function EditTrainContent() {
               </div>
             )}
 
-            {/* Departure details */}
-            {trnLeg === "Departure" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            {/* Departure details section */}
+            {(trnLeg === "Departure" || trnLeg === "Both Legs") && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "15px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
-                  <i className="fas fa-train-tram" style={{ color: TRAIN_PURPLE }}></i>
-                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Departure Details</span>
+                  <i className="fas fa-train" style={{ color: TRAIN_PURPLE }}></i>
+                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Departure Train Details</span>
                 </div>
+
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Train Serial / Code <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Train Number <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
                     <i className="fas fa-train form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. HHR-4013" value={trnDepTrainNo} onChange={(e) => setTrnDepTrainNo(e.target.value)} />
+                    <input type="text" className="form-input" placeholder="e.g. HHR-10" value={trnDepTrainNo} onChange={(e) => setTrnDepTrainNo(e.target.value)} />
                   </div>
                 </div>
+
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Station</label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Journey Status <span style={{ color: "#ef4444" }}>*</span></label>
+                  <div className="form-input-wrapper">
+                    <i className="fas fa-info-circle form-icon"></i>
+                    <select 
+                      className="form-input form-select" 
+                      value={trnDepStatus} 
+                      onChange={(e) => setTrnDepStatus(e.target.value)}
+                    >
+                      <option value="Scheduled">Scheduled</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Station <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
                     <i className="fas fa-location-dot form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. Makkah Station" value={trnDepStation} onChange={(e) => setTrnDepStation(e.target.value)} />
+                    <input type="text" className="form-input" placeholder="e.g. Medina Station (MED)" value={trnDepStation} onChange={(e) => setTrnDepStation(e.target.value)} />
                   </div>
                 </div>
+
                 <div style={{ display: "flex", gap: "15px" }}>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Date</label>
+                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
                       <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Time</label>
+                    <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Time <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
                       <input type="time" className="form-input" value={trnDepTime} onChange={(e) => setTrnDepTime(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
@@ -420,7 +530,7 @@ function EditTrainContent() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
-                  boxShadow: `0 4px 6px -1px rgba(219, 39, 119, 0.2)`
+                  boxShadow: `0 4px 6px -1px rgba(124, 58, 237, 0.2)`
                 }}
               >
                 <i className="fas fa-save"></i>

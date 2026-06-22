@@ -158,7 +158,7 @@ export default function HotelsDirectory() {
           <p style={{ opacity: 0.9 }}>Configure and manage the directory of properties available in Makkah, Madinah, and Jeddah.</p>
         </div>
         <button 
-          onClick={handleOpenAddModal} 
+          onClick={() => router.push("/admin/hotels/add")} 
           style={{
             background: "#ffffff",
             color: "#4338ca",

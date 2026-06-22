@@ -76,6 +76,12 @@ export default function Sidebar() {
         { name: "Add New", href: "/admin/trains/add" },
       ],
     },
+    {
+      name: "Hotels",
+      icon: "fa-hotel",
+      color: "#7c3aed",
+      href: "/admin/hotels",
+    },
     { name: "Agent Follow-ups", icon: "fa-headset", color: "#14b8a6", href: "/admin/agent-followups" },
     { name: "Chat Support", icon: "fa-comments", color: "#60a5fa", href: "/admin/chat" },
     { name: "Balance Statement", icon: "fa-file-invoice-dollar", color: "#f97316", href: "/admin/balance" },

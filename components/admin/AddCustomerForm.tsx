@@ -33,7 +33,11 @@ const mockHotels = [
   { id: "7", hotel_name: "Madinah Hilton", city: "Madinah" },
   { id: "8", hotel_name: "Anwar Al Madinah Mövenpick", city: "Madinah" },
   { id: "9", hotel_name: "Pullman Zamzam Madinah", city: "Madinah" },
-  { id: "10", hotel_name: "Dar Al Taqwa Hotel Madinah", city: "Madinah" }
+  { id: "10", hotel_name: "Dar Al Taqwa Hotel Madinah", city: "Madinah" },
+  { id: "11", hotel_name: "Jeddah Hilton", city: "Jeddah" },
+  { id: "12", hotel_name: "InterContinental Jeddah", city: "Jeddah" },
+  { id: "13", hotel_name: "Sheraton Jeddah Hotel", city: "Jeddah" },
+  { id: "14", hotel_name: "Rosewood Jeddah", city: "Jeddah" }
 ];
 
 const predefinedRoutes = [
@@ -132,6 +136,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [hotelCheckin, setHotelCheckin] = useState("");
   const [hotelCheckout, setHotelCheckout] = useState("");
   const [custNotes, setCustNotes] = useState("");
+  const [hotelsList, setHotelsList] = useState<any[]>([]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -141,10 +146,11 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   useEffect(() => {
     async function loadData() {
       try {
-        const [companiesData, fleetData, priceListData] = await Promise.all([
+        const [companiesData, fleetData, priceListData, hotelsData] = await Promise.all([
           (!initialCompanies || initialCompanies.length === 0) ? api.getCompanies() : Promise.resolve(null),
           api.getFleet(),
-          api.getPriceList()
+          api.getPriceList(),
+          api.getHotels()
         ]);
 
         if (companiesData) {
@@ -198,6 +204,13 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
             "Jeddah Airport to Madinah Hotel (جدہ ایئرپورٹ سے مدینہ ہوٹل)",
             "4 in 1 Tour: Kiswah Factory + Makkah Museum + Hira Museum + Holy Quran Museum (ان ۱ ٹور)",
           ]);
+        }
+
+        // Map hotels dynamically
+        if (Array.isArray(hotelsData) && hotelsData.length > 0) {
+          setHotelsList(hotelsData);
+        } else {
+          setHotelsList(mockHotels);
         }
       } catch (err) {
         console.error("Failed to load dynamic data in AddCustomerForm:", err);
@@ -459,7 +472,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           ` Class: ${trainClass}`;
       }
       
-      const hotelInfoStr = requireHotel ? ` | Hotel: ${mockHotels.find((h) => h.id === hotelId)?.hotel_name || hotelId} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})` : "";
+      const hotelObj = hotelsList.find((h) => String(h.id) === String(hotelId));
+      const hotelName = hotelObj ? (hotelObj.name || hotelObj.hotel_name) : hotelId;
+      const hotelInfoStr = requireHotel ? ` | Hotel: ${hotelName} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})` : "";
       const notesInfo = custNotes ? ` | Notes: ${custNotes}` : "";
 
       const consolidatedContact = `${phones || "N/A"}${emailInfo}${passportInfo}${flightInfoStr}${trainInfoStr}${hotelInfoStr}${notesInfo}`;
@@ -473,7 +488,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         alternative_phone: custAltPhone || null,
         email: custEmail || null,
         passport_no: passportNo || null,
-        hotel_info: requireHotel ? `${mockHotels.find((h) => h.id === hotelId)?.hotel_name || hotelId} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})` : null,
+        hotel_info: requireHotel ? `${hotelName} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})` : null,
         notes: custNotes || null,
         registered_by: "umrahcab (Today)",
         last_update: "No edits",
@@ -592,7 +607,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   };
 
   // Filter Hotels dynamically based on selected city
-  const filteredHotels = mockHotels.filter(
+  const filteredHotels = hotelsList.filter(
     (h) => !hotelCity || h.city.toLowerCase() === hotelCity.toLowerCase()
   );
 
@@ -1555,6 +1570,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           <option value="">-- Choose City --</option>
                           <option value="Makkah">Makkah Mukarramah</option>
                           <option value="Madinah">Madinah Munawwarah</option>
+                          <option value="Jeddah">Jeddah</option>
                         </select>
                       </div>
                       {errors.hotelCity && (
@@ -1570,7 +1586,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           <option value="">-- Select Hotel --</option>
                           {filteredHotels.map((h) => (
                             <option key={h.id} value={h.id}>
-                              [{h.city.toUpperCase()}] {h.hotel_name}
+                              [{h.city.toUpperCase()}] {h.name || h.hotel_name}
                             </option>
                           ))}
                         </select>

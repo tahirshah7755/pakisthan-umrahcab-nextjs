@@ -372,6 +372,46 @@ export const api = {
     return { success: false, error: "API connection failed" };
   },
 
+  // Hotels
+  async getHotels(city?: string, search?: string) {
+    const q = new URLSearchParams();
+    if (city) q.append("city", city);
+    if (search) q.append("search", search);
+    const data = await request(`/hotels?${q.toString()}`);
+    return data || [];
+  },
+
+  async createHotel(hotel: any) {
+    const data = await request(`/hotels`, {
+      method: "POST",
+      body: JSON.stringify(hotel),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async getHotel(id: string | number) {
+    const data = await request(`/hotels/${id}`);
+    return data || null;
+  },
+
+  async updateHotel(id: string | number, hotel: any) {
+    const data = await request(`/hotels/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(hotel),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async deleteHotel(id: string | number) {
+    const data = await request(`/hotels/${id}`, {
+      method: "DELETE",
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
   // Audits
   async getAudits() {
     const data = await request(`/audits`);

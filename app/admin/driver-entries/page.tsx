@@ -288,6 +288,242 @@ export default function AdminDriverEntriesPage() {
     }
   };
 
+  const handleCopy = () => {
+    if (entries.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = [
+      "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
+      "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Waqas Received", "Misc", "Net Total", "Status"
+    ];
+    const textRows = entries.map((item: any) => {
+      return [
+        new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item.driver?.name || `Driver ID #${item.driver_id}`,
+        item.vehicle?.model || "—",
+        item.vehicle?.type || "—",
+        item.trip || "—",
+        item.hotel_drop_off || "—",
+        item.agent || "—",
+        item.rate || 0,
+        item.voucher || 0,
+        item.cash || 0,
+        item.fuel || 0,
+        item.parking || 0,
+        item.wash || 0,
+        item.oil_change || 0,
+        item.car_maintenance || 0,
+        item.waqas_received || 0,
+        item.mic || 0,
+        item.total || 0,
+        item.is_locked ? "Locked" : "Open"
+      ];
+    });
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied daily logs report to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (entries.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = [
+      "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
+      "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Waqas Received", "Misc", "Net Total", "Status"
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...entries.map((item: any) => [
+        `"${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}"`,
+        `"${(item.driver?.name || `Driver ID #${item.driver_id}`).replace(/"/g, '""')}"`,
+        `"${(item.vehicle?.model || "—").replace(/"/g, '""')}"`,
+        `"${(item.vehicle?.type || "—").replace(/"/g, '""')}"`,
+        `"${(item.trip || "—").replace(/"/g, '""')}"`,
+        `"${(item.hotel_drop_off || "—").replace(/"/g, '""')}"`,
+        `"${(item.agent || "—").replace(/"/g, '""')}"`,
+        item.rate || 0,
+        item.voucher || 0,
+        item.cash || 0,
+        item.fuel || 0,
+        item.parking || 0,
+        item.wash || 0,
+        item.oil_change || 0,
+        item.car_maintenance || 0,
+        item.waqas_received || 0,
+        item.mic || 0,
+        item.total || 0,
+        item.is_locked ? "Locked" : "Open"
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `driver_logs_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (entries.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = [
+      "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
+      "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Waqas Received", "Misc", "Net Total", "Status"
+    ];
+    const textRows = entries.map((item: any) => [
+      new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      item.driver?.name || `Driver ID #${item.driver_id}`,
+      item.vehicle?.model || "—",
+      item.vehicle?.type || "—",
+      item.trip || "—",
+      item.hotel_drop_off || "—",
+      item.agent || "—",
+      item.rate || 0,
+      item.voucher || 0,
+      item.cash || 0,
+      item.fuel || 0,
+      item.parking || 0,
+      item.wash || 0,
+      item.oil_change || 0,
+      item.car_maintenance || 0,
+      item.waqas_received || 0,
+      item.mic || 0,
+      item.total || 0,
+      item.is_locked ? "Locked" : "Open"
+    ]);
+    
+    const excelContent = [
+      headers.join("\t"),
+      ...textRows.map(r => r.join("\t"))
+    ].join("\r\n");
+
+    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `driver_logs_${new Date().toISOString().split("T")[0]}.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Excel spreadsheet downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Driver Sheets & Logs Report") => {
+    if (entries.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = entries.map((item: any) => {
+      const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
+                       Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+      return `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">
+            ${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e5cff;">
+            ${item.driver?.name || `Driver ID #${item.driver_id}`}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">
+            ${item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : "—"}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.trip || "—"}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.agent || "—"}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${Number(item.cash || 0).toFixed(0)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${expenses.toFixed(0)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
+            ${Number(item.total || 0).toFixed(0)}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+            ${item.is_locked ? "Locked" : "Open"}
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>\${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #312e81; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #312e81; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 10px 8px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>\${title}</h1>
+              <p>Umrah Cab Driver Sheets & Logs Registry</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> \${today}</p>
+              <p><strong>Total Logs:</strong> \${entries.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Driver</th>
+                <th>Vehicle</th>
+                <th>Trip Route</th>
+                <th>Agent/B2B</th>
+                <th style="text-align: right;">Rate</th>
+                <th style="text-align: right;">Voucher</th>
+                <th style="text-align: right;">Cash</th>
+                <th style="text-align: right;">Expenses</th>
+                <th style="text-align: right;">Net Total</th>
+                <th style="text-align: center;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              \${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // Stats summaries
   const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0), 0);
   const totalExpenses = entries.reduce((sum, item) => 
@@ -1000,6 +1236,26 @@ export default function AdminDriverEntriesPage() {
 
       {/* Log History Table Card */}
       <div className="logs-table-card">
+        {/* Export Toolbar */}
+        {!loading && entries.length > 0 && (
+          <div style={{ display: "flex", gap: "10px", padding: "16px 24px", borderBottom: "1px solid #f1f5f9", backgroundColor: "#ffffff", flexWrap: "wrap" }}>
+            <button onClick={handleCopy} style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }}>
+              <i className="fas fa-copy"></i> Copy
+            </button>
+            <button onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }}>
+              <i className="fas fa-file-csv"></i> CSV
+            </button>
+            <button onClick={handleExportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }}>
+              <i className="fas fa-file-excel"></i> Excel
+            </button>
+            <button onClick={() => handlePrint("Driver Logs PDF Report")} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }}>
+              <i className="fas fa-file-pdf"></i> PDF
+            </button>
+            <button onClick={() => handlePrint("Driver Sheets & Logs Report")} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", transition: "all 0.2s" }}>
+              <i className="fas fa-print"></i> Print
+            </button>
+          </div>
+        )}
         {loading ? (
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "60px 0" }}>
             <div style={{ width: "40px", height: "40px", border: "4px solid #4f46e5", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite", marginBottom: "16px" }} />

@@ -30,7 +30,7 @@ export default function DriverLoginPage() {
       if (res.success) {
         router.push("/driver/dashboard");
       } else {
-        setError(res.error || "Invalid username or password.");
+        setError(res.message || "Invalid username or password.");
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");

@@ -10,6 +10,7 @@ interface MenuItem {
   icon: string;
   color?: string;
   href?: string;
+  permissionKey?: string;
   submenu?: { name: string; href: string }[];
 }
 
@@ -27,11 +28,12 @@ export default function Sidebar() {
   const menuItems: MenuItem[] = [
     { name: "Central Hub", icon: "fa-house", color: "#3b82f6", href: "/admin/hub" },
     { name: "Dashboard", icon: "fa-gauge-high", color: "#6366f1", href: "/admin/dashboard" },
-    { name: "Reminders", icon: "fa-bell", color: "#fbbf24", href: "/admin/reminders" },
+    { name: "Reminders", icon: "fa-bell", color: "#fbbf24", href: "/admin/reminders", permissionKey: "reminders" },
     {
       name: "Customers",
       icon: "fa-users",
       color: "#10b981",
+      permissionKey: "customers",
       submenu: [
         { name: "View All", href: "/admin/customers" },
         { name: "Add New", href: "/admin/customers/add" },
@@ -41,6 +43,7 @@ export default function Sidebar() {
       name: "Bookings",
       icon: "fa-calendar-check",
       color: "#f59e0b",
+      permissionKey: "bookings",
       submenu: [
         { name: "View All", href: "/admin/bookings" },
         { name: "Add New", href: "/admin/bookings/add" },
@@ -50,17 +53,30 @@ export default function Sidebar() {
       name: "Services",
       icon: "fa-hand-holding-heart",
       color: "#ec4899",
+      permissionKey: "services",
       submenu: [
         { name: "View All", href: "/admin/services" },
         { name: "Add New", href: "/admin/services/add" },
         { name: "Service Items Catalogue", href: "/admin/services/items" },
       ],
     },
-    { name: "Companies", icon: "fa-building-user", color: "#8b5cf6", href: "/admin/companies" },
+    { name: "Companies", icon: "fa-building-user", color: "#8b5cf6", href: "/admin/companies", permissionKey: "companies" },
+    {
+      name: "Drivers Portal",
+      icon: "fa-taxi",
+      color: "#059669",
+      permissionKey: "drivers",
+      submenu: [
+        { name: "Driver Registry", href: "/admin/drivers" },
+        { name: "Daily Logs & Sheets", href: "/admin/driver-entries" },
+      ],
+    },
+    { name: "Security & Clearances", icon: "fa-user-shield", color: "#4f46e5", href: "/admin/sub-admins", permissionKey: "sub_admins" },
     {
       name: "Flights",
       icon: "fa-plane",
       color: "#06b6d4",
+      permissionKey: "flights",
       submenu: [
         { name: "View All", href: "/admin/flights" },
         { name: "Flights Check", href: "/admin/flights/check" },
@@ -71,6 +87,7 @@ export default function Sidebar() {
       name: "Trains",
       icon: "fa-train",
       color: "#f43f5e",
+      permissionKey: "trains",
       submenu: [
         { name: "View All", href: "/admin/trains" },
         { name: "Add New", href: "/admin/trains/add" },
@@ -80,22 +97,35 @@ export default function Sidebar() {
       name: "Hotels",
       icon: "fa-hotel",
       color: "#7c3aed",
+      permissionKey: "hotels",
       submenu: [
         { name: "View All", href: "/admin/hotels" },
         { name: "Add New", href: "/admin/hotels/add" },
       ],
     },
-    { name: "Agent Follow-ups", icon: "fa-headset", color: "#14b8a6", href: "/admin/agent-followups" },
-    { name: "Chat Support", icon: "fa-comments", color: "#60a5fa", href: "/admin/chat" },
-    { name: "Balance Statement", icon: "fa-file-invoice-dollar", color: "#f97316", href: "/admin/balance" },
-    { name: "Invoices", icon: "fa-file-invoice", color: "#ef4444", href: "/admin/invoices" },
-    { name: "Ledgers", icon: "fa-book", color: "#d946ef", href: "/admin/ledgers" },
-    { name: "General Payments", icon: "fa-money-bill-transfer", color: "#22c55e", href: "/admin/payments" },
-    { name: "Price List", icon: "fa-tags", color: "#fb923c", href: "/admin/extras/price-list" },
-    { name: "Company Performance", icon: "fa-chart-pie", color: "#0ea5e9", href: "/admin/performance" },
-    { name: "Document Scanner", icon: "fa-file-export", color: "#3b82f6", href: "/admin/scanner" },
+    { name: "Agent Follow-ups", icon: "fa-headset", color: "#14b8a6", href: "/admin/agent-followups", permissionKey: "agent_followups" },
+    { name: "Chat Support", icon: "fa-comments", color: "#60a5fa", href: "/admin/chat", permissionKey: "chat" },
+    { name: "Balance Statement", icon: "fa-file-invoice-dollar", color: "#f97316", href: "/admin/balance", permissionKey: "balance" },
+    { name: "Invoices", icon: "fa-file-invoice", color: "#ef4444", href: "/admin/invoices", permissionKey: "invoices" },
+    { name: "Ledgers", icon: "fa-book", color: "#d946ef", href: "/admin/ledgers", permissionKey: "ledgers" },
+    { name: "General Payments", icon: "fa-money-bill-transfer", color: "#22c55e", href: "/admin/payments", permissionKey: "payments" },
+    { name: "Price List", icon: "fa-tags", color: "#fb923c", href: "/admin/extras/price-list", permissionKey: "services" },
+    { name: "Company Performance", icon: "fa-chart-pie", color: "#0ea5e9", href: "/admin/performance", permissionKey: "companies" },
+    { name: "Document Scanner", icon: "fa-file-export", color: "#3b82f6", href: "/admin/scanner", permissionKey: "scanner" },
     { name: "Shortcuts", icon: "fa-keyboard", color: "#475569", href: "/admin/shortcuts" },
   ];
+
+  // Helper to check if user has permission
+  const hasPermission = (item: MenuItem) => {
+    if (!user || user.role === "SUPER_ADMIN") return true;
+    if (!item.permissionKey) return true;
+    
+    const userPerms = (user as any).permissions || {};
+    const access = userPerms[item.permissionKey] || "none";
+    return access !== "none";
+  };
+
+  const visibleMenuItems = menuItems.filter(hasPermission);
 
   // Check if a route is active (exact match or parent of a view/subpage)
   const isRouteActive = (href: string, item?: MenuItem) => {
@@ -153,7 +183,7 @@ export default function Sidebar() {
 
       {/* Sidebar Navigation Links */}
       <div className="sidebar-nav">
-        {menuItems.map((item, idx) => {
+        {visibleMenuItems.map((item, idx) => {
           const hasSubmenu = !!item.submenu;
           const isOpen = openSubmenu === item.name;
           const isActive = item.href ? isRouteActive(item.href, item) : false;

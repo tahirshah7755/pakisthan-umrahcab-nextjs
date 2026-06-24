@@ -9,7 +9,14 @@ async function request(endpoint: string, options: RequestInit = {}) {
       const isCompanyRoute = window.location.pathname.startsWith("/company") ||
         endpoint.startsWith("/company-panel") ||
         endpoint.startsWith("company-panel");
-      if (isCompanyRoute) {
+      const isDriverRoute = window.location.pathname.startsWith("/driver") ||
+        endpoint.startsWith("/driver-panel") ||
+        endpoint.startsWith("driver-panel") ||
+        endpoint.startsWith("/auth/driver") ||
+        endpoint.startsWith("auth/driver");
+      if (isDriverRoute) {
+        token = localStorage.getItem("umrahcab_driver_token");
+      } else if (isCompanyRoute) {
         token = localStorage.getItem("umrahcab_company_token") || localStorage.getItem("umrahcab_token");
       } else {
         token = localStorage.getItem("umrahcab_token") || localStorage.getItem("umrahcab_company_token");
@@ -594,5 +601,140 @@ export const api = {
       console.warn("External location search failed:", err);
       return [];
     }
+  },
+
+  // === DRIVER PORTAL & ENTRIES (DRIVER SIDE) ===
+  async getMyDriverEntries() {
+    const data = await request(`/driver-panel/entries`);
+    return data || [];
+  },
+
+  async submitDriverEntry(entryData: any) {
+    const data = await request(`/driver-panel/entries`, {
+      method: "POST",
+      body: JSON.stringify(entryData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async updateMyDriverEntry(id: number | string, entryData: any) {
+    const data = await request(`/driver-panel/entries/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(entryData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: data?.message || "API connection failed" };
+  },
+
+  // === DRIVERS MANAGEMENT (ADMIN SIDE) ===
+  async getDrivers() {
+    const data = await request(`/admin/drivers`);
+    return data || [];
+  },
+
+  async createDriver(driverData: any) {
+    const data = await request(`/admin/drivers`, {
+      method: "POST",
+      body: JSON.stringify(driverData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async updateDriver(id: number | string, driverData: any) {
+    const data = await request(`/admin/drivers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(driverData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async deleteDriver(id: number | string) {
+    const data = await request(`/admin/drivers/${id}`, {
+      method: "DELETE",
+    });
+    if (data) return { success: true };
+    return { success: false, error: "API connection failed" };
+  },
+
+  // === DRIVER ENTRIES MANAGEMENT (ADMIN SIDE) ===
+  async getDriverEntries(filters: { driver_id?: string; vehicle_id?: string; date?: string; start_date?: string; end_date?: string } = {}) {
+    const q = new URLSearchParams();
+    if (filters.driver_id) q.append("driver_id", filters.driver_id);
+    if (filters.vehicle_id) q.append("vehicle_id", filters.vehicle_id);
+    if (filters.date) q.append("date", filters.date);
+    if (filters.start_date) q.append("start_date", filters.start_date);
+    if (filters.end_date) q.append("end_date", filters.end_date);
+    
+    const data = await request(`/admin/driver-entries?${q.toString()}`);
+    return data || [];
+  },
+
+  async createDriverEntry(entryData: any) {
+    const data = await request(`/admin/driver-entries`, {
+      method: "POST",
+      body: JSON.stringify(entryData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async updateDriverEntry(id: number | string, entryData: any) {
+    const data = await request(`/admin/driver-entries/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(entryData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async deleteDriverEntry(id: number | string) {
+    const data = await request(`/admin/driver-entries/${id}`, {
+      method: "DELETE",
+    });
+    if (data) return { success: true };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async toggleDriverEntryLock(id: number | string) {
+    const data = await request(`/admin/driver-entries/${id}/toggle-lock`, {
+      method: "POST",
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  // === SUB-ADMINS MANAGEMENT (ADMIN SIDE) ===
+  async getSubAdmins() {
+    const data = await request(`/admin/sub-admins`);
+    return data || [];
+  },
+
+  async createSubAdmin(subAdminData: any) {
+    const data = await request(`/admin/sub-admins`, {
+      method: "POST",
+      body: JSON.stringify(subAdminData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async updateSubAdmin(id: number | string, subAdminData: any) {
+    const data = await request(`/admin/sub-admins/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(subAdminData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async deleteSubAdmin(id: number | string) {
+    const data = await request(`/admin/sub-admins/${id}`, {
+      method: "DELETE",
+    });
+    if (data) return { success: true };
+    return { success: false, error: "API connection failed" };
   }
 };

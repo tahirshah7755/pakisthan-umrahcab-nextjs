@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export interface CustomerItem {
   id: string;
@@ -99,6 +100,20 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
   triggerExportAlert,
   router,
 }) => {
+  const { user } = useAuth();
+  
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["customers"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
   const [toast, setToast] = React.useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
     message: "",
@@ -289,10 +304,12 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
           <h2>Customer Directory</h2>
           <p>Manage, filter, and track customer contact profiles across all corporate accounts.</p>
         </div>
-        <button onClick={() => router.push("/admin/customers/add")} className="form-btn-back">
-          <i className="fas fa-plus"></i>
-          <span>Add New Customer</span>
-        </button>
+        {canEdit && (
+          <button onClick={() => router.push("/admin/customers/add")} className="form-btn-back">
+            <i className="fas fa-plus"></i>
+            <span>Add New Customer</span>
+          </button>
+        )}
       </div>
 
       {/* Filters Row */}
@@ -405,24 +422,26 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
                         >
                           <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                         </button>
-                        <button
-                          onClick={() => router.push(`/admin/customers/edit?id=${c.rawId || c.id}`)}
-                          title="Edit"
-                          style={{
-                            background: "#f1f5f9",
-                            border: "none",
-                            borderRadius: "6px",
-                            width: "30px",
-                            height: "30px",
-                            cursor: "pointer",
-                            color: "var(--primary-color)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
-                          }}
-                        >
-                          <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => router.push(`/admin/customers/edit?id=${c.rawId || c.id}`)}
+                            title="Edit"
+                            style={{
+                              background: "#f1f5f9",
+                              border: "none",
+                              borderRadius: "6px",
+                              width: "30px",
+                              height: "30px",
+                              cursor: "pointer",
+                              color: "var(--primary-color)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }}
+                          >
+                            <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

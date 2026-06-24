@@ -5,13 +5,15 @@ import { useAuth } from "../../../context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function DriverLoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const { driverUser, driverLogin } = useAuth();
+  const { driverLogin, driverUser } = useAuth();
   const router = useRouter();
 
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // If already logged in, redirect to dashboard
   useEffect(() => {
     if (driverUser) {
       router.push("/driver/dashboard");
@@ -28,7 +30,7 @@ export default function DriverLoginPage() {
       if (res.success) {
         router.push("/driver/dashboard");
       } else {
-        setError(res.message || "Invalid username or password");
+        setError(res.error || "Invalid username or password.");
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -38,97 +40,306 @@ export default function DriverLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center relative overflow-hidden px-4">
-      {/* Dynamic background glowing orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[100px] pointer-events-none" />
+    <div className="driver-login-page">
+      <style>{`
+        .driver-login-page {
+          min-height: 100vh;
+          background-color: var(--secondary-color, #1e1e2d);
+          background: linear-gradient(135deg, var(--secondary-color, #1e1e2d) 0%, #0c0c14 100%);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          position: relative;
+          overflow: hidden;
+          padding: 0 16px;
+          font-family: var(--font-family-sans), sans-serif;
+        }
+        
+        .glow-orb-1 {
+          position: absolute;
+          top: 25%;
+          left: 25%;
+          width: 384px;
+          height: 384px;
+          background-color: rgba(180, 138, 29, 0.05);
+          border-radius: 50%;
+          filter: blur(100px);
+          pointer-events: none;
+        }
+        
+        .glow-orb-2 {
+          position: absolute;
+          bottom: 25%;
+          right: 25%;
+          width: 384px;
+          height: 384px;
+          background-color: rgba(212, 175, 55, 0.05);
+          border-radius: 50%;
+          filter: blur(100px);
+          pointer-events: none;
+        }
+        
+        .login-wrapper {
+          width: 100%;
+          max-width: 448px;
+          z-index: 10;
+        }
+        
+        .brand-header {
+          text-align: center;
+          margin-bottom: 32px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        .logo-box {
+          width: 64px;
+          height: 64px;
+          background: var(--gradient, linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%));
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 10px 15px -3px rgba(180, 138, 29, 0.3);
+          margin-bottom: 16px;
+          animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        
+        .logo-box i {
+          font-size: 24px;
+          color: #ffffff;
+        }
+        
+        .brand-title {
+          font-size: 30px;
+          font-weight: 800;
+          color: #ffffff;
+          letter-spacing: -0.5px;
+          margin: 0;
+        }
+        
+        .brand-title span {
+          background: linear-gradient(to right, var(--accent-color, #d4af37), var(--primary-color, #b48a1d));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        
+        .brand-subtitle {
+          color: var(--text-muted, #8898aa);
+          margin-top: 8px;
+          font-size: 14px;
+          font-weight: 500;
+        }
+        
+        .login-card {
+          background-color: rgba(30, 30, 45, 0.6);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .card-title {
+          font-size: 20px;
+          font-weight: 600;
+          color: #ffffff;
+          margin-bottom: 24px;
+          text-align: center;
+        }
+        
+        .error-banner {
+          margin-bottom: 24px;
+          padding: 16px;
+          background-color: rgba(244, 63, 94, 0.1);
+          border: 1px solid rgba(244, 63, 94, 0.2);
+          color: #f87171;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 500;
+          text-align: center;
+        }
+        
+        .form-group {
+          margin-bottom: 20px;
+        }
+        
+        .form-label {
+          display: block;
+          color: #cbd5e1;
+          font-size: 12px;
+          font-weight: 600;
+          margin-bottom: 8px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .input-wrapper {
+          position: relative;
+        }
+        
+        .input-icon {
+          position: absolute;
+          left: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-muted, #8898aa);
+          font-size: 14px;
+          pointer-events: none;
+        }
+        
+        .form-input {
+          width: 100%;
+          padding: 14px 16px 14px 44px;
+          background-color: rgba(15, 23, 42, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          color: #ffffff;
+          font-size: 14px;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+        
+        .form-input::placeholder {
+          color: var(--text-muted, #8898aa);
+        }
+        
+        .form-input:focus {
+          border-color: var(--primary-color, #b48a1d);
+          box-shadow: 0 0 0 1px var(--primary-color, #b48a1d);
+        }
+        
+        .submit-btn {
+          width: 100%;
+          padding: 16px;
+          background: var(--gradient, linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%));
+          border: none;
+          border-radius: 12px;
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 12px rgba(180, 138, 29, 0.15);
+        }
+        
+        .submit-btn:hover {
+          opacity: 0.9;
+          box-shadow: 0 6px 16px rgba(180, 138, 29, 0.25);
+          transform: translateY(-1px);
+        }
+        
+        .submit-btn:active {
+          transform: translateY(0);
+        }
+        
+        .submit-btn:disabled {
+          background: var(--secondary-color, #1e1e2d);
+          color: var(--text-muted, #8898aa);
+          cursor: not-allowed;
+          box-shadow: none;
+          transform: none;
+        }
+        
+        .spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid #ffffff;
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
 
-      <div className="w-full max-w-md z-10">
-        {/* Brand Header */}
-        <div className="text-center mb-8 flex flex-col items-center">
-          <div className="w-16 h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4 animate-bounce duration-1000">
-            <i className="fas fa-taxi text-2xl text-slate-950"></i>
+      {/* Decorative Blur Spheres */}
+      <div className="glow-orb-1"></div>
+      <div className="glow-orb-2"></div>
+
+      <div className="login-wrapper">
+        {/* Brand/Logo Header */}
+        <div className="brand-header">
+          <div className="logo-box">
+            <i className="fas fa-steering-wheel" style={{ display: "none" }}></i>
+            <i className="fas fa-taxi"></i>
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            Umrah<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">Cab</span>
+          <h1 className="brand-title">
+            Umrah<span>Cab</span>
           </h1>
-          <p className="text-slate-400 mt-2 text-sm font-medium">
-            Driver Logging & Daily Sheet Portal
-          </p>
+          <p className="brand-subtitle">Driver Portal Administration</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl">
-          <h2 className="text-xl font-semibold text-white mb-6 text-center">
-            Sign In to Your Account
-          </h2>
+        <div className="login-card">
+          <h2 className="card-title">Driver Sign In</h2>
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium text-center">
-              {error}
-            </div>
-          )}
+          {error && <div className="error-banner">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-slate-300 text-xs font-semibold mb-2 tracking-wide uppercase">
-                Username
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
-                  <i className="fas fa-user text-sm"></i>
-                </div>
+          <form onSubmit={handleSubmit}>
+            {/* Username Input */}
+            <div className="form-group">
+              <label className="form-label">Username</label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <i className="fas fa-user"></i>
+                </span>
                 <input
                   type="text"
                   required
+                  placeholder="Enter your driver username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition duration-200 text-sm"
-                  placeholder="Enter your username"
+                  className="form-input"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-slate-300 text-xs font-semibold mb-2 tracking-wide uppercase">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
-                  <i className="fas fa-lock text-sm"></i>
-                </div>
+            {/* Password Input */}
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <i className="fas fa-lock"></i>
+                </span>
                 <input
                   type="password"
                   required
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-950/80 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition duration-200 text-sm"
-                  placeholder="Enter your password"
+                  className="form-input"
                 />
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold rounded-xl hover:from-emerald-400 hover:to-teal-400 focus:outline-none shadow-lg shadow-emerald-500/15 hover:shadow-emerald-500/25 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 text-sm"
-            >
+            {/* Submit Button */}
+            <button type="submit" disabled={loading} className="submit-btn">
               {loading ? (
-                <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                <div className="spinner"></div>
               ) : (
                 <>
-                  Access Dashboard
-                  <i className="fas fa-chevron-right text-xs"></i>
+                  <span>Sign In to Dashboard</span>
+                  <i className="fas fa-arrow-right"></i>
                 </>
               )}
             </button>
           </form>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-slate-600 text-xs mt-8">
-          &copy; {new Date().getFullYear()} UmrahCab Fleet Management. All rights reserved.
-        </p>
       </div>
     </div>
   );

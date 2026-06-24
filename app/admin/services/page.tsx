@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface ServiceItem {
   id: string;      // custom_id (e.g. #SRV-4068)
@@ -22,6 +23,30 @@ interface ServiceItem {
 
 export default function ServicesDirectory() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["services"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["services"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [srvPage, setSrvPage] = useState(1);
@@ -338,10 +363,12 @@ export default function ServicesDirectory() {
             <i className="fas fa-cubes"></i>
             <span>Catalogue</span>
           </button>
-          <button onClick={() => router.push("/admin/services/add")} className="form-btn-back" style={{ background: "#ffffff", color: "#6d28d9" }}>
-            <i className="fas fa-plus-circle"></i>
-            <span>New Service</span>
-          </button>
+          {canEdit && (
+            <button onClick={() => router.push("/admin/services/add")} className="form-btn-back" style={{ background: "#ffffff", color: "#6d28d9" }}>
+              <i className="fas fa-plus-circle"></i>
+              <span>New Service</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -598,27 +625,29 @@ export default function ServicesDirectory() {
                         >
                           <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                         </button>
-                        <button
-                          onClick={() => handleDeleteService(svc.rawId, svc.id)}
-                          title="Delete Record"
-                          style={{
-                            background: "#ef4444",
-                            color: "#ffffff",
-                            border: "none",
-                            borderRadius: "4px",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease"
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "#dc2626"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "#ef4444"}
-                        >
-                          <i className="fas fa-trash-alt" style={{ fontSize: "12px" }}></i>
-                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteService(svc.rawId, svc.id)}
+                            title="Delete Record"
+                            style={{
+                              background: "#ef4444",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "4px",
+                              width: "28px",
+                              height: "28px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "#dc2626"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "#ef4444"}
+                          >
+                            <i className="fas fa-trash-alt" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

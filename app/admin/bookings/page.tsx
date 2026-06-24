@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface BookingItem {
   id: string;
@@ -25,6 +26,30 @@ interface BookingItem {
 
 export default function BookingsList() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["bookings"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["bookings"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -301,10 +326,12 @@ export default function BookingsList() {
           <h2>Transportation Bookings</h2>
           <p>View, filter, and register transportation bookings for your clients.</p>
         </div>
-        <button onClick={() => router.push("/admin/bookings/add")} className="form-btn-back">
-          <i className="fas fa-plus"></i>
-          <span>Add New Booking</span>
-        </button>
+        {canEdit && (
+          <button onClick={() => router.push("/admin/bookings/add")} className="form-btn-back">
+            <i className="fas fa-plus"></i>
+            <span>Add New Booking</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -411,21 +438,23 @@ export default function BookingsList() {
                       >
                         <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                       </button>
-                      <button
-                        onClick={() => router.push(`/admin/bookings/edit?id=${b.id}`)}
-                        title="Edit Booking"
-                        style={{
-                          background: "#f1f5f9",
-                          border: "none",
-                          borderRadius: "6px",
-                          width: "30px",
-                          height: "30px",
-                          cursor: "pointer",
-                          color: "var(--primary-color)",
-                        }}
-                      >
-                        <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => router.push(`/admin/bookings/edit?id=${b.id}`)}
+                          title="Edit Booking"
+                          style={{
+                            background: "#f1f5f9",
+                            border: "none",
+                            borderRadius: "6px",
+                            width: "30px",
+                            height: "30px",
+                            cursor: "pointer",
+                            color: "var(--primary-color)",
+                          }}
+                        >
+                          <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -3,9 +3,34 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminDriversPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["drivers"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["drivers"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
 
   // State
   const [drivers, setDrivers] = useState<any[]>([]);
@@ -734,10 +759,12 @@ export default function AdminDriversPage() {
           />
         </div>
 
-        <button onClick={openAddModal} className="btn-create-driver">
-          <i className="fas fa-plus"></i>
-          Add New Driver
-        </button>
+        {canEdit && (
+          <button onClick={openAddModal} className="btn-create-driver">
+            <i className="fas fa-plus"></i>
+            Add New Driver
+          </button>
+        )}
       </div>
 
       {/* Main Registry Table Card */}
@@ -802,20 +829,24 @@ export default function AdminDriversPage() {
                     </td>
                     <td>
                       <div className="actions-btn-group">
-                        <button
-                          onClick={() => openEditModal(driver)}
-                          className="btn-action btn-action-edit"
-                          title="Edit Profile"
-                        >
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button
-                          onClick={() => setDeletingDriver(driver)}
-                          className="btn-action btn-action-delete"
-                          title="Delete Driver"
-                        >
-                          <i className="fas fa-trash"></i>
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => openEditModal(driver)}
+                            className="btn-action btn-action-edit"
+                            title="Edit Profile"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => setDeletingDriver(driver)}
+                            className="btn-action btn-action-delete"
+                            title="Delete Driver"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface TrainItem {
   id: string;      // custom_id (e.g. #TRN-32003)
@@ -22,6 +23,30 @@ interface TrainItem {
 
 export default function TrainsDirectory() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["trains"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["trains"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
 
   const [trains, setTrains] = useState<TrainItem[]>([]);
   const [trnPage, setTrnPage] = useState(1);
@@ -332,10 +357,12 @@ export default function TrainsDirectory() {
           <h2>Train Directory</h2>
           <p>Lookup and manage departure and arrival records for all train passengers.</p>
         </div>
+        {canEdit && (
         <button onClick={() => router.push("/admin/trains/add")} className="form-btn-back" style={{ background: "#ffffff", color: "#be185d" }}>
           <i className="fas fa-plus-circle"></i>
           <span>New Train Record</span>
         </button>
+      )}
       </div>
 
       {/* Date & Filter Panel */}
@@ -547,48 +574,52 @@ export default function TrainsDirectory() {
                         >
                           <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                         </button>
-                        <button
-                          onClick={() => router.push(`/admin/trains/edit?id=${t.rawId}`)}
-                          title="Edit Record"
-                          style={{
-                            background: "#3b82f6",
-                            color: "#ffffff",
-                            border: "none",
-                            borderRadius: "4px",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease"
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "#2563eb"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "#3b82f6"}
-                        >
-                          <i className="fas fa-edit" style={{ fontSize: "12px" }}></i>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTrain(t.rawId, t.id)}
-                          title="Delete Record"
-                          style={{
-                            background: "#ef4444",
-                            color: "#ffffff",
-                            border: "none",
-                            borderRadius: "4px",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease"
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "#dc2626"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "#ef4444"}
-                        >
-                          <i className="fas fa-trash-alt" style={{ fontSize: "12px" }}></i>
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => router.push(`/admin/trains/edit?id=${t.rawId}`)}
+                            title="Edit Record"
+                            style={{
+                              background: "#3b82f6",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "4px",
+                              width: "28px",
+                              height: "28px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "#2563eb"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "#3b82f6"}
+                          >
+                            <i className="fas fa-edit" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteTrain(t.rawId, t.id)}
+                            title="Delete Record"
+                            style={{
+                              background: "#ef4444",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "4px",
+                              width: "28px",
+                              height: "28px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = "#dc2626"}
+                            onMouseLeave={(e) => e.currentTarget.style.background = "#ef4444"}
+                          >
+                            <i className="fas fa-trash-alt" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

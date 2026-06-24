@@ -5,16 +5,36 @@ import { useAuth } from "../../../context/AuthContext";
 import { api } from "../../../utils/api";
 import { useRouter } from "next/navigation";
 
+const STANDARD_TRIPS = [
+  "Jeddah Airport to Makkah Hotel",
+  "Makkah Hotel to Jeddah Airport",
+  "Makkah Hotel to Madinah Hotel",
+  "Madinah Hotel to Makkah Hotel",
+  "Jeddah Airport to Madinah Hotel",
+  "Madinah Hotel to Jeddah Airport",
+  "Makkah Local Ziyarah",
+  "Madinah Local Ziyarah",
+  "Madinah Airport to Madinah Hotel",
+  "Madinah Hotel to Madinah Airport",
+  "Jeddah Hotel to Makkah Hotel",
+  "Makkah Hotel to Jeddah Hotel",
+];
+
 export default function DriverDashboardPage() {
   const { driverUser, driverLogout } = useAuth();
   const router = useRouter();
 
   // State
   const [entries, setEntries] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  // UI Helper States for Custom Inputs
+  const [customTripActive, setCustomTripActive] = useState(false);
+  const [customAgentActive, setCustomAgentActive] = useState(false);
 
   // Entry Form State
   const [formData, setFormData] = useState({
@@ -34,18 +54,27 @@ export default function DriverDashboardPage() {
     mic: 0,
   });
 
+  // Helpers to hold the select dropdown state separately
+  const [selectedTripOpt, setSelectedTripOpt] = useState("");
+  const [selectedAgentOpt, setSelectedAgentOpt] = useState("");
+
   // Edit Modal State
   const [editingEntry, setEditingEntry] = useState<any | null>(null);
   const [editFormData, setEditFormData] = useState<any>(null);
   const [editLoading, setEditLoading] = useState(false);
+  const [editCustomTripActive, setEditCustomTripActive] = useState(false);
+  const [editCustomAgentActive, setEditCustomAgentActive] = useState(false);
+  const [editSelectedTripOpt, setEditSelectedTripOpt] = useState("");
+  const [editSelectedAgentOpt, setEditSelectedAgentOpt] = useState("");
 
-  // Load entries on mount
+  // Load data on mount
   useEffect(() => {
     if (!driverUser) {
       router.push("/driver/login");
       return;
     }
     loadEntries();
+    loadCompanies();
   }, [driverUser]);
 
   const loadEntries = async () => {
@@ -55,8 +84,17 @@ export default function DriverDashboardPage() {
       setEntries(data || []);
     } catch (err) {
       console.error("Failed to load driver entries:", err);
-    } fill: {
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCompanies = async () => {
+    try {
+      const data = await api.getCompanies();
+      setCompanies(data || []);
+    } catch (err) {
+      console.error("Failed to load companies:", err);
     }
   };
 
@@ -82,6 +120,58 @@ export default function DriverDashboardPage() {
       ...prev,
       [name]: type === "number" ? Number(value) : value
     }));
+  };
+
+  // Trip Dropdown Change Handler
+  const handleTripDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedTripOpt(val);
+    if (val === "CUSTOM") {
+      setCustomTripActive(true);
+      setFormData(prev => ({ ...prev, trip: "" }));
+    } else {
+      setCustomTripActive(false);
+      setFormData(prev => ({ ...prev, trip: val }));
+    }
+  };
+
+  // Agent Dropdown Change Handler
+  const handleAgentDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedAgentOpt(val);
+    if (val === "CUSTOM") {
+      setCustomAgentActive(true);
+      setFormData(prev => ({ ...prev, agent: "" }));
+    } else {
+      setCustomAgentActive(false);
+      setFormData(prev => ({ ...prev, agent: val }));
+    }
+  };
+
+  // Edit Modal Trip Dropdown Change Handler
+  const handleEditTripDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setEditSelectedTripOpt(val);
+    if (val === "CUSTOM") {
+      setEditCustomTripActive(true);
+      setEditFormData((prev: any) => ({ ...prev, trip: "" }));
+    } else {
+      setEditCustomTripActive(false);
+      setEditFormData((prev: any) => ({ ...prev, trip: val }));
+    }
+  };
+
+  // Edit Modal Agent Dropdown Change Handler
+  const handleEditAgentDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setEditSelectedAgentOpt(val);
+    if (val === "CUSTOM") {
+      setEditCustomAgentActive(true);
+      setEditFormData((prev: any) => ({ ...prev, agent: "" }));
+    } else {
+      setEditCustomAgentActive(false);
+      setEditFormData((prev: any) => ({ ...prev, agent: val }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,6 +204,10 @@ export default function DriverDashboardPage() {
           waqas_received: 0,
           mic: 0,
         });
+        setSelectedTripOpt("");
+        setSelectedAgentOpt("");
+        setCustomTripActive(false);
+        setCustomAgentActive(false);
         // Reload history
         loadEntries();
       } else {
@@ -121,13 +215,24 @@ export default function DriverDashboardPage() {
       }
     } catch (err) {
       setErrorMessage("An error occurred during submission.");
-    } fill: {
+    } finally {
       setSubmitLoading(false);
     }
   };
 
   const openEditModal = (entry: any) => {
     setEditingEntry(entry);
+    
+    // Set matching options for dropdowns
+    const isStandardTrip = STANDARD_TRIPS.includes(entry.trip);
+    const isStandardAgent = companies.some(c => c.name === entry.agent) || entry.agent === "Individual / Cash";
+
+    setEditSelectedTripOpt(entry.trip ? (isStandardTrip ? entry.trip : "CUSTOM") : "");
+    setEditCustomTripActive(entry.trip ? !isStandardTrip : false);
+
+    setEditSelectedAgentOpt(entry.agent ? (isStandardAgent ? entry.agent : "CUSTOM") : "");
+    setEditCustomAgentActive(entry.agent ? !isStandardAgent : false);
+
     setEditFormData({
       date: entry.date.split("T")[0],
       trip: entry.trip || "",
@@ -173,7 +278,7 @@ export default function DriverDashboardPage() {
       }
     } catch (err) {
       setErrorMessage("An error occurred while updating.");
-    } fill: {
+    } finally {
       setEditLoading(false);
     }
   };
@@ -183,49 +288,651 @@ export default function DriverDashboardPage() {
   const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0), 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 px-4 md:px-8 py-6 relative overflow-hidden">
-      {/* Background Orbs */}
-      <div className="absolute top-10 left-1/3 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-1/3 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto relative z-10">
+    <div className="driver-dashboard-page">
+      <style>{`
+        .driver-dashboard-page {
+          min-height: 100vh;
+          background-color: var(--bg-light, #f4f7fa);
+          color: var(--dark-color, #2c3e50);
+          padding: 30px;
+          font-family: var(--font-family-sans), sans-serif;
+        }
         
-        {/* Header Dashboard */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/60 mb-8">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                <i className="fas fa-user text-emerald-400"></i>
-              </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-white">
-                  Welcome, {driverUser?.name}
-                </h1>
-                <p className="text-slate-400 text-xs mt-0.5">
-                  Driver Username: <span className="text-slate-200">{driverUser?.username}</span>
-                </p>
-              </div>
+        .dashboard-container {
+          max-width: 1280px;
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+        
+        /* Gradient Header Banner */
+        .dashboard-header-banner {
+          background: linear-gradient(135deg, var(--primary-color, #b48a1d) 0%, var(--secondary-color, #1e1e2d) 100%);
+          padding: 30px 40px;
+          border-radius: 20px;
+          color: #ffffff;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 10px 25px rgba(180, 138, 29, 0.15);
+          border: 1px solid rgba(180, 138, 29, 0.2);
+          flex-wrap: wrap;
+          gap: 20px;
+        }
+        
+        .profile-area {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        
+        .avatar-box {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          background-color: rgba(255, 255, 255, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .avatar-box i {
+          color: var(--accent-color, #d4af37);
+          font-size: 20px;
+        }
+        
+        .welcome-title {
+          font-size: 24px;
+          font-weight: 700;
+          color: #ffffff;
+          margin: 0;
+          letter-spacing: -0.5px;
+        }
+        
+        .welcome-subtitle {
+          color: var(--text-muted, #8898aa);
+          font-size: 13px;
+          margin: 4px 0 0 0;
+          font-weight: 500;
+        }
+        
+        .welcome-subtitle span {
+          color: #cbd5e1;
+        }
+        
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .badge-vehicle {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+        }
+        
+        .vehicle-active {
+          background-color: rgba(16, 185, 129, 0.1);
+          color: var(--success-color, #10b981);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .vehicle-inactive {
+          background-color: rgba(244, 63, 94, 0.1);
+          color: var(--danger-color, #f43f5e);
+          border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+        
+        .logout-btn {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          padding: 10px 18px;
+          border-radius: 10px;
+          color: #ffffff;
+          font-weight: 600;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .logout-btn:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: translateY(-1px);
+        }
+        
+        .alert-success {
+          padding: 16px;
+          background-color: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          color: var(--success-color, #10b981);
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .alert-error {
+          padding: 16px;
+          background-color: rgba(244, 63, 94, 0.1);
+          border: 1px solid rgba(244, 63, 94, 0.2);
+          color: var(--danger-color, #f43f5e);
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .stats-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+        
+        @media (min-width: 768px) {
+          .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        
+        .stat-card {
+          background: var(--light-color, #ffffff);
+          border-radius: 20px;
+          border: 1px solid var(--border-color, #edf2f9);
+          padding: 24px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .stat-label {
+          color: var(--text-muted, #8898aa);
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin: 0;
+        }
+        
+        .stat-value {
+          font-size: 24px;
+          font-weight: 800;
+          color: var(--dark-color, #2c3e50);
+          margin-top: 8px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .full-width-card {
+          background: var(--light-color, #ffffff);
+          border-radius: 20px;
+          border: 1px solid var(--border-color, #edf2f9);
+          padding: 30px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+          width: 100%;
+        }
+        
+        .card-header-title {
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--dark-color, #2c3e50);
+          margin-bottom: 28px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border-bottom: 1px solid var(--border-color, #edf2f9);
+          padding-bottom: 16px;
+        }
+        
+        /* Grid Layouts for Full Width Form Rows */
+        .inputs-row-4 {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        
+        @media (min-width: 768px) {
+          .inputs-row-4 {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+        
+        .inputs-row-3 {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        
+        @media (min-width: 768px) {
+          .inputs-row-3 {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        
+        .form-group {
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .form-label {
+          color: var(--dark-color, #2c3e50);
+          font-size: 13px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+        
+        .input-wrapper {
+          position: relative;
+        }
+        
+        .input-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-muted, #8898aa);
+          font-size: 13px;
+          z-index: 10;
+        }
+        
+        /* MATCHES SYSTEM ADMIN FORM INPUT STYLE */
+        .form-input {
+          width: 100%;
+          padding: 12px 14px;
+          background-color: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          color: var(--dark-color, #2c3e50);
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-input.has-icon {
+          padding-left: 38px;
+        }
+        
+        .form-input:focus {
+          background-color: #ffffff;
+          border-color: var(--primary-color, #b48a1d);
+          box-shadow: 0 0 0 1px var(--primary-color, #b48a1d);
+        }
+        
+        select.form-input {
+          appearance: auto;
+          cursor: pointer;
+        }
+        
+        .section-divider {
+          border-top: 1px solid var(--border-color, #edf2f9);
+          margin: 28px 0 20px 0;
+          padding-top: 20px;
+        }
+        
+        .section-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-muted, #8898aa);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 16px;
+        }
+        
+        .sub-input-label {
+          color: var(--text-muted, #8898aa);
+          font-size: 11px;
+          font-weight: 600;
+          margin-bottom: 6px;
+        }
+        
+        /* Calc & Submit Footer Section */
+        .form-footer-action-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 20px;
+          margin-top: 30px;
+          padding-top: 20px;
+          border-top: 1px solid var(--border-color, #edf2f9);
+        }
+        
+        .calc-summary-box {
+          padding: 16px 24px;
+          background-color: var(--bg-light, #f4f7fa);
+          border: 1px solid var(--border-color, #edf2f9);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 32px;
+          min-width: 280px;
+        }
+        
+        .calc-label-stack {
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .calc-label {
+          color: var(--dark-color, #2c3e50);
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .calc-subtext {
+          color: var(--text-muted, #8898aa);
+          font-size: 11px;
+          margin: 2px 0 0 0;
+        }
+        
+        .calc-val {
+          font-size: 22px;
+          font-weight: 900;
+          margin-left: auto;
+        }
+        
+        .calc-val.positive {
+          color: var(--success-color, #10b981);
+        }
+        
+        .calc-val.negative {
+          color: var(--danger-color, #f43f5e);
+        }
+        
+        .submit-btn {
+          padding: 14px 36px;
+          background: var(--primary-color, #b48a1d);
+          border: none;
+          border-radius: 10px;
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 12px rgba(180, 138, 29, 0.2);
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+          background: var(--gradient, linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%));
+          box-shadow: 0 6px 16px rgba(180, 138, 29, 0.3);
+          transform: translateY(-1px);
+        }
+        
+        .submit-btn:disabled {
+          background: var(--border-color, #edf2f9);
+          color: var(--text-muted, #8898aa);
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+        
+        .spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid #ffffff;
+          border-top-color: transparent;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .table-responsive {
+          width: 100%;
+          overflow-x: auto;
+        }
+        
+        .history-table {
+          width: 100%;
+          border-collapse: collapse;
+          text-align: left;
+        }
+        
+        .history-table th {
+          background-color: var(--bg-light, #f4f7fa);
+          padding: 16px 18px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--text-muted, #8898aa);
+          border-bottom: 1px solid var(--border-color, #edf2f9);
+        }
+        
+        .history-table td {
+          padding: 16px 18px;
+          border-bottom: 1px solid var(--border-color, #edf2f9);
+          font-size: 14px;
+          color: var(--dark-color, #2c3e50);
+          vertical-align: middle;
+        }
+        
+        .history-table tr:hover td {
+          background-color: var(--bg-light, #f4f7fa);
+        }
+        
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+        
+        .status-badge.locked {
+          background-color: var(--bg-light, #f4f7fa);
+          color: var(--text-muted, #8898aa);
+        }
+        
+        .status-badge.editable {
+          background-color: rgba(16, 185, 129, 0.1);
+          color: var(--success-color, #10b981);
+        }
+        
+        .action-btn {
+          width: 34px;
+          height: 34px;
+          border: 1px solid var(--border-color, #edf2f9);
+          border-radius: 8px;
+          background: var(--light-color, #ffffff);
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted, #8898aa);
+        }
+        
+        .action-btn.edit:hover {
+          color: var(--success-color, #10b981);
+          background-color: rgba(16, 185, 129, 0.1);
+          border-color: rgba(16, 185, 129, 0.2);
+        }
+        
+        .action-btn.locked {
+          background-color: var(--bg-light, #f4f7fa);
+          color: var(--border-color, #edf2f9);
+          cursor: not-allowed;
+        }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(30, 41, 59, 0.4);
+          backdrop-filter: blur(4px);
+          z-index: 100;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+        }
+        
+        .modal-card {
+          background-color: var(--light-color, #ffffff);
+          border: 1px solid var(--border-color, #edf2f9);
+          width: 100%;
+          max-width: 768px;
+          border-radius: 20px;
+          box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.1);
+          overflow: hidden;
+          animation: modalOpen 0.2s ease-out forwards;
+        }
+        
+        @keyframes modalOpen {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        
+        .modal-header {
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--border-color, #edf2f9);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background-color: var(--bg-light, #f4f7fa);
+        }
+        
+        .modal-header-title {
+          font-size: 18px;
+          font-weight: 700;
+          color: var(--dark-color, #2c3e50);
+          margin: 0;
+        }
+        
+        .modal-header-subtitle {
+          font-size: 12px;
+          color: var(--text-muted, #8898aa);
+          margin: 2px 0 0 0;
+        }
+        
+        .modal-close-btn {
+          width: 32px;
+          height: 32px;
+          background-color: var(--light-color, #ffffff);
+          border: 1px solid var(--border-color, #edf2f9);
+          color: var(--text-muted, #8898aa);
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .modal-close-btn:hover {
+          background-color: var(--bg-light, #f4f7fa);
+          color: var(--dark-color, #2c3e50);
+        }
+        
+        .modal-body {
+          padding: 24px;
+          max-height: 60vh;
+          overflow-y: auto;
+        }
+        
+        .modal-footer {
+          padding: 16px 24px;
+          border-top: 1px solid var(--border-color, #edf2f9);
+          background-color: var(--bg-light, #f4f7fa);
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+        
+        .modal-btn-cancel {
+          padding: 10px 20px;
+          background-color: var(--light-color, #ffffff);
+          border: 1px solid var(--border-color, #edf2f9);
+          color: var(--dark-color, #2c3e50);
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        
+        .modal-btn-cancel:hover {
+          background-color: var(--bg-light, #f4f7fa);
+        }
+        
+        .modal-btn-save {
+          padding: 10px 20px;
+          background-color: var(--primary-color, #b48a1d);
+          border: none;
+          color: #ffffff;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          box-shadow: 0 4px 12px rgba(180, 138, 29, 0.2);
+        }
+        
+        .modal-btn-save:hover {
+          background: var(--gradient, linear-gradient(135deg, #b48a1d 0%, #1e1e2d 100%));
+        }
+      `}</style>
+
+      <div className="dashboard-container">
+        {/* Header Dashboard Banner */}
+        <header className="dashboard-header-banner">
+          <div className="profile-area">
+            <div className="avatar-box">
+              <i className="fas fa-user"></i>
+            </div>
+            <div>
+              <h1 className="welcome-title">Welcome, {driverUser?.name}</h1>
+              <p className="welcome-subtitle">
+                Driver Username: <span>{driverUser?.username}</span>
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-end md:self-center">
+          <div className="header-actions">
             {driverUser?.vehicle_id ? (
-              <div className="px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2 text-xs text-slate-300">
-                <i className="fas fa-car text-emerald-400"></i>
+              <div className="badge-vehicle vehicle-active">
+                <i className="fas fa-car"></i>
                 Assigned Vehicle Active
               </div>
             ) : (
-              <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-400">
+              <div className="badge-vehicle vehicle-inactive">
                 <i className="fas fa-car"></i>
                 No Vehicle Assigned
               </div>
             )}
 
-            <button
-              onClick={driverLogout}
-              className="px-4 py-2 bg-slate-900/60 hover:bg-red-950/20 border border-slate-800 hover:border-red-500/30 text-slate-300 hover:text-red-400 rounded-xl transition duration-200 flex items-center gap-2 text-xs font-semibold"
-            >
+            <button onClick={driverLogout} className="logout-btn">
               <i className="fas fa-sign-out-alt"></i>
               Logout
             </button>
@@ -234,613 +941,718 @@ export default function DriverDashboardPage() {
 
         {/* Status messages */}
         {successMessage && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-450 rounded-2xl text-sm font-medium flex items-center gap-3">
-            <i className="fas fa-check flex-shrink-0"></i>
+          <div className="alert-success">
+            <i className="fas fa-check-circle" style={{ fontSize: "16px" }}></i>
             {successMessage}
           </div>
         )}
         {errorMessage && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-sm font-medium flex items-center gap-3">
-            <i className="fas fa-times flex-shrink-0"></i>
+          <div className="alert-error">
+            <i className="fas fa-times-circle" style={{ fontSize: "16px" }}></i>
             {errorMessage}
           </div>
         )}
 
         {/* Stats Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-850 p-6 rounded-2xl shadow-lg shadow-black/20">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Assigned Vehicle</p>
-            <p className="text-2xl font-extrabold text-white mt-2 flex items-center gap-3">
-              <i className="fas fa-car text-emerald-400"></i>
+        <section className="stats-grid">
+          <div className="stat-card">
+            <p className="stat-label">Assigned Vehicle</p>
+            <p className="stat-value">
+              <i className="fas fa-car" style={{ color: "var(--primary-color)" }}></i>
               {driverUser?.vehicle_id ? `Vehicle Stock ID #${driverUser.vehicle_id}` : "None"}
             </p>
           </div>
-          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-850 p-6 rounded-2xl shadow-lg shadow-black/20">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Daily Sheets Logged</p>
-            <p className="text-2xl font-extrabold text-white mt-2 flex items-center gap-3">
-              <i className="fas fa-calendar-alt text-teal-400"></i>
+          <div className="stat-card">
+            <p className="stat-label">Total Daily Sheets Logged</p>
+            <p className="stat-value">
+              <i className="fas fa-calendar-alt" style={{ color: "var(--primary-color)" }}></i>
               {totalSubmissions}
             </p>
           </div>
-          <div className="bg-slate-900/60 backdrop-blur-md border border-slate-850 p-6 rounded-2xl shadow-lg shadow-black/20">
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Cash Balance Collected</p>
-            <p className="text-2xl font-extrabold text-emerald-400 mt-2 flex items-center gap-2">
+          <div className="stat-card">
+            <p className="stat-label">Total Cash Balance Collected</p>
+            <p className="stat-value" style={{ color: "var(--success-color)" }}>
               <i className="fas fa-money-bill-wave"></i>
               {totalCashCollected.toLocaleString()} SAR
             </p>
           </div>
         </section>
 
-        {/* Two-Column Grid: Form and History */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Daily Log Entry Form (Column Span 5) */}
-          <div className="lg:col-span-5">
-            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-850 p-6 rounded-3xl shadow-xl">
-              <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <i className="fas fa-plus text-emerald-400 text-sm"></i>
-                Add Daily Log & Expenses
-              </h2>
+        {/* Stacked Full Width sections */}
+        
+        {/* SECTION 1: Add Daily Log & Expenses Form (Full Width) */}
+        <section className="full-width-card">
+          <h2 className="card-header-title">
+            <i className="fas fa-plus-circle" style={{ color: "var(--primary-color)", fontSize: "20px" }}></i>
+            Add Daily Log & Expenses
+          </h2>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Basic Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Date</label>
-                    <input
-                      type="date"
-                      required
-                      name="date"
-                      value={formData.date}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Agent/Company</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-650">
-                        <i className="fas fa-building text-xs"></i>
-                      </span>
-                      <input
-                        type="text"
-                        name="agent"
-                        value={formData.agent}
-                        onChange={handleInputChange}
-                        placeholder="e.g. Al-Fajr"
-                        className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
+          <form onSubmit={handleSubmit}>
+            {/* Row 1: General Info (4 columns) */}
+            <div className="inputs-row-4">
+              {/* Date Input */}
+              <div className="form-group">
+                <label className="form-label">Date</label>
+                <input
+                  type="date"
+                  required
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  className="form-input"
+                />
+              </div>
+
+              {/* Agent Dropdown */}
+              <div className="form-group">
+                <label className="form-label">Agent / Company</label>
+                <div className="input-wrapper">
+                  <span className="input-icon">
+                    <i className="fas fa-building"></i>
+                  </span>
+                  <select
+                    value={selectedAgentOpt}
+                    onChange={handleAgentDropdownChange}
+                    className="form-input has-icon"
+                    required
+                  >
+                    <option value="">-- Select Agent / Company --</option>
+                    {companies.map((comp) => (
+                      <option key={comp.id} value={comp.name}>
+                        {comp.name}
+                      </option>
+                    ))}
+                    <option value="Individual / Cash">Individual / Cash</option>
+                    <option value="CUSTOM">Other (Type manually...)</option>
+                  </select>
                 </div>
+                {customAgentActive && (
+                  <input
+                    type="text"
+                    required
+                    name="agent"
+                    value={formData.agent}
+                    onChange={handleInputChange}
+                    placeholder="Type Company Name..."
+                    className="form-input"
+                    style={{ marginTop: "8px" }}
+                  />
+                )}
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Trip Description</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-655">
-                        <i className="fas fa-road text-xs"></i>
-                      </span>
-                      <input
-                        type="text"
-                        name="trip"
-                        value={formData.trip}
-                        onChange={handleInputChange}
-                        placeholder="e.g. Makkah to Jeddah"
-                        className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Hotel Drop Off</label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-655">
-                        <i className="fas fa-hotel text-xs"></i>
-                      </span>
-                      <input
-                        type="text"
-                        name="hotel_drop_off"
-                        value={formData.hotel_drop_off}
-                        onChange={handleInputChange}
-                        placeholder="e.g. Hilton Suites"
-                        className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
-                      />
-                    </div>
-                  </div>
+              {/* Trip Dropdown */}
+              <div className="form-group">
+                <label className="form-label">Trip Description</label>
+                <div className="input-wrapper">
+                  <span className="input-icon">
+                    <i className="fas fa-road"></i>
+                  </span>
+                  <select
+                    value={selectedTripOpt}
+                    onChange={handleTripDropdownChange}
+                    className="form-input has-icon"
+                    required
+                  >
+                    <option value="">-- Select Trip Route --</option>
+                    {STANDARD_TRIPS.map((tr, idx) => (
+                      <option key={idx} value={tr}>
+                        {tr}
+                      </option>
+                    ))}
+                    <option value="CUSTOM">Other (Type manually...)</option>
+                  </select>
                 </div>
+                {customTripActive && (
+                  <input
+                    type="text"
+                    required
+                    name="trip"
+                    value={formData.trip}
+                    onChange={handleInputChange}
+                    placeholder="Type custom trip description..."
+                    className="form-input"
+                    style={{ marginTop: "8px" }}
+                  />
+                )}
+              </div>
 
-                <div className="border-t border-slate-850 my-4 pt-4">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Earnings (SAR)</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Rate</label>
-                      <input
-                        type="number"
-                        name="rate"
-                        min="0"
-                        value={formData.rate || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Voucher</label>
-                      <input
-                        type="number"
-                        name="voucher"
-                        min="0"
-                        value={formData.voucher || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Cash</label>
-                      <input
-                        type="number"
-                        name="cash"
-                        min="0"
-                        value={formData.cash || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
+              {/* Hotel Drop Off */}
+              <div className="form-group">
+                <label className="form-label">Hotel Drop Off</label>
+                <div className="input-wrapper">
+                  <span className="input-icon">
+                    <i className="fas fa-hotel"></i>
+                  </span>
+                  <input
+                    type="text"
+                    name="hotel_drop_off"
+                    value={formData.hotel_drop_off}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Hilton Suites"
+                    className="form-input has-icon"
+                  />
                 </div>
-
-                <div className="border-t border-slate-855 my-4 pt-4">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Expenses & Petrol (SAR)</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Fuel / Petrol</label>
-                      <input
-                        type="number"
-                        name="fuel"
-                        min="0"
-                        value={formData.fuel || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Parking</label>
-                      <input
-                        type="number"
-                        name="parking"
-                        min="0"
-                        value={formData.parking || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Car Wash</label>
-                      <input
-                        type="number"
-                        name="wash"
-                        min="0"
-                        value={formData.wash || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3 mt-3">
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Oil Change</label>
-                      <input
-                        type="number"
-                        name="oil_change"
-                        min="0"
-                        value={formData.oil_change || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Maintenance</label>
-                      <input
-                        type="number"
-                        name="car_maintenance"
-                        min="0"
-                        value={formData.car_maintenance || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Miscellaneous</label>
-                      <input
-                        type="number"
-                        name="mic"
-                        min="0"
-                        value={formData.mic || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 mt-3">
-                    <div>
-                      <label className="block text-slate-555 text-[10px] font-semibold mb-1">Waqas Received</label>
-                      <input
-                        type="number"
-                        name="waqas_received"
-                        min="0"
-                        value={formData.waqas_received || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Calculation summary */}
-                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
-                  <div>
-                    <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wide">Net Daily Total</span>
-                    <p className="text-slate-500 text-[10px] mt-0.5">Earnings - Expenses</p>
-                  </div>
-                  <div className={`text-lg font-black ${calculateTotal(formData) >= 0 ? "text-emerald-450" : "text-red-400"}`}>
-                    {calculateTotal(formData).toFixed(2)} SAR
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitLoading || !driverUser?.vehicle_id}
-                  className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-bold rounded-xl hover:from-emerald-400 hover:to-teal-400 shadow-lg hover:shadow-emerald-500/10 active:scale-[0.99] transition duration-150 flex items-center justify-center gap-2 text-sm"
-                >
-                  {submitLoading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      {!driverUser?.vehicle_id ? "Awaiting Vehicle Assignment" : "Lock & Submit Sheet"}
-                    </>
-                  )}
-                </button>
-              </form>
+              </div>
             </div>
-          </div>
 
-          {/* History / Recent Submissions (Column Span 7) */}
-          <div className="lg:col-span-7 flex flex-col">
-            <div className="bg-slate-900/60 backdrop-blur-md border border-slate-850 p-6 rounded-3xl shadow-xl flex-grow flex flex-col">
-              <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <i className="fas fa-road text-teal-400 text-sm"></i>
-                Daily Sheet Log History
-              </h2>
+            {/* Row 2: Earnings (3 columns) */}
+            <div className="section-divider">
+              <h3 className="section-title">Earnings (SAR)</h3>
+              <div className="inputs-row-3">
+                <div className="form-group">
+                  <label className="sub-input-label">Rate</label>
+                  <input
+                    type="number"
+                    name="rate"
+                    min="0"
+                    value={formData.rate || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="sub-input-label">Voucher</label>
+                  <input
+                    type="number"
+                    name="voucher"
+                    min="0"
+                    value={formData.voucher || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="sub-input-label">Cash</label>
+                  <input
+                    type="number"
+                    name="cash"
+                    min="0"
+                    value={formData.cash || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </div>
 
-              {loading ? (
-                <div className="flex-grow flex flex-col justify-center items-center py-16">
-                  <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
-                  <p className="text-slate-400 text-xs font-medium">Loading history...</p>
+            {/* Row 3: Expenses & Petrol (4 columns row 1, 3 columns row 2) */}
+            <div className="section-divider">
+              <h3 className="section-title">Expenses & Petrol (SAR)</h3>
+              
+              <div className="inputs-row-4">
+                <div className="form-group">
+                  <label className="sub-input-label">Fuel / Petrol</label>
+                  <input
+                    type="number"
+                    name="fuel"
+                    min="0"
+                    value={formData.fuel || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
                 </div>
-              ) : entries.length === 0 ? (
-                <div className="flex-grow flex flex-col justify-center items-center py-16 text-center border border-dashed border-slate-800 rounded-2xl">
-                  <i className="fas fa-road text-slate-700 text-3xl mb-3"></i>
-                  <h3 className="text-sm font-bold text-slate-300">No logs submitted yet</h3>
-                  <p className="text-slate-500 text-xs mt-1 max-w-xs">
-                    Your daily logs and expense records will appear here after you submit your first sheet.
-                  </p>
+                <div className="form-group">
+                  <label className="sub-input-label">Parking</label>
+                  <input
+                    type="number"
+                    name="parking"
+                    min="0"
+                    value={formData.parking || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
                 </div>
-              ) : (
-                <div className="overflow-x-auto flex-grow">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-450 text-xs font-bold uppercase tracking-wider">
-                        <th className="pb-3 pr-2">Date</th>
-                        <th className="pb-3 px-2">Trip</th>
-                        <th className="pb-3 px-2">Agent</th>
-                        <th className="pb-3 px-2 text-right">Cash</th>
-                        <th className="pb-3 px-2 text-right">Net Total</th>
-                        <th className="pb-3 px-2 text-center">Status</th>
-                        <th className="pb-3 pl-2 text-right">Actions</th>
+                <div className="form-group">
+                  <label className="sub-input-label">Car Wash</label>
+                  <input
+                    type="number"
+                    name="wash"
+                    min="0"
+                    value={formData.wash || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="sub-input-label">Oil Change</label>
+                  <input
+                    type="number"
+                    name="oil_change"
+                    min="0"
+                    value={formData.oil_change || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="inputs-row-3" style={{ marginTop: "16px" }}>
+                <div className="form-group">
+                  <label className="sub-input-label">Maintenance</label>
+                  <input
+                    type="number"
+                    name="car_maintenance"
+                    min="0"
+                    value={formData.car_maintenance || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="sub-input-label">Miscellaneous</label>
+                  <input
+                    type="number"
+                    name="mic"
+                    min="0"
+                    value={formData.mic || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="sub-input-label">Waqas Received</label>
+                  <input
+                    type="number"
+                    name="waqas_received"
+                    min="0"
+                    value={formData.waqas_received || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Calculations & Submit row */}
+            <div className="form-footer-action-row">
+              <div className="calc-summary-box">
+                <div className="calc-label-stack">
+                  <span className="calc-label">Net Daily Total</span>
+                  <p className="calc-subtext">Earnings - Expenses</p>
+                </div>
+                <div className={`calc-val ${calculateTotal(formData) >= 0 ? "positive" : "negative"}`}>
+                  {calculateTotal(formData).toFixed(2)} SAR
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitLoading || !driverUser?.vehicle_id}
+                className="submit-btn"
+              >
+                {submitLoading ? (
+                  <div className="spinner"></div>
+                ) : (
+                  <>
+                    <i className="fas fa-lock"></i>
+                    {!driverUser?.vehicle_id ? "Awaiting Vehicle Assignment" : "Lock & Submit Daily Sheet"}
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        {/* SECTION 2: Daily Sheet Log History (Full Width) */}
+        <section className="full-width-card" style={{ display: "flex", flexDirection: "column", minHeight: "450px" }}>
+          <h2 className="card-header-title">
+            <i className="fas fa-history" style={{ color: "var(--primary-color)", fontSize: "20px" }}></i>
+            Daily Sheet Log History
+          </h2>
+
+          {loading ? (
+            <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "center", alignItems: "center", padding: "64px 0" }}>
+              <div className="spinner" style={{ border: "2px solid var(--primary-color)", borderTopColor: "transparent", width: "40px", height: "40px", marginBottom: "16px" }} />
+              <p style={{ color: "var(--text-muted)", fontSize: "13px", fontWeight: 500 }}>Loading log history...</p>
+            </div>
+          ) : entries.length === 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "center", alignItems: "center", padding: "64px 16px", textAlign: "center", border: "1px dashed var(--border-color)", borderRadius: "16px" }}>
+              <i className="fas fa-road" style={{ color: "var(--border-color)", fontSize: "40px", marginBottom: "16px" }}></i>
+              <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--dark-color)" }}>No logs submitted yet</h3>
+              <p style={{ color: "var(--text-muted)", fontSize: "13px", marginTop: "6px", maxWidth: "320px" }}>
+                Your daily logs and expense records will appear here after you submit your first sheet.
+              </p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Trip</th>
+                    <th>Hotel Drop Off</th>
+                    <th>Agent / Company</th>
+                    <th style={{ textAlign: "right" }}>Rate</th>
+                    <th style={{ textAlign: "right" }}>Voucher</th>
+                    <th style={{ textAlign: "right" }}>Cash Collected</th>
+                    <th style={{ textAlign: "right" }}>Fuel / Petrol</th>
+                    <th style={{ textAlign: "right" }}>Total Expenses</th>
+                    <th style={{ textAlign: "right" }}>Net Total</th>
+                    <th style={{ textAlign: "center" }}>Status</th>
+                    <th style={{ textAlign: "right" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((item) => {
+                    const isLocked = item.is_locked && !driverUser?.edit_rights;
+                    const totalExpenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
+                                          Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+                    return (
+                      <tr key={item.id}>
+                        <td style={{ fontWeight: 600, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
+                          {new Date(item.date).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td style={{ color: "var(--dark-color)", whiteSpace: "nowrap" }}>
+                          {item.trip || "-"}
+                        </td>
+                        <td style={{ color: "var(--dark-color)", whiteSpace: "nowrap" }}>
+                          {item.hotel_drop_off || "-"}
+                        </td>
+                        <td style={{ color: "var(--dark-color)", whiteSpace: "nowrap" }}>
+                          {item.agent || "-"}
+                        </td>
+                        <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
+                          {Number(item.rate || 0).toFixed(0)} SAR
+                        </td>
+                        <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
+                          {Number(item.voucher || 0).toFixed(0)} SAR
+                        </td>
+                        <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
+                          {Number(item.cash || 0).toFixed(0)} SAR
+                        </td>
+                        <td style={{ textAlign: "right", color: "var(--danger-color)", whiteSpace: "nowrap" }}>
+                          {Number(item.fuel || 0).toFixed(0)} SAR
+                        </td>
+                        <td style={{ textAlign: "right", color: "var(--danger-color)", whiteSpace: "nowrap" }}>
+                          {totalExpenses.toFixed(0)} SAR
+                        </td>
+                        <td style={{ textAlign: "right", fontWeight: "bold", whiteSpace: "nowrap" }} className={Number(item.total || 0) >= 0 ? "text-success" : "text-danger"}>
+                          {Number(item.total || 0).toFixed(0)} SAR
+                        </td>
+                        <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                          {isLocked ? (
+                            <span className="status-badge locked">
+                              <i className="fas fa-lock" style={{ fontSize: "10px", marginRight: "4px" }}></i>
+                              Locked
+                            </span>
+                          ) : (
+                            <span className="status-badge editable">
+                              <i className="fas fa-unlock" style={{ fontSize: "10px", marginRight: "4px" }}></i>
+                              Editable
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            {isLocked ? (
+                              <button
+                                disabled
+                                className="action-btn locked"
+                                title="Locked. Contact admin to edit."
+                              >
+                                <i className="fas fa-lock" style={{ fontSize: "12px" }}></i>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openEditModal(item)}
+                                className="action-btn edit"
+                                title="Edit entry"
+                              >
+                                <i className="fas fa-edit" style={{ fontSize: "12px" }}></i>
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-850 text-sm">
-                      {entries.map((item) => {
-                        const isLocked = item.is_locked && !driverUser?.edit_rights;
-                        return (
-                          <tr key={item.id} className="hover:bg-slate-850/30 transition duration-150">
-                            <td className="py-4 pr-2 font-medium text-slate-300 whitespace-nowrap">
-                              {new Date(item.date).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              })}
-                            </td>
-                            <td className="py-4 px-2 text-slate-400 max-w-[120px] truncate" title={item.trip}>
-                              {item.trip || "N/A"}
-                            </td>
-                            <td className="py-4 px-2 text-slate-400 max-w-[100px] truncate" title={item.agent}>
-                              {item.agent || "N/A"}
-                            </td>
-                            <td className="py-4 px-2 text-right font-medium text-slate-300">
-                              {Number(item.cash || 0).toFixed(0)}
-                            </td>
-                            <td className={`py-4 px-2 text-right font-bold ${Number(item.total || 0) >= 0 ? "text-emerald-450" : "text-red-400"}`}>
-                              {Number(item.total || 0).toFixed(0)}
-                            </td>
-                            <td className="py-4 px-2 text-center whitespace-nowrap">
-                              {isLocked ? (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-950 border border-slate-800 text-slate-500 rounded-lg text-[10px] font-extrabold uppercase">
-                                  <i className="fas fa-lock text-[9px]"></i>
-                                  Locked
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-[10px] font-extrabold uppercase">
-                                  <i className="fas fa-unlock text-[9px]"></i>
-                                  Editable
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-4 pl-2 text-right whitespace-nowrap">
-                              {isLocked ? (
-                                <button
-                                  disabled
-                                  className="p-2 bg-slate-900 text-slate-700 rounded-lg cursor-not-allowed border border-slate-800/20"
-                                  title="Locked. Contact admin to edit."
-                                >
-                                  <i className="fas fa-lock text-xs"></i>
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => openEditModal(item)}
-                                  className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg transition duration-150 border border-emerald-500/10 hover:border-emerald-500/30"
-                                  title="Edit entry"
-                                >
-                                  <i className="fas fa-edit text-xs"></i>
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </div>
-
+          )}
+        </section>
       </div>
 
-      {/* Edit Modal (Glassmorphic Backdrop) */}
+      {/* Edit Modal */}
       {editingEntry && editFormData && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            
+        <div className="modal-overlay">
+          <div className="modal-card">
             {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-slate-800/60 flex items-center justify-between bg-slate-950/40">
+            <div className="modal-header">
               <div>
-                <h3 className="text-lg font-extrabold text-white">Edit Daily Log Sheet</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Editing record dated {new Date(editingEntry.date).toLocaleDateString()}</p>
+                <h3 className="modal-header-title">Edit Daily Log Sheet</h3>
+                <p className="modal-header-subtitle">
+                  Editing record dated {new Date(editingEntry.date).toLocaleDateString()}
+                </p>
               </div>
-              <button 
-                onClick={closeEditModal}
-                className="p-2 bg-slate-800/40 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl transition duration-155"
-              >
+              <button onClick={closeEditModal} className="modal-close-btn">
                 <i className="fas fa-times"></i>
               </button>
             </div>
 
             {/* Modal Body */}
             <form onSubmit={handleUpdate}>
-              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Date</label>
+              <div className="modal-body">
+                {/* Row 1: General Info */}
+                <div className="inputs-row-4">
+                  {/* Date */}
+                  <div className="form-group">
+                    <label className="form-label">Date</label>
                     <input
                       type="date"
                       required
                       name="date"
                       value={editFormData.date}
                       onChange={handleEditInputChange}
-                      className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
+                      className="form-input"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Agent/Company</label>
-                    <input
-                      type="text"
-                      name="agent"
-                      value={editFormData.agent}
-                      onChange={handleEditInputChange}
-                      className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Trip Description</label>
-                    <input
-                      type="text"
-                      name="trip"
-                      value={editFormData.trip}
-                      onChange={handleEditInputChange}
-                      className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
-                    />
+                  {/* Edit Agent Dropdown */}
+                  <div className="form-group">
+                    <label className="form-label">Agent/Company</label>
+                    <select
+                      value={editSelectedAgentOpt}
+                      onChange={handleEditAgentDropdownChange}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">-- Select Agent / Company --</option>
+                      {companies.map((comp) => (
+                        <option key={comp.id} value={comp.name}>
+                          {comp.name}
+                        </option>
+                      ))}
+                      <option value="Individual / Cash">Individual / Cash</option>
+                      <option value="CUSTOM">Other (Type manually...)</option>
+                    </select>
+                    {editCustomAgentActive && (
+                      <input
+                        type="text"
+                        required
+                        name="agent"
+                        value={editFormData.agent}
+                        onChange={handleEditInputChange}
+                        placeholder="Type Company Name..."
+                        className="form-input"
+                        style={{ marginTop: "8px" }}
+                      />
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-slate-400 text-xs font-semibold mb-1.5">Hotel Drop Off</label>
+
+                  {/* Edit Trip Dropdown */}
+                  <div className="form-group">
+                    <label className="form-label">Trip Description</label>
+                    <select
+                      value={editSelectedTripOpt}
+                      onChange={handleEditTripDropdownChange}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">-- Select Trip Route --</option>
+                      {STANDARD_TRIPS.map((tr, idx) => (
+                        <option key={idx} value={tr}>
+                          {tr}
+                        </option>
+                      ))}
+                      <option value="CUSTOM">Other (Type manually...)</option>
+                    </select>
+                    {editCustomTripActive && (
+                      <input
+                        type="text"
+                        required
+                        name="trip"
+                        value={editFormData.trip}
+                        onChange={handleEditInputChange}
+                        placeholder="Type custom trip description..."
+                        className="form-input"
+                        style={{ marginTop: "8px" }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Hotel Drop Off */}
+                  <div className="form-group">
+                    <label className="form-label">Hotel Drop Off</label>
                     <input
                       type="text"
                       name="hotel_drop_off"
                       value={editFormData.hotel_drop_off}
                       onChange={handleEditInputChange}
-                      className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none focus:border-emerald-500"
+                      className="form-input"
                     />
                   </div>
                 </div>
 
-                <div className="border-t border-slate-850 pt-4">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Earnings (SAR)</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Rate</label>
+                <div className="section-divider">
+                  <h4 className="section-title">Earnings (SAR)</h4>
+                  <div className="inputs-row-3">
+                    <div className="form-group">
+                      <label className="sub-input-label">Rate</label>
                       <input
                         type="number"
                         name="rate"
                         min="0"
                         value={editFormData.rate}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Voucher</label>
+                    <div className="form-group">
+                      <label className="sub-input-label">Voucher</label>
                       <input
                         type="number"
                         name="voucher"
                         min="0"
                         value={editFormData.voucher}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Cash</label>
+                    <div className="form-group">
+                      <label className="sub-input-label">Cash</label>
                       <input
                         type="number"
                         name="cash"
                         min="0"
                         value={editFormData.cash}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-850 pt-4">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Expenses & Petrol (SAR)</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Fuel / Petrol</label>
+                <div className="section-divider">
+                  <h4 className="section-title">Expenses & Petrol (SAR)</h4>
+                  <div className="inputs-row-4">
+                    <div className="form-group">
+                      <label className="sub-input-label">Fuel / Petrol</label>
                       <input
                         type="number"
                         name="fuel"
                         min="0"
                         value={editFormData.fuel}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Parking</label>
+                    <div className="form-group">
+                      <label className="sub-input-label">Parking</label>
                       <input
                         type="number"
                         name="parking"
                         min="0"
                         value={editFormData.parking}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Car Wash</label>
+                    <div className="form-group">
+                      <label className="sub-input-label">Car Wash</label>
                       <input
                         type="number"
                         name="wash"
                         min="0"
                         value={editFormData.wash}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3 mt-3">
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Oil Change</label>
+                    <div className="form-group">
+                      <label className="sub-input-label">Oil Change</label>
                       <input
                         type="number"
                         name="oil_change"
                         min="0"
                         value={editFormData.oil_change}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Maintenance</label>
+                  </div>
+
+                  <div className="inputs-row-3" style={{ marginTop: "16px" }}>
+                    <div className="form-group">
+                      <label className="sub-input-label">Maintenance</label>
                       <input
                         type="number"
                         name="car_maintenance"
                         min="0"
                         value={editFormData.car_maintenance}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Miscellaneous</label>
+                    <div className="form-group">
+                      <label className="sub-input-label">Miscellaneous</label>
                       <input
                         type="number"
                         name="mic"
                         min="0"
                         value={editFormData.mic}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 mt-3">
-                    <div>
-                      <label className="block text-slate-500 text-[10px] font-semibold mb-1">Waqas Received</label>
+                    <div className="form-group">
+                      <label className="sub-input-label">Waqas Received</label>
                       <input
                         type="number"
                         name="waqas_received"
                         min="0"
                         value={editFormData.waqas_received}
                         onChange={handleEditInputChange}
-                        className="w-full px-3 py-2 bg-slate-955 border border-slate-800 rounded-xl text-white text-sm focus:outline-none"
+                        className="form-input"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
-                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wide">Recalculated Total</span>
-                  <div className={`text-lg font-black ${calculateTotal(editFormData) >= 0 ? "text-emerald-450" : "text-red-400"}`}>
+                <div className="calc-summary-card" style={{ marginBottom: 0 }}>
+                  <span className="calc-label">Recalculated Total</span>
+                  <div className={`calc-val ${calculateTotal(editFormData) >= 0 ? "positive" : "negative"}`}>
                     {calculateTotal(editFormData).toFixed(2)} SAR
                   </div>
                 </div>
-
               </div>
 
               {/* Modal Footer */}
-              <div className="px-6 py-4 border-t border-slate-800/60 bg-slate-950/40 flex items-center justify-end gap-3">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={closeEditModal}
-                  className="px-5 py-2.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-xl transition duration-150 text-sm font-semibold"
+                  className="modal-btn-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={editLoading}
-                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold rounded-xl hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/10 transition duration-150 flex items-center gap-2 text-sm"
+                  className="modal-btn-save"
                 >
                   {editLoading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <div className="spinner" style={{ border: "2px solid #ffffff", borderTopColor: "transparent" }}></div>
                   ) : (
-                    <>
-                      Save Changes
-                    </>
+                    "Save Changes"
                   )}
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}

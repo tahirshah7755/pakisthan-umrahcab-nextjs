@@ -3,9 +3,34 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminDriverEntriesPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["drivers"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["drivers"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
 
   // State
   const [entries, setEntries] = useState<any[]>([]);
@@ -965,10 +990,12 @@ export default function AdminDriverEntriesPage() {
           )}
         </div>
 
-        <button onClick={openAddModal} className="btn-log-manual">
-          <i className="fas fa-plus"></i>
-          Log Manual Sheet
-        </button>
+        {canEdit && (
+          <button onClick={openAddModal} className="btn-log-manual">
+            <i className="fas fa-plus"></i>
+            Log Manual Sheet
+          </button>
+        )}
       </div>
 
       {/* Log History Table Card */}
@@ -1053,6 +1080,8 @@ export default function AdminDriverEntriesPage() {
                           onClick={() => handleToggleLock(item.id)}
                           className={`btn-lock-toggle ${item.is_locked ? "lock-locked" : "lock-unlocked"}`}
                           title={item.is_locked ? "Click to Unlock Sheet for Driver Edits" : "Click to Lock Sheet (Restricts Driver Edits)"}
+                          disabled={!canEdit}
+                          style={{ opacity: canEdit ? 1 : 0.6, cursor: canEdit ? "pointer" : "not-allowed" }}
                         >
                           <i className={item.is_locked ? "fas fa-lock" : "fas fa-unlock"}></i>
                           {item.is_locked ? "Locked" : "Open Gate"}
@@ -1060,20 +1089,24 @@ export default function AdminDriverEntriesPage() {
                       </td>
                       <td>
                         <div className="actions-btn-group">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            className="btn-action btn-action-edit"
-                            title="Edit Log Journal"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button
-                            onClick={() => setDeletingEntry(item)}
-                            className="btn-action btn-action-delete"
-                            title="Delete Daily Record"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => openEditModal(item)}
+                              className="btn-action btn-action-edit"
+                              title="Edit Log Journal"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => setDeletingEntry(item)}
+                              className="btn-action btn-action-delete"
+                              title="Delete Daily Record"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

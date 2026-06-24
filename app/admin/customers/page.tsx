@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { CustomerDirectory } from "@/components/admin/CustomerDirectory";
+import { useAuth } from "@/context/AuthContext";
 
 interface CustomerItem {
   id: string;
@@ -29,6 +30,18 @@ interface CompanyItem {
 
 export default function CustomersPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["customers"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
   const [customers, setCustomers] = useState<CustomerItem[]>([]);
   const [companies, setCompanies] = useState<CompanyItem[]>([]);
   

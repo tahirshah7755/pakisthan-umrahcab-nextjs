@@ -94,6 +94,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Background sync driver profile on navigation/mount to immediately reflect admin permission updates
+  useEffect(() => {
+    if (pathname.startsWith("/driver") && pathname !== "/driver/login" && driverUser) {
+      const fetchLatestProfile = async () => {
+        try {
+          const token = localStorage.getItem("umrahcab_driver_token");
+          if (!token) return;
+
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+          const meUrl = apiBase.endsWith("/")
+            ? apiBase.replace(/umrahcab\/?$/, "auth/driver/me")
+            : apiBase.replace("umrahcab", "auth/driver/me");
+
+          const response = await fetch(meUrl, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            credentials: "include"
+          });
+
+          if (response.ok) {
+            const resData = await response.json();
+            const driver = resData?.data || resData;
+            if (driver) {
+              const updatedDriver = {
+                id: String(driver.id),
+                name: driver.name || "Driver",
+                username: driver.username,
+                phone: driver.phone || "",
+                vehicle_id: driver.vehicle_id,
+                edit_rights: !!driver.edit_rights
+              };
+              
+              // Only trigger state update if details actually changed to prevent infinite render loops
+              if (JSON.stringify(driverUser) !== JSON.stringify(updatedDriver)) {
+                setDriverUser(updatedDriver);
+                localStorage.setItem("umrahcab_driver_user", JSON.stringify(updatedDriver));
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to background sync driver profile:", err);
+        }
+      };
+      
+      fetchLatestProfile();
+    }
+  }, [pathname, driverUser]);
+
   // Handle responsive sidebar default state
   useEffect(() => {
     const handleResize = () => {

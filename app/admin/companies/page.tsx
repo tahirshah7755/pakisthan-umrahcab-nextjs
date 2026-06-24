@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface CompanyItem {
   id: string;
@@ -17,6 +18,29 @@ interface CompanyItem {
 
 export default function CompaniesPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["companies"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["companies"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
   const [companies, setCompanies] = useState<CompanyItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -263,24 +287,26 @@ export default function CompaniesPage() {
           <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>Company Management</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>Manage and track all companies under your organization.</p>
         </div>
-        <button 
-          onClick={() => router.push("/admin/companies/add")} 
-          style={{
-            background: "#1d4ed8",
-            color: "#ffffff",
-            border: "none",
-            borderRadius: "6px",
-            padding: "10px 18px",
-            fontWeight: "600",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}
-        >
-          <i className="fas fa-plus"></i>
-          <span>Register New Company</span>
-        </button>
+        {canEdit && (
+          <button 
+            onClick={() => router.push("/admin/companies/add")} 
+            style={{
+              background: "#1d4ed8",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "10px 18px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <i className="fas fa-plus"></i>
+            <span>Register New Company</span>
+          </button>
+        )}
       </div>
 
       <div className="table-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
@@ -399,24 +425,26 @@ export default function CompaniesPage() {
                             >
                               <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                             </button>
-                            <button 
-                              onClick={() => router.push(`/admin/companies/edit?id=${rawId}`)} 
-                              title="Edit" 
-                              style={{ 
-                                background: "#eff6ff", 
-                                border: "none", 
-                                borderRadius: "6px", 
-                                width: "30px", 
-                                height: "30px", 
-                                cursor: "pointer", 
-                                color: "#2563eb", 
-                                display: "flex", 
-                                alignItems: "center", 
-                                justifyContent: "center" 
-                              }}
-                            >
-                              <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
-                            </button>
+                            {canEdit && (
+                              <button 
+                                onClick={() => router.push(`/admin/companies/edit?id=${rawId}`)} 
+                                title="Edit" 
+                                style={{ 
+                                  background: "#eff6ff", 
+                                  border: "none", 
+                                  borderRadius: "6px", 
+                                  width: "30px", 
+                                  height: "30px", 
+                                  cursor: "pointer", 
+                                  color: "#2563eb", 
+                                  display: "flex", 
+                                  alignItems: "center", 
+                                  justifyContent: "center" 
+                                }}
+                              >
+                                <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

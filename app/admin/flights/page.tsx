@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface FlightItem {
   id: string;
@@ -23,6 +24,30 @@ interface FlightItem {
 
 export default function FlightsDirectory() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Determine permissions
+  const getPermission = () => {
+    if (!user) return "none";
+    if (user.role === "SUPER_ADMIN") return "full";
+    const userPerms = (user as any).permissions || {};
+    return userPerms["flights"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (user && user.role !== "SUPER_ADMIN") {
+      const userPerms = (user as any).permissions || {};
+      const access = userPerms["flights"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [user, router]);
   const [flights, setFlights] = useState<FlightItem[]>([]);
   const [fltPage, setFltPage] = useState(1);
   const [fltPerPage, setFltPerPage] = useState(10);
@@ -326,26 +351,28 @@ export default function FlightsDirectory() {
           <h2 style={{ fontSize: "28px", fontWeight: "700" }}>Flight Directory</h2>
           <p style={{ opacity: 0.9 }}>Lookup and manage departure and arrival records for all passengers.</p>
         </div>
-        <button 
-          onClick={() => router.push("/admin/flights/add")} 
-          style={{
-            background: "#ffffff",
-            color: "#0f172a",
-            border: "none",
-            padding: "10px 20px",
-            borderRadius: "8px",
-            fontWeight: "700",
-            fontSize: "14px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            boxShadow: "0 4px 6px rgba(0,0,0,0.05)"
-          }}
-        >
-          <i className="fas fa-plus"></i>
-          <span>New Flight</span>
-        </button>
+        {canEdit && (
+          <button 
+            onClick={() => router.push("/admin/flights/add")} 
+            style={{
+              background: "#ffffff",
+              color: "#0f172a",
+              border: "none",
+              padding: "10px 20px",
+              borderRadius: "8px",
+              fontWeight: "700",
+              fontSize: "14px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.05)"
+            }}
+          >
+            <i className="fas fa-plus"></i>
+            <span>New Flight</span>
+          </button>
+        )}
       </div>
 
       {/* Date & Filter Panel */}
@@ -587,44 +614,48 @@ export default function FlightsDirectory() {
                         >
                           <i className="far fa-eye" style={{ fontSize: "12px" }}></i>
                         </button>
-                        <button
-                          onClick={() => router.push(`/admin/flights/edit?id=${f.id}`)}
-                          style={{
-                            background: "#3b82f6",
-                            color: "#ffffff",
-                            border: "none",
-                            borderRadius: "6px",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            boxShadow: "0 2px 4px rgba(59,130,246,0.2)"
-                          }}
-                          title="Edit Record"
-                        >
-                          <i className="far fa-edit" style={{ fontSize: "12px" }}></i>
-                        </button>
-                        <button
-                          onClick={() => handleDelete(f.id)}
-                          style={{
-                            background: "#ef4444",
-                            color: "#ffffff",
-                            border: "none",
-                            borderRadius: "6px",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            boxShadow: "0 2px 4px rgba(239,68,68,0.2)"
-                          }}
-                          title="Delete Record"
-                        >
-                          <i className="far fa-trash-alt" style={{ fontSize: "12px" }}></i>
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => router.push(`/admin/flights/edit?id=${f.id}`)}
+                            style={{
+                              background: "#3b82f6",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "6px",
+                              width: "28px",
+                              height: "28px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 4px rgba(59,130,246,0.2)"
+                            }}
+                            title="Edit Record"
+                          >
+                            <i className="far fa-edit" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDelete(f.id)}
+                            style={{
+                              background: "#ef4444",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "6px",
+                              width: "28px",
+                              height: "28px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 4px rgba(239,68,68,0.2)"
+                            }}
+                            title="Delete Record"
+                          >
+                            <i className="far fa-trash-alt" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

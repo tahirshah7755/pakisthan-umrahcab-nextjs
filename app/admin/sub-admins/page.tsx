@@ -38,6 +38,29 @@ export default function AdminSubAdminsPage() {
   const router = useRouter();
   const { user: currentAdmin } = useAuth();
 
+  // Determine permissions
+  const getPermission = () => {
+    if (!currentAdmin) return "none";
+    if (currentAdmin.role === "SUPER_ADMIN") return "full";
+    const userPerms = (currentAdmin as any).permissions || {};
+    return userPerms["sub_admins"] || "none";
+  };
+
+  const permission = getPermission();
+  const canEdit = permission === "edit" || permission === "full";
+  const canDelete = permission === "full";
+
+  // Redirect if unauthorized
+  useEffect(() => {
+    if (currentAdmin && currentAdmin.role !== "SUPER_ADMIN") {
+      const userPerms = (currentAdmin as any).permissions || {};
+      const access = userPerms["sub_admins"] || "none";
+      if (access === "none") {
+        router.push("/admin/hub");
+      }
+    }
+  }, [currentAdmin, router]);
+
   // Data State
   const [admins, setAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -829,10 +852,12 @@ export default function AdminSubAdminsPage() {
 
       {/* Actions Row */}
       <div className="security-actions-bar">
-        <button onClick={openAddModal} className="btn-add-admin">
-          <i className="fas fa-plus"></i>
-          Add Administrator
-        </button>
+        {canEdit && (
+          <button onClick={openAddModal} className="btn-add-admin">
+            <i className="fas fa-plus"></i>
+            Add Administrator
+          </button>
+        )}
       </div>
 
       {/* Admins Registry List Table */}
@@ -913,21 +938,25 @@ export default function AdminSubAdminsPage() {
                       </td>
                       <td>
                         <div className="actions-btn-group">
-                          <button
-                            onClick={() => openEditModal(admin)}
-                            className="btn-action btn-action-edit"
-                            title="Configure clearances"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button
-                            onClick={() => setDeletingAdmin(admin)}
-                            disabled={isSelf}
-                            className={`btn-action btn-action-delete ${isSelf ? "btn-action-disabled" : ""}`}
-                            title={isSelf ? "Cannot delete yourself" : "Revoke clearance"}
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => openEditModal(admin)}
+                              className="btn-action btn-action-edit"
+                              title="Configure clearances"
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => setDeletingAdmin(admin)}
+                              disabled={isSelf}
+                              className={`btn-action btn-action-delete ${isSelf ? "btn-action-disabled" : ""}`}
+                              title={isSelf ? "Cannot delete yourself" : "Revoke clearance"}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

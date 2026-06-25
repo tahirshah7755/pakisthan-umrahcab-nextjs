@@ -198,18 +198,31 @@ export default function FleetManagementPage() {
                         <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
                           <button 
                             onClick={() => handleEditClick(f)}
-                            className="btn-submit" 
-                            style={{ width: "auto", background: "#312e81", height: "32px", fontSize: "12px", padding: "0 15px", display: "inline-flex", alignItems: "center", gap: "6px" }}
+                            style={{ 
+                              width: "32px", 
+                              height: "32px", 
+                              background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", 
+                              color: "#ffffff", 
+                              border: "none", 
+                              borderRadius: "6px",
+                              fontWeight: "600",
+                              cursor: "pointer",
+                              display: "inline-flex", 
+                              alignItems: "center", 
+                              justifyContent: "center",
+                              transition: "all 0.2s",
+                              boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)"
+                            }}
+                            title="Edit Allocation"
                           >
-                            <i className="fas fa-pen-to-square"></i>
-                            <span>Edit Allocation</span>
+                            <i className="fas fa-pen-to-square" style={{ color: "#ffffff" }}></i>
                           </button>
                           <button 
                             onClick={() => setDeletingVehicle(f)}
                             style={{ width: "32px", height: "32px", borderRadius: "6px", border: "1px solid #ef4444", background: "#fef2f2", color: "#ef4444", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
                             title="Delete Vehicle Model"
                           >
-                            <i className="fas fa-trash"></i>
+                            <i className="fas fa-trash" style={{ color: "#ef4444" }}></i>
                           </button>
                         </div>
                       </td>
@@ -296,8 +309,22 @@ export default function FleetManagementPage() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn-submit" style={{ background: "linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)", width: "auto" }}>
-                  Add Vehicle
+                <button 
+                  type="submit" 
+                  style={{ 
+                    background: "linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)", 
+                    color: "#ffffff", 
+                    border: "none", 
+                    borderRadius: "6px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    padding: "8px 20px",
+                    fontSize: "13px",
+                    width: "auto",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  <span style={{ color: "#ffffff" }}>Add Vehicle</span>
                 </button>
               </div>
             </form>
@@ -364,8 +391,22 @@ export default function FleetManagementPage() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn-submit" style={{ background: "linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)", width: "auto" }}>
-                  Save Allocation
+                <button 
+                  type="submit" 
+                  style={{ 
+                    background: "linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)", 
+                    color: "#ffffff", 
+                    border: "none", 
+                    borderRadius: "6px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    padding: "8px 20px",
+                    fontSize: "13px",
+                    width: "auto",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  <span style={{ color: "#ffffff" }}>Save Allocation</span>
                 </button>
               </div>
             </form>

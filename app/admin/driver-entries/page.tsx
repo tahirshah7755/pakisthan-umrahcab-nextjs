@@ -145,12 +145,10 @@ export default function AdminDriverEntriesPage() {
 
   const handleDriverSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const dId = e.target.value;
-    const selectedDriver = drivers.find(d => String(d.id) === dId);
     setFormData(prev => ({
       ...prev,
       driver_id: dId,
-      // Auto-assign vehicle if driver has one mapped
-      vehicle_id: selectedDriver?.vehicle_id ? String(selectedDriver.vehicle_id) : prev.vehicle_id
+      // Vehicle assignment is manual because drivers change vehicles frequently
     }));
   };
 

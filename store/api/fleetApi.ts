@@ -6,6 +6,14 @@ export const fleetApi = apiSlice.injectEndpoints({
       query: () => `/fleet`,
       providesTags: ["Fleet"],
     }),
+    addFleet: builder.mutation({
+      query: (newVehicle) => ({
+        url: `/fleet`,
+        method: "POST",
+        body: newVehicle,
+      }),
+      invalidatesTags: ["Fleet"],
+    }),
     updateFleet: builder.mutation({
       query: ({ id, count, active }) => ({
         url: `/fleet/${id}`,
@@ -14,10 +22,19 @@ export const fleetApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Fleet"],
     }),
+    deleteFleet: builder.mutation({
+      query: (id) => ({
+        url: `/fleet/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Fleet"],
+    }),
   }),
 });
 
 export const {
   useGetFleetQuery,
+  useAddFleetMutation,
   useUpdateFleetMutation,
+  useDeleteFleetMutation,
 } = fleetApi;

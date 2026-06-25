@@ -736,5 +736,20 @@ export const api = {
     });
     if (data) return { success: true };
     return { success: false, error: "API connection failed" };
+  },
+
+  // === WEBSITE SETTINGS ===
+  async getWebsiteSettings() {
+    const data = await request(`/public/website-settings`);
+    return data || {};
+  },
+
+  async updateWebsiteSettings(formData: FormData) {
+    const data = await request(`/admin/website-settings`, {
+      method: "POST",
+      body: formData,
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
   }
 };

@@ -228,7 +228,7 @@ export default function CompanyChatPage() {
   // Open attachment in custom preview modal
   const handleOpenPreview = (path: string) => {
     const filename = getFileName(path);
-    const url = `${IMAGE_BASE}/${path}`;
+    const url = path.startsWith("http://") || path.startsWith("https://") ? path : `${IMAGE_BASE}/${path}`;
     const isImg = isImageFile(path);
     const isPdf = path.toLowerCase().endsWith(".pdf");
 
@@ -401,7 +401,7 @@ export default function CompanyChatPage() {
                             </div>
                           ) : (
                             <img 
-                              src={`${IMAGE_BASE}/${msg.attachment}`} 
+                              src={msg.attachment.startsWith("http://") || msg.attachment.startsWith("https://") ? msg.attachment : `${IMAGE_BASE}/${msg.attachment}`} 
                               alt="Attachment" 
                               style={{ maxWidth: "100%", maxHeight: "250px", objectFit: "cover", display: "block", cursor: "pointer" }} 
                               onClick={() => handleOpenPreview(msg.attachment!)}

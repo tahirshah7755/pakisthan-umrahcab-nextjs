@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { api } from "../../utils/api";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [websiteSettings, setWebsiteSettings] = useState<any>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -15,12 +17,51 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Fetch website settings from the public API
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const data = await api.getWebsiteSettings();
+        if (data) {
+          setWebsiteSettings(data);
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic website settings", err);
+      }
+    }
+    fetchSettings();
+  }, []);
+
+  // Dynamically update document title & favicon
+  useEffect(() => {
+    if (websiteSettings?.site_title) {
+      document.title = websiteSettings.site_title;
+    }
+    if (websiteSettings?.favicon) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = websiteSettings.favicon;
+    }
+  }, [websiteSettings]);
+
   const navLinks = [
     { label: "Home", href: "/public-site" },
     { label: "Booking Status", href: "/public-site/booking-status" },
     { label: "Contact Us", href: "/public-site#contact" },
     { label: "Members", href: "/public-site/signup" },
   ];
+
+  // Fallbacks
+  const siteLogo = websiteSettings?.website_logo || "/logo2.png";
+  const siteTitle = websiteSettings?.site_title || "UmrahCab";
+  const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
+  const siteEmail = websiteSettings?.contact_email || "Info@umrahcab.com";
+  const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";
+  const whatsappLink = websiteSettings?.whatsapp_link || "https://wa.me/966567799616?text=HI";
 
   return (
     <div style={{ fontFamily: "'Poppins', 'Inter', sans-serif", minHeight: "100vh", background: "#fff", color: "#222" }}>
@@ -621,8 +662,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <nav className={`uc-nav ${scrolled ? "scrolled" : ""}`} style={{ background: scrolled ? undefined : "linear-gradient(180deg, rgba(13,17,23,0.9) 0%, transparent 100%)" }}>
         <div className="uc-nav-inner">
           <Link href="/public-site" className="uc-nav-logo">
-            <img src="/logo2.png" alt="Umrah Cab" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            <span className="uc-nav-logo-text">UmrahCab</span>
+            <img src={siteLogo} alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            <span className="uc-nav-logo-text">{siteTitle}</span>
           </Link>
 
           <ul className="uc-nav-links">
@@ -639,7 +680,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </ul>
 
           {/* WhatsApp CTA */}
-          <a href="https://wa.me/966567799616?text=HI" target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "8px 16px", display: "none" }}>
+          <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "8px 16px", display: "none" }}>
             <i className="fab fa-whatsapp"></i> WhatsApp
           </a>
         </div>
@@ -650,7 +691,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* Floating WhatsApp button */}
       <a
-        href="https://wa.me/966567799616?text=HI"
+        href={whatsappLink}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -682,8 +723,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className="uc-footer-grid">
           <div>
             <div className="uc-footer-logo">
-              <img src="/logo2.png" alt="Umrah Cab" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              <span className="uc-footer-logo-text">UmrahCab</span>
+              <img src={siteLogo} alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <span className="uc-footer-logo-text">{siteTitle}</span>
             </div>
             <p className="uc-footer-desc">
               Book your Umrah cab online. Cheap, reliable transport services across Saudi Arabia — Jeddah Airport to Makkah, Madinah, and beyond.
@@ -705,13 +746,13 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
           <div>
             <div className="uc-footer-heading">Contact</div>
-            <span className="uc-footer-link">+966 567 799 616</span>
-            <span className="uc-footer-link">Info@umrahcab.com</span>
-            <span className="uc-footer-link" style={{ fontSize: "12px" }}>Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA</span>
+            <span className="uc-footer-link">{sitePhone}</span>
+            <span className="uc-footer-link">{siteEmail}</span>
+            <span className="uc-footer-link" style={{ fontSize: "12px" }}>{siteAddress}</span>
           </div>
         </div>
         <div className="uc-footer-bottom">
-          <span>Copyright © 2018–2026 Umrah Cab. All Rights Reserved.</span>
+          <span>Copyright © 2018–2026 {siteTitle}. All Rights Reserved.</span>
           <span>Powered by UmrahCab Platform v2.0</span>
         </div>
       </footer>

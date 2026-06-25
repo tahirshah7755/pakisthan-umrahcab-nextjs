@@ -316,7 +316,7 @@ export default function AdminChatPage() {
 
   const handleOpenPreview = (path: string) => {
     const filename = getFileName(path);
-    const url = `${IMAGE_BASE}/${path}`;
+    const url = path.startsWith("http://") || path.startsWith("https://") ? path : `${IMAGE_BASE}/${path}`;
     const isImg = isImageFile(path);
     const isPdf = path.toLowerCase().endsWith(".pdf");
 
@@ -435,7 +435,7 @@ export default function AdminChatPage() {
                     >
                       {room.company.logo_path ? (
                         <img 
-                          src={`${IMAGE_BASE}/${room.company.logo_path}`} 
+                          src={room.company.logo_path.startsWith("http://") || room.company.logo_path.startsWith("https://") ? room.company.logo_path : `${IMAGE_BASE}/${room.company.logo_path}`} 
                           alt="Logo" 
                           style={{ width: "100%", height: "100%", objectFit: "contain" }} 
                         />
@@ -493,7 +493,7 @@ export default function AdminChatPage() {
 
                   <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: selectedRoom.company.logo_path ? "rgba(0,0,0,0.02)" : "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid #edf2f9" }}>
                     {selectedRoom.company.logo_path ? (
-                      <img src={`${IMAGE_BASE}/${selectedRoom.company.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      <img src={selectedRoom.company.logo_path.startsWith("http://") || selectedRoom.company.logo_path.startsWith("https://") ? selectedRoom.company.logo_path : `${IMAGE_BASE}/${selectedRoom.company.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                     ) : (
                       <i className="fas fa-handshake" style={{ color: "#ffffff", fontSize: "14px" }}></i>
                     )}
@@ -539,7 +539,7 @@ export default function AdminChatPage() {
                                   </div>
                                 ) : (
                                   <img 
-                                    src={`${IMAGE_BASE}/${msg.attachment}`} 
+                                    src={msg.attachment.startsWith("http://") || msg.attachment.startsWith("https://") ? msg.attachment : `${IMAGE_BASE}/${msg.attachment}`} 
                                     alt="Attachment" 
                                     style={{ maxWidth: "100%", maxHeight: "200px", objectFit: "cover", display: "block", cursor: "pointer" }} 
                                     onClick={() => handleOpenPreview(msg.attachment!)}

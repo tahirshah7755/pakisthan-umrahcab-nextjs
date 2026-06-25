@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
+import { api } from "@/utils/api";
 
 export default function AdminLayout({
   children,
@@ -13,6 +14,38 @@ export default function AdminLayout({
 }) {
   const { sidebarOpen, setSidebarOpen } = useAuth();
   const pathname = usePathname();
+  const [websiteSettings, setWebsiteSettings] = useState<any>(null);
+
+  // Fetch website settings
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const data = await api.getWebsiteSettings();
+        if (data) {
+          setWebsiteSettings(data);
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic website settings in admin", err);
+      }
+    }
+    fetchSettings();
+  }, []);
+
+  // Dynamically update document title & favicon
+  useEffect(() => {
+    if (websiteSettings?.site_title) {
+      document.title = `${websiteSettings.site_title} - Admin Portal`;
+    }
+    if (websiteSettings?.favicon) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = websiteSettings.favicon;
+    }
+  }, [websiteSettings]);
 
   // Route transition states
   const [loading, setLoading] = useState(false);

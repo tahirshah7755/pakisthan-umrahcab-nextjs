@@ -5,6 +5,7 @@ import CompanySidebar from "@/components/CompanySidebar";
 import CompanyHeader from "@/components/CompanyHeader";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
+import { api } from "@/utils/api";
 
 export default function CompanyLayout({
   children,
@@ -13,6 +14,38 @@ export default function CompanyLayout({
 }) {
   const { sidebarOpen, setSidebarOpen } = useAuth();
   const pathname = usePathname();
+  const [websiteSettings, setWebsiteSettings] = useState<any>(null);
+
+  // Fetch website settings
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const data = await api.getWebsiteSettings();
+        if (data) {
+          setWebsiteSettings(data);
+        }
+      } catch (err) {
+        console.warn("Could not load dynamic website settings in company", err);
+      }
+    }
+    fetchSettings();
+  }, []);
+
+  // Dynamically update document title & favicon
+  useEffect(() => {
+    if (websiteSettings?.site_title) {
+      document.title = `${websiteSettings.site_title} - Agent Portal`;
+    }
+    if (websiteSettings?.favicon) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = websiteSettings.favicon;
+    }
+  }, [websiteSettings]);
 
   // Route transition states
   const [loading, setLoading] = useState(false);

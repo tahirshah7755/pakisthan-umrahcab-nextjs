@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/utils/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
 const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
@@ -22,6 +23,21 @@ export default function CompanySidebar() {
   
   // Track open submenu states (Accordion behavior - only one open at a time)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string>("/logo2.png");
+
+  useEffect(() => {
+    async function fetchLogo() {
+      try {
+        const data = await api.getWebsiteSettings();
+        if (data && data.website_logo) {
+          setLogoUrl(data.website_logo);
+        }
+      } catch (err) {
+        console.error("Failed to load sidebar logo:", err);
+      }
+    }
+    fetchLogo();
+  }, []);
 
   const toggleSubmenu = (name: string) => {
     setOpenSubmenu((prev) => (prev === name ? null : name));
@@ -103,7 +119,7 @@ export default function CompanySidebar() {
     <div className={`admin-sidebar ${!sidebarOpen ? "collapsed" : "mobile-open"}`} style={{ background: "#0f172a" }}>
       {/* Sidebar Top: Logo Block */}
       <div className="sidebar-logo-container" style={{ borderBottom: "1px solid #1e293b" }}>
-        <img src="/logo2.png" alt="Logo" className="sidebar-logo" />
+        <img src={logoUrl} alt="Logo" className="sidebar-logo" onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
         <span style={{ color: "#d4af37", fontWeight: "700", fontSize: "14px", marginLeft: "10px" }}>B2B Agent</span>
       </div>
 

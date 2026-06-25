@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/utils/api";
 
 interface MenuItem {
   name: string;
@@ -20,6 +21,21 @@ export default function Sidebar() {
   
   // Track open submenu states (Accordion behavior - only one open at a time)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string>("/logo2.png");
+
+  useEffect(() => {
+    async function fetchLogo() {
+      try {
+        const data = await api.getWebsiteSettings();
+        if (data && data.website_logo) {
+          setLogoUrl(data.website_logo);
+        }
+      } catch (err) {
+        console.error("Failed to load sidebar logo:", err);
+      }
+    }
+    fetchLogo();
+  }, []);
 
   const toggleSubmenu = (name: string) => {
     setOpenSubmenu((prev) => (prev === name ? null : name));
@@ -166,7 +182,7 @@ export default function Sidebar() {
     <div className={`admin-sidebar ${!sidebarOpen ? "collapsed" : "mobile-open"}`}>
       {/* Sidebar Top: Logo Block */}
       <div className="sidebar-logo-container">
-        <img src="/logo2.png" alt="Logo" className="sidebar-logo" />
+        <img src={logoUrl} alt="Logo" className="sidebar-logo" onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
       </div>
 
       {/* Profile Card */}

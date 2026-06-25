@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
+import { exportToExcel } from "@/utils/excelHelper";
 
 interface InvoiceRecord {
   id: string;
@@ -29,6 +30,176 @@ export default function CompanyInvoicesPage() {
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const handleExportExcel = () => {
+    if (invoices.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Invoice Code", "Customer Name", "Date", "Period", "Invoice Type", "Amount", "Outstanding Balance", "Status"];
+    const textRows = invoices.map((inv: any) => [
+      inv.invoice_code || "",
+      inv.customer || "",
+      inv.date || "",
+      inv.period || "",
+      inv.type || "",
+      inv.amount || 0,
+      inv.balance || 0,
+      inv.status || ""
+    ]);
+    
+    exportToExcel({
+      title: "Agent Invoices Statement",
+      headers,
+      rows: textRows,
+      filename: `invoices_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [5, 6],
+      statusIndex: 7
+    });
+  };
+
+  const handleCopy = () => {
+    if (invoices.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["Invoice Code", "Customer Name", "Date", "Period", "Invoice Type", "Amount", "Outstanding Balance", "Status"];
+    const textRows = invoices.map((inv: any) => [
+      inv.invoice_code || "",
+      inv.customer || "",
+      inv.date || "",
+      inv.period || "",
+      inv.type || "",
+      inv.amount || 0,
+      inv.balance || 0,
+      inv.status || ""
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied invoices list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (invoices.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Invoice Code", "Customer Name", "Date", "Period", "Invoice Type", "Amount", "Outstanding Balance", "Status"];
+    const csvContent = [
+      headers.join(","),
+      ...invoices.map((inv: any) => [
+        `"${(inv.invoice_code || "").replace(/"/g, '""')}"`,
+        `"${(inv.customer || "").replace(/"/g, '""')}"`,
+        `"${(inv.date || "").replace(/"/g, '""')}"`,
+        `"${(inv.period || "").replace(/"/g, '""')}"`,
+        `"${(inv.type || "").replace(/"/g, '""')}"`,
+        inv.amount || 0,
+        inv.balance || 0,
+        `"${(inv.status || "").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `invoices_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Agent Invoices Registry") => {
+    if (invoices.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = invoices.map((inv: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">${inv.invoice_code}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${inv.customer}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.date}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.period || "N/A"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.type || "General"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right;">SAR ${Number(inv.amount || 0).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: #ef4444;">SAR ${Number(inv.balance || 0).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.status}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #b48a1d; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #b48a1d; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab B2B Agent Invoices Registry</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Invoices:</strong> ${invoices.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice Code</th>
+                <th>Customer Name</th>
+                <th>Date</th>
+                <th>Period</th>
+                <th>Invoice Type</th>
+                <th style="text-align: right;">Amount</th>
+                <th style="text-align: right;">Outstanding Balance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleButtonClick = (fmt: string) => {
+    if (fmt === "Copy") handleCopy();
+    else if (fmt === "CSV") handleExportCSV();
+    else if (fmt === "Excel") handleExportExcel();
+    else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Invoices Statement - PDF Report" : "Invoices Statement");
   };
 
   const loadInvoices = async () => {
@@ -80,7 +251,7 @@ export default function CompanyInvoicesPage() {
             {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
               <button
                 key={fmt}
-                onClick={() => showToast(`${fmt} Export Triggered!`, "success")}
+                onClick={() => handleButtonClick(fmt)}
                 style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
               >
                 {fmt}

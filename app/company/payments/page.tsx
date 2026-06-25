@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
+import { exportToExcel } from "@/utils/excelHelper";
 
 interface PaymentRecord {
   id: string;
@@ -43,6 +44,174 @@ export default function CompanyPaymentsPage() {
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const handleExportExcel = () => {
+    if (payments.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Payment ID", "Date", "Payment Method", "Transaction ID", "Amount", "Currency", "Status"];
+    const textRows = payments.map((p: any) => [
+      p.custom_id,
+      p.date || "",
+      p.method || "",
+      p.transaction_ref || "N/A",
+      p.amount || 0,
+      p.currency || "SAR",
+      p.status || ""
+    ]);
+    
+    exportToExcel({
+      title: "Corporate Balance Deposits Statement",
+      headers,
+      rows: textRows,
+      filename: `payments_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [4],
+      statusIndex: 6
+    });
+  };
+
+  const handleCopy = () => {
+    if (payments.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["Payment ID", "Date", "Payment Method", "Transaction ID", "Amount", "Currency", "Status"];
+    const textRows = payments.map((p: any) => [
+      p.custom_id,
+      p.date || "",
+      p.method || "",
+      p.transaction_ref || "N/A",
+      p.amount || 0,
+      p.currency || "SAR",
+      p.status || ""
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied payments list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (payments.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Payment ID", "Date", "Payment Method", "Transaction ID", "Amount", "Currency", "Status"];
+    const csvContent = [
+      headers.join(","),
+      ...payments.map((p: any) => [
+        `"${(p.custom_id || "").replace(/"/g, '""')}"`,
+        `"${(p.date || "").replace(/"/g, '""')}"`,
+        `"${(p.method || "").replace(/"/g, '""')}"`,
+        `"${(p.transaction_ref || "N/A").replace(/"/g, '""')}"`,
+        p.amount || 0,
+        `"${(p.currency || "SAR").replace(/"/g, '""')}"`,
+        `"${(p.status || "").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `payments_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Corporate Balance Deposits Statement") => {
+    if (payments.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = payments.map((p: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">${p.custom_id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${p.date}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <div style="font-weight: 600;">${p.method}</div>
+          ${p.proof_details ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">${p.proof_details}</div>` : ""}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace;">${p.transaction_ref || "N/A"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: #10b981;">SAR ${Number(p.amount || 0).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${p.currency}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${p.status}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #b48a1d; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #b48a1d; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab B2B Agent Balance Deposits Registry</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Deposits:</strong> ${payments.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Payment ID</th>
+                <th>Date</th>
+                <th>Payment Method</th>
+                <th>Transaction ID</th>
+                <th style="text-align: right;">Amount</th>
+                <th>Currency</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleButtonClick = (fmt: string) => {
+    if (fmt === "Copy") handleCopy();
+    else if (fmt === "CSV") handleExportCSV();
+    else if (fmt === "Excel") handleExportExcel();
+    else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Balance Deposits Statement - PDF Report" : "Balance Deposits Statement");
   };
 
   const loadPayments = async () => {
@@ -151,7 +320,7 @@ export default function CompanyPaymentsPage() {
             {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
               <button
                 key={fmt}
-                onClick={() => showToast(`${fmt} Export Triggered!`, "success")}
+                onClick={() => handleButtonClick(fmt)}
                 style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
               >
                 {fmt}

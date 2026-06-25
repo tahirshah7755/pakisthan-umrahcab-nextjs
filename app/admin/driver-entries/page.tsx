@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
 import { useAuth } from "@/context/AuthContext";
+import { exportToExcel } from "@/utils/excelHelper";
 
 export default function AdminDriverEntriesPage() {
   const router = useRouter();
@@ -405,20 +406,14 @@ export default function AdminDriverEntriesPage() {
       item.is_locked ? "Locked" : "Open"
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `driver_logs_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Driver Sheets & Logs Report",
+      headers,
+      rows: textRows,
+      filename: `driver_logs_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+      statusIndex: 18
+    });
   };
 
   const handlePrint = (title: string = "Driver Sheets & Logs Report") => {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
+import { exportToExcel } from "@/utils/excelHelper";
 
 interface BookingItem {
   id: string;
@@ -138,20 +139,14 @@ export default function BookingsList() {
       b.status || ""
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `bookings_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Transportation Bookings Registry",
+      headers,
+      rows: textRows,
+      filename: `bookings_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [7],
+      statusIndex: 8
+    });
   };
 
   const handlePrint = (title: string = "Transportation Bookings Registry") => {

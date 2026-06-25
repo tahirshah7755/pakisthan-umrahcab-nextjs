@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
+import { exportToExcel } from "@/utils/excelHelper";
 
 interface ServiceItem {
   id: string;      // custom_id (e.g. #SRV-4068)
@@ -144,20 +145,14 @@ export default function ServicesDirectory() {
       svc.driverCash || 0
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `services_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Other Services Directory Report",
+      headers,
+      rows: textRows,
+      filename: `services_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [7, 8],
+      statusIndex: 6
+    });
   };
 
   const handlePrint = (title: string = "Supplementary Services Directory") => {

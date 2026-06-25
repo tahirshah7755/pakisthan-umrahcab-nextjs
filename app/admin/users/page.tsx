@@ -9,6 +9,7 @@ import {
   useDeleteUserMutation,
 } from "@/store/api/usersApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
+import { exportToExcel } from "@/utils/excelHelper";
 
 export default function UsersManagementPage() {
   const router = useRouter();
@@ -114,20 +115,13 @@ export default function UsersManagementPage() {
       u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "User Registry Report",
+      headers,
+      rows: textRows,
+      filename: `users_${new Date().toISOString().split("T")[0]}.xls`,
+      statusIndex: 2
+    });
   };
 
   const handlePrint = (title: string = "User Accounts Directory") => {

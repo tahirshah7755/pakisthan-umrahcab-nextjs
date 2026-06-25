@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetPaymentsQuery, useUpdatePaymentStatusMutation } from "@/store/api/paymentsApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
+import { exportToExcel } from "@/utils/excelHelper";
 
 const fmt = (n: number, curr = "SAR") =>
   `${curr} ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -121,20 +122,14 @@ export default function PaymentsPage() {
       p.status || "Pending"
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `payments_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Payments Register Report",
+      headers,
+      rows: textRows,
+      filename: `payments_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [5],
+      statusIndex: 7
+    });
   };
 
   const handlePrint = (title: string = "Corporate Payments Audit Ledger") => {

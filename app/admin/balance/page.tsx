@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetBalanceSummaryQuery } from "@/store/api/balanceApi";
+import { exportToExcel } from "@/utils/excelHelper";
 import { useGetCompaniesQuery, useUpdateCompanyMutation } from "@/store/api/companiesApi";
 
 const fmt = (n: number) =>
@@ -143,20 +144,14 @@ export default function BalancePage() {
       item.company_remarks || ""
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `balance_statement_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Balance Statement Report",
+      headers,
+      rows: textRows,
+      filename: `balance_statement_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [3, 4, 5, 6, 7],
+      statusIndex: 2
+    });
   };
 
   const handlePrint = (title: string = "Balance Statement Report") => {

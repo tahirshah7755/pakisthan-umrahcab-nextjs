@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { api } from "@/utils/api";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { exportToExcel } from "@/utils/excelHelper";
 
 interface BookingRecord {
   id: string;
@@ -46,6 +47,179 @@ function CompanyBookingsContent() {
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const handleExportExcel = () => {
+    if (bookings.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Booking Code", "Passenger Name", "Trip Details", "Date", "Time", "Car Type", "Price (SAR)", "Flight No", "Status"];
+    const textRows = bookings.map((b: any) => [
+      b.booking_code,
+      b.full_name || "Guest",
+      `${b.pickup} -> ${b.destination}`,
+      b.date || "",
+      b.time || "",
+      b.car_type || "",
+      b.car_price || 0,
+      b.flight_no || "N/A",
+      b.status || ""
+    ]);
+    
+    exportToExcel({
+      title: "My Bookings Statement",
+      headers,
+      rows: textRows,
+      filename: `bookings_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [6],
+      statusIndex: 8
+    });
+  };
+
+  const handleCopy = () => {
+    if (bookings.length === 0) {
+      showToast("No data to copy!", "error");
+      return;
+    }
+    const headers = ["Booking Code", "Passenger Name", "Trip Details", "Date", "Time", "Car Type", "Price (SAR)", "Flight No", "Status"];
+    const textRows = bookings.map((b: any) => [
+      b.booking_code,
+      b.full_name || "Guest",
+      `${b.pickup} -> ${b.destination}`,
+      b.date || "",
+      b.time || "",
+      b.car_type || "",
+      b.car_price || 0,
+      b.flight_no || "N/A",
+      b.status || ""
+    ]);
+    const text = [headers.join("\t"), ...textRows.map(r => r.join("\t"))].join("\n");
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Copied bookings list to clipboard!", "success"))
+      .catch(() => showToast("Failed to copy!", "error"));
+  };
+
+  const handleExportCSV = () => {
+    if (bookings.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const headers = ["Booking Code", "Passenger Name", "Trip Details", "Date", "Time", "Car Type", "Price (SAR)", "Flight No", "Status"];
+    const csvContent = [
+      headers.join(","),
+      ...bookings.map((b: any) => [
+        `"${(b.booking_code || "").replace(/"/g, '""')}"`,
+        `"${(b.full_name || "Guest").replace(/"/g, '""')}"`,
+        `"${(`${b.pickup} -> ${b.destination}`).replace(/"/g, '""')}"`,
+        `"${(b.date || "").replace(/"/g, '""')}"`,
+        `"${(b.time || "").replace(/"/g, '""')}"`,
+        `"${(b.car_type || "").replace(/"/g, '""')}"`,
+        b.car_price || 0,
+        `"${(b.flight_no || "N/A").replace(/"/g, '""')}"`,
+        `"${(b.status || "").replace(/"/g, '""')}"`
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `bookings_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handlePrint = (title: string = "Transportation Bookings Registry") => {
+    if (bookings.length === 0) {
+      showToast("No data to print!", "error");
+      return;
+    }
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+    const rowsHtml = bookings.map((b: any) => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #2563eb;">${b.booking_code}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${b.full_name || "Guest"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.pickup} &rarr; ${b.destination}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.date} (${b.time})</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.car_type}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: #d97706;">SAR ${Number(b.car_price || 0).toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.flight_no || "N/A"}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.status}</td>
+      </tr>
+    `).join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #b48a1d; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #b48a1d; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            @media print {
+              body { margin: 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${title}</h1>
+              <p>Umrah Cab B2B Agent Booking Statement</p>
+            </div>
+            <div style="text-align: right;">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Bookings:</strong> ${bookings.length}</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Booking Code</th>
+                <th>Passenger Name</th>
+                <th>Trip Details</th>
+                <th>Date & Time</th>
+                <th>Car Type</th>
+                <th style="text-align: right;">Price</th>
+                <th>Flight No</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleButtonClick = (fmt: string) => {
+    if (fmt === "Copy") handleCopy();
+    else if (fmt === "CSV") handleExportCSV();
+    else if (fmt === "Excel") handleExportExcel();
+    else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Transportation Bookings Registry - PDF Report" : "Transportation Bookings Registry");
   };
 
   useEffect(() => {
@@ -162,7 +336,7 @@ function CompanyBookingsContent() {
             {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
               <button
                 key={fmt}
-                onClick={() => showToast(`${fmt} Export Triggered!`, "success")}
+                onClick={() => handleButtonClick(fmt)}
                 style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
               >
                 {fmt}

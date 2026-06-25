@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetInvoicesQuery, useUpdateInvoiceMutation, useDeleteInvoiceMutation } from "@/store/api/invoicesApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
+import { exportToExcel } from "@/utils/excelHelper";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -114,20 +115,13 @@ export default function InvoicesPage() {
       inv.entered_by || "System Admin"
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map((r: any) => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `invoices_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Corporate Invoices Report",
+      headers,
+      rows: textRows,
+      filename: `invoices_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [6]
+    });
   };
 
   const handlePrint = (title: string = "Corporate Invoices Registry") => {

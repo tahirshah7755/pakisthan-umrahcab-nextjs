@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetLedgersQuery } from "@/store/api/ledgersApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
+import { exportToExcel } from "@/utils/excelHelper";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -214,20 +215,13 @@ export default function LedgersPage() {
       ld.description || ""
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...rows.map((r: any) => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `ledgers_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Ledger Audit Report",
+      headers,
+      rows,
+      filename: `ledgers_${new Date().toISOString().split("T")[0]}.xls`,
+      totalsIndices: [4, 5]
+    });
   };
 
   const handlePrint = (title: string = "Ledger Audit Report") => {

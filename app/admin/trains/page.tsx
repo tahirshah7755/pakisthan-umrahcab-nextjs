@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
+import { exportToExcel } from "@/utils/excelHelper";
 
 interface TrainItem {
   id: string;      // custom_id (e.g. #TRN-32003)
@@ -140,20 +141,12 @@ export default function TrainsDirectory() {
       t.time ? formatTime12h(t.time) : "N/A"
     ]);
     
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `trains_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    exportToExcel({
+      title: "Train Passenger Registry",
+      headers,
+      rows: textRows,
+      filename: `trains_${new Date().toISOString().split("T")[0]}.xls`
+    });
   };
 
   const handlePrint = (title: string = "Train Passenger Directory") => {

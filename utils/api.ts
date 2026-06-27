@@ -1,4 +1,6 @@
 // UmrahCab Central API Utility for Next.js Frontend
+import { countryCodesList } from "./countriesData";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
 
 // Helper to handle requests with fallback to local mock state
@@ -748,5 +750,37 @@ export const api = {
     });
     if (data) return { success: true, data };
     return { success: false, error: "API connection failed" };
+  },
+
+  async getCountryCodes() {
+    return countryCodesList;
   }
 };
+
+export function getDefaultPhoneCode(userOrCompany: any): string {
+  if (!userOrCompany) return "+966";
+  
+  const phone = userOrCompany.phone || "";
+  const name = (userOrCompany.name || "").toLowerCase();
+  const username = (userOrCompany.agent_username || "").toLowerCase();
+
+  // Check phone prefix
+  if (phone.startsWith("+92") || phone.startsWith("92") || phone.startsWith("0092")) return "+92";
+  if (phone.startsWith("+880") || phone.startsWith("880") || phone.startsWith("00880")) return "+880";
+  if (phone.startsWith("+91") || phone.startsWith("91") || phone.startsWith("0091")) return "+91";
+  if (phone.startsWith("+971") || phone.startsWith("971") || phone.startsWith("00971")) return "+971";
+  if (phone.startsWith("+44") || phone.startsWith("44") || phone.startsWith("0044")) return "+44";
+  if (phone.startsWith("+1") || phone.startsWith("1") || phone.startsWith("001")) return "+1";
+  if (phone.startsWith("+966") || phone.startsWith("966") || phone.startsWith("00966")) return "+966";
+
+  // Check name/username keywords
+  if (name.includes("pakistan") || username.includes("pakistan") || name.includes("pak") || username.includes("pak")) return "+92";
+  if (name.includes("bangladesh") || username.includes("bangladesh") || name.includes("bd") || username.includes("bd")) return "+880";
+  if (name.includes("india") || username.includes("india") || name.includes("ind")) return "+91";
+  if (name.includes("uae") || username.includes("uae") || name.includes("dubai")) return "+971";
+  if (name.includes("uk") || name.includes("london") || name.includes("britain")) return "+44";
+  if (name.includes("us") || name.includes("canada") || name.includes("america")) return "+1";
+
+  return "+966";
+}
+

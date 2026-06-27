@@ -4,6 +4,24 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { exportToExcel } from "@/utils/excelHelper";
+import { CountryCodeSelector } from "@/components/CountryCodeSelector";
+
+const defaultCountryCodes = [
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+92", flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+91", flag: "🇮🇳", name: "India" },
+  { code: "+971", flag: "🇦🇪", name: "UAE" },
+  { code: "+44", flag: "🇬🇧", name: "UK" },
+  { code: "+1", flag: "🇺🇸", name: "US/Canada" },
+];
+
+const formatPhoneNumber = (code: string, number: string) => {
+  if (!number) return "";
+  const cleaned = number.trim();
+  if (cleaned.startsWith("+") || cleaned.startsWith("00")) return cleaned;
+  return `${code}${cleaned}`;
+};
 
 interface CustomerRecord {
   id: string;
@@ -72,10 +90,22 @@ export default function CompanyCustomersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCustName, setNewCustName] = useState("");
   const [newCustMobile, setNewCustMobile] = useState("");
+  const [newCustMobileCode, setNewCustMobileCode] = useState("+966");
   const [newCustEmail, setNewCustEmail] = useState("");
   const [newCustPassport, setNewCustPassport] = useState("");
   const [newCustNotes, setNewCustNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [countryCodes, setCountryCodes] = useState(defaultCountryCodes);
+
+  useEffect(() => {
+    async function loadCountryCodes() {
+      const list = await api.getCountryCodes();
+      if (list && list.length > 0) {
+        setCountryCodes(list);
+      }
+    }
+    loadCountryCodes();
+  }, []);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -247,10 +277,20 @@ export default function CompanyCustomersPage() {
       showToast("Customer name is required.", "error");
       return;
     }
+    if (!newCustEmail.trim()) {
+      showToast("Email address is required.", "error");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newCustEmail)) {
+      showToast("Please enter a valid email address.", "error");
+      return;
+    }
     try {
       setSubmitting(true);
       
-      const phones = [newCustMobile].filter(Boolean).join(" / ");
+      const formattedPhone = formatPhoneNumber(newCustMobileCode, newCustMobile);
+      const phones = [formattedPhone].filter(Boolean).join(" / ");
       const emailInfo = newCustEmail ? ` | Email: ${newCustEmail}` : "";
       const passportInfo = newCustPassport ? ` | Passport: ${newCustPassport}` : "";
       const notesInfo = newCustNotes ? ` | Notes: ${newCustNotes}` : "";
@@ -258,7 +298,11 @@ export default function CompanyCustomersPage() {
 
       const res = await api.createCompanyCustomer({
         name: newCustName,
-        contact: consolidatedContact
+        contact: consolidatedContact,
+        phone: formattedPhone || null,
+        email: newCustEmail || null,
+        passport_no: newCustPassport || null,
+        notes: newCustNotes || null
       });
       if (res.success) {
         showToast("Customer added successfully!", "success");
@@ -563,19 +607,28 @@ export default function CompanyCustomersPage() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>WhatsApp / Mobile</label>
-                <input
-                  type="text"
-                  value={newCustMobile}
-                  onChange={(e) => setNewCustMobile(e.target.value)}
-                  placeholder="e.g. +966500000000"
-                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", color: "#000" }}
-                />
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>WhatsApp / Mobile *</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <CountryCodeSelector
+                    value={newCustMobileCode}
+                    onChange={setNewCustMobileCode}
+                    style={{ width: "130px", flexShrink: 0 }}
+                  />
+                  <input
+                    type="text"
+                    required
+                    value={newCustMobile}
+                    onChange={(e) => setNewCustMobile(e.target.value)}
+                    placeholder="e.g. 500000000"
+                    style={{ flexGrow: 1, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", color: "#000" }}
+                  />
+                </div>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Email Address</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Email Address *</label>
                 <input
                   type="email"
+                  required
                   value={newCustEmail}
                   onChange={(e) => setNewCustEmail(e.target.value)}
                   placeholder="customer@example.com"

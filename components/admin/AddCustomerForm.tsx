@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { api } from "@/utils/api";
+import { api, getDefaultPhoneCode } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
+import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 
 interface CompanyItem {
   id: string;
@@ -47,6 +48,23 @@ const predefinedRoutes = [
   "MADINAH - MAKKAH - JEDDAH"
 ];
 
+const defaultCountryCodes = [
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+92", flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+91", flag: "🇮🇳", name: "India" },
+  { code: "+971", flag: "🇦🇪", name: "UAE" },
+  { code: "+44", flag: "🇬🇧", name: "UK" },
+  { code: "+1", flag: "🇺🇸", name: "US/Canada" },
+];
+
+const formatPhoneNumber = (code: string, number: string) => {
+  if (!number) return "";
+  const cleaned = number.trim();
+  if (cleaned.startsWith("+") || cleaned.startsWith("00")) return cleaned;
+  return `${code}${cleaned}`;
+};
+
 
 export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   companies: initialCompanies,
@@ -71,15 +89,50 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [custName, setCustName] = useState("");
   const [passportNo, setPassportNo] = useState("");
   const [custPhone, setCustPhone] = useState("");
+  const [custPhoneCode, setCustPhoneCode] = useState("+966");
   const [custSecondaryPhone, setCustSecondaryPhone] = useState("");
+  const [custSecondaryPhoneCode, setCustSecondaryPhoneCode] = useState("+966");
   const [custAltPhone, setCustAltPhone] = useState("");
+  const [custAltPhoneCode, setCustAltPhoneCode] = useState("+966");
   const [custEmail, setCustEmail] = useState("");
+  const [countryCodes, setCountryCodes] = useState(defaultCountryCodes);
 
   useEffect(() => {
-    if (isCompanyPanel && companyUser?.name) {
-      setCustCompany(companyUser.name);
+    async function loadCountryCodes() {
+      const list = await api.getCountryCodes();
+      if (list && list.length > 0) {
+        setCountryCodes(list);
+      }
+    }
+    loadCountryCodes();
+  }, []);
+
+  useEffect(() => {
+    if (isCompanyPanel && companyUser) {
+      setCustCompany(companyUser.name || "");
+      const defaultCode = getDefaultPhoneCode(companyUser);
+      setCustPhoneCode(defaultCode);
+      setCustSecondaryPhoneCode(defaultCode);
+      setCustAltPhoneCode(defaultCode);
     }
   }, [companyUser, isCompanyPanel]);
+
+  useEffect(() => {
+    if (custCompany && companiesList.length > 0) {
+      const matched = companiesList.find((c) => c.name === custCompany);
+      if (matched && matched.phone && matched.phone !== "N/A") {
+        const defaultCode = getDefaultPhoneCode(matched);
+        setCustPhoneCode(defaultCode);
+        setCustSecondaryPhoneCode(defaultCode);
+        setCustAltPhoneCode(defaultCode);
+      } else {
+        const defaultCode = getDefaultPhoneCode({ name: custCompany });
+        setCustPhoneCode(defaultCode);
+        setCustSecondaryPhoneCode(defaultCode);
+        setCustAltPhoneCode(defaultCode);
+      }
+    }
+  }, [custCompany, companiesList]);
 
   // Step 2 States: Route setup (Full booking form integration)
   const [pickupDate, setPickupDate] = useState("");
@@ -334,21 +387,30 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         newErrors.custName = "Customer Name must be at least 3 characters long.";
       }
 
+      const combinedPhone = formatPhoneNumber(custPhoneCode, custPhone);
       if (!custPhone.trim()) {
         newErrors.custPhone = "Contact Mobile (WhatsApp number) is required.";
-      } else if (!phoneRegex.test(custPhone)) {
+      } else if (!phoneRegex.test(combinedPhone)) {
         newErrors.custPhone = "Please enter a valid phone number (minimum 7 digits).";
       }
 
-      if (custSecondaryPhone && !phoneRegex.test(custSecondaryPhone)) {
-        newErrors.custSecondaryPhone = "Please enter a valid secondary phone number.";
+      if (custSecondaryPhone) {
+        const combinedSecondary = formatPhoneNumber(custSecondaryPhoneCode, custSecondaryPhone);
+        if (!phoneRegex.test(combinedSecondary)) {
+          newErrors.custSecondaryPhone = "Please enter a valid secondary phone number.";
+        }
       }
 
-      if (custAltPhone && !phoneRegex.test(custAltPhone)) {
-        newErrors.custAltPhone = "Please enter a valid alternative phone number.";
+      if (custAltPhone) {
+        const combinedAlt = formatPhoneNumber(custAltPhoneCode, custAltPhone);
+        if (!phoneRegex.test(combinedAlt)) {
+          newErrors.custAltPhone = "Please enter a valid alternative phone number.";
+        }
       }
 
-      if (custEmail && !emailRegex.test(custEmail)) {
+      if (!custEmail.trim()) {
+        newErrors.custEmail = "Email Address is required.";
+      } else if (!emailRegex.test(custEmail)) {
         newErrors.custEmail = "Please enter a valid email address.";
       }
     }
@@ -521,7 +583,11 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
     try {
       // 1. Prepare consolidated contact details
-      const phones = [custPhone, custSecondaryPhone, custAltPhone].filter(Boolean).join(" / ");
+      const formattedPhone = formatPhoneNumber(custPhoneCode, custPhone);
+      const formattedSecondary = formatPhoneNumber(custSecondaryPhoneCode, custSecondaryPhone);
+      const formattedAlt = formatPhoneNumber(custAltPhoneCode, custAltPhone);
+
+      const phones = [formattedPhone, formattedSecondary, formattedAlt].filter(Boolean).join(" / ");
       const emailInfo = custEmail ? ` | Email: ${custEmail}` : "";
       const passportInfo = passportNo ? ` | Passport: ${passportNo}` : "";
       
@@ -553,9 +619,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         name: custName,
         company: custCompany,
         contact: consolidatedContact,
-        phone: custPhone || null,
-        secondary_phone: custSecondaryPhone || null,
-        alternative_phone: custAltPhone || null,
+        phone: formattedPhone || null,
+        secondary_phone: formattedSecondary || null,
+        alternative_phone: formattedAlt || null,
         email: custEmail || null,
         passport_no: passportNo || null,
         hotel_info: requireHotel ? `${hotelName} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})` : null,
@@ -867,9 +933,17 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
                   <div>
                     <label className="form-label">Contact Mobile *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="WhatsApp Number" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} required style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custPhone ? "#ef4444" : undefined }} />
+                    <div className="form-input-wrapper" style={{ display: "flex", gap: "8px", position: "relative" }}>
+                      <CountryCodeSelector
+                        value={custPhoneCode}
+                        onChange={setCustPhoneCode}
+                        style={{ width: "130px", flexShrink: 0 }}
+                        className="form-input"
+                      />
+                      <div style={{ position: "relative", flexGrow: 1 }}>
+                        <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                        <input type="text" className="form-input" placeholder="WhatsApp Number" value={custPhone} onChange={(e) => setCustPhone(e.target.value)} required style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custPhone ? "#ef4444" : undefined }} />
+                      </div>
                     </div>
                     {errors.custPhone && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custPhone}</span>
@@ -878,9 +952,17 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
                   <div>
                     <label className="form-label">Secondary Phone</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="e.g. +9665XXXXXXXX" value={custSecondaryPhone} onChange={(e) => setCustSecondaryPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custSecondaryPhone ? "#ef4444" : undefined }} />
+                    <div className="form-input-wrapper" style={{ display: "flex", gap: "8px", position: "relative" }}>
+                      <CountryCodeSelector
+                        value={custSecondaryPhoneCode}
+                        onChange={setCustSecondaryPhoneCode}
+                        style={{ width: "130px", flexShrink: 0 }}
+                        className="form-input"
+                      />
+                      <div style={{ position: "relative", flexGrow: 1 }}>
+                        <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                        <input type="text" className="form-input" placeholder="e.g. 5XXXXXXXX" value={custSecondaryPhone} onChange={(e) => setCustSecondaryPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custSecondaryPhone ? "#ef4444" : undefined }} />
+                      </div>
                     </div>
                     {errors.custSecondaryPhone && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custSecondaryPhone}</span>
@@ -889,9 +971,17 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
                   <div>
                     <label className="form-label">Alternative Phone</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="text" className="form-input" placeholder="e.g. +9665XXXXXXXX" value={custAltPhone} onChange={(e) => setCustAltPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custAltPhone ? "#ef4444" : undefined }} />
+                    <div className="form-input-wrapper" style={{ display: "flex", gap: "8px", position: "relative" }}>
+                      <CountryCodeSelector
+                        value={custAltPhoneCode}
+                        onChange={setCustAltPhoneCode}
+                        style={{ width: "130px", flexShrink: 0 }}
+                        className="form-input"
+                      />
+                      <div style={{ position: "relative", flexGrow: 1 }}>
+                        <i className="fas fa-phone form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                        <input type="text" className="form-input" placeholder="e.g. 5XXXXXXXX" value={custAltPhone} onChange={(e) => setCustAltPhone(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custAltPhone ? "#ef4444" : undefined }} />
+                      </div>
                     </div>
                     {errors.custAltPhone && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custAltPhone}</span>
@@ -899,10 +989,10 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                   </div>
 
                   <div className="form-group-full">
-                    <label className="form-label">Email Address</label>
+                    <label className="form-label">Email Address *</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-envelope form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="email" className="form-input" placeholder="customer@example.com" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custEmail ? "#ef4444" : undefined }} />
+                      <input type="email" className="form-input" placeholder="customer@example.com" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} required style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custEmail ? "#ef4444" : undefined }} />
                     </div>
                     {errors.custEmail && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custEmail}</span>

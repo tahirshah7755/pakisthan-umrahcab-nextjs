@@ -4,6 +4,23 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 
+const defaultCountryCodes = [
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+92", flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+91", flag: "🇮🇳", name: "India" },
+  { code: "+971", flag: "🇦🇪", name: "UAE" },
+  { code: "+44", flag: "🇬🇧", name: "UK" },
+  { code: "+1", flag: "🇺🇸", name: "US/Canada" },
+];
+
+const formatPhoneNumber = (code: string, number: string) => {
+  if (!number) return "";
+  const cleaned = number.trim();
+  if (cleaned.startsWith("+") || cleaned.startsWith("00")) return cleaned;
+  return `${code}${cleaned}`;
+};
+
 export default function AddNewBooking() {
   const router = useRouter();
 
@@ -40,10 +57,22 @@ export default function AddNewBooking() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCustName, setNewCustName] = useState("");
   const [newCustMobile, setNewCustMobile] = useState("");
+  const [newCustMobileCode, setNewCustMobileCode] = useState("+966");
   const [newCustEmail, setNewCustEmail] = useState("");
   const [newCustPassport, setNewCustPassport] = useState("");
   const [newCustNotes, setNewCustNotes] = useState("");
   const [savingCustomer, setSavingCustomer] = useState(false);
+  const [countryCodes, setCountryCodes] = useState(defaultCountryCodes);
+
+  useEffect(() => {
+    async function loadCountryCodes() {
+      const list = await api.getCountryCodes();
+      if (list && list.length > 0) {
+        setCountryCodes(list);
+      }
+    }
+    loadCountryCodes();
+  }, []);
 
   // Dynamic Dropdown Lists from API
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
@@ -245,10 +274,21 @@ export default function AddNewBooking() {
       showToast("Customer name is required.", "error");
       return;
     }
+    if (!newCustEmail.trim()) {
+      showToast("Email address is required.", "error");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newCustEmail)) {
+      showToast("Please enter a valid email address.", "error");
+      return;
+    }
+
     try {
       setSavingCustomer(true);
       
-      const phones = [newCustMobile].filter(Boolean).join(" / ");
+      const formattedPhone = formatPhoneNumber(newCustMobileCode, newCustMobile);
+      const phones = [formattedPhone].filter(Boolean).join(" / ");
       const emailInfo = newCustEmail ? ` | Email: ${newCustEmail}` : "";
       const passportInfo = newCustPassport ? ` | Passport: ${newCustPassport}` : "";
       const notesInfo = newCustNotes ? ` | Notes: ${newCustNotes}` : "";
@@ -256,7 +296,11 @@ export default function AddNewBooking() {
 
       const res = await api.createCompanyCustomer({
         name: newCustName,
-        contact: consolidatedContact
+        contact: consolidatedContact,
+        phone: formattedPhone || null,
+        email: newCustEmail || null,
+        passport_no: newCustPassport || null,
+        notes: newCustNotes || null
       });
       if (res.success && res.data) {
         showToast("Customer registered successfully!", "success");
@@ -459,7 +503,8 @@ export default function AddNewBooking() {
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push("/company/customers/add");
+                      setShowAddModal(true);
+                      setIsOpen(false);
                     }}
                   >
                     <i className="fas fa-plus"></i> Add New Customer...
@@ -966,19 +1011,34 @@ export default function AddNewBooking() {
                 />
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>WhatsApp / Mobile</label>
-                <input
-                  type="text"
-                  value={newCustMobile}
-                  onChange={(e) => setNewCustMobile(e.target.value)}
-                  placeholder="e.g. +966500000000"
-                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
-                />
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>WhatsApp / Mobile *</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <select
+                    value={newCustMobileCode}
+                    onChange={(e) => setNewCustMobileCode(e.target.value)}
+                    style={{ width: "140px", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
+                  >
+                    {countryCodes.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.code} ({c.name})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    required
+                    value={newCustMobile}
+                    onChange={(e) => setNewCustMobile(e.target.value)}
+                    placeholder="e.g. 500000000"
+                    style={{ flexGrow: 1, padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
+                  />
+                </div>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Email Address</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Email Address *</label>
                 <input
                   type="email"
+                  required
                   value={newCustEmail}
                   onChange={(e) => setNewCustEmail(e.target.value)}
                   placeholder="customer@example.com"

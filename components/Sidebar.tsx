@@ -115,8 +115,8 @@ export default function Sidebar() {
       color: "#7c3aed",
       permissionKey: "hotels",
       submenu: [
-        { name: "View All", href: "/admin/hotels" },
-        { name: "Add New", href: "/admin/hotels/add" },
+        { name: "Hotel Directory", href: "/admin/hotels" },
+        { name: "Customer Stays", href: "/admin/hotels/assignments" },
       ],
     },
     { name: "Agent Follow-ups", icon: "fa-headset", color: "#14b8a6", href: "/admin/agent-followups", permissionKey: "agent_followups" },

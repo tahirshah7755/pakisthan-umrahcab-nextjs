@@ -1,14 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 
-export default function AddHotelDirectory() {
+function EditHotelContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryId = searchParams.get("id");
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [hotelName, setHotelName] = useState("");
   const [hotelCity, setHotelCity] = useState("Makkah");
   const [hotelActive, setHotelActive] = useState(1);
+  const [customId, setCustomId] = useState("");
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -22,12 +28,45 @@ export default function AddHotelDirectory() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  const handleAddHotel = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!queryId) {
+      setError("No Hotel ID provided.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchHotelDetails = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await api.getHotel(queryId);
+        if (res && res.success && res.data) {
+          const h = res.data;
+          setHotelName(h.name || "");
+          setHotelCity(h.city || "Makkah");
+          setHotelActive(h.active);
+          setCustomId(h.custom_id || "");
+        } else {
+          setError("Failed to load hotel details.");
+        }
+      } catch (err: any) {
+        console.error("Failed to load hotel details:", err);
+        setError(err.message || "An error occurred while loading hotel details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHotelDetails();
+  }, [queryId]);
+
+  const handleUpdateHotel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hotelName.trim()) {
       showToast("Hotel name is required.", "error");
       return;
     }
+    if (!queryId) return;
 
     try {
       const payload = {
@@ -39,16 +78,15 @@ export default function AddHotelDirectory() {
         check_out: null,
       };
 
-      const res = await api.createHotel(payload);
+      const res = await api.updateHotel(queryId, payload);
 
       if (res && res.success) {
-        showToast("Hotel property registered in directory successfully!", "success");
-        setHotelName("");
+        showToast("Hotel property updated successfully!", "success");
         setTimeout(() => {
           router.push("/admin/hotels");
         }, 1500);
       } else {
-        showToast(res?.error || "Failed to save hotel.", "error");
+        showToast(res?.error || "Failed to update hotel.", "error");
       }
     } catch (err: any) {
       console.error(err);
@@ -57,6 +95,52 @@ export default function AddHotelDirectory() {
   };
 
   const HOTEL_PURPLE = "#7c3aed";
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="form-header-card" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)" }}>
+          <div>
+            <h2>Edit Hotel Property</h2>
+            <p>Modify standard properties and details for directory hotel.</p>
+          </div>
+          <button onClick={() => router.push("/admin/hotels")} className="form-btn-back">
+            <i className="fas fa-list"></i>
+            <span>Hotel Directory</span>
+          </button>
+        </div>
+        <div className="form-card" style={{ textAlign: "center", padding: "40px", color: "#64748b", background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: "40px", color: HOTEL_PURPLE, marginBottom: "15px" }}></i>
+          <h3>Loading Hotel details...</h3>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !queryId) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="form-header-card" style={{ background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)" }}>
+          <div>
+            <h2>Edit Hotel Error</h2>
+            <p>{error || "Hotel property could not be found."}</p>
+          </div>
+          <button onClick={() => router.push("/admin/hotels")} className="form-btn-back">
+            <i className="fas fa-list"></i>
+            <span>Hotel Directory</span>
+          </button>
+        </div>
+        <div className="form-card" style={{ textAlign: "center", padding: "40px", color: "#64748b", background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
+          <i className="fas fa-circle-exclamation" style={{ fontSize: "48px", color: "#ef4444", marginBottom: "15px" }}></i>
+          <h3>Unable to retrieve hotel details</h3>
+          <p>{error || "The property may have been deleted, or there was a communication issue with the server."}</p>
+          <button onClick={() => router.push("/admin/hotels")} className="btn-submit" style={{ marginTop: "15px", background: "#7c3aed", color: "#ffffff" }}>
+            Return to Directory
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -84,10 +168,10 @@ export default function AddHotelDirectory() {
         </div>
       )}
 
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)" }}>
+      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Add Hotel Property</h2>
-          <p>Register a new hotel accommodation globally in the system lookup directory.</p>
+          <h2>Edit Hotel Property: {customId || `#HTL-${queryId}`}</h2>
+          <p>Update hotel details, city, and operational status inside the global lookup directory.</p>
         </div>
         <button onClick={() => router.push("/admin/hotels")} className="form-btn-back">
           <i className="fas fa-list"></i>
@@ -97,7 +181,7 @@ export default function AddHotelDirectory() {
 
       <div style={{ display: "flex", justifyContent: "center", width: "100%", padding: "10px 0" }}>
         <div className="form-card" style={{ maxWidth: "600px", width: "100%", background: "#ffffff", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", padding: "30px", border: "1px solid #e2e8f0" }}>
-          <form onSubmit={handleAddHotel} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleUpdateHotel} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             
             <div>
               <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>City / Area *</label>
@@ -189,8 +273,8 @@ export default function AddHotelDirectory() {
                   boxShadow: `0 4px 6px -1px rgba(124, 58, 237, 0.2)`
                 }}
               >
-                <i className="fas fa-check"></i>
-                <span>Save Property</span>
+                <i className="fas fa-save"></i>
+                <span>Save Changes</span>
               </button>
             </div>
           </form>
@@ -204,5 +288,13 @@ export default function AddHotelDirectory() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function EditHotelPage() {
+  return (
+    <Suspense fallback={<div>Loading hotel editing layout...</div>}>
+      <EditHotelContent />
+    </Suspense>
   );
 }

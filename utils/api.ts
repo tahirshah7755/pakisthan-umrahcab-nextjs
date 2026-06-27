@@ -379,11 +379,11 @@ export const api = {
     return { success: false, error: "API connection failed" };
   },
 
-  // Hotels
-  async getHotels(city?: string, search?: string) {
+  async getHotels(city?: string, search?: string, type?: string) {
     const q = new URLSearchParams();
     if (city) q.append("city", city);
     if (search) q.append("search", search);
+    if (type) q.append("type", type);
     const data = await request(`/hotels?${q.toString()}`);
     return data || [];
   },

@@ -499,7 +499,7 @@ export const api = {
     return data || [];
   },
 
-  async createCompanyCustomer(cust: { name: string; contact?: string }) {
+  async createCompanyCustomer(cust: any) {
     const data = await request(`/company-panel/customers`, {
       method: "POST",
       body: JSON.stringify(cust),

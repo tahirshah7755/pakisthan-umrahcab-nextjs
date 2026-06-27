@@ -14,11 +14,59 @@ interface CustomerRecord {
   last_update: string;
 }
 
+const formatContact = (contactStr: string) => {
+  if (!contactStr) return "N/A";
+  
+  let phone = "N/A";
+  let email = "";
+  
+  const mainPart = contactStr.split(" | ")[0] || "";
+  if (mainPart && !mainPart.includes("Email:") && !mainPart.includes("Passport:")) {
+    phone = mainPart.split(" / ")[0] || "N/A";
+  } else {
+    const phonePart = contactStr.split(" | Notes: ")[0]?.split(" (P), ")[0];
+    if (phonePart) {
+      phone = phonePart.split(" / ")[0] || "N/A";
+    }
+  }
+
+  if (contactStr.includes("Email: ")) {
+    const emailPart = contactStr.split("Email: ")[1]?.split(" | ")[0];
+    if (emailPart) email = emailPart.trim();
+  } else if (contactStr.includes(" (Email)")) {
+    const emailPart = contactStr.split(" | Notes: ")[0]?.split(" (P), ")[1]?.replace(" (Email)", "");
+    if (emailPart) email = emailPart.trim();
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+      <span style={{ fontWeight: 600, color: "#1e293b", fontSize: "13px" }}>
+        <i className="fas fa-phone" style={{ fontSize: "11px", marginRight: "6px", color: "#0f766e" }}></i>
+        {phone}
+      </span>
+      {email && (
+        <span style={{ fontSize: "11px", color: "#64748b" }}>
+          <i className="fas fa-envelope" style={{ fontSize: "10px", marginRight: "6px", color: "#ef4444" }}></i>
+          {email}
+        </span>
+      )}
+    </div>
+  );
+};
+
 export default function CompanyCustomersPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   // Add Customer Modal States
   const [showAddModal, setShowAddModal] = useState(false);
@@ -249,6 +297,12 @@ export default function CompanyCustomersPage() {
     loadCustomers();
   }, [search]);
 
+  // Paginate customers
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = customers.slice(indexOfFirstEntry, indexOfLastEntry);
+  const totalPages = Math.ceil(customers.length / entriesPerPage);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {toast.show && (
@@ -285,15 +339,16 @@ export default function CompanyCustomersPage() {
       </div>
 
       {/* Customers Table Card */}
-      <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+      <div className="table-card mobile-card" style={{ padding: "25px" }}>
         {/* Toolbar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
-          <div className="mobile-toolbar" style={{ display: "flex", gap: "6px" }}>
+          <div className="mobile-toolbar" style={{ display: "flex", gap: "8px" }}>
             {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
               <button
                 key={fmt}
                 onClick={() => handleButtonClick(fmt)}
-                style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
+                className="hub-btn hub-btn-list"
+                style={{ padding: "6px 12px", fontSize: "12px", margin: 0 }}
               >
                 {fmt}
               </button>
@@ -304,10 +359,11 @@ export default function CompanyCustomersPage() {
             <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>Search:</span>
             <input
               type="text"
-              placeholder="Search by name, contact..."
+              placeholder="Search customers..."
+              className="matrix-search-input"
+              style={{ width: "220px", height: "35px" }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", width: "220px", outline: "none" }}
             />
           </div>
         </div>
@@ -317,36 +373,115 @@ export default function CompanyCustomersPage() {
             <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "35px", height: "35px", animation: "spin 1s linear infinite" }}></div>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="db-table" style={{ width: "100%" }}>
-              <thead>
-                <tr>
-                  <th>Customer ID</th>
-                  <th>Name</th>
-                  <th>Contact</th>
-                  <th>Registered By</th>
-                  <th>Last Update</th>
-                </tr>
-              </thead>
-              <tbody>
-                {customers.length === 0 ? (
+          <>
+            <div className="table-responsive">
+              <table className="db-table" style={{ width: "100%" }}>
+                <thead>
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No customers associated with this corporate account.</td>
+                    <th>Customer ID</th>
+                    <th>Customer Name</th>
+                    <th>Contact</th>
+                    <th>Registered By</th>
+                    <th>Last Update</th>
                   </tr>
-                ) : (
-                  customers.map((c) => (
-                    <tr key={c.id}>
-                      <td style={{ fontWeight: 700, color: "#1e293b" }}>{c.custom_id}</td>
-                      <td style={{ fontWeight: 600 }}>{c.name}</td>
-                      <td>{c.contact || "N/A"}</td>
-                      <td>{c.registered_by}</td>
-                      <td>{c.last_update}</td>
+                </thead>
+                <tbody>
+                  {currentEntries.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No customers associated with this corporate account.</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    currentEntries.map((c) => (
+                      <tr key={c.id}>
+                        <td style={{ fontWeight: 700, color: "var(--primary-color)" }}>{c.custom_id}</td>
+                        <td style={{ fontWeight: 600 }}>{c.name}</td>
+                        <td>{formatContact(c.contact)}</td>
+                        <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.registered_by}</td>
+                        <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.last_update}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Elegant Pagination Controls */}
+            <div 
+              style={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center", 
+                marginTop: "20px", 
+                borderTop: "1px solid #f1f5f9", 
+                paddingTop: "15px",
+                flexWrap: "wrap",
+                gap: "15px"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "13px", color: "#64748b" }}>Show</span>
+                <select 
+                  className="tool-date-input" 
+                  value={entriesPerPage} 
+                  onChange={(e) => {
+                    setEntriesPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: "70px", padding: "4px 8px", height: "auto" }}
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+                <span style={{ fontSize: "13px", color: "#64748b" }}>entries</span>
+              </div>
+
+              <span style={{ fontSize: "13px", color: "#64748b" }}>
+                Showing {customers.length === 0 ? 0 : indexOfFirstEntry + 1} to {Math.min(indexOfLastEntry, customers.length)} of {customers.length} entries
+              </span>
+
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button 
+                  className="form-btn-back" 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  style={{ 
+                    background: currentPage === 1 ? "#f1f5f9" : "var(--primary-color)", 
+                    color: currentPage === 1 ? "#94a3b8" : "#ffffff", 
+                    border: "none",
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    padding: "6px 12px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    margin: 0
+                  }}
+                >
+                  Previous
+                </button>
+                <span style={{ display: "flex", alignItems: "center", padding: "0 10px", fontSize: "13px", fontWeight: "700", color: "#334155" }}>
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <button 
+                  className="form-btn-back" 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  style={{ 
+                    background: (currentPage === totalPages || totalPages === 0) ? "#f1f5f9" : "var(--primary-color)", 
+                    color: (currentPage === totalPages || totalPages === 0) ? "#94a3b8" : "#ffffff", 
+                    border: "none",
+                    cursor: (currentPage === totalPages || totalPages === 0) ? "not-allowed" : "pointer",
+                    padding: "6px 12px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    margin: 0
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
       <style>{`

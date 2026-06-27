@@ -565,7 +565,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       };
 
       // 2. Call Customer Creation API
-      const custRes = await api.createCustomer(newCust);
+      const custRes = isCompanyPanel 
+        ? await api.createCompanyCustomer(newCust) 
+        : await api.createCustomer(newCust);
       if (!custRes || !custRes.success) {
         showToast("Failed to register customer record.", "error");
         setLoading(false);

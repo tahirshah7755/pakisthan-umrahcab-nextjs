@@ -27,9 +27,6 @@ async function request(endpoint: string, options: RequestInit = {}) {
     if (!(options.body instanceof FormData)) {
       headers.append("Content-Type", "application/json");
     }
-    if (token) {
-      headers.append("Authorization", `Bearer ${token}`);
-    }
     if (options.headers) {
       const extraHeaders = new Headers(options.headers);
       extraHeaders.forEach((value, key) => {

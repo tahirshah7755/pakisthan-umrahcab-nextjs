@@ -109,7 +109,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           const response = await fetch(meUrl, {
             headers: {
-              "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json"
             },
             credentials: "include"

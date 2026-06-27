@@ -24,8 +24,10 @@ export default function CompanySidebar() {
   // Track open submenu states (Accordion behavior - only one open at a time)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>("/logo2.png");
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     async function fetchLogo() {
       try {
         const data = await api.getWebsiteSettings();
@@ -126,14 +128,14 @@ export default function CompanySidebar() {
       {/* Profile Card */}
       <div className="sidebar-profile-card" style={{ background: "#1e293b", margin: "15px", borderRadius: "10px" }}>
         <div className="profile-info">
-          <div className="profile-avatar" style={{ background: companyUser?.logo_path ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {companyUser?.logo_path ? (
+          <div className="profile-avatar" style={{ background: (isMounted && companyUser?.logo_path) ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {(isMounted && companyUser?.logo_path) ? (
               <img src={`${IMAGE_BASE}/${companyUser.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             ) : (
               <i className="fas fa-handshake" style={{ color: "#0f172a" }}></i>
             )}
           </div>
-          <span className="profile-name" style={{ color: "#ffffff" }}>{companyUser?.name || "B2B Agent"}</span>
+          <span className="profile-name" style={{ color: "#ffffff" }}>{(isMounted && companyUser?.name) ? companyUser.name : "B2B Agent"}</span>
         </div>
         <button onClick={companyLogout} className="logout-btn" title="Sign Out" style={{ color: "#f43f5e" }}>
           <i className="fas fa-right-from-bracket"></i>

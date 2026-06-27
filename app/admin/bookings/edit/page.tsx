@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api } from "@/utils/api";
+import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 
 const defaultCountryCodes = [
@@ -227,6 +227,17 @@ function BookingEditContent() {
     }
     loadCountryCodes();
   }, []);
+
+  useEffect(() => {
+    if (newCustCompany && companiesList.length > 0) {
+      const matched = companiesList.find((c: any) => c.name === newCustCompany);
+      if (matched) {
+        setNewCustMobileCode(getDefaultPhoneCode(matched));
+      } else {
+        setNewCustMobileCode(getDefaultPhoneCode({ name: newCustCompany }));
+      }
+    }
+  }, [newCustCompany, companiesList]);
 
   // Toast notification
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({

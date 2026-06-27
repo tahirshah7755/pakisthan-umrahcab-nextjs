@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/utils/api";
+import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 
 const defaultCountryCodes = [
@@ -151,6 +151,17 @@ export default function AddNewBooking() {
     }
     loadCountryCodes();
   }, []);
+
+  useEffect(() => {
+    if (newCustCompany && companiesList.length > 0) {
+      const matched = companiesList.find((c: any) => c.name === newCustCompany);
+      if (matched) {
+        setNewCustMobileCode(getDefaultPhoneCode(matched));
+      } else {
+        setNewCustMobileCode(getDefaultPhoneCode({ name: newCustCompany }));
+      }
+    }
+  }, [newCustCompany, companiesList]);
 
   // Fetch dynamic vehicles and packages lists on mount
   useEffect(() => {

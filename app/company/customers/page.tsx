@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/utils/api";
+import { api, getDefaultPhoneCode } from "@/utils/api";
 import { exportToExcel } from "@/utils/excelHelper";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
+import { useAuth } from "@/context/AuthContext";
 
 const defaultCountryCodes = [
   { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
@@ -74,6 +75,7 @@ const formatContact = (contactStr: string) => {
 
 export default function CompanyCustomersPage() {
   const router = useRouter();
+  const { companyUser } = useAuth();
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -106,6 +108,12 @@ export default function CompanyCustomersPage() {
     }
     loadCountryCodes();
   }, []);
+
+  useEffect(() => {
+    if (companyUser) {
+      setNewCustMobileCode(getDefaultPhoneCode(companyUser));
+    }
+  }, [companyUser]);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,

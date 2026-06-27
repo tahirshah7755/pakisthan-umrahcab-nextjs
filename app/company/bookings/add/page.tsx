@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/utils/api";
+import { api, getDefaultPhoneCode } from "@/utils/api";
+import { CountryCodeSelector } from "@/components/CountryCodeSelector";
+import { useAuth } from "@/context/AuthContext";
 
 const defaultCountryCodes = [
   { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
@@ -23,6 +25,7 @@ const formatPhoneNumber = (code: string, number: string) => {
 
 export default function AddNewBooking() {
   const router = useRouter();
+  const { companyUser } = useAuth();
 
   // Form State
   const [customer, setCustomer] = useState("");
@@ -73,6 +76,12 @@ export default function AddNewBooking() {
     }
     loadCountryCodes();
   }, []);
+
+  useEffect(() => {
+    if (companyUser) {
+      setNewCustMobileCode(getDefaultPhoneCode(companyUser));
+    }
+  }, [companyUser]);
 
   // Dynamic Dropdown Lists from API
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
@@ -1013,17 +1022,11 @@ export default function AddNewBooking() {
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>WhatsApp / Mobile *</label>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <select
+                  <CountryCodeSelector
                     value={newCustMobileCode}
-                    onChange={(e) => setNewCustMobileCode(e.target.value)}
-                    style={{ width: "140px", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", outline: "none", background: "#ffffff", color: "#000000" }}
-                  >
-                    {countryCodes.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.code} ({c.name})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setNewCustMobileCode}
+                    style={{ width: "130px", flexShrink: 0 }}
+                  />
                   <input
                     type="text"
                     required

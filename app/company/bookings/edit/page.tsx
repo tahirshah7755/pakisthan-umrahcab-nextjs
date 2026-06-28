@@ -310,19 +310,37 @@ function BookingEditContent() {
     });
 
     if (matchedPackage) {
-      const name = vehicle.toLowerCase();
-      let category: "sedan" | "suv" | "van" | "coach" | null = null;
-      if (name.includes("sedan")) category = "sedan";
-      else if (name.includes("suv") || name.includes("gmc") || name.includes("yukon")) category = "suv";
-      else if (name.includes("van") || name.includes("staria") || name.includes("starex") || name.includes("hiace") || name.includes("grand cabin")) category = "van";
-      else if (name.includes("coaster") || name.includes("bus") || name.includes("coach")) category = "coach";
-      else category = "sedan"; // Fallback to sedan for custom vehicle names
+      let resolvedPrice: number | null = null;
 
-      if (category) {
-        const priceField = `${category}_price`;
-        const autoPrice = parseFloat(matchedPackage[priceField]);
-        if (!isNaN(autoPrice)) {
-          setPriceBeforeDiscount(autoPrice);
+      // Try to resolve custom price first
+      if (matchedPackage.custom_prices && typeof matchedPackage.custom_prices === 'object') {
+        const customPriceObj = matchedPackage.custom_prices[vehicle];
+        if (customPriceObj && typeof customPriceObj === 'object' && customPriceObj.price !== undefined) {
+          const p = parseFloat(customPriceObj.price);
+          if (!isNaN(p)) {
+            resolvedPrice = p;
+          }
+        }
+      }
+
+      if (resolvedPrice !== null) {
+        setPriceBeforeDiscount(resolvedPrice);
+      } else {
+        // Fallback to category based pricing
+        const name = vehicle.toLowerCase();
+        let category: "sedan" | "suv" | "van" | "coach" | null = null;
+        if (name.includes("sedan")) category = "sedan";
+        else if (name.includes("suv") || name.includes("gmc") || name.includes("yukon")) category = "suv";
+        else if (name.includes("van") || name.includes("staria") || name.includes("starex") || name.includes("hiace") || name.includes("grand cabin")) category = "van";
+        else if (name.includes("coaster") || name.includes("bus") || name.includes("coach")) category = "coach";
+        else category = "sedan"; // Fallback to sedan for custom vehicle names
+
+        if (category) {
+          const priceField = `${category}_price`;
+          const autoPrice = parseFloat(matchedPackage[priceField]);
+          if (!isNaN(autoPrice)) {
+            setPriceBeforeDiscount(autoPrice);
+          }
         }
       }
     }

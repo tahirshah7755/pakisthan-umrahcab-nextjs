@@ -26,22 +26,49 @@ interface PackageRow {
   urduName: string;
   shortCode: string;
   prices: Record<string, PriceCell>; // Key is vehicle ID
+  custom_prices?: any;
 }
 
 function getVehiclePriceInfo(b: any, key: string) {
   let price = 0;
   let dates = "2026-06-01 to 2026-08-31";
   
-  if (key === "sedan") {
+  // Try to resolve custom vehicle-specific price first
+  if (b.custom_prices && typeof b.custom_prices === 'object') {
+    const custom = b.custom_prices[key];
+    if (custom && typeof custom === 'object') {
+      price = parseFloat(custom.price) || 0;
+      dates = `${custom.from || "2026-06-01"} to ${custom.to || "2026-08-31"}`;
+      const parts = dates.split(" to ");
+      return {
+        price: String(price),
+        from: parts[0] || "2026-06-01",
+        to: parts[1] || "2026-08-31"
+      };
+    }
+  }
+
+  // Parse category as fallback
+  const modelLower = key.toLowerCase();
+  let category = "sedan";
+  if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
+    category = "van";
+  } else if (modelLower.includes("yukon") || modelLower.includes("suv") || modelLower.includes("gmc")) {
+    category = "suv";
+  } else if (modelLower.includes("coaster") || modelLower.includes("bus") || modelLower.includes("coach")) {
+    category = "coach";
+  }
+
+  if (category === "sedan") {
     price = b.sedan_price ?? 300;
     dates = b.sedan_dates || "2026-06-01 to 2026-08-31";
-  } else if (key === "van") {
+  } else if (category === "van") {
     price = b.van_price ?? 500;
     dates = b.van_dates || "2026-06-01 to 2026-08-31";
-  } else if (key === "suv") {
+  } else if (category === "suv") {
     price = b.suv_price ?? 700;
     dates = b.suv_dates || "2026-06-01 to 2026-08-31";
-  } else if (key === "coach") {
+  } else if (category === "coach") {
     price = b.coach_price ?? 1200;
     dates = b.coach_dates || "2026-06-01 to 2026-08-31";
   }
@@ -321,7 +348,7 @@ export default function PriceListMatrix() {
         const prices: Record<string, PriceCell> = {};
         
         activeVehicles.forEach((vehicle: any) => {
-          prices[vehicle.id] = getVehiclePriceInfo(b, vehicle.key);
+          prices[vehicle.id] = getVehiclePriceInfo(b, vehicle.name);
         });
 
         return {
@@ -329,7 +356,8 @@ export default function PriceListMatrix() {
           englishName: b.route,
           urduName: b.route.includes("Airport") ? "ایئرپورٹ ٹرانسپورٹ" : "ہوٹل ٹرانسپورٹ",
           shortCode: b.route.split(" To ").map((s: string) => s.substring(0, 3).toUpperCase()).join("-"),
-          prices
+          prices,
+          custom_prices: b.custom_prices
         };
       });
       setPackages(mapped);
@@ -428,24 +456,46 @@ export default function PriceListMatrix() {
           group_name: selectedGroup
         };
         
+        const customPrices: Record<string, any> = pkg.custom_prices ? { ...pkg.custom_prices } : {};
+        
         activeVehicles.forEach((vehicle: any) => {
           const priceCell = pkg.prices[vehicle.id];
           if (priceCell) {
-            if (vehicle.key === "sedan") {
+            // Save vehicle-specific price dynamically
+            customPrices[vehicle.name] = {
+              price: parseFloat(priceCell.price) || 0,
+              from: priceCell.from || "2026-06-01",
+              to: priceCell.to || "2026-08-31"
+            };
+
+            // Maintain fallback categories for backward compatibility
+            const modelLower = vehicle.name.toLowerCase();
+            let category = "sedan";
+            if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
+              category = "van";
+            } else if (modelLower.includes("yukon") || modelLower.includes("suv") || modelLower.includes("gmc")) {
+              category = "suv";
+            } else if (modelLower.includes("coaster") || modelLower.includes("bus") || modelLower.includes("coach")) {
+              category = "coach";
+            }
+
+            if (category === "sedan") {
               updatePayload.sedan_price = parseFloat(priceCell.price || "300");
               updatePayload.sedan_dates = `${priceCell.from} to ${priceCell.to}`;
-            } else if (vehicle.key === "van") {
+            } else if (category === "van") {
               updatePayload.van_price = parseFloat(priceCell.price || "500");
               updatePayload.van_dates = `${priceCell.from} to ${priceCell.to}`;
-            } else if (vehicle.key === "suv") {
+            } else if (category === "suv") {
               updatePayload.suv_price = parseFloat(priceCell.price || "700");
               updatePayload.suv_dates = `${priceCell.from} to ${priceCell.to}`;
-            } else if (vehicle.key === "coach") {
+            } else if (category === "coach") {
               updatePayload.coach_price = parseFloat(priceCell.price || "1200");
               updatePayload.coach_dates = `${priceCell.from} to ${priceCell.to}`;
             }
           }
         });
+
+        updatePayload.custom_prices = customPrices;
 
         await updatePriceList(updatePayload).unwrap();
       }

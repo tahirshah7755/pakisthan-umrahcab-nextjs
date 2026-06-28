@@ -16,6 +16,7 @@ interface CompanyItem {
   invoice: boolean;
   vouchers: boolean;
   reminders: boolean;
+  price_group?: string;
 }
 
 interface AddCustomerFormProps {
@@ -109,11 +110,24 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
   useEffect(() => {
     if (isCompanyPanel && companyUser) {
-      setCustCompany(companyUser.name || "");
-      const defaultCode = getDefaultPhoneCode(companyUser);
+      const u = companyUser as any;
+      setCustCompany(u.name || "");
+      const defaultCode = getDefaultPhoneCode(u);
       setCustPhoneCode(defaultCode);
       setCustSecondaryPhoneCode(defaultCode);
       setCustAltPhoneCode(defaultCode);
+      setCompaniesList([{
+        id: u.id ? String(u.id) : "#CMP-ME",
+        name: u.name || "",
+        phone: u.phone || "N/A",
+        email: u.email || "N/A",
+        website: u.website || "N/A",
+        address: u.address || "N/A",
+        invoice: !!u.invoice,
+        vouchers: !!u.vouchers,
+        reminders: !!u.reminders,
+        price_group: u.price_group
+      }]);
     }
   }, [companyUser, isCompanyPanel]);
 
@@ -132,6 +146,43 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         setCustAltPhoneCode(defaultCode);
       }
     }
+  }, [custCompany, companiesList]);
+
+  useEffect(() => {
+    async function loadCustomPriceList() {
+      if (custCompany) {
+        const matched = companiesList.find((c) => c.name?.trim().toLowerCase() === custCompany?.trim().toLowerCase());
+        const group = matched?.price_group || "Standard";
+        try {
+          const prices = await api.getPriceList(group);
+          if (prices) {
+            let rawList: any[] = [];
+            if (Array.isArray(prices)) {
+              rawList = prices;
+            } else if (prices && Array.isArray(prices.data)) {
+              rawList = prices.data;
+            }
+            setRawPriceList(rawList);
+          }
+        } catch (err) {
+          console.error("Error loading group pricing in AddCustomerForm:", err);
+        }
+      } else {
+        try {
+          const prices = await api.getPriceList();
+          let rawList: any[] = [];
+          if (Array.isArray(prices)) {
+            rawList = prices;
+          } else if (prices && Array.isArray(prices.data)) {
+            rawList = prices.data;
+          }
+          setRawPriceList(rawList);
+        } catch (err) {
+          console.error("Error loading default pricing in AddCustomerForm:", err);
+        }
+      }
+    }
+    loadCustomPriceList();
   }, [custCompany, companiesList]);
 
   // Step 2 States: Route setup (Full booking form integration)
@@ -265,7 +316,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     async function loadData() {
       try {
         const [companiesData, fleetData, priceListData, hotelsData, locationsData] = await Promise.all([
-          (!initialCompanies || initialCompanies.length === 0) ? api.getCompanies() : Promise.resolve(null),
+          (!isCompanyPanel && (!initialCompanies || initialCompanies.length === 0)) ? api.getCompanies() : Promise.resolve(null),
           api.getFleet(),
           api.getPriceList(),
           api.getHotels(),
@@ -282,7 +333,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
             address: c.address || "N/A",
             invoice: !!c.invoice,
             vouchers: !!c.vouchers,
-            reminders: !!c.reminders
+            reminders: !!c.reminders,
+            price_group: c.price_group
           })));
         }
 

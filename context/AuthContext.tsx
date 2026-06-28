@@ -15,7 +15,20 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, passwordConfirm: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   // B2B Company Auth
-  companyUser: { id: string; name: string; agent_username: string; email: string; logo_path?: string } | null;
+  companyUser: { 
+    id: string; 
+    name: string; 
+    agent_username: string; 
+    email: string; 
+    logo_path?: string;
+    phone?: string;
+    website?: string;
+    address?: string;
+    invoice?: boolean;
+    vouchers?: boolean;
+    reminders?: boolean;
+    price_group?: string;
+  } | null;
   companyLogin: (agent_username: string, agent_password: string) => Promise<{ success: boolean; message?: string }>;
   companyLogout: () => void;
   // Driver Auth
@@ -48,7 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
-  const [companyUser, setCompanyUser] = useState<{ id: string; name: string; agent_username: string; email: string; logo_path?: string } | null>(() => {
+  const [companyUser, setCompanyUser] = useState<{ 
+    id: string; 
+    name: string; 
+    agent_username: string; 
+    email: string; 
+    logo_path?: string;
+    phone?: string;
+    website?: string;
+    address?: string;
+    invoice?: boolean;
+    vouchers?: boolean;
+    reminders?: boolean;
+    price_group?: string;
+  } | null>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("umrahcab_company_user");
       return saved ? JSON.parse(saved) : null;
@@ -142,6 +168,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       fetchLatestProfile();
     }
   }, [pathname, driverUser]);
+
+  // Background sync company agent profile on navigation/mount to immediately reflect pricing/permission updates
+  useEffect(() => {
+    if (pathname.startsWith("/company") && pathname !== "/company/login" && companyUser) {
+      const fetchLatestCompanyProfile = async () => {
+        try {
+          const token = localStorage.getItem("umrahcab_company_token");
+          if (!token) return;
+
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+          const meUrl = apiBase.endsWith("/")
+            ? apiBase.replace(/umrahcab\/?$/, "auth/company/me")
+            : apiBase.replace("umrahcab", "auth/company/me");
+
+          const response = await fetch(meUrl, {
+            headers: {
+              "Content-Type": "application/json"
+            },
+            credentials: "include"
+          });
+
+          if (response.ok) {
+            const resData = await response.json();
+            const company = resData?.data || resData;
+            if (company) {
+              const updatedCompany = {
+                id: String(company.id),
+                name: company.name || "B2B Agent",
+                agent_username: company.agent_username,
+                email: company.email || "",
+                phone: company.phone || "",
+                website: company.website || "",
+                address: company.address || "",
+                invoice: !!company.invoice,
+                vouchers: !!company.vouchers,
+                reminders: !!company.reminders,
+                price_group: company.price_group || "Standard",
+                logo_path: company.logo_path || ""
+              };
+              
+              if (JSON.stringify(companyUser) !== JSON.stringify(updatedCompany)) {
+                setCompanyUser(updatedCompany);
+                localStorage.setItem("umrahcab_company_user", JSON.stringify(updatedCompany));
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to background sync company profile:", err);
+        }
+      };
+      
+      fetchLatestCompanyProfile();
+    }
+  }, [pathname, companyUser]);
 
   // Handle responsive sidebar default state
   useEffect(() => {
@@ -329,6 +409,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: company?.name || "B2B Agent",
           agent_username: company?.agent_username || agent_username,
           email: company?.email || "",
+          phone: company?.phone || "",
+          website: company?.website || "",
+          address: company?.address || "",
+          invoice: !!company?.invoice,
+          vouchers: !!company?.vouchers,
+          reminders: !!company?.reminders,
+          price_group: company?.price_group || "Standard",
           logo_path: company?.logo_path || ""
         };
         setCompanyUser(newCompanyUser);

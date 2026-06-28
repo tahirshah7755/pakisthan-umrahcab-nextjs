@@ -10,6 +10,7 @@ import {
   useCreatePriceListMutation,
   useDeletePriceListMutation,
 } from "@/store/api/priceListApi";
+import { useGetFleetQuery } from "@/store/api/fleetApi";
 
 interface PriceCell {
   price: string;
@@ -25,20 +26,78 @@ interface PackageRow {
   prices: Record<string, PriceCell>; // Key is vehicle ID
 }
 
-const VEHICLES = [
-  { id: "sedan", name: "Sedan (Core)", isCore: true },
-  { id: "staria", name: "Hyundai Staria (Core)", isCore: true },
-  { id: "starex", name: "Hyundai Starex (Core)", isCore: true },
-  { id: "yukon", name: "GMC XL Yukon (Core)", isCore: true },
-  { id: "hiace", name: "Hiace Grand Cabin (Core)", isCore: true },
-  { id: "coaster", name: "Coaster (Core)", isCore: true },
-  { id: "bus", name: "Bus (Core)", isCore: true },
-  { id: "luxury_bus", name: "Luxury Bus (Core)", isCore: true },
-];
+function getVehiclePriceInfo(b: any, key: string) {
+  let price = 0;
+  let dates = "2026-06-01 to 2026-08-31";
+  
+  if (key === "sedan") {
+    price = b.sedan_price ?? 300;
+    dates = b.sedan_dates || "2026-06-01 to 2026-08-31";
+  } else if (key === "van") {
+    price = b.van_price ?? 500;
+    dates = b.van_dates || "2026-06-01 to 2026-08-31";
+  } else if (key === "suv") {
+    price = b.suv_price ?? 700;
+    dates = b.suv_dates || "2026-06-01 to 2026-08-31";
+  } else if (key === "coach") {
+    price = b.coach_price ?? 1200;
+    dates = b.coach_dates || "2026-06-01 to 2026-08-31";
+  }
+  
+  const parts = dates.split(" to ");
+  return {
+    price: String(price),
+    from: parts[0] || "2026-06-01",
+    to: parts[1] || "2026-08-31"
+  };
+}
 
 export default function PriceListMatrix() {
   const { extrasUnlocked } = useAuth();
   const router = useRouter();
+
+  const { data: fleetResponse } = useGetFleetQuery(undefined);
+  const fleetList = Array.isArray(fleetResponse)
+    ? fleetResponse
+    : (fleetResponse && typeof fleetResponse === "object" && Array.isArray((fleetResponse as any).data)
+        ? (fleetResponse as any).data
+        : []);
+
+  const activeVehicles = React.useMemo(() => {
+    if (fleetList.length > 0) {
+      return fleetList.map((f: any) => {
+        const modelLower = f.model.toLowerCase();
+        let dbField = "sedan";
+        if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
+          dbField = "van";
+        } else if (modelLower.includes("yukon") || modelLower.includes("suv") || modelLower.includes("gmc")) {
+          dbField = "suv";
+        } else if (modelLower.includes("coaster") || modelLower.includes("bus") || modelLower.includes("coach")) {
+          dbField = "coach";
+        } else if (modelLower.includes("sedan")) {
+          dbField = "sedan";
+        }
+        
+        return {
+          id: String(f.id),
+          key: dbField,
+          name: f.model,
+          isCore: true
+        };
+      });
+    }
+    
+    return [
+      { id: "sedan", key: "sedan", name: "Sedan (Core)", isCore: true },
+      { id: "staria", key: "van", name: "Hyundai Staria (Core)", isCore: true },
+      { id: "starex", key: "van", name: "Hyundai Starex (Core)", isCore: true },
+      { id: "yukon", key: "suv", name: "GMC XL Yukon (Core)", isCore: true },
+      { id: "hiace", key: "van", name: "Hiace Grand Cabin (Core)", isCore: true },
+      { id: "coaster", key: "coach", name: "Coaster (Core)", isCore: true },
+      { id: "bus", key: "coach", name: "Bus (Core)", isCore: true },
+      { id: "luxury_bus", key: "coach", name: "Luxury Bus (Core)", isCore: true },
+    ];
+  }, [fleetList]);
 
   // Redirect if extras not unlocked
   useEffect(() => {
@@ -160,33 +219,25 @@ export default function PriceListMatrix() {
 
     if (Array.isArray(rawData)) {
       const mapped = rawData.map((b: any) => {
-        const sedanDates = b.sedan_dates || "2026-06-01 to 2026-08-31";
-        const parts = sedanDates.split(" to ");
-        const fromDate = parts[0] || "2026-06-01";
-        const toDate = parts[1] || "2026-08-31";
+        const prices: Record<string, PriceCell> = {};
         
+        activeVehicles.forEach((vehicle: any) => {
+          prices[vehicle.id] = getVehiclePriceInfo(b, vehicle.key);
+        });
+
         return {
           id: String(b.id),
           englishName: b.route,
           urduName: b.route.includes("Airport") ? "ایئرپورٹ ٹرانسپورٹ" : "ہوٹل ٹرانسپورٹ",
           shortCode: b.route.split(" To ").map((s: string) => s.substring(0, 3).toUpperCase()).join("-"),
-          prices: {
-            sedan: { price: String(b.sedan_price || 300), from: fromDate, to: toDate },
-            staria: { price: String(b.van_price || 500), from: fromDate, to: toDate },
-            starex: { price: String(b.van_price || 450), from: fromDate, to: toDate },
-            yukon: { price: String(b.suv_price || 700), from: fromDate, to: toDate },
-            hiace: { price: String(b.van_price || 600), from: fromDate, to: toDate },
-            coaster: { price: String(b.coach_price || 1200), from: fromDate, to: toDate },
-            bus: { price: String(b.coach_price || 1800), from: fromDate, to: toDate },
-            luxury_bus: { price: String(b.coach_price || 2400), from: fromDate, to: toDate },
-          }
+          prices
         };
       });
       setPackages(mapped);
       setTotalRecords(total);
       setLastPage(lastPg);
     }
-  }, [priceListData]);
+  }, [priceListData, activeVehicles]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -272,17 +323,28 @@ export default function PriceListMatrix() {
         const routeId = parseInt(pkg.id);
         if (isNaN(routeId)) continue;
         
-        await updatePriceList({
-          id: routeId,
-          sedan_price: parseFloat(pkg.prices.sedan?.price || "300"),
-          sedan_dates: `${pkg.prices.sedan?.from} to ${pkg.prices.sedan?.to}`,
-          suv_price: parseFloat(pkg.prices.yukon?.price || "700"),
-          suv_dates: `${pkg.prices.yukon?.from} to ${pkg.prices.yukon?.to}`,
-          van_price: parseFloat(pkg.prices.staria?.price || "500"),
-          van_dates: `${pkg.prices.staria?.from} to ${pkg.prices.staria?.to}`,
-          coach_price: parseFloat(pkg.prices.coaster?.price || "1200"),
-          coach_dates: `${pkg.prices.coaster?.from} to ${pkg.prices.coaster?.to}`,
-        }).unwrap();
+        const updatePayload: any = { id: routeId };
+        
+        activeVehicles.forEach((vehicle: any) => {
+          const priceCell = pkg.prices[vehicle.id];
+          if (priceCell) {
+            if (vehicle.key === "sedan") {
+              updatePayload.sedan_price = parseFloat(priceCell.price || "300");
+              updatePayload.sedan_dates = `${priceCell.from} to ${priceCell.to}`;
+            } else if (vehicle.key === "van") {
+              updatePayload.van_price = parseFloat(priceCell.price || "500");
+              updatePayload.van_dates = `${priceCell.from} to ${priceCell.to}`;
+            } else if (vehicle.key === "suv") {
+              updatePayload.suv_price = parseFloat(priceCell.price || "700");
+              updatePayload.suv_dates = `${priceCell.from} to ${priceCell.to}`;
+            } else if (vehicle.key === "coach") {
+              updatePayload.coach_price = parseFloat(priceCell.price || "1200");
+              updatePayload.coach_dates = `${priceCell.from} to ${priceCell.to}`;
+            }
+          }
+        });
+
+        await updatePriceList(updatePayload).unwrap();
       }
       showToast("Standard Price Matrix updated successfully on Laravel backend!", "success");
     } catch (err) {
@@ -422,7 +484,7 @@ export default function PriceListMatrix() {
               <thead>
                 <tr>
                   <th style={{ background: "#2563eb", color: "#ffffff" }}>Route Package</th>
-                  {VEHICLES.map((vehicle) => (
+                  {activeVehicles.map((vehicle: any) => (
                     <th key={vehicle.id} className={vehicle.isCore ? "col-header-core" : ""}>
                       <span>{vehicle.name}</span>
                       {vehicle.isCore && (
@@ -446,9 +508,9 @@ export default function PriceListMatrix() {
                           <span className="package-urdu">{pkg.urduName}</span>
                         </div>
                         <button 
-                          onClick={() => handleDeleteRoute(pkg.id, pkg.englishName)}
-                          title="Delete Route"
-                          style={{ background: "#fee2e2", border: "none", borderRadius: "6px", color: "#dc2626", width: "26px", height: "26px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                           onClick={() => handleDeleteRoute(pkg.id, pkg.englishName)}
+                           title="Delete Route"
+                           style={{ background: "#fee2e2", border: "none", borderRadius: "6px", color: "#dc2626", width: "26px", height: "26px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                         >
                           <i className="fas fa-trash-can" style={{ fontSize: "12px" }}></i>
                         </button>
@@ -456,7 +518,7 @@ export default function PriceListMatrix() {
                     </td>
 
                     {/* Pricing and Date cells */}
-                    {VEHICLES.map((vehicle) => {
+                    {activeVehicles.map((vehicle: any) => {
                       const priceCell = pkg.prices[vehicle.id] || { price: "", from: "", to: "" };
                       return (
                         <td key={vehicle.id}>
@@ -500,7 +562,7 @@ export default function PriceListMatrix() {
                 {packages.length === 0 && (
                   <tr>
                     <td
-                      colSpan={VEHICLES.length + 1}
+                      colSpan={activeVehicles.length + 1}
                       style={{
                         textAlign: "center",
                         padding: "40px",

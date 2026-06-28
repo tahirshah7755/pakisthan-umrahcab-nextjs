@@ -186,26 +186,59 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   }, [custCompany, companiesList]);
 
   // Step 2 States: Route setup (Full booking form integration)
-  const [pickupDate, setPickupDate] = useState("");
-  const [pickupTime, setPickupTime] = useState("");
-  const [pickupLocation, setPickupLocation] = useState("");
-  const [dropoffLocation, setDropoffLocation] = useState("");
-  const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
-  const [showDropoffSuggestions, setShowDropoffSuggestions] = useState(false);
-  const [timingStatus, setTimingStatus] = useState("Confirmed");
-  const [bookingStatus, setBookingStatus] = useState("Pending");
-  const [adults, setAdults] = useState<number | "">(0);
-  const [childrenCount, setChildrenCount] = useState<number | "">(0);
-  const [bags, setBags] = useState<number | "">(0);
-  const [vehicle, setVehicle] = useState("");
-  const [tripPackage, setTripPackage] = useState("");
-  const [priceBeforeDiscount, setPriceBeforeDiscount] = useState<number | "">("");
-  const [discount, setDiscount] = useState<number | "">("");
-  const [cashToReceive, setCashToReceive] = useState<number | "">("");
-  const [discountReason, setDiscountReason] = useState("");
-  const [tafweejRequired, setTafweejRequired] = useState(false);
-  const [internalNotes, setInternalNotes] = useState("");
-  const [externalNotes, setExternalNotes] = useState("");
+  interface RouteItem {
+    id: number;
+    pickupDate: string;
+    pickupTime: string;
+    pickupLocation: string;
+    dropoffLocation: string;
+    timingStatus: string;
+    bookingStatus: string;
+    adults: number | "";
+    childrenCount: number | "";
+    bags: number | "";
+    vehicle: string;
+    tripPackage: string;
+    priceBeforeDiscount: number | "";
+    discount: number | "";
+    cashToReceive: number | "";
+    discountReason: string;
+    tafweejRequired: boolean;
+    internalNotes: string;
+    externalNotes: string;
+    showPickupSuggestions?: boolean;
+    showDropoffSuggestions?: boolean;
+    externalPickupLocations?: string[];
+    externalDropoffLocations?: string[];
+  }
+
+  const [routes, setRoutes] = useState<RouteItem[]>([
+    {
+      id: Date.now(),
+      pickupDate: "",
+      pickupTime: "",
+      pickupLocation: "",
+      dropoffLocation: "",
+      timingStatus: "Confirmed",
+      bookingStatus: "Pending",
+      adults: 0,
+      childrenCount: 0,
+      bags: 0,
+      vehicle: "",
+      tripPackage: "",
+      priceBeforeDiscount: "",
+      discount: "",
+      cashToReceive: "",
+      discountReason: "",
+      tafweejRequired: false,
+      internalNotes: "",
+      externalNotes: "",
+      showPickupSuggestions: false,
+      showDropoffSuggestions: false,
+      externalPickupLocations: [],
+      externalDropoffLocations: []
+    }
+  ]);
   const [vehiclesList, setVehiclesList] = useState<string[]>([]);
   const [packagesList, setPackagesList] = useState<string[]>([]);
   const [rawPriceList, setRawPriceList] = useState<any[]>([]);
@@ -232,46 +265,89 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     return fallbackLocations;
   }, [locationsList]);
 
-  const [externalPickupLocations, setExternalPickupLocations] = useState<string[]>([]);
-  const [externalDropoffLocations, setExternalDropoffLocations] = useState<string[]>([]);
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  const filteredPickupSuggestions = React.useMemo(() => {
-    const localMatches = extractedLocations.filter((loc) =>
-      loc.toLowerCase().includes(pickupLocation.toLowerCase())
-    );
-    return Array.from(new Set([...localMatches, ...externalPickupLocations]));
-  }, [extractedLocations, pickupLocation, externalPickupLocations]);
+  const updateRouteField = (index: number, field: keyof RouteItem, value: any) => {
+    setRoutes((prev) => {
+      const updated = [...prev];
+      const route = { ...updated[index], [field]: value };
+      
+      // If package or vehicle changed, resolve price
+      if (field === "tripPackage" || field === "vehicle") {
+        const pkg = field === "tripPackage" ? value : route.tripPackage;
+        const veh = field === "vehicle" ? value : route.vehicle;
+        const resolvedPrice = getResolvedPrice(pkg, veh);
+        route.priceBeforeDiscount = resolvedPrice;
+        
+        // Update cashToReceive automatically if priceBeforeDiscount is resolved
+        const base = Number(resolvedPrice || 0);
+        const disc = Number(route.discount || 0);
+        route.cashToReceive = Math.max(0, base - disc);
+      }
+      
+      // If priceBeforeDiscount or discount changed, update cashToReceive
+      if (field === "priceBeforeDiscount" || field === "discount") {
+        const base = Number(field === "priceBeforeDiscount" ? value : route.priceBeforeDiscount || 0);
+        const disc = Number(field === "discount" ? value : route.discount || 0);
+        route.cashToReceive = Math.max(0, base - disc);
+      }
+      
+      updated[index] = route;
+      return updated;
+    });
+  };
 
-  const filteredDropoffSuggestions = React.useMemo(() => {
-    const localMatches = extractedLocations.filter((loc) =>
-      loc.toLowerCase().includes(dropoffLocation.toLowerCase())
-    );
-    return Array.from(new Set([...localMatches, ...externalDropoffLocations]));
-  }, [extractedLocations, dropoffLocation, externalDropoffLocations]);
-
-  useEffect(() => {
-    if (!pickupLocation || pickupLocation.trim().length < 3) {
-      setExternalPickupLocations([]);
+  const handlePickupChange = (index: number, value: string) => {
+    updateRouteField(index, "pickupLocation", value);
+    updateRouteField(index, "showPickupSuggestions", true);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    if (!value || value.trim().length < 3) {
+      updateRouteField(index, "externalPickupLocations", []);
       return;
     }
-    const delayDebounceFn = setTimeout(async () => {
-      const results = await api.searchExternalLocations(pickupLocation);
-      setExternalPickupLocations(results);
+    
+    searchTimeoutRef.current = setTimeout(async () => {
+      const results = await api.searchExternalLocations(value);
+      updateRouteField(index, "externalPickupLocations", results || []);
     }, 400);
-    return () => clearTimeout(delayDebounceFn);
-  }, [pickupLocation]);
+  };
 
-  useEffect(() => {
-    if (!dropoffLocation || dropoffLocation.trim().length < 3) {
-      setExternalDropoffLocations([]);
+  const handleDropoffChange = (index: number, value: string) => {
+    updateRouteField(index, "dropoffLocation", value);
+    updateRouteField(index, "showDropoffSuggestions", true);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    if (!value || value.trim().length < 3) {
+      updateRouteField(index, "externalDropoffLocations", []);
       return;
     }
-    const delayDebounceFn = setTimeout(async () => {
-      const results = await api.searchExternalLocations(dropoffLocation);
-      setExternalDropoffLocations(results);
+    
+    searchTimeoutRef.current = setTimeout(async () => {
+      const results = await api.searchExternalLocations(value);
+      updateRouteField(index, "externalDropoffLocations", results || []);
     }, 400);
-    return () => clearTimeout(delayDebounceFn);
-  }, [dropoffLocation]);
+  };
+
+  const getPickupSuggestions = (route: RouteItem) => {
+    const localMatches = extractedLocations.filter((loc) =>
+      loc.toLowerCase().includes((route.pickupLocation || "").toLowerCase())
+    );
+    return Array.from(new Set([...localMatches, ...(route.externalPickupLocations || [])]));
+  };
+
+  const getDropoffSuggestions = (route: RouteItem) => {
+    const localMatches = extractedLocations.filter((loc) =>
+      loc.toLowerCase().includes((route.dropoffLocation || "").toLowerCase())
+    );
+    return Array.from(new Set([...localMatches, ...(route.externalDropoffLocations || [])]));
+  };
 
   // Step 3 States: Flight Setup
   const [requireFlight, setRequireFlight] = useState(false);
@@ -394,54 +470,66 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     loadData();
   }, [initialCompanies]);
 
-  useEffect(() => {
-    if (!vehicle || !tripPackage || rawPriceList.length === 0) return;
-
+  const getResolvedPrice = (tripPkg: string, veh: string) => {
+    if (!tripPkg || !veh || rawPriceList.length === 0) return "";
+    
     const matchedPackage = rawPriceList.find((p: any) => {
       if (!p.route) return false;
       const r1 = p.route.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const r2 = tripPackage.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const r2 = tripPkg.toLowerCase().replace(/[^a-z0-9]/g, "");
       return r1 === r2 || r1.includes(r2) || r2.includes(r1);
     });
 
     if (matchedPackage) {
-      let resolvedPrice: number | null = null;
-
-      // Try to resolve custom price first
+      // 1. Check custom prices first
       if (matchedPackage.custom_prices && typeof matchedPackage.custom_prices === 'object') {
-        const customPriceObj = matchedPackage.custom_prices[vehicle];
+        const customPriceObj = matchedPackage.custom_prices[veh];
         if (customPriceObj && typeof customPriceObj === 'object' && customPriceObj.price !== undefined) {
           const p = parseFloat(customPriceObj.price);
           if (!isNaN(p)) {
-            resolvedPrice = p;
+            return p;
           }
         }
       }
 
-      if (resolvedPrice !== null) {
-        setPriceBeforeDiscount(resolvedPrice);
-      } else {
-        // Fallback to category based pricing
-        const name = vehicle.toLowerCase();
-        let category: "sedan" | "suv" | "van" | "coach" | null = null;
-        if (name.includes("sedan")) category = "sedan";
-        else if (name.includes("suv") || name.includes("gmc") || name.includes("yukon")) category = "suv";
-        else if (name.includes("van") || name.includes("staria") || name.includes("starex") || name.includes("hiace") || name.includes("grand cabin")) category = "van";
-        else if (name.includes("coaster") || name.includes("bus") || name.includes("coach")) category = "coach";
-        else category = "sedan"; // Fallback to sedan for custom vehicle names
+      // 2. Fallback to category based pricing
+      const name = veh.toLowerCase();
+      let category: "sedan" | "suv" | "van" | "coach" | null = null;
+      if (name.includes("sedan")) category = "sedan";
+      else if (name.includes("suv") || name.includes("gmc") || name.includes("yukon")) category = "suv";
+      else if (name.includes("van") || name.includes("staria") || name.includes("starex") || name.includes("hiace") || name.includes("grand cabin")) category = "van";
+      else if (name.includes("coaster") || name.includes("bus") || name.includes("coach")) category = "coach";
+      else category = "sedan"; // Fallback to sedan for custom vehicle names
 
-        if (category) {
-          const priceField = `${category}_price`;
-          const autoPrice = parseFloat(matchedPackage[priceField]);
-          if (!isNaN(autoPrice)) {
-            setPriceBeforeDiscount(autoPrice);
-          }
+      if (category) {
+        const priceField = `${category}_price`;
+        const autoPrice = parseFloat(matchedPackage[priceField]);
+        if (!isNaN(autoPrice)) {
+          return autoPrice;
         }
       }
     }
-  }, [vehicle, tripPackage, rawPriceList]);
+    return "";
+  };
 
-  const finalBookingPrice = Math.max(0, (Number(priceBeforeDiscount) || 0) - (Number(discount) || 0));
+  useEffect(() => {
+    if (rawPriceList.length === 0) return;
+    setRoutes((prev) =>
+      prev.map((route) => {
+        if (route.tripPackage && route.vehicle && (route.priceBeforeDiscount === "" || route.priceBeforeDiscount === 0)) {
+          const resolvedPrice = getResolvedPrice(route.tripPackage, route.vehicle);
+          const base = Number(resolvedPrice || 0);
+          const disc = Number(route.discount || 0);
+          return {
+            ...route,
+            priceBeforeDiscount: resolvedPrice,
+            cashToReceive: Math.max(0, base - disc)
+          };
+        }
+        return route;
+      })
+    );
+  }, [rawPriceList]);
 
   const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {};
@@ -487,49 +575,52 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     }
 
     if (step === 2) {
-      if (!pickupDate) {
-        newErrors.pickupDate = "Pick up date is required.";
-      }
-      if (!pickupTime) {
-        newErrors.pickupTime = "Pick up time is required.";
-      }
-      if (!pickupLocation.trim()) {
-        newErrors.pickupLocation = "Pick up location is required.";
-      }
-      if (!dropoffLocation.trim()) {
-        newErrors.dropoffLocation = "Drop off location is required.";
-      }
-      if (!vehicle) {
-        newErrors.vehicle = "Vehicle selection is required.";
-      }
-      if (!tripPackage) {
-        newErrors.tripPackage = "Package selection is required.";
-      }
-      if (priceBeforeDiscount === "") {
-        newErrors.priceBeforeDiscount = "Price before discount is required.";
-      } else if (Number(priceBeforeDiscount) < 0) {
-        newErrors.priceBeforeDiscount = "Price before discount cannot be negative.";
-      }
+      routes.forEach((route, idx) => {
+        const prefix = `route_${idx}_`;
+        if (!route.pickupDate) {
+          newErrors[`${prefix}pickupDate`] = `Pick up date is required for Route #${idx + 1}.`;
+        }
+        if (!route.pickupTime) {
+          newErrors[`${prefix}pickupTime`] = `Pick up time is required for Route #${idx + 1}.`;
+        }
+        if (!route.pickupLocation.trim()) {
+          newErrors[`${prefix}pickupLocation`] = `Pick up location is required for Route #${idx + 1}.`;
+        }
+        if (!route.dropoffLocation.trim()) {
+          newErrors[`${prefix}dropoffLocation`] = `Drop off location is required for Route #${idx + 1}.`;
+        }
+        if (!route.vehicle) {
+          newErrors[`${prefix}vehicle`] = `Vehicle selection is required for Route #${idx + 1}.`;
+        }
+        if (!route.tripPackage) {
+          newErrors[`${prefix}tripPackage`] = `Package selection is required for Route #${idx + 1}.`;
+        }
+        if (route.priceBeforeDiscount === "") {
+          newErrors[`${prefix}priceBeforeDiscount`] = `Price before discount is required for Route #${idx + 1}.`;
+        } else if (Number(route.priceBeforeDiscount) < 0) {
+          newErrors[`${prefix}priceBeforeDiscount`] = `Price before discount cannot be negative for Route #${idx + 1}.`;
+        }
 
-      if (discount !== "" && Number(discount) < 0) {
-        newErrors.discount = "Discount cannot be negative.";
-      } else if (discount !== "" && Number(discount) > (Number(priceBeforeDiscount) || 0)) {
-        newErrors.discount = "Discount cannot exceed the price before discount.";
-      }
+        if (route.discount !== "" && Number(route.discount) < 0) {
+          newErrors[`${prefix}discount`] = `Discount cannot be negative for Route #${idx + 1}.`;
+        } else if (route.discount !== "" && Number(route.discount) > (Number(route.priceBeforeDiscount) || 0)) {
+          newErrors[`${prefix}discount`] = `Discount cannot exceed the price before discount for Route #${idx + 1}.`;
+        }
 
-      if (cashToReceive !== "" && Number(cashToReceive) < 0) {
-        newErrors.cashToReceive = "Cash to receive cannot be negative.";
-      }
+        if (route.cashToReceive !== "" && Number(route.cashToReceive) < 0) {
+          newErrors[`${prefix}cashToReceive`] = `Cash to receive cannot be negative for Route #${idx + 1}.`;
+        }
 
-      if (adults !== "" && Number(adults) < 0) {
-        newErrors.adults = "Adults count cannot be negative.";
-      }
-      if (childrenCount !== "" && Number(childrenCount) < 0) {
-        newErrors.childrenCount = "Children count cannot be negative.";
-      }
-      if (bags !== "" && Number(bags) < 0) {
-        newErrors.bags = "Bags count cannot be negative.";
-      }
+        if (route.adults !== "" && Number(route.adults) < 0) {
+          newErrors[`${prefix}adults`] = `Adults count cannot be negative for Route #${idx + 1}.`;
+        }
+        if (route.childrenCount !== "" && Number(route.childrenCount) < 0) {
+          newErrors[`${prefix}childrenCount`] = `Children count cannot be negative for Route #${idx + 1}.`;
+        }
+        if (route.bags !== "" && Number(route.bags) < 0) {
+          newErrors[`${prefix}bags`] = `Bags count cannot be negative for Route #${idx + 1}.`;
+        }
+      });
     }
 
     if (step === 3) {
@@ -714,7 +805,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       const createdCustomer = custRes.data;
       const customerId = createdCustomer.id;
 
-      // 3. Create Booking Record
+      // 3. Create Booking Record per Route
       const todayStr = new Date().toISOString().split("T")[0];
 
       let bookingFlightNo = null;
@@ -724,27 +815,32 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         else bookingFlightNo = `${fltArrFlightNo} / ${fltDepFlightNo}`;
       }
 
-      const bookingData = {
-        customer_id: customerId,
-        pickup: pickupLocation,
-        destination: dropoffLocation,
-        date: pickupDate,
-        time: pickupTime,
-        passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
-        car_type: vehicle,
-        car_price: finalBookingPrice,
-        full_name: custName,
-        email: custEmail || null,
-        whatsapp: custPhone || "N/A",
-        flight_no: bookingFlightNo,
-        notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}${notesInfo}`,
-      };
+      for (let idx = 0; idx < routes.length; idx++) {
+        const route = routes[idx];
+        const finalPrice = Math.max(0, (Number(route.priceBeforeDiscount) || 0) - (Number(route.discount) || 0));
 
-      const bookingRes = await api.createBooking(bookingData);
-      if (!bookingRes || !bookingRes.success) {
-        showToast("Customer created, but failed to create booking file.", "error");
-        setLoading(false);
-        return;
+        const bookingData = {
+          customer_id: customerId,
+          pickup: route.pickupLocation,
+          destination: route.dropoffLocation,
+          date: route.pickupDate,
+          time: route.pickupTime,
+          passengers: `${Number(route.adults || 0) + Number(route.childrenCount || 0)} Passengers`,
+          car_type: route.vehicle,
+          car_price: finalPrice,
+          full_name: custName,
+          email: custEmail || null,
+          whatsapp: custPhone || "N/A",
+          flight_no: bookingFlightNo,
+          notes: `Route: ${route.tripPackage} | Vehicle: ${route.vehicle} | Passengers: ${Number(route.adults || 0) + Number(route.childrenCount || 0)} | Timing Status: ${route.timingStatus} | Booking Status: ${route.bookingStatus} | Bags: ${route.bags || 0} | Discount Reason: ${route.discountReason} | Tafweej Required: ${route.tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${route.cashToReceive || 0} | Internal Notes: ${route.internalNotes} | External Notes: ${route.externalNotes}${notesInfo}`,
+        };
+
+        const bookingRes = await api.createBooking(bookingData);
+        if (!bookingRes || !bookingRes.success) {
+          showToast(`Customer created, but failed to create booking for Route #${idx + 1}.`, "error");
+          setLoading(false);
+          return;
+        }
       }
 
       // 4. Create Flight (if requireFlight is active)
@@ -1081,484 +1177,595 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
             {/* ==================== TAB 2: ROUTE BOOKING ==================== */}
             {activeStep === 2 && (
-              <div>
-                <div style={{ borderBottom: "1px solid #edf2f9", marginBottom: "20px", paddingBottom: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                <div style={{ borderBottom: "1px solid #edf2f9", marginBottom: "10px", paddingBottom: "10px" }}>
                   <h3 style={{ color: "var(--dark-color)", margin: 0, fontSize: "18px", fontWeight: "700" }}>
                     <i className="fa-solid fa-route" style={{ marginRight: "10px", color: "var(--primary-color)" }}></i> Step 2: Transport Route & Sector Selection
                   </h3>
                 </div>
 
-                <div className="form-grid">
-                  {/* Pickup Date */}
-                  <div>
-                    <label className="form-label">Pick up Date *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-calendar-day form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={pickupDate}
-                        onChange={(e) => setPickupDate(e.target.value)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.pickupDate ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.pickupDate && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.pickupDate}</span>
-                    )}
-                  </div>
+                {routes.map((route, index) => {
+                  const finalPrice = Math.max(0, (Number(route.priceBeforeDiscount) || 0) - (Number(route.discount) || 0));
 
-                  {/* Pickup Time */}
-                  <div>
-                    <label className="form-label">Pick up Time *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="time"
-                        className="form-input"
-                        value={pickupTime}
-                        onChange={(e) => setPickupTime(e.target.value)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.pickupTime ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.pickupTime && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.pickupTime}</span>
-                    )}
-                  </div>
-
-                  {/* Pickup Location */}
-                  <div style={{ position: "relative" }}>
-                    <label className="form-label">Pick up Location *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-location-dot form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Type or select location..."
-                        value={pickupLocation}
-                        onChange={(e) => {
-                          setPickupLocation(e.target.value);
-                          setShowPickupSuggestions(true);
-                        }}
-                        onFocus={() => setShowPickupSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowPickupSuggestions(false), 200)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.pickupLocation ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {showPickupSuggestions && filteredPickupSuggestions.length > 0 && (
-                      <div className="suggestions-box" style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
+                  return (
+                    <div
+                      key={route.id}
+                      className="route-card animate-fade-in"
+                      style={{
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "12px",
+                        padding: "24px",
                         backgroundColor: "#fff",
-                        border: "1px solid #cbd5e1",
-                        borderRadius: "8px",
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                        zIndex: 999,
-                        maxHeight: "180px",
-                        overflowY: "auto",
-                        marginTop: "4px"
-                      }}>
-                        {filteredPickupSuggestions.map((loc, idx) => (
-                          <div
-                            key={idx}
-                            onMouseDown={() => {
-                              setPickupLocation(loc);
-                              setShowPickupSuggestions(false);
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                        position: "relative"
+                      }}
+                    >
+                      {/* Header */}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "20px",
+                          borderBottom: "1px solid #f1f5f9",
+                          paddingBottom: "12px"
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: "15px", color: "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <i className="fa-solid fa-circle" style={{ fontSize: "8px", color: "#b48a1d" }}></i>
+                          Route #{index + 1}
+                        </span>
+                        {routes.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRoutes((prev) => prev.filter((_, i) => i !== index));
                             }}
                             style={{
-                              padding: "10px 14px",
+                              color: "#ef4444",
+                              background: "none",
+                              border: "none",
                               cursor: "pointer",
                               fontSize: "13px",
-                              color: "#334155",
-                              borderBottom: "1px solid #f1f5f9"
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px"
                             }}
-                            className="suggestion-item"
                           >
-                            <i className="fas fa-location-dot" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
-                            {loc}
+                            <i className="fa-solid fa-trash-can"></i> Remove Route
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Form Grid */}
+                      <div className="form-grid">
+                        {/* Pickup Date */}
+                        <div>
+                          <label className="form-label">Pick up Date *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-calendar-day form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="date"
+                              className="form-input"
+                              value={route.pickupDate}
+                              onChange={(e) => updateRouteField(index, "pickupDate", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_pickupDate`] ? "#ef4444" : undefined }}
+                            />
                           </div>
-                        ))}
-                      </div>
-                    )}
-                    {errors.pickupLocation && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.pickupLocation}</span>
-                    )}
-                  </div>
+                          {errors[`route_${index}_pickupDate`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_pickupDate`]}</span>
+                          )}
+                        </div>
 
-                  {/* Dropoff Location */}
-                  <div style={{ position: "relative" }}>
-                    <label className="form-label">Drop off Location *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-paper-plane form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Type or select location..."
-                        value={dropoffLocation}
-                        onChange={(e) => {
-                          setDropoffLocation(e.target.value);
-                          setShowDropoffSuggestions(true);
-                        }}
-                        onFocus={() => setShowDropoffSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowDropoffSuggestions(false), 200)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.dropoffLocation ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {showDropoffSuggestions && filteredDropoffSuggestions.length > 0 && (
-                      <div className="suggestions-box" style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
-                        backgroundColor: "#fff",
-                        border: "1px solid #cbd5e1",
-                        borderRadius: "8px",
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                        zIndex: 999,
-                        maxHeight: "180px",
-                        overflowY: "auto",
-                        marginTop: "4px"
-                      }}>
-                        {filteredDropoffSuggestions.map((loc, idx) => (
-                          <div
-                            key={idx}
-                            onMouseDown={() => {
-                              setDropoffLocation(loc);
-                              setShowDropoffSuggestions(false);
-                            }}
-                            style={{
-                              padding: "10px 14px",
-                              cursor: "pointer",
-                              fontSize: "13px",
-                              color: "#334155",
-                              borderBottom: "1px solid #f1f5f9"
-                            }}
-                            className="suggestion-item"
-                          >
-                            <i className="fas fa-paper-plane" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
-                            {loc}
+                        {/* Pickup Time */}
+                        <div>
+                          <label className="form-label">Pick up Time *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="time"
+                              className="form-input"
+                              value={route.pickupTime}
+                              onChange={(e) => updateRouteField(index, "pickupTime", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_pickupTime`] ? "#ef4444" : undefined }}
+                            />
                           </div>
-                        ))}
+                          {errors[`route_${index}_pickupTime`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_pickupTime`]}</span>
+                          )}
+                        </div>
+
+                        {/* Pickup Location */}
+                        <div style={{ position: "relative" }}>
+                          <label className="form-label">Pick up Location *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-location-dot form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Type or select location..."
+                              value={route.pickupLocation}
+                              onChange={(e) => handlePickupChange(index, e.target.value)}
+                              onFocus={() => updateRouteField(index, "showPickupSuggestions", true)}
+                              onBlur={() => setTimeout(() => updateRouteField(index, "showPickupSuggestions", false), 200)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_pickupLocation`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {route.showPickupSuggestions && getPickupSuggestions(route).length > 0 && (
+                            <div className="suggestions-box" style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              backgroundColor: "#fff",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                              zIndex: 999,
+                              maxHeight: "180px",
+                              overflowY: "auto",
+                              marginTop: "4px"
+                            }}>
+                              {getPickupSuggestions(route).map((loc, idx) => (
+                                <div
+                                  key={idx}
+                                  onMouseDown={() => {
+                                    updateRouteField(index, "pickupLocation", loc);
+                                    updateRouteField(index, "showPickupSuggestions", false);
+                                  }}
+                                  style={{
+                                    padding: "10px 14px",
+                                    cursor: "pointer",
+                                    fontSize: "13px",
+                                    color: "#334155",
+                                    borderBottom: "1px solid #f1f5f9"
+                                  }}
+                                  className="suggestion-item"
+                                >
+                                  <i className="fas fa-location-dot" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
+                                  {loc}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {errors[`route_${index}_pickupLocation`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_pickupLocation`]}</span>
+                          )}
+                        </div>
+
+                        {/* Dropoff Location */}
+                        <div style={{ position: "relative" }}>
+                          <label className="form-label">Drop off Location *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-paper-plane form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Type or select location..."
+                              value={route.dropoffLocation}
+                              onChange={(e) => handleDropoffChange(index, e.target.value)}
+                              onFocus={() => updateRouteField(index, "showDropoffSuggestions", true)}
+                              onBlur={() => setTimeout(() => updateRouteField(index, "showDropoffSuggestions", false), 200)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_dropoffLocation`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {route.showDropoffSuggestions && getDropoffSuggestions(route).length > 0 && (
+                            <div className="suggestions-box" style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              backgroundColor: "#fff",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                              zIndex: 999,
+                              maxHeight: "180px",
+                              overflowY: "auto",
+                              marginTop: "4px"
+                            }}>
+                              {getDropoffSuggestions(route).map((loc, idx) => (
+                                <div
+                                  key={idx}
+                                  onMouseDown={() => {
+                                    updateRouteField(index, "dropoffLocation", loc);
+                                    updateRouteField(index, "showDropoffSuggestions", false);
+                                  }}
+                                  style={{
+                                    padding: "10px 14px",
+                                    cursor: "pointer",
+                                    fontSize: "13px",
+                                    color: "#334155",
+                                    borderBottom: "1px solid #f1f5f9"
+                                  }}
+                                  className="suggestion-item"
+                                >
+                                  <i className="fas fa-paper-plane" style={{ marginRight: "8px", color: "#b48a1d" }}></i>
+                                  {loc}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {errors[`route_${index}_dropoffLocation`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_dropoffLocation`]}</span>
+                          )}
+                        </div>
+
+                        {/* Timing Status */}
+                        <div>
+                          <label className="form-label">Timing Status</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-clock-rotate-left form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <select
+                              className="form-input form-select"
+                              value={route.timingStatus}
+                              onChange={(e) => updateRouteField(index, "timingStatus", e.target.value)}
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_timingStatus`] ? "#ef4444" : undefined }}
+                            >
+                              <option value="Confirmed">Confirmed</option>
+                              <option value="Delayed">Delayed</option>
+                              <option value="On Time">On Time</option>
+                            </select>
+                          </div>
+                          {errors[`route_${index}_timingStatus`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_timingStatus`]}</span>
+                          )}
+                        </div>
+
+                        {/* Booking Status */}
+                        <div>
+                          <label className="form-label">Booking Status *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-chart-simple form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <select
+                              className="form-input form-select"
+                              value={route.bookingStatus}
+                              onChange={(e) => updateRouteField(index, "bookingStatus", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_bookingStatus`] ? "#ef4444" : undefined }}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Confirmed">Confirmed</option>
+                              <option value="Completed">Completed</option>
+                              <option value="Cancelled">Cancelled</option>
+                            </select>
+                          </div>
+                          {errors[`route_${index}_bookingStatus`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_bookingStatus`]}</span>
+                          )}
+                        </div>
+
+                        {/* Adults */}
+                        <div>
+                          <label className="form-label">Adults</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-user-group form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="number"
+                              min="0"
+                              className="form-input"
+                              value={route.adults}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updateRouteField(index, "adults", val === "" ? "" : parseInt(val) || 0);
+                              }}
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_adults`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {errors[`route_${index}_adults`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_adults`]}</span>
+                          )}
+                        </div>
+
+                        {/* Children */}
+                        <div>
+                          <label className="form-label">Children</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-child form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="number"
+                              min="0"
+                              className="form-input"
+                              value={route.childrenCount}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updateRouteField(index, "childrenCount", val === "" ? "" : parseInt(val) || 0);
+                              }}
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_childrenCount`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {errors[`route_${index}_childrenCount`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_childrenCount`]}</span>
+                          )}
+                        </div>
+
+                        {/* Bags */}
+                        <div>
+                          <label className="form-label">Bags</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-briefcase form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="number"
+                              min="0"
+                              className="form-input"
+                              value={route.bags}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updateRouteField(index, "bags", val === "" ? "" : parseInt(val) || 0);
+                              }}
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_bags`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {errors[`route_${index}_bags`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_bags`]}</span>
+                          )}
+                        </div>
+
+                        {/* Vehicle */}
+                        <div>
+                          <label className="form-label">Vehicle *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-bus form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <select
+                              className="form-input form-select"
+                              value={route.vehicle}
+                              onChange={(e) => updateRouteField(index, "vehicle", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_vehicle`] ? "#ef4444" : undefined }}
+                            >
+                              <option value="">Choose vehicle...</option>
+                              {vehiclesList.map((v, i) => (
+                                <option key={i} value={v}>
+                                  {v}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          {errors[`route_${index}_vehicle`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_vehicle`]}</span>
+                          )}
+                        </div>
+
+                        {/* Package */}
+                        <div className="form-group-full">
+                          <label className="form-label">Package *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-box-archive form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <select
+                              className="form-input form-select"
+                              value={route.tripPackage}
+                              onChange={(e) => updateRouteField(index, "tripPackage", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_tripPackage`] ? "#ef4444" : undefined }}
+                            >
+                              <option value="">Choose package...</option>
+                              {packagesList.map((p, i) => (
+                                <option key={i} value={p}>
+                                  {p}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          {errors[`route_${index}_tripPackage`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_tripPackage`]}</span>
+                          )}
+                        </div>
+
+                        {/* Price Before Discount */}
+                        <div>
+                          <label className="form-label">Price Before Discount *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-money-bill-1 form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="form-input"
+                              placeholder="0.00"
+                              value={route.priceBeforeDiscount}
+                              onChange={(e) => updateRouteField(index, "priceBeforeDiscount", e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_priceBeforeDiscount`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {errors[`route_${index}_priceBeforeDiscount`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_priceBeforeDiscount`]}</span>
+                          )}
+                        </div>
+
+                        {/* Discount */}
+                        <div>
+                          <label className="form-label">Discount</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-scissors form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="form-input"
+                              placeholder="0.00"
+                              value={route.discount}
+                              onChange={(e) => updateRouteField(index, "discount", e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_discount`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {errors[`route_${index}_discount`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_discount`]}</span>
+                          )}
+                        </div>
+
+                        {/* Final Booking Price */}
+                        <div>
+                          <label className="form-label">Final Booking Price</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-calculator form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="text"
+                              className="form-input form-input-readonly"
+                              value={finalPrice.toFixed(2)}
+                              readOnly
+                              style={{ paddingLeft: "42px", width: "100%", background: "#f1f5f9" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Cash to Receive */}
+                        <div>
+                          <label className="form-label">Cash to Receive</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-hand-holding-dollar form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              className="form-input"
+                              placeholder="0.00"
+                              value={route.cashToReceive}
+                              onChange={(e) => updateRouteField(index, "cashToReceive", e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_cashToReceive`] ? "#ef4444" : undefined }}
+                            />
+                          </div>
+                          {errors[`route_${index}_cashToReceive`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_cashToReceive`]}</span>
+                          )}
+                        </div>
+
+                        {/* Discount Reason */}
+                        <div className="form-group-full">
+                          <label className="form-label">Discount Reason</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-quote-left form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Reason for applying discount (if any)..."
+                              value={route.discountReason}
+                              onChange={(e) => updateRouteField(index, "discountReason", e.target.value)}
+                              style={{ paddingLeft: "42px", width: "100%" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Tafweej Required Toggle */}
+                        <div className="form-group-full">
+                          <div className="tafweej-box">
+                            <div className="tafweej-row">
+                              <span className="tafweej-toggle-label">Is Tafweej Required?</span>
+                              <label className="switch">
+                                <input
+                                  type="checkbox"
+                                  checked={route.tafweejRequired}
+                                  onChange={(e) => updateRouteField(index, "tafweejRequired", e.target.checked)}
+                                />
+                                <span className="slider"></span>
+                              </label>
+                            </div>
+                            <div className="tafweej-note">
+                              <i className="fas fa-circle-exclamation"></i>
+                              <span>Tafweej is mandatory if the Umrah visa is obtained on airport arrival.</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Internal Notes */}
+                        <div className="form-group-full">
+                          <label className="form-label">Internal Notes</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-lock form-icon" style={{ position: "absolute", left: "14px", top: "16px", color: "#9ca3af" }}></i>
+                            <textarea
+                              className="form-input form-textarea"
+                              placeholder="Private internal notes (not visible to customer)..."
+                              value={route.internalNotes}
+                              onChange={(e) => updateRouteField(index, "internalNotes", e.target.value)}
+                              rows={3}
+                              style={{ paddingLeft: "42px", width: "100%", height: "auto", resize: "vertical", paddingTop: "12px" }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* External Notes */}
+                        <div className="form-group-full">
+                          <label className="form-label">External Notes</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-comment form-icon" style={{ position: "absolute", left: "14px", top: "16px", color: "#9ca3af" }}></i>
+                            <textarea
+                              className="form-input form-textarea"
+                              placeholder="Notes for customer/driver..."
+                              value={route.externalNotes}
+                              onChange={(e) => updateRouteField(index, "externalNotes", e.target.value)}
+                              rows={3}
+                              style={{ paddingLeft: "42px", width: "100%", height: "auto", resize: "vertical", paddingTop: "12px" }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )}
-                    {errors.dropoffLocation && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.dropoffLocation}</span>
-                    )}
-                  </div>
-
-                  {/* Timing Status */}
-                  <div>
-                    <label className="form-label">Timing Status</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-clock-rotate-left form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <select
-                        className="form-input form-select"
-                        value={timingStatus}
-                        onChange={(e) => setTimingStatus(e.target.value)}
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.timingStatus ? "#ef4444" : undefined }}
-                      >
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Delayed">Delayed</option>
-                        <option value="On Time">On Time</option>
-                      </select>
                     </div>
-                    {errors.timingStatus && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.timingStatus}</span>
-                    )}
-                  </div>
+                  );
+                })}
 
-                  {/* Booking Status */}
-                  <div>
-                    <label className="form-label">Booking Status *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-chart-simple form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <select
-                        className="form-input form-select"
-                        value={bookingStatus}
-                        onChange={(e) => setBookingStatus(e.target.value)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.bookingStatus ? "#ef4444" : undefined }}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
-                    </div>
-                    {errors.bookingStatus && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.bookingStatus}</span>
-                    )}
-                  </div>
-
-                  {/* Adults */}
-                  <div>
-                    <label className="form-label">Adults</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-user-group form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="number"
-                        min="0"
-                        className="form-input"
-                        value={adults}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setAdults(val === "" ? "" : parseInt(val) || 0);
-                        }}
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.adults ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.adults && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.adults}</span>
-                    )}
-                  </div>
-
-                  {/* Children */}
-                  <div>
-                    <label className="form-label">Children</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-child form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="number"
-                        min="0"
-                        className="form-input"
-                        value={childrenCount}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setChildrenCount(val === "" ? "" : parseInt(val) || 0);
-                        }}
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.childrenCount ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.childrenCount && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.childrenCount}</span>
-                    )}
-                  </div>
-
-                  {/* Bags */}
-                  <div>
-                    <label className="form-label">Bags</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-briefcase form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="number"
-                        min="0"
-                        className="form-input"
-                        value={bags}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setBags(val === "" ? "" : parseInt(val) || 0);
-                        }}
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.bags ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.bags && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.bags}</span>
-                    )}
-                  </div>
-
-                  {/* Vehicle */}
-                  <div>
-                    <label className="form-label">Vehicle *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-bus form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <select
-                        className="form-input form-select"
-                        value={vehicle}
-                        onChange={(e) => setVehicle(e.target.value)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.vehicle ? "#ef4444" : undefined }}
-                      >
-                        <option value="">Choose vehicle...</option>
-                        {vehiclesList.map((v, i) => (
-                          <option key={i} value={v}>
-                            {v}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {errors.vehicle && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.vehicle}</span>
-                    )}
-                  </div>
-
-                  {/* Package */}
-                  <div className="form-group-full">
-                    <label className="form-label">Package *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-box-archive form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <select
-                        className="form-input form-select"
-                        value={tripPackage}
-                        onChange={(e) => setTripPackage(e.target.value)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.tripPackage ? "#ef4444" : undefined }}
-                      >
-                        <option value="">Choose package...</option>
-                        {packagesList.map((p, i) => (
-                          <option key={i} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {errors.tripPackage && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.tripPackage}</span>
-                    )}
-                  </div>
-
-                  {/* Price Before Discount */}
-                  <div>
-                    <label className="form-label">Price Before Discount *</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-money-bill-1 form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="form-input"
-                        placeholder="0.00"
-                        value={priceBeforeDiscount}
-                        onChange={(e) => setPriceBeforeDiscount(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
-                        required
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.priceBeforeDiscount ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.priceBeforeDiscount && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.priceBeforeDiscount}</span>
-                    )}
-                  </div>
-
-                  {/* Discount */}
-                  <div>
-                    <label className="form-label">Discount</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-scissors form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="form-input"
-                        placeholder="0.00"
-                        value={discount}
-                        onChange={(e) => setDiscount(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.discount ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.discount && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.discount}</span>
-                    )}
-                  </div>
-
-                  {/* Final Booking Price */}
-                  <div>
-                    <label className="form-label">Final Booking Price</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-calculator form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="text"
-                        className="form-input form-input-readonly"
-                        value={finalBookingPrice.toFixed(2)}
-                        readOnly
-                        style={{ paddingLeft: "42px", width: "100%", background: "#f1f5f9" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Cash to Receive */}
-                  <div>
-                    <label className="form-label">Cash to Receive</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-hand-holding-dollar form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="form-input"
-                        placeholder="0.00"
-                        value={cashToReceive}
-                        onChange={(e) => setCashToReceive(e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
-                        style={{ paddingLeft: "42px", width: "100%", borderColor: errors.cashToReceive ? "#ef4444" : undefined }}
-                      />
-                    </div>
-                    {errors.cashToReceive && (
-                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.cashToReceive}</span>
-                    )}
-                  </div>
-
-                  {/* Discount Reason */}
-                  <div className="form-group-full">
-                    <label className="form-label">Discount Reason</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-quote-left form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Reason for applying discount (if any)..."
-                        value={discountReason}
-                        onChange={(e) => setDiscountReason(e.target.value)}
-                        style={{ paddingLeft: "42px", width: "100%" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Tafweej Required Toggle */}
-                  <div className="form-group-full">
-                    <div className="tafweej-box">
-                      <div className="tafweej-row">
-                        <span className="tafweej-toggle-label">Is Tafweej Required?</span>
-                        <label className="switch">
-                          <input
-                            type="checkbox"
-                            checked={tafweejRequired}
-                            onChange={(e) => setTafweejRequired(e.target.checked)}
-                          />
-                          <span className="slider"></span>
-                        </label>
-                      </div>
-                      <div className="tafweej-note">
-                        <i className="fas fa-circle-exclamation"></i>
-                        <span>Tafweej is mandatory if the Umrah visa is obtained on airport arrival.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Internal Notes */}
-                  <div className="form-group-full">
-                    <label className="form-label">Internal Notes</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-lock form-icon" style={{ position: "absolute", left: "14px", top: "16px", color: "#9ca3af" }}></i>
-                      <textarea
-                        className="form-input form-textarea"
-                        placeholder="Private internal notes (not visible to customer)..."
-                        value={internalNotes}
-                        onChange={(e) => setInternalNotes(e.target.value)}
-                        rows={3}
-                        style={{ paddingLeft: "42px", width: "100%", height: "auto", resize: "vertical", paddingTop: "12px" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* External Notes */}
-                  <div className="form-group-full">
-                    <label className="form-label">External Notes</label>
-                    <div className="form-input-wrapper" style={{ position: "relative" }}>
-                      <i className="fas fa-comment form-icon" style={{ position: "absolute", left: "14px", top: "16px", color: "#9ca3af" }}></i>
-                      <textarea
-                        className="form-input form-textarea"
-                        placeholder="Notes for customer/driver..."
-                        value={externalNotes}
-                        onChange={(e) => setExternalNotes(e.target.value)}
-                        rows={3}
-                        style={{ paddingLeft: "42px", width: "100%", height: "auto", resize: "vertical", paddingTop: "12px" }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                {/* Add More Route Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRoutes((prev) => [
+                      ...prev,
+                      {
+                        id: Date.now(),
+                        pickupDate: "",
+                        pickupTime: "",
+                        pickupLocation: "",
+                        dropoffLocation: "",
+                        timingStatus: "Confirmed",
+                        bookingStatus: "Pending",
+                        adults: 0,
+                        childrenCount: 0,
+                        bags: 0,
+                        vehicle: "",
+                        tripPackage: "",
+                        priceBeforeDiscount: "",
+                        discount: "",
+                        cashToReceive: "",
+                        discountReason: "",
+                        tafweejRequired: false,
+                        internalNotes: "",
+                        externalNotes: "",
+                        showPickupSuggestions: false,
+                        showDropoffSuggestions: false,
+                        externalPickupLocations: [],
+                        externalDropoffLocations: []
+                      }
+                    ]);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    padding: "16px",
+                    border: "2px dashed #b48a1d",
+                    borderRadius: "12px",
+                    color: "#b48a1d",
+                    backgroundColor: "#fff",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    width: "100%",
+                    transition: "all 0.2s",
+                    fontSize: "14px"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#fffbeb";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#fff";
+                  }}
+                >
+                  <i className="fa-solid fa-circle-plus" style={{ fontSize: "16px" }}></i> Add More Route
+                </button>
 
                 <div style={{ marginTop: "30px", display: "flex", justifyContent: "space-between" }}>
                   <button type="button" className="btn-cancel" onClick={handlePrev} style={{ display: "flex", alignItems: "center", gap: "8px" }}>

@@ -154,7 +154,7 @@ export default function AddNewBooking() {
 
   useEffect(() => {
     if (newCustCompany && companiesList.length > 0) {
-      const matched = companiesList.find((c: any) => c.name === newCustCompany);
+      const matched = companiesList.find((c: any) => c.name?.trim().toLowerCase() === newCustCompany?.trim().toLowerCase());
       if (matched) {
         setNewCustMobileCode(getDefaultPhoneCode(matched));
       } else {
@@ -230,7 +230,7 @@ export default function AddNewBooking() {
     async function loadCustomPriceList() {
       const companyName = selectedCustomerObj?.company;
       if (companyName) {
-        const matched = companiesList.find((c: any) => c.name === companyName);
+        const matched = companiesList.find((c: any) => c.name?.trim().toLowerCase() === companyName?.trim().toLowerCase());
         const group = matched?.price_group || "Standard";
         try {
           const prices = await api.getPriceList(group);

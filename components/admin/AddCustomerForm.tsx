@@ -119,7 +119,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
   useEffect(() => {
     if (custCompany && companiesList.length > 0) {
-      const matched = companiesList.find((c) => c.name === custCompany);
+      const matched = companiesList.find((c) => c.name?.trim().toLowerCase() === custCompany?.trim().toLowerCase());
       if (matched && matched.phone && matched.phone !== "N/A") {
         const defaultCode = getDefaultPhoneCode(matched);
         setCustPhoneCode(defaultCode);

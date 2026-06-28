@@ -45,6 +45,25 @@ async function request(endpoint: string, options: RequestInit = {}) {
       credentials: "include",
     });
     if (!res.ok) {
+      if (res.status === 401) {
+        if (typeof window !== "undefined") {
+          const pathname = window.location.pathname;
+          if (pathname.startsWith("/driver")) {
+            localStorage.removeItem("umrahcab_driver_user");
+            localStorage.removeItem("umrahcab_driver_token");
+            window.location.href = "/driver/login";
+          } else if (pathname.startsWith("/company")) {
+            localStorage.removeItem("umrahcab_company_user");
+            localStorage.removeItem("umrahcab_company_token");
+            window.location.href = "/company/login";
+          } else {
+            localStorage.removeItem("umrahcab_user");
+            localStorage.removeItem("umrahcab_token");
+            localStorage.removeItem("umrahcab_extras_unlocked");
+            window.location.href = "/login";
+          }
+        }
+      }
       throw new Error(`HTTP Error: ${res.status}`);
     }
     const json = await res.json();

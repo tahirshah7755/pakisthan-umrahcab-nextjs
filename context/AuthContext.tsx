@@ -140,6 +140,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             credentials: "include"
           });
 
+          if (response.status === 401) {
+            setDriverUser(null);
+            localStorage.removeItem("umrahcab_driver_user");
+            localStorage.removeItem("umrahcab_driver_token");
+            router.push("/driver/login");
+            return;
+          }
+
           if (response.ok) {
             const resData = await response.json();
             const driver = resData?.data || resData;
@@ -188,6 +196,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             },
             credentials: "include"
           });
+
+          if (response.status === 401) {
+            setCompanyUser(null);
+            localStorage.removeItem("umrahcab_company_user");
+            localStorage.removeItem("umrahcab_company_token");
+            router.push("/company/login");
+            return;
+          }
 
           if (response.ok) {
             const resData = await response.json();

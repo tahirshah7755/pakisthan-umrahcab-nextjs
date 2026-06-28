@@ -22,6 +22,11 @@ export default function Sidebar() {
   // Track open submenu states (Accordion behavior - only one open at a time)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>("/logo2.png");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     async function fetchLogo() {
@@ -191,7 +196,7 @@ export default function Sidebar() {
           <div className="profile-avatar">
             <i className="fas fa-user-tie"></i>
           </div>
-          <span className="profile-name">{user?.name || user?.username || "umrahcab"}</span>
+          <span className="profile-name">{isMounted ? (user?.name || user?.username || "umrahcab") : "umrahcab"}</span>
         </div>
         <button onClick={logout} className="logout-btn" title="Sign Out">
           <i className="fas fa-right-from-bracket"></i>

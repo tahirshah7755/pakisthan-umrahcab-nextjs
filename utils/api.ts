@@ -452,8 +452,14 @@ export const api = {
   },
 
   // Price List
-  async getPriceList() {
-    const data = await request(`/price-list?paginate=false`);
+  async getPriceList(groupName?: string) {
+    const query = groupName ? `&group_name=${encodeURIComponent(groupName)}` : '';
+    const data = await request(`/price-list?paginate=false${query}`);
+    return data || [];
+  },
+
+  async getPriceGroups() {
+    const data = await request(`/price-list/groups`);
     return data || [];
   },
 

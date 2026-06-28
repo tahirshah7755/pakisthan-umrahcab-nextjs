@@ -227,6 +227,44 @@ export default function AddNewBooking() {
   }, []);
 
   useEffect(() => {
+    async function loadCustomPriceList() {
+      const companyName = selectedCustomerObj?.company;
+      if (companyName) {
+        const matched = companiesList.find((c: any) => c.name === companyName);
+        const group = matched?.price_group || "Standard";
+        try {
+          const prices = await api.getPriceList(group);
+          if (prices) {
+            let rawList: any[] = [];
+            if (Array.isArray(prices)) {
+              rawList = prices;
+            } else if (prices && Array.isArray(prices.data)) {
+              rawList = prices.data;
+            }
+            setRawPriceList(rawList);
+          }
+        } catch (err) {
+          console.error("Error loading group pricing:", err);
+        }
+      } else {
+        try {
+          const prices = await api.getPriceList();
+          let rawList: any[] = [];
+          if (Array.isArray(prices)) {
+            rawList = prices;
+          } else if (prices && Array.isArray(prices.data)) {
+            rawList = prices.data;
+          }
+          setRawPriceList(rawList);
+        } catch (err) {
+          console.error("Error loading default pricing:", err);
+        }
+      }
+    }
+    loadCustomPriceList();
+  }, [selectedCustomerObj, companiesList]);
+
+  useEffect(() => {
     if (!vehicle || !tripPackage || rawPriceList.length === 0) return;
 
     const matchedPackage = rawPriceList.find((p: any) => {

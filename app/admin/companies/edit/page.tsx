@@ -27,6 +27,22 @@ function EditCompanyContent() {
   const [compExemptBulkLock, setCompExemptBulkLock] = useState(false);
   const [compRemarks, setCompRemarks] = useState("");
   const [loading, setLoading] = useState(true);
+  const [priceGroups, setPriceGroups] = useState<string[]>(["Standard"]);
+  const [compPriceGroup, setCompPriceGroup] = useState("Standard");
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const groups = await api.getPriceGroups();
+        if (groups && groups.length > 0) {
+          setPriceGroups(groups);
+        }
+      } catch (err) {
+        console.error("Error fetching price groups:", err);
+      }
+    };
+    fetchGroups();
+  }, []);
 
   // Toast notification
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -64,6 +80,7 @@ function EditCompanyContent() {
           setCompTomorrowReminder(found.tomorrow_reminder === 1 || found.tomorrow_reminder === true);
           setCompExemptBulkLock(found.exempt_bulk_lock === 1 || found.exempt_bulk_lock === true);
           setCompRemarks(found.remarks || "");
+          setCompPriceGroup(found.price_group || "Standard");
         } else {
           // Default fallbacks
           setCompName("Zahid Travels");
@@ -101,7 +118,8 @@ function EditCompanyContent() {
         tomorrow_reminder: compTomorrowReminder ? 1 : 0,
         exempt_bulk_lock: compExemptBulkLock ? 1 : 0,
         remarks: compRemarks || "",
-        logo_path: compLogoBase64 || compLogoName || ""
+        logo_path: compLogoBase64 || compLogoName || "",
+        price_group: compPriceGroup
       };
       await api.updateCompany(targetId, updated);
       showToast("Company profile updated successfully!", "success");
@@ -360,6 +378,28 @@ function EditCompanyContent() {
                 <span className="slider"></span>
               </label>
             </div>
+          </div>
+
+          {/* Row 4.5: Assigned Price Group */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div>
+              <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Assigned Price Group</label>
+              <div className="form-input-wrapper">
+                <i className="fas fa-tags form-icon" style={{ color: "#2563eb" }}></i>
+                <select 
+                  className="form-input form-select" 
+                  value={compPriceGroup} 
+                  onChange={(e) => setCompPriceGroup(e.target.value)}
+                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+                >
+                  {priceGroups.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+                <i className="fas fa-chevron-down select-arrow"></i>
+              </div>
+            </div>
+            <div></div>
           </div>
 
           {/* Row 5: Tomorrow Invoice Reminder & Exempt from Bulk Lock */}

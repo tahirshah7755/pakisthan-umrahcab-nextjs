@@ -29,6 +29,9 @@ async function request(endpoint: string, options: RequestInit = {}) {
     if (!(options.body instanceof FormData)) {
       headers.append("Content-Type", "application/json");
     }
+    if (token) {
+      headers.append("Authorization", `Bearer ${token}`);
+    }
     if (options.headers) {
       const extraHeaders = new Headers(options.headers);
       extraHeaders.forEach((value, key) => {
@@ -481,6 +484,14 @@ export const api = {
   async getCompanyDashboardSummary() {
     const data = await request(`/company-panel/dashboard-summary`);
     return data || null;
+  },
+
+  async uploadCompanyDocument(formData: FormData) {
+    const data = await request(`/company-panel/upload-document`, {
+      method: "POST",
+      body: formData,
+    });
+    return data;
   },
 
   async getCompanyBookings(search?: string, page?: number, perPage?: number, filter?: string) {

@@ -19,6 +19,7 @@ function parseNotes(notesStr: string, carPrice: number) {
     cashToReceive: 0,
     internalNotes: "",
     externalNotes: "",
+    documents: [] as { name: string; url: string }[],
   };
 
   if (!notesStr) return result;
@@ -65,6 +66,18 @@ function parseNotes(notesStr: string, carPrice: number) {
     } else if (cleanPart.startsWith("External Notes:")) {
       result.externalNotes = cleanPart.substring("External Notes:".length).trim();
       matchedCount++;
+    } else if (cleanPart.startsWith("Documents:")) {
+      const docStr = cleanPart.substring("Documents:".length).trim();
+      if (docStr) {
+        result.documents = docStr.split(",").map(d => {
+          const idx = d.lastIndexOf("::");
+          if (idx !== -1) {
+            return { name: d.substring(0, idx), url: d.substring(idx + 2) };
+          }
+          return { name: "Document", url: d };
+        }).filter(d => d.url);
+      }
+      matchedCount++;
     }
   });
 
@@ -75,6 +88,27 @@ function parseNotes(notesStr: string, carPrice: number) {
   return result;
 }
 
+function serializeNotes(parsed: any, documents: { name: string; url: string }[]) {
+  const parts = [];
+  if (parsed.tripPackage) parts.push(`Route: ${parsed.tripPackage}`);
+  if (parsed.vehicle) parts.push(`Vehicle: ${parsed.vehicle}`);
+  if (parsed.adults) parts.push(`Passengers: ${parsed.adults}`);
+  if (parsed.timingStatus) parts.push(`Timing Status: ${parsed.timingStatus}`);
+  if (parsed.bags) parts.push(`Bags: ${parsed.bags}`);
+  if (parsed.priceBeforeDiscount) parts.push(`Price Before Discount: ${parsed.priceBeforeDiscount}`);
+  if (parsed.discount !== undefined) parts.push(`Discount: ${parsed.discount}`);
+  if (parsed.discountReason) parts.push(`Discount Reason: ${parsed.discountReason}`);
+  if (parsed.tafweejRequired) parts.push(`Tafweej Required: ${parsed.tafweejRequired ? "yes" : "no"}`);
+  if (parsed.cashToReceive) parts.push(`Cash to Receive: ${parsed.cashToReceive}`);
+  if (parsed.internalNotes) parts.push(`Internal Notes: ${parsed.internalNotes}`);
+  if (parsed.externalNotes) parts.push(`External Notes: ${parsed.externalNotes}`);
+  if (documents && documents.length > 0) {
+    const docStr = documents.map(d => `${d.name.replace(/::/g, "").replace(/,/g, "")}::${d.url}`).join(",");
+    parts.push(`Documents: ${docStr}`);
+  }
+  return parts.join(" | ");
+}
+
 function BookingViewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -83,6 +117,14 @@ function BookingViewContent() {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<any | null>(null);
   const [customerObj, setCustomerObj] = useState<any | null>(null);
+
+  // Document scanning/upload states
+  const [cameraActive, setCameraActive] = useState(false);
+  const [documentName, setDocumentName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -145,6 +187,133 @@ function BookingViewContent() {
   }
 
   const parsed = parseNotes(booking.notes, parseFloat(booking.car_price || 0));
+
+  // Start Camera
+  const startCamera = async () => {
+    try {
+      setCameraActive(true);
+      setTimeout(async () => {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" }
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
+          }
+        }
+      }, 300);
+    } catch (err) {
+      console.error("Camera access failed:", err);
+      showToast("Could not access camera. Please upload file instead.", "error");
+      setCameraActive(false);
+    }
+  };
+
+  // Stop Camera
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  // Capture Photo
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const name = documentName.trim() || "Scanned Document";
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          const file = new File([blob], `${name.toLowerCase().replace(/\s+/g, "_")}.jpg`, { type: "image/jpeg" });
+          stopCamera();
+          await uploadFile(file, name);
+        }
+      }, "image/jpeg", 0.9);
+    }
+  };
+
+  // File Upload
+  const handleFileUploadChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const name = documentName.trim() || file.name;
+    await uploadFile(file, name);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const uploadFile = async (file: File, name: string) => {
+    try {
+      setUploading(true);
+      const fd = new FormData();
+      fd.append("file", file);
+      
+      const res = await api.uploadCompanyDocument(fd);
+      if (res && res.success) {
+        showToast("Document uploaded and attached successfully!", "success");
+        setDocumentName("");
+        
+        const currentDocs = parsed.documents || [];
+        const newDocs = [...currentDocs, { name, url: res.url }];
+        const newNotes = serializeNotes(parsed, newDocs);
+        
+        const updateRes = await api.updateBooking(booking.id, {
+          ...booking,
+          notes: newNotes
+        });
+        
+        if (updateRes.success) {
+          setBooking((prev: any) => ({ ...prev, notes: newNotes }));
+        } else {
+          showToast("Failed to link document to booking.", "error");
+        }
+      } else {
+        showToast(res?.message || "Failed to upload document to server.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error uploading file.", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const deleteDocument = async (indexToDelete: number) => {
+    try {
+      setUploading(true);
+      const currentDocs = parsed.documents || [];
+      const newDocs = currentDocs.filter((_, idx) => idx !== indexToDelete);
+      const newNotes = serializeNotes(parsed, newDocs);
+      
+      const updateRes = await api.updateBooking(booking.id, {
+        ...booking,
+        notes: newNotes
+      });
+      
+      if (updateRes.success) {
+        setBooking((prev: any) => ({ ...prev, notes: newNotes }));
+        showToast("Document removed successfully.", "success");
+      } else {
+        showToast("Failed to update booking.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error removing document.", "error");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const getStatusClass = (status: string) => {
     const s = (status || "").toLowerCase();
@@ -286,6 +455,140 @@ function BookingViewContent() {
                   {parsed.externalNotes || "No external notes provided."}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Card 4: Documents & Scanning */}
+          <div className="form-card" style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
+            <h3 style={{ margin: "0 0 20px 0", color: "#0f172a", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px", fontSize: "16px", fontWeight: "700" }}>
+              <i className="fas fa-file-shield" style={{ color: "#d4af37", marginRight: "8px" }}></i>
+              Document Scanning & Files
+            </h3>
+            
+            {/* List of uploaded documents */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "20px" }}>
+              {(!parsed.documents || parsed.documents.length === 0) ? (
+                <div style={{ padding: "15px", textAlign: "center", background: "#f8fafc", borderRadius: "8px", border: "1px dashed #cbd5e1", fontSize: "13px", color: "#64748b" }}>
+                  No documents attached to this booking. Use the fields below to upload or scan passenger passports, visas, or tickets.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {parsed.documents.map((doc, idx) => (
+                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "10px 14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
+                        <i className="fas fa-file-pdf" style={{ color: "#ef4444", fontSize: "16px", flexShrink: 0 }}></i>
+                        <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{doc.name}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                        <a 
+                          href={doc.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{
+                            background: "#e0f2fe", color: "#0369a1", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px"
+                          }}
+                        >
+                          <i className="fas fa-eye"></i> View
+                        </a>
+                        <button 
+                          onClick={() => deleteDocument(idx)}
+                          disabled={uploading}
+                          style={{
+                            background: "#fee2e2", color: "#b91c1c", border: "none", padding: "4px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px"
+                          }}
+                        >
+                          <i className="fas fa-trash"></i> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Document Actions Form */}
+            <div style={{ background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ fontSize: "12px", color: "#475569", fontWeight: "700", display: "block", marginBottom: "6px", textTransform: "uppercase" }}>Document Label / Type</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Passport - Ahmed, Umrah Visa, E-Ticket..." 
+                  value={documentName}
+                  onChange={(e) => setDocumentName(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "13px", boxSizing: "border-box", outline: "none" }}
+                />
+              </div>
+
+              {/* Upload & Scan buttons */}
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  style={{
+                    flex: 1, background: "#0f172a", color: "#ffffff", border: "none", padding: "10px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px"
+                  }}
+                >
+                  <i className="fas fa-upload"></i> Upload File
+                </button>
+                <button
+                  type="button"
+                  onClick={cameraActive ? stopCamera : startCamera}
+                  disabled={uploading}
+                  style={{
+                    flex: 1, background: "#d4af37", color: "#0f172a", border: "none", padding: "10px", borderRadius: "6px", fontSize: "13px", fontWeight: "700", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px"
+                  }}
+                >
+                  <i className="fas fa-camera"></i> {cameraActive ? "Close Camera" : "Scan via Camera"}
+                </button>
+              </div>
+
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileUploadChange} 
+                style={{ display: "none" }} 
+                accept="image/*,application/pdf"
+              />
+
+              {/* Live camera scanning interface */}
+              {cameraActive && (
+                <div style={{ marginTop: "15px", display: "flex", flexDirection: "column", gap: "10px", background: "#000", padding: "10px", borderRadius: "8px", overflow: "hidden" }}>
+                  <video 
+                    ref={videoRef} 
+                    style={{ width: "100%", borderRadius: "6px", background: "#222" }} 
+                    playsInline 
+                    muted 
+                  />
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      style={{
+                        flex: 1, background: "#10b981", color: "#ffffff", border: "none", padding: "10px", borderRadius: "6px", fontSize: "13px", fontWeight: "700", cursor: "pointer"
+                      }}
+                    >
+                      Capture & Save Document
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      style={{
+                        background: "#ef4444", color: "#ffffff", border: "none", padding: "10px 15px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer"
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <canvas ref={canvasRef} style={{ display: "none" }} />
+                </div>
+              )}
+
+              {uploading && (
+                <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#b48a1d", fontWeight: "600" }}>
+                  <i className="fas fa-circle-notch fa-spin"></i> Processing & saving document...
+                </div>
+              )}
             </div>
           </div>
 

@@ -127,12 +127,11 @@ export default function AdminDriverEntriesPage() {
     }
   };
 
-  // Formula: (Rate + Voucher + Cash) - (Fuel + Parking + Wash + Oil + Maint + Mic)
+  // Formula: Cash - (Fuel + Parking + Wash + Oil + Maint + Mic)
   const calculateTotal = (data: typeof formData) => {
-    const earnings = Number(data.rate) + Number(data.voucher) + Number(data.cash);
     const expenses = Number(data.fuel) + Number(data.parking) + Number(data.wash) + 
                      Number(data.oil_change) + Number(data.car_maintenance) + Number(data.mic);
-    return earnings - expenses;
+    return Number(data.cash) - expenses;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

@@ -316,6 +316,7 @@ function BookingEditContent() {
       else if (name.includes("suv") || name.includes("gmc") || name.includes("yukon")) category = "suv";
       else if (name.includes("van") || name.includes("staria") || name.includes("starex") || name.includes("hiace") || name.includes("grand cabin")) category = "van";
       else if (name.includes("coaster") || name.includes("bus") || name.includes("coach")) category = "coach";
+      else category = "sedan"; // Fallback to sedan for custom vehicle names
 
       if (category) {
         const priceField = `${category}_price`;

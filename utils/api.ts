@@ -569,7 +569,7 @@ export const api = {
 
   async createCompanyPayment(payload: FormData | any) {
     const isFormData = payload instanceof FormData;
-    const data = await request(`/payments`, {
+    const data = await request(`/company-panel/payments`, {
       method: "POST",
       body: isFormData ? payload : JSON.stringify(payload),
     });

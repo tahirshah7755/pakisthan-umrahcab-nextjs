@@ -85,8 +85,8 @@ function FlightDetailsContent() {
         setSingleFltLoading(true);
         setSingleFltError("");
         const res = await api.getFlight(queryId);
-        if (res && res.id) {
-          setSingleFlt(res);
+        if (res && res.flight) {
+          setSingleFlt(res.flight);
           setSingleFltAudits(res.audits || []);
         } else {
           setSingleFltError("Failed to load flight details.");

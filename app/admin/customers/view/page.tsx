@@ -30,6 +30,7 @@ function CustomerViewContent() {
   const [services, setServices] = useState<any[]>([]);
   const [flights, setFlights] = useState<any[]>([]);
   const [trains, setTrains] = useState<any[]>([]);
+  const [hotels, setHotels] = useState<any[]>([]);
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -122,6 +123,20 @@ function CustomerViewContent() {
                 customer_id: t.customer_id
               })));
             }
+
+            // Map hotels
+            if (Array.isArray(customerProfile.hotels)) {
+              setHotels(customerProfile.hotels.map((h: any) => ({
+                id: h.custom_id || `#HTL-${h.id}`,
+                rawId: h.id,
+                name: h.name,
+                city: h.city,
+                checkIn: h.check_in,
+                checkOut: h.check_out,
+                active: h.active,
+                customer_id: h.customer_id
+              })));
+            }
           } else {
             setDbCustomer(customerProfile);
             
@@ -188,6 +203,20 @@ function CustomerViewContent() {
                 route: t.route || "JED → MAK",
                 status: t.status || "Arrived",
                 customer_id: t.customer_id
+              })));
+            }
+
+            const htlList = await api.getHotels();
+            if (htlList) {
+              setHotels(htlList.map((h: any) => ({
+                id: h.custom_id || `#HTL-${h.id}`,
+                rawId: h.id,
+                name: h.name,
+                city: h.city,
+                checkIn: h.check_in,
+                checkOut: h.check_out,
+                active: h.active,
+                customer_id: h.customer_id
               })));
             }
           }
@@ -325,12 +354,14 @@ function CustomerViewContent() {
   const filteredServices = services.filter(s => String(s.customer_id) === String(custRawId));
   const filteredFlights = flights.filter(f => String(f.customer_id) === String(custRawId));
   const filteredTrains = trains.filter(t => String(t.customer_id) === String(custRawId));
+  const filteredHotels = hotels.filter(h => String(h.customer_id) === String(custRawId));
 
   const stats = {
     bookings: filteredBookings.length,
     flights: filteredFlights.length,
     trains: filteredTrains.length,
-    services: filteredServices.length
+    services: filteredServices.length,
+    hotels: filteredHotels.length
   };
 
   return (
@@ -356,6 +387,7 @@ function CustomerViewContent() {
         custServices={filteredServices}
         custFlights={filteredFlights}
         custTrains={filteredTrains}
+        custHotels={filteredHotels}
         customers={customers}
         setEditingCustomer={() => {}}
         router={router}

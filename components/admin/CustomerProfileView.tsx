@@ -26,6 +26,7 @@ interface CustomerProfileViewProps {
     flights: number;
     trains: number;
     services: number;
+    hotels: number;
   };
   activeProfileTab: string;
   setActiveProfileTab: (tab: string) => void;
@@ -33,6 +34,7 @@ interface CustomerProfileViewProps {
   custServices: any[];
   custFlights: any[];
   custTrains: any[];
+  custHotels: any[];
   customers: CustomerItem[];
   setEditingCustomer: (c: CustomerItem) => void;
   router: any;
@@ -49,6 +51,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
   custServices,
   custFlights,
   custTrains,
+  custHotels,
   customers,
   setEditingCustomer,
   router,
@@ -58,6 +61,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
   const [selectedProfileBooking, setSelectedProfileBooking] = useState<any>(null);
   const [selectedProfileFlight, setSelectedProfileFlight] = useState<any>(null);
   const [selectedProfileTrain, setSelectedProfileTrain] = useState<any>(null);
+  const [selectedProfileHotel, setSelectedProfileHotel] = useState<any>(null);
 
   const handleActionClick = (actionName: string) => {
     showToast(`Triggered simulated customer action: ${actionName}`, "success");
@@ -181,6 +185,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
           { id: "bookings", label: "Bookings", badge: stats.bookings },
           { id: "flights", label: "Flights", badge: stats.flights },
           { id: "trains", label: "Trains", badge: stats.trains },
+          { id: "hotels", label: "Hotels", badge: stats.hotels },
           { id: "services", label: "Services", badge: stats.services }
         ].map((tab) => {
           const isSelected = activeProfileTab === tab.id;
@@ -376,11 +381,12 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                 <i className="fas fa-chart-pie" style={{ color: "#3b82f6" }}></i> Activity Summary
               </h3>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "15px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "15px" }}>
                 {[
                   { label: "Total Bookings", val: stats.bookings, bg: "#eff6ff", text: "#1e40af", icon: "fa-calendar-days" },
                   { label: "Total Flights", val: stats.flights, bg: "#ecfeff", text: "#0891b2", icon: "fa-plane" },
                   { label: "Total Trains", val: stats.trains, bg: "#faf5ff", text: "#6b21a8", icon: "fa-train" },
+                  { label: "Hotel Stays", val: stats.hotels, bg: "#fff7ed", text: "#c2410c", icon: "fa-hotel" },
                   { label: "Total Services", val: stats.services, bg: "#f0fdf4", text: "#166534", icon: "fa-bell" }
                 ].map((stat, idx) => (
                   <div key={idx} style={{ background: stat.bg, borderRadius: "12px", padding: "15px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
@@ -641,6 +647,59 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                 );
               })()}
 
+              {activeProfileTab === "hotels" && (() => {
+                const profileHotels = custHotels || [];
+                return (
+                  <table className="db-table" style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>Hotel ID</th>
+                        <th>Hotel Name</th>
+                        <th>City</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {profileHotels.length === 0 ? (
+                        <tr><td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>No hotel stays found for this customer.</td></tr>
+                      ) : profileHotels.map((h: any) => (
+                        <tr key={h.id}>
+                          <td style={{ fontWeight: 700 }}>{h.id}</td>
+                          <td style={{ fontWeight: 700 }}>{h.name}</td>
+                          <td style={{ fontWeight: 600 }}>{h.city}</td>
+                          <td>{h.checkIn || "N/A"}</td>
+                          <td>{h.checkOut || "N/A"}</td>
+                          <td>
+                            <span className={`status-pill ${h.active ? "completed" : "pending"}`}>
+                              {h.active ? "ACTIVE" : "INACTIVE"}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => setSelectedProfileHotel({
+                                id: h.id,
+                                name: h.name,
+                                city: h.city,
+                                checkIn: h.checkIn,
+                                checkOut: h.checkOut,
+                                status: h.active ? "Active" : "Inactive"
+                              })}
+                              style={{ background: "#eff6ff", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#f97316", cursor: "pointer" }}
+                              title="View Details"
+                            >
+                              <i className="fas fa-eye"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                );
+              })()}
+
             </div>
           </div>
 
@@ -670,6 +729,9 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               </button>
               <button onClick={() => router.push("/admin/trains/add")} style={{ background: "#a855f7", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-train"></i> Add Train
+              </button>
+              <button onClick={() => router.push("/admin/hotels/assignments")} style={{ background: "#f97316", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                <i className="fas fa-hotel"></i> Add Hotel
               </button>
               <button onClick={() => router.push("/admin/services/add")} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-bell"></i> Add Service
@@ -852,6 +914,47 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
 
             <div style={{ display: "flex", justifyContent: "flex-end", borderTop: "1px solid var(--border-color)", paddingTop: "15px" }}>
               <button onClick={() => setSelectedProfileTrain(null)} className="form-btn-back" style={{ background: "#f1f5f9", color: "#475569", width: "120px", justifyContent: "center" }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Hotel Details Modal */}
+      {selectedProfileHotel && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
+          <div className="form-card" style={{ width: "100%", maxWidth: "550px", margin: "20px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid var(--border-color)", paddingBottom: "15px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary-color)", margin: 0 }}>
+                <i className="fas fa-hotel"></i> Hotel Stay Details ({selectedProfileHotel.id})
+              </h3>
+              <button onClick={() => setSelectedProfileHotel(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}>&times;</button>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+              <div style={{ gridColumn: "span 2" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Hotel Name</span>
+                <span style={{ fontSize: "16px", fontWeight: "700" }}>{selectedProfileHotel.name}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>City</span>
+                <span style={{ fontSize: "15px", fontWeight: "600" }}>{selectedProfileHotel.city}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Status</span>
+                <span className={`status-pill ${selectedProfileHotel.status === "Active" ? "completed" : "pending"}`}>{selectedProfileHotel.status}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Check-in Date</span>
+                <span style={{ fontSize: "15px", fontWeight: "600" }}>{selectedProfileHotel.checkIn || "N/A"}</span>
+              </div>
+              <div>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Check-out Date</span>
+                <span style={{ fontSize: "15px", fontWeight: "600" }}>{selectedProfileHotel.checkOut || "N/A"}</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", borderTop: "1px solid var(--border-color)", paddingTop: "15px" }}>
+              <button onClick={() => setSelectedProfileHotel(null)} className="form-btn-back" style={{ background: "#f1f5f9", color: "#475569", width: "120px", justifyContent: "center" }}>Close</button>
             </div>
           </div>
         </div>

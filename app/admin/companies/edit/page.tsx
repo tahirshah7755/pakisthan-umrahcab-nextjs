@@ -13,6 +13,7 @@ function EditCompanyContent() {
   const [compName, setCompName] = useState("");
   const [agentUsername, setAgentUsername] = useState("");
   const [agentPassword, setAgentPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [compPhone, setCompPhone] = useState("");
   const [compEmail, setCompEmail] = useState("");
   const [compWeb, setCompWeb] = useState("");
@@ -212,16 +213,37 @@ function EditCompanyContent() {
 
             <div>
               <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Agent Password (Leave blank to keep current)</label>
-              <div className="form-input-wrapper">
+              <div className="form-input-wrapper" style={{ position: "relative" }}>
                 <i className="fas fa-lock form-icon" style={{ color: "#2563eb" }}></i>
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   className="form-input" 
                   placeholder="Enter New Password" 
                   value={agentPassword} 
                   onChange={(e) => setAgentPassword(e.target.value)} 
-                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px", paddingRight: "45px" }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "15px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#64748b",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 5
+                  }}
+                >
+                  <i className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
+                </button>
               </div>
             </div>
           </div>

@@ -132,7 +132,7 @@ export default function Sidebar() {
     { name: "General Payments", icon: "fa-money-bill-transfer", color: "#22c55e", href: "/admin/payments", permissionKey: "payments" },
     { name: "Price List", icon: "fa-tags", color: "#fb923c", href: "/admin/extras/price-list", permissionKey: "services" },
     { name: "Company Performance", icon: "fa-chart-pie", color: "#0ea5e9", href: "/admin/performance", permissionKey: "companies" },
-    { name: "Document Scanner", icon: "fa-file-export", color: "#3b82f6", href: "/admin/scanner", permissionKey: "scanner" },
+    { name: "Upload Documents", icon: "fa-cloud-arrow-up", color: "#ec4899", href: "/admin/documents/upload" },
     { name: "Shortcuts", icon: "fa-keyboard", color: "#475569", href: "/admin/shortcuts" },
     { name: "Website Settings", icon: "fa-globe", color: "#10b981", href: "/admin/website-settings" },
   ];

@@ -82,6 +82,7 @@ export default function CompanySidebar() {
     { name: "Payments", icon: "fa-money-bill-transfer", color: "#22c55e", href: "/company/payments" },
     { name: "Agent Report", icon: "fa-chart-line", color: "#3b82f6", href: "/company/reports" },
     { name: "Chat Support", icon: "fa-headset", color: "#fb923c", href: "/company/chat" },
+    { name: "Upload Documents", icon: "fa-cloud-arrow-up", color: "#ec4899", href: "/company/documents/upload" },
   ];
 
   // Check if a route is active

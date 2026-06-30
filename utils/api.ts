@@ -64,15 +64,27 @@ async function request(endpoint: string, options: RequestInit = {}) {
           }
         }
       }
-      throw new Error(`HTTP Error: ${res.status}`);
+      
+      let errorMessage = `HTTP Error: ${res.status}`;
+      try {
+        const errorJson = await res.json();
+        errorMessage = errorJson?.Message || errorJson?.message || errorJson?.error || errorMessage;
+      } catch (_) {}
+
+      const httpError = new Error(errorMessage);
+      (httpError as any).status = res.status;
+      throw httpError;
     }
     const json = await res.json();
     if (json && typeof json === "object" && "status_code" in json && "data" in json) {
       return json.data;
     }
     return json;
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`Laravel API connection failed on ${endpoint}.`, error);
+    if (error && typeof error === "object" && "status" in error) {
+      throw error;
+    }
     return null;
   }
 }
@@ -535,6 +547,15 @@ export const api = {
     return data || [];
   },
 
+  async getCompanyCustomer(id: string | number) {
+    const data = await request(`/company-panel/customers/${id}`);
+    // Extract customer property if response has structure { customer, bookings, services... }
+    if (data && data.customer) {
+      return data.customer;
+    }
+    return data;
+  },
+
   async createCompanyCustomer(cust: any) {
     const data = await request(`/company-panel/customers`, {
       method: "POST",
@@ -793,6 +814,29 @@ export const api = {
 
   async getCountryCodes() {
     return countryCodesList;
+  },
+
+  async getCustomerDocuments(customerId: string, isCompany: boolean = false) {
+    const prefix = isCompany ? "/company-panel" : "";
+    const data = await request(`${prefix}/customer-documents?customer_id=${customerId}`);
+    return data;
+  },
+
+  async uploadCustomerDocument(formData: FormData, isCompany: boolean = false) {
+    const prefix = isCompany ? "/company-panel" : "";
+    const data = await request(`${prefix}/customer-documents`, {
+      method: "POST",
+      body: formData,
+    });
+    return data;
+  },
+
+  async deleteCustomerDocument(id: number, isCompany: boolean = false) {
+    const prefix = isCompany ? "/company-panel" : "";
+    const data = await request(`${prefix}/customer-documents/${id}`, {
+      method: "DELETE",
+    });
+    return data;
   }
 };
 

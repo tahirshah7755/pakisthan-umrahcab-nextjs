@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CustomerItem } from "./CustomerDirectory";
 import { api } from "@/utils/api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
 
 interface CustomerProfileViewProps {
   currentProfile: {
@@ -73,6 +76,58 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
 
   const basePath = isCompany ? "/company" : "/admin";
   const rawId = currentProfile.id.replace("#CST-", "").replace("#Cst-", "").replace("#cst-", "");
+
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Viewer states
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerDoc, setViewerDoc] = useState<any | null>(null);
+
+  // Delete states
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<number | null>(null);
+
+  const downloadFile = (filePath: string) => {
+    const downloadUrl = `${API_URL}/download-file?path=${encodeURIComponent(filePath)}`;
+    window.location.href = downloadUrl;
+  };
+
+  const loadDocuments = async () => {
+    if (!rawId) return;
+    try {
+      setLoadingDocs(true);
+      const res = await api.getCustomerDocuments(rawId, isCompany);
+      if (res && Array.isArray(res)) {
+        setDocuments(res);
+      } else {
+        setDocuments([]);
+      }
+    } catch (err) {
+      console.error("Error loading documents in profile:", err);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDocuments();
+  }, [rawId]);
+
+  const handleDeleteDoc = async (id: number) => {
+    try {
+      const res = await api.deleteCustomerDocument(id, isCompany);
+      if (res) {
+        showToast("Document deleted successfully", "success");
+        loadDocuments();
+      } else {
+        showToast("Failed to delete document", "error");
+      }
+    } catch (err) {
+      console.error("Error deleting document:", err);
+      showToast("An error occurred while deleting document", "error");
+    }
+  };
 
   const handleActionClick = (actionName: string) => {
     showToast(`Triggered simulated customer action: ${actionName}`, "success");
@@ -198,7 +253,8 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
           { id: "flights", label: "Flights", badge: stats.flights },
           { id: "trains", label: "Trains", badge: stats.trains },
           { id: "hotels", label: "Hotels", badge: stats.hotels },
-          { id: "services", label: "Services", badge: stats.services }
+          { id: "services", label: "Services", badge: stats.services },
+          { id: "documents", label: "Documents", badge: documents.length }
         ].map((tab) => {
           const isSelected = activeProfileTab === tab.id;
           return (
@@ -763,6 +819,166 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                 );
               })()}
 
+              {activeProfileTab === "documents" && (() => {
+                return (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                      <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "700", color: "#475569" }}>
+                         Pilgrim Documents &amp; Identity Scans
+                      </h4>
+                      <button
+                        onClick={() => router.push(`${basePath}/documents/upload?customerId=${rawId}`)}
+                        style={{
+                          background: isCompany ? "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)" : "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+                          color: isCompany ? "#0f172a" : "#ffffff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "8px 16px",
+                          fontSize: "12px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        <i className="fas fa-plus"></i> Upload New Document
+                      </button>
+                    </div>
+
+                    {loadingDocs ? (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px" }}>
+                        <div className="spinner" style={{ width: "32px", height: "32px", borderWidth: "3px", borderTopColor: isCompany ? "#d4af37" : "#7c3aed", marginBottom: "12px" }}></div>
+                        <span style={{ fontSize: "13px", color: "#64748b" }}>Loading documents...</span>
+                      </div>
+                    ) : documents.length === 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", color: "#64748b", background: "#f8fafc", borderRadius: "8px", border: "1px dashed #cbd5e1" }}>
+                        <i className="fas fa-folder-open" style={{ fontSize: "36px", color: "#cbd5e1", marginBottom: "12px" }}></i>
+                        <span style={{ fontSize: "14px", fontWeight: "600", color: "#475569" }}>No documents uploaded for this pilgrim yet.</span>
+                        <p style={{ fontSize: "12px", color: "#94a3b8", margin: "4px 0 0 0" }}>Upload visa, passport copies, or vouchers directly under this customer.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                        {documents.map((doc: any) => {
+                          const isPdf = doc.file_type?.toLowerCase() === "pdf";
+                          const docUrl = doc.file_path.startsWith("http://") || doc.file_path.startsWith("https://") 
+                            ? doc.file_path 
+                            : `${IMAGE_BASE}${doc.file_path}`;
+                          return (
+                            <div
+                              key={doc.id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "14px 18px",
+                                background: "#f8fafc",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "8px",
+                                transition: "all 0.15s"
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                <div style={{
+                                  width: "42px",
+                                  height: "42px",
+                                  borderRadius: "6px",
+                                  background: isPdf ? "#fee2e2" : "#e0f2fe",
+                                  color: isPdf ? "#ef4444" : "#0284c7",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "20px"
+                                }}>
+                                  <i className={isPdf ? "fas fa-file-pdf" : "fas fa-file-image"}></i>
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column" }}>
+                                  <span style={{ fontSize: "13px", fontWeight: "700", color: "#1e293b" }}>{doc.title}</span>
+                                  <span style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                                    Uploaded by {doc.uploaded_by || "User"} • {new Date(doc.created_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setViewerDoc(doc);
+                                    setViewerOpen(true);
+                                  }}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "6px",
+                                    background: "#ffffff",
+                                    border: "1px solid #e2e8f0",
+                                    color: "#475569",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s"
+                                  }}
+                                  title="View Document"
+                                >
+                                  <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    downloadFile(doc.file_path);
+                                  }}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "6px",
+                                    background: "#ffffff",
+                                    border: "1px solid #e2e8f0",
+                                    color: "#059669",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s"
+                                  }}
+                                  title="Download"
+                                >
+                                  <i className="fas fa-download" style={{ fontSize: "12px" }}></i>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDocToDelete(doc.id);
+                                    setDeleteConfirmOpen(true);
+                                  }}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "6px",
+                                    background: "#fee2e2",
+                                    border: "1px solid #fecaca",
+                                    color: "#dc2626",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s"
+                                  }}
+                                  title="Delete"
+                                >
+                                  <i className="fas fa-trash-can" style={{ fontSize: "12px" }}></i>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
             </div>
           </div>
 
@@ -798,6 +1014,9 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               </button>
               <button onClick={() => router.push(`${basePath}/services/add?customerId=${rawId}`)} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-bell"></i> Add Service
+              </button>
+              <button onClick={() => router.push(`${basePath}/documents/upload?customerId=${rawId}`)} style={{ background: "#ec4899", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                <i className="fas fa-file-arrow-up"></i> Upload Document
               </button>
             </div>
             
@@ -1279,6 +1498,303 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
         </div>
       )}
 
+      {viewerOpen && viewerDoc && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.75)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "800px",
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            overflow: "hidden"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: "16px 24px",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#f8fafc"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  background: viewerDoc.file_type?.toLowerCase() === "pdf" ? "#fee2e2" : "#e0f2fe",
+                  color: viewerDoc.file_type?.toLowerCase() === "pdf" ? "#ef4444" : "#0284c7",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "16px"
+                }}>
+                  <i className={viewerDoc.file_type?.toLowerCase() === "pdf" ? "fas fa-file-pdf" : "fas fa-file-image"}></i>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>{viewerDoc.title}</h3>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#64748b" }}>
+                    Type: {viewerDoc.file_type?.toUpperCase()} • Uploaded by {viewerDoc.uploaded_by || "User"}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadFile(viewerDoc.file_path);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "#10b981",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "8px 14px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.15s"
+                  }}
+                >
+                  <i className="fas fa-download"></i> Download
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setViewerOpen(false); setViewerDoc(null); }}
+                  style={{
+                    background: "#f1f5f9",
+                    border: "none",
+                    borderRadius: "8px",
+                    width: "32px",
+                    height: "32px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b",
+                    cursor: "pointer",
+                    fontSize: "14px"
+                  }}
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{
+              padding: "24px",
+              overflowY: "auto",
+              background: "#f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flex: 1,
+              minHeight: "350px"
+            }}>
+              {(() => {
+                const ext = viewerDoc.file_type?.toLowerCase();
+                const url = viewerDoc.file_path.startsWith("http://") || viewerDoc.file_path.startsWith("https://") 
+                  ? viewerDoc.file_path 
+                  : `${IMAGE_BASE}${viewerDoc.file_path}`;
+
+                if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) {
+                  return (
+                    <img
+                      src={url}
+                      alt={viewerDoc.title}
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "65vh",
+                        objectFit: "contain",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)"
+                      }}
+                    />
+                  );
+                } else if (ext === "pdf") {
+                  return (
+                    <iframe
+                      src={url}
+                      style={{
+                        width: "100%",
+                        height: "65vh",
+                        border: "none",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)"
+                      }}
+                    />
+                  );
+                } else {
+                  return (
+                    <div style={{
+                      background: "#ffffff",
+                      borderRadius: "12px",
+                      padding: "30px 40px",
+                      textAlign: "center",
+                      maxWidth: "400px",
+                      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)"
+                    }}>
+                      <div style={{
+                        width: "60px",
+                        height: "60px",
+                        borderRadius: "50%",
+                        background: "#fef3c7",
+                        color: "#d97706",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "24px",
+                        margin: "0 auto 16px auto"
+                      }}>
+                        <i className="fas fa-file-lines"></i>
+                      </div>
+                      <h4 style={{ margin: "0 0 8px 0", color: "#1e293b", fontSize: "16px", fontWeight: "700" }}>
+                        Preview Not Available
+                      </h4>
+                      <p style={{ margin: "0 0 20px 0", color: "#64748b", fontSize: "13px", lineHeight: "1.5" }}>
+                        Direct preview is not supported for <strong>.{ext.toUpperCase()}</strong> files. Please download the file to view it on your device.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => downloadFile(viewerDoc.file_path)}
+                        style={{
+                          background: isCompany ? "#d4af37" : "#7c3aed",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "10px 20px",
+                          fontSize: "13px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          width: "100%",
+                          boxShadow: isCompany ? "0 4px 10px rgba(212, 175, 55, 0.3)" : "0 4px 10px rgba(124, 58, 237, 0.3)"
+                        }}
+                      >
+                        <i className="fas fa-download" style={{ marginRight: "8px" }}></i> Download Document
+                      </button>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmOpen && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.75)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10000,
+          padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "420px",
+            padding: "24px",
+            textAlign: "center",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+          }}>
+            <div style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "50%",
+              background: "#fee2e2",
+              color: "#ef4444",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "24px",
+              margin: "0 auto 16px auto"
+            }}>
+              <i className="fas fa-triangle-exclamation"></i>
+            </div>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: "18px", fontWeight: "700", color: "#0f172a" }}>
+              Delete Document?
+            </h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#64748b", lineHeight: "1.5" }}>
+              Are you sure you want to permanently delete this document? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setDocToDelete(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  background: "#ffffff",
+                  color: "#475569",
+                  fontWeight: "600",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  transition: "background 0.15s"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (docToDelete) {
+                    await handleDeleteDoc(docToDelete);
+                  }
+                  setDeleteConfirmOpen(false);
+                  setDocToDelete(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#ef4444",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                  boxShadow: "0 4px 10px rgba(239, 68, 68, 0.2)"
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

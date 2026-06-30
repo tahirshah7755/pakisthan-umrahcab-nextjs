@@ -84,6 +84,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     type: "success",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [agentBalance, setAgentBalance] = useState<number | null>(null);
 
   // Step 1 States: Customer Setup
   const [custCompany, setCustCompany] = useState("");
@@ -128,6 +129,34 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         reminders: !!u.reminders,
         price_group: u.price_group
       }]);
+    }
+  }, [companyUser, isCompanyPanel]);
+
+  useEffect(() => {
+    if (isCompanyPanel && companyUser) {
+      const fetchBalanceAndChat = async () => {
+        try {
+          const summary = await api.getCompanyDashboardSummary();
+          if (summary && summary.ledger_summary) {
+            setAgentBalance(Number(summary.ledger_summary.current_balance));
+          }
+        } catch (e) {
+          console.error("Failed to load agent balance", e);
+        }
+
+        try {
+          const chatMsgs = await api.getCompanyChatMessages();
+          if (Array.isArray(chatMsgs) && chatMsgs.length > 0) {
+            const latestMsg = chatMsgs[chatMsgs.length - 1];
+            if (latestMsg && latestMsg.message) {
+              setCustNotes(latestMsg.message);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load last chat message", e);
+        }
+      };
+      fetchBalanceAndChat();
     }
   }, [companyUser, isCompanyPanel]);
 
@@ -1071,6 +1100,21 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         </select>
                       )}
                     </div>
+                    {isCompanyPanel && companyUser && agentBalance !== null && (
+                      <div style={{ marginTop: "6px", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ color: "#64748b", fontWeight: "600" }}>Available Balance:</span>
+                        <span style={{ 
+                          color: agentBalance < 0 ? "#ef4444" : "#10b981", 
+                          fontWeight: "800",
+                          background: agentBalance < 0 ? "#fef2f2" : "#f0fdf4",
+                          padding: "2px 8px",
+                          borderRadius: "4px",
+                          border: `1px solid ${agentBalance < 0 ? "#fee2e2" : "#bbf7d0"}`
+                        }}>
+                          SAR {agentBalance.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                     {errors.custCompany && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custCompany}</span>
                     )}

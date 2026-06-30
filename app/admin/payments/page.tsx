@@ -47,6 +47,13 @@ export default function PaymentsPage() {
     type: "success",
   });
 
+  // Modal states for Payment Approval
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [approvalNotes, setApprovalNotes] = useState("");
+  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
@@ -599,7 +606,7 @@ export default function PaymentsPage() {
                         )}
                         {p.proof_details && (
                           <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                            <strong>Notes:</strong> {p.proof_details}
+                            <strong>Notes:</strong> <span style={{ whiteSpace: "pre-line" }}>{p.proof_details}</span>
                           </div>
                         )}
                         {p.proof_file && (
@@ -633,12 +640,23 @@ export default function PaymentsPage() {
                         <select
                           value={p.status || "Pending"}
                           onChange={async (e) => {
-                            try {
-                              await updatePaymentStatus({ id: p.id, status: e.target.value }).unwrap();
-                              showToast(`Payment ${p.custom_id || `PAY-${p.id}`} marked as ${e.target.value}!`, "success");
-                            } catch (err) {
-                              console.error(err);
-                              showToast("Failed to update payment status.", "error");
+                            const newStatus = e.target.value;
+                            if (newStatus === "Approved") {
+                              setSelectedPayment(p);
+                              setReceivedAmount(String(p.amount));
+                              setApprovalNotes("");
+                              setShowApprovalModal(true);
+                            } else {
+                              try {
+                                await updatePaymentStatus({ 
+                                  id: p.id, 
+                                  status: newStatus
+                                }).unwrap();
+                                showToast(`Payment ${p.custom_id || `PAY-${p.id}`} marked as ${newStatus}!`, "success");
+                              } catch (err) {
+                                console.error(err);
+                                showToast("Failed to update payment status.", "error");
+                              }
                             }
                           }}
                           style={{
@@ -712,6 +730,229 @@ export default function PaymentsPage() {
           </div>
         )}
       </div>
+
+      {/* Premium Approval Modal */}
+      {showApprovalModal && selectedPayment && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          padding: "16px"
+        }}>
+          <div style={{
+            backgroundColor: "#ffffff",
+            width: "100%",
+            maxWidth: "500px",
+            borderRadius: "16px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
+            overflow: "hidden",
+            border: "1px solid #e2e8f0"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              background: "linear-gradient(135deg, #0f766e, #0d9488)",
+              padding: "20px 24px",
+              color: "#ffffff",
+              position: "relative"
+            }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", display: "flex", alignItems: "center", gap: "10px" }}>
+                <i className="fas fa-check-circle" style={{ fontSize: "20px" }}></i>
+                Approve Payment Request
+              </h3>
+              <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#ccfbf1", opacity: 0.9 }}>
+                Verify and approve deposits to credit B2B agent balance
+              </p>
+              <button 
+                onClick={() => setShowApprovalModal(false)}
+                style={{
+                  position: "absolute",
+                  right: "20px",
+                  top: "20px",
+                  background: "transparent",
+                  border: "none",
+                  color: "#ffffff",
+                  fontSize: "18px",
+                  cursor: "pointer",
+                  opacity: 0.8
+                }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* Payment Details Card */}
+              <div style={{
+                background: "#f8fafc",
+                borderRadius: "12px",
+                padding: "16px",
+                border: "1px solid #e2e8f0",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+                fontSize: "13px"
+              }}>
+                <div>
+                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Ref ID</span>
+                  <strong style={{ color: "#1e293b" }}>{selectedPayment.custom_id || `PAY-${selectedPayment.id}`}</strong>
+                </div>
+                <div>
+                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Company</span>
+                  <strong style={{ color: "#1e293b" }}>{selectedPayment.company}</strong>
+                </div>
+                <div>
+                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Requested Amount</span>
+                  <strong style={{ color: "#0f766e", fontSize: "14px" }}>{fmt(selectedPayment.amount, selectedPayment.currency)}</strong>
+                </div>
+                <div>
+                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Payment Method</span>
+                  <strong style={{ color: "#1e293b" }}>{selectedPayment.method}</strong>
+                </div>
+              </div>
+
+              {/* Form Input fields */}
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                  Received Amount *
+                </label>
+                <div style={{ position: "relative" }}>
+                  <span style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#64748b",
+                    fontWeight: "600",
+                    fontSize: "14px"
+                  }}>
+                    {selectedPayment.currency}
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={selectedPayment.amount}
+                    value={receivedAmount}
+                    onChange={(e) => setReceivedAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px 10px 52px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "14px",
+                      outline: "none",
+                      fontWeight: "600",
+                      color: "#1e293b"
+                    }}
+                  />
+                </div>
+                <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                  If the received amount is less than the requested amount, a new pending payment of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created as due.
+                </span>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                  Approval Notes / Remarks
+                </label>
+                <textarea
+                  value={approvalNotes}
+                  onChange={(e) => setApprovalNotes(e.target.value)}
+                  placeholder="e.g. Received partial cash at counter, remaining will pay tomorrow."
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "13px",
+                    outline: "none",
+                    fontFamily: "inherit",
+                    resize: "none",
+                    color: "#1e293b"
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              background: "#f8fafc",
+              padding: "16px 24px",
+              borderTop: "1px solid #e2e8f0",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "12px"
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowApprovalModal(false)}
+                disabled={isSubmittingApproval}
+                style={{
+                  background: "#ffffff",
+                  color: "#64748b",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount}
+                onClick={async () => {
+                  setIsSubmittingApproval(true);
+                  try {
+                    await updatePaymentStatus({
+                      id: selectedPayment.id,
+                      status: "Approved",
+                      approved_amount: Number(receivedAmount),
+                      notes: approvalNotes
+                    }).unwrap();
+                    showToast(`Payment ${selectedPayment.custom_id || `PAY-${selectedPayment.id}`} approved successfully!`, "success");
+                    setShowApprovalModal(false);
+                  } catch (err) {
+                    console.error(err);
+                    showToast("Failed to approve payment.", "error");
+                  } finally {
+                    setIsSubmittingApproval(false);
+                  }
+                }}
+                style={{
+                  background: "linear-gradient(135deg, #0d9488, #0f766e)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "8px 20px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: (isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount) ? "not-allowed" : "pointer",
+                  opacity: (isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount) ? 0.7 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                {isSubmittingApproval ? "Approving..." : "Confirm Approval"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
         <span>&copy; 2026 Umrah Cab. General Payments Registrar.</span>

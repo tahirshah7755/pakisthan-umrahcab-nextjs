@@ -18,10 +18,10 @@ export const paymentsApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Payments"],
     }),
     updatePaymentStatus: builder.mutation({
-      query: ({ id, status }) => ({
+      query: ({ id, status, approved_amount }) => ({
         url: `/payments/${id}/status`,
         method: "PUT",
-        body: { status },
+        body: { status, approved_amount },
       }),
       invalidatesTags: ["Payments", "Companies"],
     }),

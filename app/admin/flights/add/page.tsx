@@ -194,6 +194,7 @@ function AddFlightContent() {
               selectedCustomer={fltSelectedCustomerObj}
               onSelectCustomer={setFltSelectedCustomerObj}
               themeColor={SKY_BLUE}
+              disabled={!!customerId}
             />
 
             {/* Leg Type Tab Buttons */}

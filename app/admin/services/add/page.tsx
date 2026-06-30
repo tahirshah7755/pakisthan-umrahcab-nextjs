@@ -8,7 +8,7 @@ import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 function AddServicePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prefilledCustomerId = searchParams.get("customer_id");
+  const prefilledCustomerId = searchParams.get("customerId") || searchParams.get("customer_id") || "";
 
   // Customer
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
@@ -44,8 +44,8 @@ function AddServicePageContent() {
   useEffect(() => {
     if (prefilledCustomerId) {
       api.getCustomer(prefilledCustomerId).then((data: any) => {
-        if (data) setSelectedCustomer(data);
-      });
+        if (data) setSelectedCustomer(data.customer || data);
+      }).catch(err => console.error("Failed to prefill customer details", err));
     }
   }, [prefilledCustomerId]);
 
@@ -156,6 +156,7 @@ function AddServicePageContent() {
               required={true}
               themeColor="#7c3aed"
               placeholder="Search and select a customer..."
+              disabled={!!prefilledCustomerId}
             />
           </div>
 

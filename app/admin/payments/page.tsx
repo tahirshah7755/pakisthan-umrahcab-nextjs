@@ -327,10 +327,36 @@ export default function PaymentsPage() {
     setCurrentPage(1);
     showToast(`Applied Quick Filter for last ${days} days!`, "success");
   };
+  // Fetch all payments for summation (non-paginated, or high per_page)
+  const { data: allPaymentsData } = useGetPaymentsQuery({
+    search: debouncedSearch || undefined,
+    company: appliedFilters.company || undefined,
+    method: appliedFilters.method !== "all" ? appliedFilters.method : undefined,
+    status: appliedFilters.status !== "all" ? appliedFilters.status : undefined,
+    start_date: appliedFilters.start_date || undefined,
+    end_date: appliedFilters.end_date || undefined,
+    per_page: 100000,
+  });
 
-  const totalSum = paginatedPayments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
-  const approvedSum = paginatedPayments.filter((p: any) => p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
-  const pendingSum = paginatedPayments.filter((p: any) => p.status === "Pending" || p.status === "pending").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  let allPayments: any[] = [];
+  if (allPaymentsData) {
+    if (Array.isArray(allPaymentsData)) {
+      allPayments = allPaymentsData;
+    } else if (typeof allPaymentsData === "object") {
+      const pObj = allPaymentsData as any;
+      if (pObj.data && Array.isArray(pObj.data)) {
+        allPayments = pObj.data;
+      } else if (pObj.data && typeof pObj.data === "object" && Array.isArray(pObj.data.data)) {
+        allPayments = pObj.data.data;
+      } else if (Array.isArray(pObj)) {
+        allPayments = pObj;
+      }
+    }
+  }
+
+  const totalSum = allPayments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const approvedSum = allPayments.filter((p: any) => p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const pendingSum = allPayments.filter((p: any) => p.status === "Pending" || p.status === "pending").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "10px" }}>
@@ -744,6 +770,22 @@ export default function PaymentsPage() {
                   ))
                 )}
               </tbody>
+              <tfoot>
+                <tr style={{ background: "#f8fafc", fontWeight: "bold", borderTop: "2px solid #e2e8f0" }}>
+                  <td colSpan={4} style={{ padding: "12px 16px", textAlign: "right" }}>Page Total:</td>
+                  <td style={{ padding: "12px 10px", color: "#059669" }}>
+                    {fmt(paginatedPayments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0))}
+                  </td>
+                  <td colSpan={4}></td>
+                </tr>
+                <tr style={{ background: "#f1f5f9", fontWeight: "bold", borderTop: "1px solid #cbd5e1" }}>
+                  <td colSpan={4} style={{ padding: "12px 16px", textAlign: "right" }}>Filtered Total (All Pages):</td>
+                  <td style={{ padding: "12px 10px", color: "#0d9488" }}>
+                    {fmt(allPayments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0))}
+                  </td>
+                  <td colSpan={4}></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
           </div>

@@ -191,6 +191,7 @@ function AddHotelAssignmentContent() {
               selectedCustomer={selectedCustomer}
               onSelectCustomer={setSelectedCustomer}
               themeColor={GOLD_COLOR}
+              disabled={!!customerId}
             />
 
             <div>

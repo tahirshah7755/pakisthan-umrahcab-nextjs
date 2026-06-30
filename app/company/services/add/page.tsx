@@ -213,6 +213,7 @@ function AddServicePageContent() {
               selectedCustomer={selectedCustomer}
               onSelectCustomer={setSelectedCustomer}
               themeColor={GOLD_COLOR}
+              disabled={!!prefilledCustomerId}
             />
 
             <div>

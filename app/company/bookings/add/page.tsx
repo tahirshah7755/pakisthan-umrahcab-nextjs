@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 import { useAuth } from "@/context/AuthContext";
@@ -23,8 +23,10 @@ const formatPhoneNumber = (code: string, number: string) => {
   return `${code}${cleaned}`;
 };
 
-export default function AddNewBooking() {
+function AddNewBookingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefilledCustomerId = searchParams.get("customerId") || searchParams.get("customer_id") || "";
   const { companyUser } = useAuth();
 
   // Form State
@@ -77,6 +79,24 @@ export default function AddNewBooking() {
     }
     loadCountryCodes();
   }, []);
+
+  // Pre-populate customer if prefilledCustomerId is present in URL
+  useEffect(() => {
+    if (prefilledCustomerId) {
+      const fetchCustomer = async () => {
+        try {
+          const res = await api.getCustomer(prefilledCustomerId);
+          if (res && res.customer) {
+            setCustomer(String(res.customer.id));
+            setSelectedCustomerObj(res.customer);
+          }
+        } catch (err) {
+          console.error("Failed to prefill customer details", err);
+        }
+      };
+      fetchCustomer();
+    }
+  }, [prefilledCustomerId]);
 
   useEffect(() => {
     if (companyUser) {
@@ -420,12 +440,12 @@ export default function AddNewBooking() {
     if (res?.success) {
       showToast("Booking registered successfully!", "success");
       setTimeout(() => {
-        router.push("/company/bookings");
+        router.push(prefilledCustomerId ? `/company/customers/view?id=${prefilledCustomerId}` : "/company/bookings");
       }, 1500);
     } else {
       showToast("Saved with fallback.", "success");
       setTimeout(() => {
-        router.push("/company/bookings");
+        router.push(prefilledCustomerId ? `/company/customers/view?id=${prefilledCustomerId}` : "/company/bookings");
       }, 1500);
     }
   };
@@ -469,7 +489,7 @@ export default function AddNewBooking() {
             </div>
           )}
         </div>
-        <button onClick={() => router.push("/company/bookings")} className="form-btn-back">
+        <button onClick={() => router.push(prefilledCustomerId ? `/company/customers/view?id=${prefilledCustomerId}` : "/company/bookings")} className="form-btn-back">
           <i className="fas fa-arrow-left"></i>
           <span>Back to List</span>
         </button>
@@ -489,22 +509,29 @@ export default function AddNewBooking() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  cursor: "pointer",
-                  background: "#fff",
+                  cursor: prefilledCustomerId ? "not-allowed" : "pointer",
+                  background: prefilledCustomerId ? "#f1f5f9" : "#fff",
                   minHeight: "45px",
                   paddingLeft: "45px",
                   paddingRight: "15px",
                   border: "1px solid var(--border-color)",
-                  borderRadius: "8px"
+                  borderRadius: "8px",
+                  opacity: prefilledCustomerId ? 0.8 : 1
                 }}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                  if (!prefilledCustomerId) {
+                    setIsOpen(!isOpen);
+                  }
+                }}
               >
                 <span style={{ color: selectedCustomerObj ? "#0f172a" : "#94a3b8", fontWeight: selectedCustomerObj ? "600" : "400" }}>
                   {selectedCustomerObj 
                     ? `${selectedCustomerObj.name} (${selectedCustomerObj.company} - ${selectedCustomerObj.custom_id})`
                     : "Search and select a customer..."}
                 </span>
-                <i className={`fas fa-chevron-${isOpen ? "up" : "down"}`} style={{ color: "#94a3b8", fontSize: "12px" }}></i>
+                {!prefilledCustomerId && (
+                  <i className={`fas fa-chevron-${isOpen ? "up" : "down"}`} style={{ color: "#94a3b8", fontSize: "12px" }}></i>
+                )}
               </div>
             </div>
 
@@ -1149,5 +1176,17 @@ export default function AddNewBooking() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AddNewBooking() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+      </div>
+    }>
+      <AddNewBookingContent />
+    </Suspense>
   );
 }

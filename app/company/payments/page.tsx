@@ -48,12 +48,12 @@ export default function CompanyPaymentsPage() {
   };
 
   const handleExportExcel = () => {
-    if (payments.length === 0) {
+    if (filteredPayments.length === 0) {
       showToast("No data to export!", "error");
       return;
     }
     const headers = ["Payment ID", "Date", "Payment Method", "Transaction ID", "Amount", "Currency", "Status"];
-    const textRows = payments.map((p: any) => [
+    const textRows = filteredPayments.map((p: any) => [
       p.custom_id,
       p.date || "",
       p.method || "",
@@ -74,12 +74,12 @@ export default function CompanyPaymentsPage() {
   };
 
   const handleCopy = () => {
-    if (payments.length === 0) {
+    if (filteredPayments.length === 0) {
       showToast("No data to copy!", "error");
       return;
     }
     const headers = ["Payment ID", "Date", "Payment Method", "Transaction ID", "Amount", "Currency", "Status"];
-    const textRows = payments.map((p: any) => [
+    const textRows = filteredPayments.map((p: any) => [
       p.custom_id,
       p.date || "",
       p.method || "",
@@ -95,14 +95,14 @@ export default function CompanyPaymentsPage() {
   };
 
   const handleExportCSV = () => {
-    if (payments.length === 0) {
+    if (filteredPayments.length === 0) {
       showToast("No data to export!", "error");
       return;
     }
     const headers = ["Payment ID", "Date", "Payment Method", "Transaction ID", "Amount", "Currency", "Status"];
     const csvContent = [
       headers.join(","),
-      ...payments.map((p: any) => [
+      ...filteredPayments.map((p: any) => [
         `"${(p.custom_id || "").replace(/"/g, '""')}"`,
         `"${(p.date || "").replace(/"/g, '""')}"`,
         `"${(p.method || "").replace(/"/g, '""')}"`,
@@ -125,7 +125,7 @@ export default function CompanyPaymentsPage() {
   };
 
   const handlePrint = (title: string = "Corporate Balance Deposits Statement") => {
-    if (payments.length === 0) {
+    if (filteredPayments.length === 0) {
       showToast("No data to print!", "error");
       return;
     }
@@ -138,7 +138,7 @@ export default function CompanyPaymentsPage() {
 
     const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     
-    const rowsHtml = payments.map((p: any) => `
+    const rowsHtml = filteredPayments.map((p: any) => `
       <tr>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e293b;">${p.custom_id}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${p.date}</td>
@@ -177,7 +177,7 @@ export default function CompanyPaymentsPage() {
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>
-              <p><strong>Total Deposits:</strong> ${payments.length}</p>
+              <p><strong>Total Deposits:</strong> ${filteredPayments.length}</p>
             </div>
           </div>
           <table>
@@ -215,11 +215,11 @@ export default function CompanyPaymentsPage() {
     else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Balance Deposits Statement - PDF Report" : "Balance Deposits Statement");
   };
 
-  const loadPayments = async (status?: string) => {
+  const loadPayments = async () => {
     try {
       setLoading(true);
-      const data = await api.getCompanyPayments(status);
-      setPayments(data);
+      const data = await api.getCompanyPayments();
+      setPayments(data || []);
     } catch (err) {
       console.error(err);
       showToast("Failed to retrieve payments history.", "error");
@@ -229,8 +229,8 @@ export default function CompanyPaymentsPage() {
   };
 
   useEffect(() => {
-    loadPayments(statusFilter);
-  }, [statusFilter]);
+    loadPayments();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,6 +300,18 @@ export default function CompanyPaymentsPage() {
   const totalSum = payments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
   const approvedSum = payments.filter((p: any) => p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
   const pendingSum = payments.filter((p: any) => p.status === "Pending" || p.status === "pending").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+
+  const filteredPayments = payments.filter((p) => {
+    if (statusFilter !== "all") {
+      const ps = (p.status || "").toLowerCase();
+      const fs = statusFilter.toLowerCase();
+      if (fs === "approved") {
+        return ps === "approved" || ps === "success" || ps === "verified";
+      }
+      return ps === fs;
+    }
+    return true;
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -433,12 +445,12 @@ export default function CompanyPaymentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {payments.length === 0 ? (
+                {filteredPayments.length === 0 ? (
                   <tr>
                     <td colSpan={7} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No payments registered under this corporate account.</td>
                   </tr>
                 ) : (
-                  payments.map((p) => (
+                  filteredPayments.map((p) => (
                     <tr key={p.id}>
                       <td style={{ fontWeight: 700, color: "#1e293b" }}>{p.custom_id}</td>
                       <td>{p.date}</td>
@@ -480,6 +492,15 @@ export default function CompanyPaymentsPage() {
                   ))
                 )}
               </tbody>
+              <tfoot>
+                <tr style={{ background: "#f8fafc", fontWeight: "bold", borderTop: "2px solid #e2e8f0" }}>
+                  <td colSpan={4} style={{ padding: "12px 16px", textAlign: "right" }}>Filtered Total:</td>
+                  <td style={{ padding: "12px 10px", color: "#10b981" }}>
+                    {fmt(filteredPayments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0))}
+                  </td>
+                  <td colSpan={2}></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}

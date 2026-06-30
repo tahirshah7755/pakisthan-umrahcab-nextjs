@@ -41,6 +41,7 @@ interface CustomerProfileViewProps {
   router: any;
   showToast: (msg: string, type: "success" | "error") => void;
   triggerExportAlert: (fmt: string) => void;
+  isCompany?: boolean;
 }
 
 export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
@@ -58,6 +59,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
   router,
   showToast,
   triggerExportAlert,
+  isCompany = false,
 }) => {
   const [selectedProfileBooking, setSelectedProfileBooking] = useState<any>(null);
   const [selectedProfileFlight, setSelectedProfileFlight] = useState<any>(null);
@@ -68,6 +70,9 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
   const [selectedCancelBooking, setSelectedCancelBooking] = useState<any>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedApproveBooking, setSelectedApproveBooking] = useState<any>(null);
+
+  const basePath = isCompany ? "/company" : "/admin";
+  const rawId = currentProfile.id.replace("#CST-", "").replace("#Cst-", "").replace("#cst-", "");
 
   const handleActionClick = (actionName: string) => {
     showToast(`Triggered simulated customer action: ${actionName}`, "success");
@@ -130,7 +135,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
         {/* Header Action Buttons */}
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <button
-            onClick={() => router.push("/admin/customers")}
+            onClick={() => router.push(isCompany ? "/company/customers" : "/admin/customers")}
             style={{
               background: "rgba(255, 255, 255, 0.15)",
               color: "#ffffff",
@@ -149,30 +154,31 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
             <i className="fas fa-list"></i>
             <span>List</span>
           </button>
-          <button
-            onClick={() => {
-              const rawId = currentProfile.id.replace("#CST-", "").replace("#Cst-", "").replace("#cst-", "");
-              router.push(`/admin/customers/edit?id=${rawId}`);
-            }}
-            style={{
-              background: "#ffffff",
-              color: "#0f766e",
-              border: "none",
-              borderRadius: "8px",
-              padding: "10px 18px",
-              fontWeight: "700",
-              fontSize: "13px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
-              transition: "all 0.2s"
-            }}
-          >
-            <i className="fas fa-pencil"></i>
-            <span>Edit</span>
-          </button>
+          {!isCompany && (
+            <button
+              onClick={() => {
+                router.push(`/admin/customers/edit?id=${rawId}`);
+              }}
+              style={{
+                background: "#ffffff",
+                color: "#0f766e",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 18px",
+                fontWeight: "700",
+                fontSize: "13px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
+                transition: "all 0.2s"
+              }}
+            >
+              <i className="fas fa-pencil"></i>
+              <span>Edit</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -328,10 +334,17 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <span style={{ fontSize: "11px", textTransform: "uppercase", color: "#94a3b8", fontWeight: "700", letterSpacing: "0.5px" }}>Linked Company</span>
-                  <a onClick={() => router.push("/admin/companies")} style={{ fontSize: "14px", fontWeight: "700", color: "#2563eb", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <i className="fas fa-building" style={{ fontSize: "12px" }}></i>
-                    {currentProfile.company}
-                  </a>
+                  {isCompany ? (
+                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <i className="fas fa-building" style={{ fontSize: "12px", color: "#64748b" }}></i>
+                      {currentProfile.company}
+                    </span>
+                  ) : (
+                    <a onClick={() => router.push("/admin/companies")} style={{ fontSize: "14px", fontWeight: "700", color: "#2563eb", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <i className="fas fa-building" style={{ fontSize: "12px" }}></i>
+                      {currentProfile.company}
+                    </a>
+                  )}
                 </div>
 
                 {currentProfile.passportNo && (
@@ -510,7 +523,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                               >
                                 <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                               </button>
-                              {b.status === "Pending" && (
+                              {!isCompany && b.status === "Pending" && (
                                 <button
                                   onClick={() => {
                                     setSelectedApproveBooking({
@@ -528,7 +541,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                                   <i className="fas fa-check" style={{ fontSize: "12px" }}></i>
                                 </button>
                               )}
-                              {b.status !== "Cancelled" && (
+                              {!isCompany && b.status !== "Cancelled" && (
                                 <button
                                   onClick={() => {
                                     setSelectedCancelBooking({
@@ -680,13 +693,15 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                             </span>
                           </td>
                           <td>
-                            <button
-                              onClick={() => router.push(`/admin/services/view?id=${s.id}`)}
-                              style={{ background: "#e0f2fe", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#0284c7", cursor: "pointer" }}
-                              title="View Details"
-                            >
-                              <i className="fas fa-eye"></i>
-                            </button>
+                            {!isCompany && (
+                              <button
+                                onClick={() => router.push(`/admin/services/view?id=${s.id}`)}
+                                style={{ background: "#e0f2fe", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#0284c7", cursor: "pointer" }}
+                                title="View Details"
+                              >
+                                <i className="fas fa-eye"></i>
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -769,19 +784,19 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               <button onClick={() => handleActionClick("Welcome Message")} style={{ background: "#22c55e", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fab fa-whatsapp"></i> Welcome Message
               </button>
-              <button onClick={() => router.push("/admin/bookings/add")} style={{ background: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push(`${basePath}/bookings/add?customerId=${rawId}`)} style={{ background: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-calendar-plus"></i> Add Booking
               </button>
-              <button onClick={() => router.push("/admin/flights/add")} style={{ background: "#0ea5e9", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push(`${basePath}/flights/add?customerId=${rawId}`)} style={{ background: "#0ea5e9", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-plane"></i> Add Flight
               </button>
-              <button onClick={() => router.push("/admin/trains/add")} style={{ background: "#a855f7", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push(`${basePath}/trains/add?customerId=${rawId}`)} style={{ background: "#a855f7", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-train"></i> Add Train
               </button>
-              <button onClick={() => router.push("/admin/hotels/assignments")} style={{ background: "#f97316", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push(`${basePath}/hotels/assignments/add?customerId=${rawId}`)} style={{ background: "#f97316", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-hotel"></i> Add Hotel
               </button>
-              <button onClick={() => router.push("/admin/services/add")} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => router.push(`${basePath}/services/add?customerId=${rawId}`)} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
                 <i className="fas fa-bell"></i> Add Service
               </button>
             </div>

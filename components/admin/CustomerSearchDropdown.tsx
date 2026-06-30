@@ -10,6 +10,7 @@ interface CustomerSearchDropdownProps {
   required?: boolean;
   themeColor?: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export default function CustomerSearchDropdown({
@@ -19,6 +20,7 @@ export default function CustomerSearchDropdown({
   required = true,
   themeColor = "#7c3aed",
   placeholder = "Search for a customer...",
+  disabled = false,
 }: CustomerSearchDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -36,7 +38,7 @@ export default function CustomerSearchDropdown({
 
   // Fetch customers
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || disabled) return;
 
     const fetchCustomers = async () => {
       try {
@@ -80,7 +82,7 @@ export default function CustomerSearchDropdown({
 
     const delayDebounceFn = setTimeout(fetchCustomers, page === 1 ? 300 : 0);
     return () => clearTimeout(delayDebounceFn);
-  }, [search, page, isOpen]);
+  }, [search, page, isOpen, disabled]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -106,22 +108,29 @@ export default function CustomerSearchDropdown({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            cursor: "pointer",
-            background: "#fff",
+            cursor: disabled ? "not-allowed" : "pointer",
+            background: disabled ? "#f1f5f9" : "#fff",
             minHeight: "45px",
             paddingLeft: "45px",
             paddingRight: "15px",
             border: "1px solid #cbd5e1",
-            borderRadius: "8px"
+            borderRadius: "8px",
+            opacity: disabled ? 0.8 : 1
           }}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            if (!disabled) {
+              setIsOpen(!isOpen);
+            }
+          }}
         >
           <span style={{ color: selectedCustomer ? "#0f172a" : "#94a3b8", fontWeight: selectedCustomer ? "600" : "400" }}>
             {selectedCustomer
               ? `${selectedCustomer.name} (${selectedCustomer.company} - ${selectedCustomer.custom_id || `#CST-${selectedCustomer.id}`})`
               : placeholder}
           </span>
-          <i className={`fas fa-chevron-${isOpen ? "up" : "down"}`} style={{ color: "#94a3b8", fontSize: "12px" }}></i>
+          {!disabled && (
+            <i className={`fas fa-chevron-${isOpen ? "up" : "down"}`} style={{ color: "#94a3b8", fontSize: "12px" }}></i>
+          )}
         </div>
       </div>
 

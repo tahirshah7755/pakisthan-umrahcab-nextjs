@@ -199,6 +199,7 @@ function AddTrainContent() {
               selectedCustomer={trnSelectedCustomerObj}
               onSelectCustomer={setTrnSelectedCustomerObj}
               themeColor={GOLD_COLOR}
+              disabled={!!customerId}
             />
 
             {/* Leg Type Tab Buttons */}

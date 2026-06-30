@@ -308,6 +308,7 @@ function CompanyCustomerViewContent() {
         router={router}
         showToast={showToast}
         triggerExportAlert={triggerExportAlert}
+        isCompany={true}
       />
     </div>
   );

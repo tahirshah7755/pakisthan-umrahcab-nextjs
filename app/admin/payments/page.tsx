@@ -15,6 +15,7 @@ export default function PaymentsPage() {
   // Filter input states
   const [companyFilter, setCompanyFilter] = useState("");
   const [methodFilter, setMethodFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
@@ -22,6 +23,7 @@ export default function PaymentsPage() {
   const [appliedFilters, setAppliedFilters] = useState({
     company: "",
     method: "all",
+    status: "all",
     start_date: "",
     end_date: "",
   });
@@ -228,6 +230,7 @@ export default function PaymentsPage() {
     search: debouncedSearch || undefined,
     company: appliedFilters.company || undefined,
     method: appliedFilters.method !== "all" ? appliedFilters.method : undefined,
+    status: appliedFilters.status !== "all" ? appliedFilters.status : undefined,
     start_date: appliedFilters.start_date || undefined,
     end_date: appliedFilters.end_date || undefined,
   });
@@ -281,6 +284,7 @@ export default function PaymentsPage() {
     setAppliedFilters({
       company: companyFilter,
       method: methodFilter,
+      status: statusFilter,
       start_date: startDate,
       end_date: endDate,
     });
@@ -290,11 +294,13 @@ export default function PaymentsPage() {
   const handleResetFilters = () => {
     setCompanyFilter("");
     setMethodFilter("all");
+    setStatusFilter("all");
     setStartDate("");
     setEndDate("");
     setAppliedFilters({
       company: "",
       method: "all",
+      status: "all",
       start_date: "",
       end_date: "",
     });
@@ -314,12 +320,17 @@ export default function PaymentsPage() {
     setAppliedFilters({
       company: companyFilter,
       method: methodFilter,
+      status: statusFilter,
       start_date: startStr,
       end_date: endStr,
     });
     setCurrentPage(1);
     showToast(`Applied Quick Filter for last ${days} days!`, "success");
   };
+
+  const totalSum = paginatedPayments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const approvedSum = paginatedPayments.filter((p: any) => p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const pendingSum = paginatedPayments.filter((p: any) => p.status === "Pending" || p.status === "pending").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "10px" }}>
@@ -352,6 +363,37 @@ export default function PaymentsPage() {
             <i className="fas fa-arrow-left"></i>
             <span>Back to Hub</span>
           </button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
+        <div className="form-card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "15px", borderRadius: "12px", borderLeft: "4px solid #3b82f6" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+            <i className="fas fa-wallet"></i>
+          </div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Total Loaded Amount</span>
+            <strong style={{ fontSize: "18px", color: "#1e293b" }}>{fmt(totalSum)}</strong>
+          </div>
+        </div>
+        <div className="form-card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "15px", borderRadius: "12px", borderLeft: "4px solid #10b981" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#dcfce7", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Approved / Received</span>
+            <strong style={{ fontSize: "18px", color: "#10b981" }}>{fmt(approvedSum)}</strong>
+          </div>
+        </div>
+        <div className="form-card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "15px", borderRadius: "12px", borderLeft: "4px solid #d97706" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+            <i className="fas fa-clock"></i>
+          </div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Pending Approval</span>
+            <strong style={{ fontSize: "18px", color: "#d97706" }}>{fmt(pendingSum)}</strong>
+          </div>
         </div>
       </div>
 
@@ -403,6 +445,25 @@ export default function PaymentsPage() {
                 <option value="Bank Transfer">Bank Transfer</option>
                 <option value="Cash Receipt">Cash Deposit (Physical)</option>
                 <option value="Online Gateway">Online Checkout Card</option>
+              </select>
+              <i className="fas fa-chevron-down select-arrow" style={{ fontSize: "10px" }}></i>
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: "6px" }}>Payment Status</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-info-circle form-icon" style={{ fontSize: "13px" }}></i>
+              <select 
+                className="form-input form-select" 
+                style={{ height: "38px", paddingLeft: "38px", fontSize: "13px", borderRadius: "6px" }}
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="Pending">Pending Approval</option>
+                <option value="Approved">Approved / Received</option>
+                <option value="Rejected">Rejected</option>
               </select>
               <i className="fas fa-chevron-down select-arrow" style={{ fontSize: "10px" }}></i>
             </div>

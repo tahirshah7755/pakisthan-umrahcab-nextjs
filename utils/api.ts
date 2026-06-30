@@ -553,8 +553,10 @@ export const api = {
     return data || [];
   },
 
-  async getCompanyPayments() {
-    const data = await request(`/company-panel/payments`);
+  async getCompanyPayments(status?: string) {
+    const q = new URLSearchParams();
+    if (status && status !== "all") q.append("status", status);
+    const data = await request(`/company-panel/payments?${q.toString()}`);
     return data || [];
   },
 

@@ -22,6 +22,7 @@ export default function CompanyPaymentsPage() {
   const { companyUser } = useAuth();
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Deposit Request Form States
   const [showModal, setShowModal] = useState(false);
@@ -214,10 +215,10 @@ export default function CompanyPaymentsPage() {
     else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Balance Deposits Statement - PDF Report" : "Balance Deposits Statement");
   };
 
-  const loadPayments = async () => {
+  const loadPayments = async (status?: string) => {
     try {
       setLoading(true);
-      const data = await api.getCompanyPayments();
+      const data = await api.getCompanyPayments(status);
       setPayments(data);
     } catch (err) {
       console.error(err);
@@ -228,8 +229,8 @@ export default function CompanyPaymentsPage() {
   };
 
   useEffect(() => {
-    loadPayments();
-  }, []);
+    loadPayments(statusFilter);
+  }, [statusFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -295,6 +296,11 @@ export default function CompanyPaymentsPage() {
     return "cancelled";
   };
 
+  const fmt = (n: number) => `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const totalSum = payments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const approvedSum = payments.filter((p: any) => p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const pendingSum = payments.filter((p: any) => p.status === "Pending" || p.status === "pending").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {toast.show && (
@@ -312,20 +318,78 @@ export default function CompanyPaymentsPage() {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
+        <div className="form-card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "15px", borderRadius: "12px", borderLeft: "4px solid #3b82f6", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#eff6ff", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+            <i className="fas fa-wallet"></i>
+          </div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Total Deposit Requests</span>
+            <strong style={{ fontSize: "18px", color: "#1e293b" }}>{fmt(totalSum)}</strong>
+          </div>
+        </div>
+        <div className="form-card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "15px", borderRadius: "12px", borderLeft: "4px solid #10b981", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#dcfce7", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Approved / Received</span>
+            <strong style={{ fontSize: "18px", color: "#10b981" }}>{fmt(approvedSum)}</strong>
+          </div>
+        </div>
+        <div className="form-card" style={{ padding: "20px", display: "flex", alignItems: "center", gap: "15px", borderRadius: "12px", borderLeft: "4px solid #d97706", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+          <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
+            <i className="fas fa-clock"></i>
+          </div>
+          <div>
+            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Pending Approval</span>
+            <strong style={{ fontSize: "18px", color: "#d97706" }}>{fmt(pendingSum)}</strong>
+          </div>
+        </div>
+      </div>
+
       {/* Payments Table Card */}
       <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
         {/* Toolbar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
-          <div className="mobile-toolbar" style={{ display: "flex", gap: "6px" }}>
-            {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
-              <button
-                key={fmt}
-                onClick={() => handleButtonClick(fmt)}
-                style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
+          <div className="mobile-toolbar" style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "6px" }}>
+              {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => handleButtonClick(fmt)}
+                  style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
+                >
+                  {fmt}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <label style={{ fontSize: "12px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>Payment Status:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  height: "36px",
+                  padding: "0 12px",
+                  fontSize: "13px",
+                  borderRadius: "6px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#334155",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  outline: "none"
+                }}
               >
-                {fmt}
-              </button>
-            ))}
+                <option value="all">All Status</option>
+                <option value="Pending">Pending Approval</option>
+                <option value="Approved">Approved / Received</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
           </div>
 
           <button

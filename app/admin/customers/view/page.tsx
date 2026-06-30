@@ -61,19 +61,28 @@ function CustomerViewContent() {
             
             // Map bookings
             if (Array.isArray(customerProfile.bookings)) {
-              setBookings(customerProfile.bookings.map((b: any, idx: number) => ({
-                id: b.booking_code || `#BKG-87${idx + 10}`,
-                rawId: b.id ? String(b.id) : `87${idx + 10}`,
-                type: "BKG",
-                date: b.date || "2026-05-25",
-                time: b.time || "10:30 AM",
-                customerName: b.full_name || b.fullName || "Guest",
-                companyName: b.full_name ? "Corporate Account" : "Walk-in",
-                details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
-                vehicle: b.car_type || b.carType || "Sedan (Standard)",
-                phones: [b.phone || b.whatsapp || "+966501234567"],
-                customerId: b.customer_id ? String(b.customer_id) : "1"
-              })));
+              setBookings(customerProfile.bookings.map((b: any, idx: number) => {
+                let uiStatus = "Pending";
+                if (b.status === "Active Dispatch" || b.status === "Confirmed Booking" || b.status === "Confirmed") uiStatus = "Confirmed";
+                else if (b.status === "Completed") uiStatus = "Completed";
+                else if (b.status === "Cancelled") uiStatus = "Cancelled";
+
+                return {
+                  id: b.booking_code || `#BKG-87${idx + 10}`,
+                  rawId: b.id ? String(b.id) : `87${idx + 10}`,
+                  type: "BKG",
+                  date: b.date || "2026-05-25",
+                  time: b.time || "10:30 AM",
+                  customerName: b.full_name || b.fullName || "Guest",
+                  companyName: b.full_name ? "Corporate Account" : "Walk-in",
+                  details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
+                  vehicle: b.car_type || b.carType || "Sedan (Standard)",
+                  phones: [b.phone || b.whatsapp || "+966501234567"],
+                  customerId: b.customer_id ? String(b.customer_id) : "1",
+                  status: uiStatus,
+                  finalPrice: parseFloat(b.car_price || 0)
+                };
+              }));
             }
             
             // Map services
@@ -143,19 +152,28 @@ function CustomerViewContent() {
             // Fallback to fetch all related list if API didn't group them
             const bkgList = await api.getBookings();
             if (bkgList) {
-              setBookings(bkgList.map((b: any, idx: number) => ({
-                id: b.booking_code || `#BKG-87${idx + 10}`,
-                rawId: b.id ? String(b.id) : `87${idx + 10}`,
-                type: "BKG",
-                date: b.date || "2026-05-25",
-                time: b.time || "10:30 AM",
-                customerName: b.fullName || "Guest",
-                companyName: b.fullName ? "Corporate Account" : "Walk-in",
-                details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
-                vehicle: b.carType || "Sedan (Standard)",
-                phones: [b.phone || "+966501234567"],
-                customerId: b.customer_id ? String(b.customer_id) : "1"
-              })));
+              setBookings(bkgList.map((b: any, idx: number) => {
+                let uiStatus = "Pending";
+                if (b.status === "Active Dispatch" || b.status === "Confirmed Booking" || b.status === "Confirmed") uiStatus = "Confirmed";
+                else if (b.status === "Completed") uiStatus = "Completed";
+                else if (b.status === "Cancelled") uiStatus = "Cancelled";
+
+                return {
+                  id: b.booking_code || `#BKG-87${idx + 10}`,
+                  rawId: b.id ? String(b.id) : `87${idx + 10}`,
+                  type: "BKG",
+                  date: b.date || "2026-05-25",
+                  time: b.time || "10:30 AM",
+                  customerName: b.fullName || "Guest",
+                  companyName: b.fullName ? "Corporate Account" : "Walk-in",
+                  details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
+                  vehicle: b.carType || "Sedan (Standard)",
+                  phones: [b.phone || "+966501234567"],
+                  customerId: b.customer_id ? String(b.customer_id) : "1",
+                  status: uiStatus,
+                  finalPrice: parseFloat(b.carPrice || b.car_price || 0)
+                };
+              }));
             }
 
             const srvList = await api.getServices();

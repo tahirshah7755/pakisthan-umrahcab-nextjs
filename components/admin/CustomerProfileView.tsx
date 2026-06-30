@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { CustomerItem } from "./CustomerDirectory";
+import { api } from "@/utils/api";
 
 interface CustomerProfileViewProps {
   currentProfile: {
@@ -62,6 +63,11 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
   const [selectedProfileFlight, setSelectedProfileFlight] = useState<any>(null);
   const [selectedProfileTrain, setSelectedProfileTrain] = useState<any>(null);
   const [selectedProfileHotel, setSelectedProfileHotel] = useState<any>(null);
+
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedCancelBooking, setSelectedCancelBooking] = useState<any>(null);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [selectedApproveBooking, setSelectedApproveBooking] = useState<any>(null);
 
   const handleActionClick = (actionName: string) => {
     showToast(`Triggered simulated customer action: ${actionName}`, "success");
@@ -478,27 +484,69 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                           <td style={{ fontWeight: 600 }}>{b.details}</td>
                           <td><span className="status-pill active" style={{ background: "#ecfeff", color: "#0891b2" }}>{b.vehicle}</span></td>
                           <td>
-                            <span className={`status-pill ${b.status === "Confirmed" || b.status === "confirmed" ? "completed" : "pending"}`}>
+                            <span className={`status-pill ${
+                              b.status === "Confirmed" || b.status === "confirmed" || b.status === "Completed" || b.status === "completed" ? "completed" :
+                              b.status === "Cancelled" || b.status === "cancelled" ? "cancelled" : "pending"
+                            }`}>
                               {(b.status || "PENDING").toUpperCase()}
                             </span>
                           </td>
-                          <td>
-                            <button
-                              onClick={() => setSelectedProfileBooking({
-                                id: b.id,
-                                customerName: currentProfile.name,
-                                pickupDate: b.date,
-                                pickupTime: b.time,
-                                pickupLocation: b.details.split(" → ")[0] || "N/A",
-                                dropoffLocation: b.details.split(" → ")[1] || "N/A",
-                                vehicle: b.vehicle,
-                                finalPrice: 0,
-                                status: b.status || "Pending"
-                              })}
-                              style={{ background: "#f1f5f9", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#2563eb", cursor: "pointer" }}
-                            >
-                              <i className="fas fa-eye"></i>
-                            </button>
+                           <td>
+                            <div style={{ display: "flex", gap: "6px" }}>
+                              <button
+                                onClick={() => setSelectedProfileBooking({
+                                  id: b.id,
+                                  customerName: currentProfile.name,
+                                  pickupDate: b.date,
+                                  pickupTime: b.time,
+                                  pickupLocation: b.details.split(" → ")[0] || "N/A",
+                                  dropoffLocation: b.details.split(" → ")[1] || "N/A",
+                                  vehicle: b.vehicle,
+                                  finalPrice: b.finalPrice || 0,
+                                  status: b.status || "Pending"
+                                })}
+                                title="View Details"
+                                style={{ background: "#f1f5f9", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#2563eb", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                              >
+                                <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
+                              </button>
+                              {b.status === "Pending" && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedApproveBooking({
+                                      id: b.id,
+                                      customerName: currentProfile.name,
+                                      pickupLocation: b.details.split(" → ")[0] || "N/A",
+                                      dropoffLocation: b.details.split(" → ")[1] || "N/A",
+                                      finalPrice: b.finalPrice || 0
+                                    });
+                                    setShowApproveModal(true);
+                                  }}
+                                  title="Confirm & Approve Booking"
+                                  style={{ background: "#dcfce7", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#16a34a", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                                >
+                                  <i className="fas fa-check" style={{ fontSize: "12px" }}></i>
+                                </button>
+                              )}
+                              {b.status !== "Cancelled" && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedCancelBooking({
+                                      id: b.id,
+                                      customerName: currentProfile.name,
+                                      pickupLocation: b.details.split(" → ")[0] || "N/A",
+                                      dropoffLocation: b.details.split(" → ")[1] || "N/A",
+                                      finalPrice: b.finalPrice || 0
+                                    });
+                                    setShowCancelModal(true);
+                                  }}
+                                  title="Cancel & Refund Booking"
+                                  style={{ background: "#fee2e2", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#ef4444", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                                >
+                                  <i className="fas fa-ban" style={{ fontSize: "12px" }}></i>
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -955,6 +1003,262 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
 
             <div style={{ display: "flex", justifyContent: "flex-end", borderTop: "1px solid var(--border-color)", paddingTop: "15px" }}>
               <button onClick={() => setSelectedProfileHotel(null)} className="form-btn-back" style={{ background: "#f1f5f9", color: "#475569", width: "120px", justifyContent: "center" }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Confirm & Approve Modal */}
+      {showApproveModal && selectedApproveBooking && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "480px",
+            padding: "24px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            border: "1px solid #e2e8f0",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div style={{
+                background: "#dcfce7",
+                color: "#16a34a",
+                borderRadius: "50%",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "20px",
+              }}>
+                <i className="fas fa-check-circle"></i>
+              </div>
+              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                Approve &amp; Confirm Booking
+              </h3>
+            </div>
+
+            <div style={{ fontSize: "14px", color: "#475569", marginBottom: "20px", lineHeight: "1.5" }}>
+              <p style={{ margin: "0 0 12px 0" }}>
+                Are you sure you want to approve booking <strong style={{ color: "#0f172a" }}>{selectedApproveBooking.id}</strong> for <strong style={{ color: "#0f172a" }}>{selectedApproveBooking.customerName}</strong>?
+              </p>
+              <div style={{
+                background: "#f8fafc",
+                borderRadius: "8px",
+                padding: "12px",
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Route:</span>
+                  <span style={{ fontWeight: "600" }}>{selectedApproveBooking.pickupLocation} → {selectedApproveBooking.dropoffLocation}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Fare Price:</span>
+                  <span style={{ fontWeight: "600" }}>SAR {Number(selectedApproveBooking.finalPrice).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowApproveModal(false);
+                  setSelectedApproveBooking(null);
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  background: "#ffffff",
+                  color: "#334155",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                }}
+              >
+                No, Keep Pending
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setShowApproveModal(false);
+                    const res = await api.updateBooking(selectedApproveBooking.id, { status: "Confirmed Booking" });
+                    if (res?.success) {
+                      showToast(`Booking ${selectedApproveBooking.id} approved & confirmed successfully!`, "success");
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
+                    } else {
+                      showToast(res?.error || "Failed to approve booking.", "error");
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    showToast("Error approving booking.", "error");
+                  } finally {
+                    setSelectedApproveBooking(null);
+                  }
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#16a34a",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                }}
+              >
+                Yes, Approve &amp; Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Cancel & Refund Modal */}
+      {showCancelModal && selectedCancelBooking && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.6)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "480px",
+            padding: "24px",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            border: "1px solid #e2e8f0",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div style={{
+                background: "#fee2e2",
+                color: "#ef4444",
+                borderRadius: "50%",
+                width: "40px",
+                height: "40px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "20px",
+              }}>
+                <i className="fas fa-exclamation-triangle"></i>
+              </div>
+              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                Cancel &amp; Refund Booking
+              </h3>
+            </div>
+
+            <div style={{ fontSize: "14px", color: "#475569", marginBottom: "20px", lineHeight: "1.5" }}>
+              <p style={{ margin: "0 0 12px 0" }}>
+                Are you sure you want to cancel booking <strong style={{ color: "#0f172a" }}>{selectedCancelBooking.id}</strong>? This action will automatically refund the B2B agent's ledger.
+              </p>
+              <div style={{
+                background: "#f8fafc",
+                borderRadius: "8px",
+                padding: "12px",
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Route:</span>
+                  <span style={{ fontWeight: "600" }}>{selectedCancelBooking.pickupLocation} → {selectedCancelBooking.dropoffLocation}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Refund Amount:</span>
+                  <span style={{ fontWeight: "700", color: "#16a34a" }}>SAR {Number(selectedCancelBooking.finalPrice).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setSelectedCancelBooking(null);
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  background: "#ffffff",
+                  color: "#334155",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                }}
+              >
+                No, Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    setShowCancelModal(false);
+                    const res = await api.updateBooking(selectedCancelBooking.id, { status: "Cancelled" });
+                    if (res?.success) {
+                      showToast(`Booking ${selectedCancelBooking.id} cancelled & refunded successfully!`, "success");
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
+                    } else {
+                      showToast(res?.error || "Failed to cancel booking.", "error");
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    showToast("Error cancelling booking.", "error");
+                  } finally {
+                    setSelectedCancelBooking(null);
+                  }
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#ef4444",
+                  color: "#ffffff",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
+                }}
+              >
+                Yes, Cancel &amp; Refund
+              </button>
             </div>
           </div>
         </div>

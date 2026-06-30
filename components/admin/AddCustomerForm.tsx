@@ -770,6 +770,20 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     }
     if (!allValid) return;
 
+    // Check B2B Agent balance
+    if (isCompanyPanel && agentBalance !== null) {
+      let totalBookingCost = 0;
+      routes.forEach((route) => {
+        const finalPrice = Math.max(0, (Number(route.priceBeforeDiscount) || 0) - (Number(route.discount) || 0));
+        totalBookingCost += finalPrice;
+      });
+
+      if (agentBalance < totalBookingCost) {
+        showToast(`Insufficient balance! Available balance is SAR ${agentBalance.toFixed(2)}, but this booking requires SAR ${totalBookingCost.toFixed(2)}. Please top up.`, "error");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {

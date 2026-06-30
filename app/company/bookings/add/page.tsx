@@ -46,6 +46,7 @@ export default function AddNewBooking() {
   const [tafweejRequired, setTafweejRequired] = useState(false);
   const [internalNotes, setInternalNotes] = useState("");
   const [externalNotes, setExternalNotes] = useState("");
+  const [agentBalance, setAgentBalance] = useState<number | null>(null);
 
   // Searchable Dropdown state
   const [customerSearch, setCustomerSearch] = useState("");
@@ -80,6 +81,17 @@ export default function AddNewBooking() {
   useEffect(() => {
     if (companyUser) {
       setNewCustMobileCode(getDefaultPhoneCode(companyUser));
+      const fetchBalance = async () => {
+        try {
+          const summary = await api.getCompanyDashboardSummary();
+          if (summary && summary.ledger_summary) {
+            setAgentBalance(Number(summary.ledger_summary.current_balance));
+          }
+        } catch (e) {
+          console.error("Failed to load agent balance", e);
+        }
+      };
+      fetchBalance();
     }
   }, [companyUser]);
 
@@ -362,6 +374,11 @@ export default function AddNewBooking() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (agentBalance !== null && finalBookingPrice > agentBalance) {
+      showToast(`Insufficient balance! Available balance is SAR ${agentBalance.toFixed(2)}, but this booking requires SAR ${finalBookingPrice.toFixed(2)}. Please top up.`, "error");
+      return;
+    }
+
     if (!customer) {
       showToast("Please select a customer.", "error");
       return;
@@ -436,6 +453,21 @@ export default function AddNewBooking() {
         <div>
           <h2>Create New Booking</h2>
           <p>Register a new transportation booking for your clients.</p>
+          {agentBalance !== null && (
+            <div style={{ marginTop: "8px", fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ color: "rgba(255, 255, 255, 0.8)", fontWeight: "500" }}>Available Balance:</span>
+              <span style={{ 
+                color: agentBalance < 0 ? "#fecaca" : "#bbf7d0", 
+                fontWeight: "700",
+                background: agentBalance < 0 ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                border: `1px solid ${agentBalance < 0 ? "rgba(239, 68, 68, 0.3)" : "rgba(16, 185, 129, 0.3)"}`
+              }}>
+                SAR {agentBalance.toFixed(2)}
+              </span>
+            </div>
+          )}
         </div>
         <button onClick={() => router.push("/company/bookings")} className="form-btn-back">
           <i className="fas fa-arrow-left"></i>

@@ -50,17 +50,6 @@ function AddHotelAssignmentContent() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  // Pre-populate customer
-  useEffect(() => {
-    if (customerId) {
-      api.getCustomer(customerId).then((res) => {
-        if (res && res.customer) {
-          setSelectedCustomer(res.customer);
-        }
-      }).catch(err => console.error(err));
-    }
-  }, [customerId]);
-
   useEffect(() => {
     const fetchDirectoryHotels = async () => {
       try {
@@ -74,6 +63,23 @@ function AddHotelAssignmentContent() {
     };
     fetchDirectoryHotels();
   }, []);
+
+  // Pre-populate customer if customerId is present in URL
+  useEffect(() => {
+    if (customerId) {
+      const fetchCustomer = async () => {
+        try {
+          const res = await api.getCustomer(customerId);
+          if (res && res.customer) {
+            setSelectedCustomer(res.customer);
+          }
+        } catch (err) {
+          console.error("Failed to load customer details", err);
+        }
+      };
+      fetchCustomer();
+    }
+  }, [customerId]);
 
   // Compute available properties for the selected city from both directory and mock list
   const cityHotels = useMemo(() => {
@@ -112,6 +118,7 @@ function AddHotelAssignmentContent() {
     }
 
     const finalHotelName = isCustomHotel ? customHotelName : hotelName;
+
     if (!finalHotelName.trim()) {
       showToast("Hotel property selection or name is required.", "error");
       return;
@@ -132,7 +139,7 @@ function AddHotelAssignmentContent() {
       if (res && res.success) {
         showToast("Hotel stay assigned to customer successfully!", "success");
         setTimeout(() => {
-          router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/hotels/assignments");
+          router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`);
         }, 1500);
       } else {
         showToast(res?.error || "Failed to assign hotel.", "error");
@@ -143,7 +150,7 @@ function AddHotelAssignmentContent() {
     }
   };
 
-  const GOLD_COLOR = "#b48a1d";
+  const GOLD_COLOR = "#d4af37";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -164,21 +171,20 @@ function AddHotelAssignmentContent() {
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          animation: "slideIn 0.3s ease-out"
         }}>
           <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
           <span>{toast.message}</span>
         </div>
       )}
 
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #b48a1d 0%, #8c6b12 100%)" }}>
+      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #b48a1d 0%, #d4af37 100%)" }}>
         <div>
           <h2>Assign Hotel to Customer</h2>
           <p>Register check-in and check-out tracking dates for a customer stay.</p>
         </div>
-        <button onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/hotels/assignments")} className="form-btn-back">
-          <i className="fas fa-list"></i>
-          <span>Back</span>
+        <button onClick={() => router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`)} className="form-btn-back">
+          <i className="fas fa-arrow-left"></i>
+          <span>Back to Profile</span>
         </button>
       </div>
 
@@ -216,9 +222,9 @@ function AddHotelAssignmentContent() {
             </div>
 
             <div>
-              <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Hotel / Property Name *</label>
-              <div className="form-input-wrapper" style={{ position: "relative", marginBottom: isCustomHotel ? "10px" : "0" }}>
-                <i className="fa-solid fa-building-circle-check form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+              <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Select Hotel Property *</label>
+              <div className="form-input-wrapper" style={{ position: "relative" }}>
+                <i className="fa-solid fa-hotel form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
                 <select
                   className="form-input form-select"
                   value={hotelId}
@@ -226,68 +232,58 @@ function AddHotelAssignmentContent() {
                   style={{ paddingLeft: "42px", width: "100%" }}
                   required
                 >
-                  <option value="">-- Select Hotel --</option>
+                  <option value="">-- Choose Hotel --</option>
                   {cityHotels.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.name}
-                    </option>
+                    <option key={h.id} value={h.name}>{h.name}</option>
                   ))}
-                  <option value="custom">-- Other / Custom Hotel --</option>
+                  <option value="custom">-- Custom Property (Write Below) --</option>
                 </select>
               </div>
-              {isCustomHotel && (
-                <div className="form-input-wrapper" style={{ position: "relative", marginTop: "10px" }}>
-                  <i className="fa-solid fa-hotel form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+            </div>
+
+            {isCustomHotel && (
+              <div>
+                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Custom Hotel Name *</label>
+                <div className="form-input-wrapper" style={{ position: "relative" }}>
+                  <i className="fa-solid fa-pencil form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="Enter custom hotel name..."
+                    placeholder="Enter custom hotel property name..."
                     value={customHotelName}
                     onChange={(e) => setCustomHotelName(e.target.value)}
-                    style={{ paddingLeft: "42px", width: "100%" }}
+                    style={{ paddingLeft: "42px" }}
                     required
                   />
                 </div>
-              )}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div>
-                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-In Date</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={checkIn}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                  style={{ width: "100%", paddingLeft: "12px" }}
-                />
               </div>
-              <div>
-                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-Out Date</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  style={{ width: "100%", paddingLeft: "12px" }}
-                />
-              </div>
-            </div>
+            )}
 
-            <div>
-              <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Status *</label>
-              <div className="form-input-wrapper" style={{ position: "relative" }}>
-                <i className="fa-solid fa-circle-info form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
-                <select
-                  className="form-input form-select"
-                  value={hotelActive}
-                  onChange={(e) => setHotelActive(Number(e.target.value))}
-                  style={{ paddingLeft: "42px", width: "100%" }}
-                  required
-                >
-                  <option value={1}>Active Property</option>
-                  <option value={0}>Inactive Property</option>
-                </select>
+            <div style={{ display: "flex", gap: "15px" }}>
+              <div style={{ flex: 1 }}>
+                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-in Date</label>
+                <div className="form-input-wrapper">
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={checkIn}
+                    onChange={(e) => setCheckIn(e.target.value)}
+                    style={{ paddingLeft: "15px" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-out Date</label>
+                <div className="form-input-wrapper">
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={checkOut}
+                    onChange={(e) => setCheckOut(e.target.value)}
+                    style={{ paddingLeft: "15px" }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -295,7 +291,7 @@ function AddHotelAssignmentContent() {
             <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
               <button
                 type="button"
-                onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/hotels/assignments")}
+                onClick={() => router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`)}
                 style={{
                   flex: 1,
                   padding: "12px",
@@ -327,23 +323,16 @@ function AddHotelAssignmentContent() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
-                  boxShadow: `0 4px 6px -1px rgba(180, 138, 29, 0.2)`
+                  boxShadow: "0 4px 6px -1px rgba(212, 175, 55, 0.2)"
                 }}
               >
                 <i className="fas fa-check"></i>
-                <span>Assign Property</span>
+                <span>Assign Hotel Stay</span>
               </button>
             </div>
           </form>
         </div>
       </div>
-      
-      <style jsx global>{`
-        @keyframes slideIn {
-          from { transform: translateY(-20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

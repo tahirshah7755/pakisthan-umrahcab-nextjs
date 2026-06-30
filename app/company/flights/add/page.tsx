@@ -37,14 +37,20 @@ function AddFlightContent() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  // Pre-populate customer
+  // Pre-populate customer if customerId is present in URL
   useEffect(() => {
     if (customerId) {
-      api.getCustomer(customerId).then((res) => {
-        if (res && res.customer) {
-          setFltSelectedCustomerObj(res.customer);
+      const fetchCustomer = async () => {
+        try {
+          const res = await api.getCustomer(customerId);
+          if (res && res.customer) {
+            setFltSelectedCustomerObj(res.customer);
+          }
+        } catch (err) {
+          console.error("Failed to load customer details", err);
         }
-      }).catch(err => console.error(err));
+      };
+      fetchCustomer();
     }
   }, [customerId]);
 
@@ -138,7 +144,7 @@ function AddFlightContent() {
       setFltSelectedCustomerObj(null);
 
       setTimeout(() => {
-        router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/flights");
+        router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`);
       }, 1000);
     } catch (err: any) {
       console.error(err);
@@ -146,7 +152,7 @@ function AddFlightContent() {
     }
   };
 
-  const SKY_BLUE = "#0284c7";
+  const GOLD_COLOR = "#d4af37";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -167,21 +173,20 @@ function AddFlightContent() {
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          animation: "slideIn 0.3s ease-out"
         }}>
           <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
           <span>{toast.message}</span>
         </div>
       )}
 
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)" }}>
+      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #b48a1d 0%, #d4af37 100%)" }}>
         <div>
           <h2>Add Flight Record</h2>
           <p>Register departure and arrival details for a customer flight.</p>
         </div>
-        <button onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/flights")} className="form-btn-back">
-          <i className="fas fa-list"></i>
-          <span>Back</span>
+        <button onClick={() => router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`)} className="form-btn-back">
+          <i className="fas fa-arrow-left"></i>
+          <span>Back to Profile</span>
         </button>
       </div>
 
@@ -193,7 +198,7 @@ function AddFlightContent() {
             <CustomerSearchDropdown
               selectedCustomer={fltSelectedCustomerObj}
               onSelectCustomer={setFltSelectedCustomerObj}
-              themeColor={SKY_BLUE}
+              themeColor={GOLD_COLOR}
             />
 
             {/* Leg Type Tab Buttons */}
@@ -215,9 +220,9 @@ function AddFlightContent() {
                     fontSize: "13px",
                     cursor: "pointer",
                     border: fltLeg === leg ? "none" : "1px solid #cbd5e1",
-                    background: fltLeg === leg ? SKY_BLUE : "#ffffff",
+                    background: fltLeg === leg ? GOLD_COLOR : "#ffffff",
                     color: fltLeg === leg ? "#ffffff" : "#64748b",
-                    boxShadow: fltLeg === leg ? `0 4px 6px -1px rgba(2, 132, 199, 0.25)` : "none",
+                    boxShadow: fltLeg === leg ? `0 4px 6px -1px rgba(212, 175, 55, 0.25)` : "none",
                     transition: "all 0.2s ease"
                   }}
                 >
@@ -231,7 +236,7 @@ function AddFlightContent() {
             {(fltLeg === "Arrival" || fltLeg === "Both Legs") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "10px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
-                  <i className="fas fa-plane-arrival" style={{ color: SKY_BLUE }}></i>
+                  <i className="fas fa-plane-arrival" style={{ color: GOLD_COLOR }}></i>
                   <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Arrival Flight Details</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -269,7 +274,7 @@ function AddFlightContent() {
             {(fltLeg === "Departure" || fltLeg === "Both Legs") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "15px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
-                  <i className="fas fa-plane-departure" style={{ color: SKY_BLUE }}></i>
+                  <i className="fas fa-plane-departure" style={{ color: GOLD_COLOR }}></i>
                   <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Departure Flight Details</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -307,7 +312,7 @@ function AddFlightContent() {
             <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
               <button
                 type="button"
-                onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/flights")}
+                onClick={() => router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`)}
                 style={{
                   flex: 1,
                   padding: "12px",
@@ -329,7 +334,7 @@ function AddFlightContent() {
                   flex: 2,
                   padding: "12px",
                   borderRadius: "8px",
-                  background: SKY_BLUE,
+                  background: GOLD_COLOR,
                   color: "#ffffff",
                   border: "none",
                   fontSize: "15px",
@@ -339,7 +344,7 @@ function AddFlightContent() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
-                  boxShadow: "0 4px 6px -1px rgba(2, 132, 199, 0.2)"
+                  boxShadow: "0 4px 6px -1px rgba(212, 175, 55, 0.2)"
                 }}
               >
                 <i className="fas fa-check"></i>

@@ -435,12 +435,13 @@ export default function CompanyCustomersPage() {
                     <th>Contact</th>
                     <th>Registered By</th>
                     <th>Last Update</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentEntries.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No customers associated with this corporate account.</td>
+                      <td colSpan={6} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No customers associated with this corporate account.</td>
                     </tr>
                   ) : (
                     currentEntries.map((c) => (
@@ -450,6 +451,15 @@ export default function CompanyCustomersPage() {
                         <td>{formatContact(c.contact)}</td>
                         <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.registered_by}</td>
                         <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.last_update}</td>
+                        <td>
+                          <button
+                            onClick={() => router.push(`/company/customers/view?id=${c.id}`)}
+                            className="hub-btn hub-btn-list"
+                            style={{ padding: "6px 12px", fontSize: "12px", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}
+                          >
+                            <i className="fas fa-eye"></i> View Profile
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}

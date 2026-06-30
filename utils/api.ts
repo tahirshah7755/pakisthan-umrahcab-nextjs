@@ -140,7 +140,8 @@ export const api = {
   },
 
   async getCustomer(id: string) {
-    const data = await request(`/customers/${id}`);
+    const isCompany = typeof window !== "undefined" && window.location.pathname.startsWith("/company");
+    const data = await request(isCompany ? `/company-panel/customers/${id}` : `/customers/${id}`);
     return data || null;
   },
 

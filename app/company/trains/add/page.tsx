@@ -5,25 +5,25 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 
-function AddFlightContent() {
+function AddTrainContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const customerId = searchParams.get("customerId") || "";
 
-  const [fltSelectedCustomerObj, setFltSelectedCustomerObj] = useState<any | null>(null);
-  const [fltLeg, setFltLeg] = useState<"Arrival" | "Departure" | "Both Legs">("Arrival");
+  const [trnSelectedCustomerObj, setTrnSelectedCustomerObj] = useState<any | null>(null);
+  const [trnLeg, setTrnLeg] = useState<"Arrival" | "Departure" | "Both Legs">("Arrival");
 
   // Arrival states
-  const [fltArrFlightNo, setFltArrFlightNo] = useState("");
-  const [fltArrPlace, setFltArrPlace] = useState("");
-  const [fltArrDate, setFltArrDate] = useState("");
-  const [fltArrTime, setFltArrTime] = useState("");
+  const [trnArrTrainNo, setTrnArrTrainNo] = useState("");
+  const [trnArrStation, setTrnArrStation] = useState("");
+  const [trnArrDate, setTrnArrDate] = useState("");
+  const [trnArrTime, setTrnArrTime] = useState("");
 
   // Departure states
-  const [fltDepFlightNo, setFltDepFlightNo] = useState("");
-  const [fltDepPlace, setFltDepPlace] = useState("");
-  const [fltDepDate, setFltDepDate] = useState("");
-  const [fltDepTime, setFltDepTime] = useState("");
+  const [trnDepTrainNo, setTrnDepTrainNo] = useState("");
+  const [trnDepStation, setTrnDepStation] = useState("");
+  const [trnDepDate, setTrnDepDate] = useState("");
+  const [trnDepTime, setTrnDepTime] = useState("");
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -37,116 +37,122 @@ function AddFlightContent() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  // Pre-populate customer
+  // Pre-populate customer if customerId is present in URL
   useEffect(() => {
     if (customerId) {
-      api.getCustomer(customerId).then((res) => {
-        if (res && res.customer) {
-          setFltSelectedCustomerObj(res.customer);
+      const fetchCustomer = async () => {
+        try {
+          const res = await api.getCustomer(customerId);
+          if (res && res.customer) {
+            setTrnSelectedCustomerObj(res.customer);
+          }
+        } catch (err) {
+          console.error("Failed to load customer details", err);
         }
-      }).catch(err => console.error(err));
+      };
+      fetchCustomer();
     }
   }, [customerId]);
 
-  const handleAddFlight = async (e: React.FormEvent) => {
+  const handleAddTrain = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fltSelectedCustomerObj) {
+    if (!trnSelectedCustomerObj) {
       showToast("Please select a customer first.", "error");
       return;
     }
 
     try {
-      if (fltLeg === "Arrival") {
-        if (!fltArrFlightNo || !fltArrDate || !fltArrTime || !fltArrPlace) {
+      if (trnLeg === "Arrival") {
+        if (!trnArrTrainNo || !trnArrDate || !trnArrTime || !trnArrStation) {
           showToast("Please fill in all Arrival details.", "error");
           return;
         }
-        const res = await api.createFlight({
-          customer_id: fltSelectedCustomerObj.id,
-          flight_no: fltArrFlightNo,
+        const res = await api.createTrain({
+          customer_id: trnSelectedCustomerObj.id,
+          train_no: trnArrTrainNo,
           leg: "Arrival",
-          date: fltArrDate,
-          time: fltArrTime,
-          route: fltArrPlace,
-          status: "On Time"
+          date: trnArrDate,
+          time: trnArrTime,
+          route: trnArrStation,
+          status: "Scheduled"
         });
         if (!res?.success) {
-          showToast(res?.error || "Failed to save flight details.", "error");
+          showToast(res?.error || "Failed to save train details.", "error");
           return;
         }
-      } else if (fltLeg === "Departure") {
-        if (!fltDepFlightNo || !fltDepDate || !fltDepTime || !fltDepPlace) {
+      } else if (trnLeg === "Departure") {
+        if (!trnDepTrainNo || !trnDepDate || !trnDepTime || !trnDepStation) {
           showToast("Please fill in all Departure details.", "error");
           return;
         }
-        const res = await api.createFlight({
-          customer_id: fltSelectedCustomerObj.id,
-          flight_no: fltDepFlightNo,
+        const res = await api.createTrain({
+          customer_id: trnSelectedCustomerObj.id,
+          train_no: trnDepTrainNo,
           leg: "Departure",
-          date: fltDepDate,
-          time: fltDepTime,
-          route: fltDepPlace,
-          status: "On Time"
+          date: trnDepDate,
+          time: trnDepTime,
+          route: trnDepStation,
+          status: "Scheduled"
         });
         if (!res?.success) {
-          showToast(res?.error || "Failed to save flight details.", "error");
+          showToast(res?.error || "Failed to save train details.", "error");
           return;
         }
-      } else if (fltLeg === "Both Legs") {
+      } else if (trnLeg === "Both Legs") {
         if (
-          !fltArrFlightNo || !fltArrDate || !fltArrTime || !fltArrPlace ||
-          !fltDepFlightNo || !fltDepDate || !fltDepTime || !fltDepPlace
+          !trnArrTrainNo || !trnArrDate || !trnArrTime || !trnArrStation ||
+          !trnDepTrainNo || !trnDepDate || !trnDepTime || !trnDepStation
         ) {
           showToast("Please fill in both Arrival and Departure details.", "error");
           return;
         }
-        const res1 = await api.createFlight({
-          customer_id: fltSelectedCustomerObj.id,
-          flight_no: fltArrFlightNo,
+        const res1 = await api.createTrain({
+          customer_id: trnSelectedCustomerObj.id,
+          train_no: trnArrTrainNo,
           leg: "Arrival",
-          date: fltArrDate,
-          time: fltArrTime,
-          route: fltArrPlace,
-          status: "On Time"
+          date: trnArrDate,
+          time: trnArrTime,
+          route: trnArrStation,
+          status: "Scheduled"
         });
-        const res2 = await api.createFlight({
-          customer_id: fltSelectedCustomerObj.id,
-          flight_no: fltDepFlightNo,
+        const res2 = await api.createTrain({
+          customer_id: trnSelectedCustomerObj.id,
+          train_no: trnDepTrainNo,
           leg: "Departure",
-          date: fltDepDate,
-          time: fltDepTime,
-          route: fltDepPlace,
-          status: "On Time"
+          date: trnDepDate,
+          time: trnDepTime,
+          route: trnDepStation,
+          status: "Scheduled"
         });
         if (!res1?.success || !res2?.success) {
-          showToast("Failed to save some flight details.", "error");
+          showToast("Failed to save some train details.", "error");
           return;
         }
       }
 
-      showToast("Flight tracking details saved!", "success");
+      showToast("Train tracking details saved!", "success");
       
       // Clear inputs
-      setFltArrFlightNo("");
-      setFltArrPlace("");
-      setFltArrDate("");
-      setFltArrTime("");
-      setFltDepFlightNo("");
-      setFltDepPlace("");
-      setFltDepDate("");
-      setFltDepTime("");
-      setFltSelectedCustomerObj(null);
+      setTrnArrTrainNo("");
+      setTrnArrStation("");
+      setTrnArrDate("");
+      setTrnArrTime("");
+      setTrnDepTrainNo("");
+      setTrnDepStation("");
+      setTrnDepDate("");
+      setTrnDepTime("");
+      setTrnSelectedCustomerObj(null);
 
       setTimeout(() => {
-        router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/flights");
+        router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`);
       }, 1000);
     } catch (err: any) {
       console.error(err);
-      showToast(err.message || "Failed to add flight record.", "error");
+      showToast(err.message || "Failed to add train record.", "error");
     }
   };
 
-  const SKY_BLUE = "#0284c7";
+  const GOLD_COLOR = "#d4af37";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -167,33 +173,32 @@ function AddFlightContent() {
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          animation: "slideIn 0.3s ease-out"
         }}>
           <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
           <span>{toast.message}</span>
         </div>
       )}
 
-      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)" }}>
+      <div className="form-header-card" style={{ background: "linear-gradient(135deg, #b48a1d 0%, #d4af37 100%)" }}>
         <div>
-          <h2>Add Flight Record</h2>
-          <p>Register departure and arrival details for a customer flight.</p>
+          <h2>Add Train Record</h2>
+          <p>Register departure and arrival details for a customer train journey.</p>
         </div>
-        <button onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/flights")} className="form-btn-back">
-          <i className="fas fa-list"></i>
-          <span>Back</span>
+        <button onClick={() => router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`)} className="form-btn-back">
+          <i className="fas fa-arrow-left"></i>
+          <span>Back to Profile</span>
         </button>
       </div>
 
       <div style={{ display: "flex", justifyContent: "center", width: "100%", padding: "10px 0" }}>
         <div className="form-card" style={{ maxWidth: "650px", width: "100%", background: "#ffffff", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", padding: "30px", border: "1px solid #e2e8f0" }}>
-          <form onSubmit={handleAddFlight} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleAddTrain} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             
             {/* Search Customer Dropdown Component */}
             <CustomerSearchDropdown
-              selectedCustomer={fltSelectedCustomerObj}
-              onSelectCustomer={setFltSelectedCustomerObj}
-              themeColor={SKY_BLUE}
+              selectedCustomer={trnSelectedCustomerObj}
+              onSelectCustomer={setTrnSelectedCustomerObj}
+              themeColor={GOLD_COLOR}
             />
 
             {/* Leg Type Tab Buttons */}
@@ -202,7 +207,7 @@ function AddFlightContent() {
                 <button
                   key={leg}
                   type="button"
-                  onClick={() => setFltLeg(leg)}
+                  onClick={() => setTrnLeg(leg)}
                   style={{
                     flex: 1,
                     display: "flex",
@@ -214,51 +219,51 @@ function AddFlightContent() {
                     fontWeight: "600",
                     fontSize: "13px",
                     cursor: "pointer",
-                    border: fltLeg === leg ? "none" : "1px solid #cbd5e1",
-                    background: fltLeg === leg ? SKY_BLUE : "#ffffff",
-                    color: fltLeg === leg ? "#ffffff" : "#64748b",
-                    boxShadow: fltLeg === leg ? `0 4px 6px -1px rgba(2, 132, 199, 0.25)` : "none",
+                    border: trnLeg === leg ? "none" : "1px solid #cbd5e1",
+                    background: trnLeg === leg ? GOLD_COLOR : "#ffffff",
+                    color: trnLeg === leg ? "#ffffff" : "#64748b",
+                    boxShadow: trnLeg === leg ? `0 4px 6px -1px rgba(212, 175, 55, 0.25)` : "none",
                     transition: "all 0.2s ease"
                   }}
                 >
-                  <i className={leg === "Arrival" ? "fas fa-plane-arrival" : leg === "Departure" ? "fas fa-plane-departure" : "fas fa-arrows-left-right"}></i>
+                  <i className={leg === "Arrival" ? "fas fa-train" : leg === "Departure" ? "fas fa-train" : "fas fa-arrows-left-right"}></i>
                   <span>{leg}</span>
                 </button>
               ))}
             </div>
 
             {/* Arrival details */}
-            {(fltLeg === "Arrival" || fltLeg === "Both Legs") && (
+            {(trnLeg === "Arrival" || trnLeg === "Both Legs") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "10px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
-                  <i className="fas fa-plane-arrival" style={{ color: SKY_BLUE }}></i>
-                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Arrival Flight Details</span>
+                  <i className="fas fa-train" style={{ color: GOLD_COLOR }}></i>
+                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Arrival Train Details</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Flight Number <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Train Number / Code <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
-                    <i className="fas fa-plane form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. SV-3720" value={fltArrFlightNo} onChange={(e) => setFltArrFlightNo(e.target.value)} />
+                    <i className="fas fa-train form-icon"></i>
+                    <input type="text" className="form-input" placeholder="e.g. HHR-5240" value={trnArrTrainNo} onChange={(e) => setTrnArrTrainNo(e.target.value)} />
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Airport / City <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Station <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
                     <i className="fas fa-location-dot form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. Jeddah International Airport (JED)" value={fltArrPlace} onChange={(e) => setFltArrPlace(e.target.value)} />
+                    <input type="text" className="form-input" placeholder="e.g. Makkah Haramain Station" value={trnArrStation} onChange={(e) => setTrnArrStation(e.target.value)} />
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "15px" }}>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={fltArrDate} onChange={(e) => setFltArrDate(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Time <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="time" className="form-input" value={fltArrTime} onChange={(e) => setFltArrTime(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <input type="time" className="form-input" value={trnArrTime} onChange={(e) => setTrnArrTime(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                 </div>
@@ -266,37 +271,37 @@ function AddFlightContent() {
             )}
 
             {/* Departure details */}
-            {(fltLeg === "Departure" || fltLeg === "Both Legs") && (
+            {(trnLeg === "Departure" || trnLeg === "Both Legs") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "15px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
-                  <i className="fas fa-plane-departure" style={{ color: SKY_BLUE }}></i>
-                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Departure Flight Details</span>
+                  <i className="fas fa-train" style={{ color: GOLD_COLOR }}></i>
+                  <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "15px" }}>Departure Train Details</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Flight Number <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Train Number / Code <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
-                    <i className="fas fa-plane form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. SV-3721" value={fltDepFlightNo} onChange={(e) => setFltDepFlightNo(e.target.value)} />
+                    <i className="fas fa-train form-icon"></i>
+                    <input type="text" className="form-input" placeholder="e.g. HHR-5241" value={trnDepTrainNo} onChange={(e) => setTrnDepTrainNo(e.target.value)} />
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Airport / City <span style={{ color: "#ef4444" }}>*</span></label>
+                  <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Station <span style={{ color: "#ef4444" }}>*</span></label>
                   <div className="form-input-wrapper">
                     <i className="fas fa-location-dot form-icon"></i>
-                    <input type="text" className="form-input" placeholder="e.g. Madinah Airport (MED)" value={fltDepPlace} onChange={(e) => setFltDepPlace(e.target.value)} />
+                    <input type="text" className="form-input" placeholder="e.g. Madinah Haramain Station" value={trnDepStation} onChange={(e) => setTrnDepStation(e.target.value)} />
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "15px" }}>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={fltDepDate} onChange={(e) => setFltDepDate(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Time <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="time" className="form-input" value={fltDepTime} onChange={(e) => setFltDepTime(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <input type="time" className="form-input" value={trnDepTime} onChange={(e) => setTrnDepTime(e.target.value)} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                 </div>
@@ -307,7 +312,7 @@ function AddFlightContent() {
             <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
               <button
                 type="button"
-                onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/flights")}
+                onClick={() => router.push(customerId ? `/company/customers/view?id=${customerId}` : `/company/customers`)}
                 style={{
                   flex: 1,
                   padding: "12px",
@@ -329,7 +334,7 @@ function AddFlightContent() {
                   flex: 2,
                   padding: "12px",
                   borderRadius: "8px",
-                  background: SKY_BLUE,
+                  background: GOLD_COLOR,
                   color: "#ffffff",
                   border: "none",
                   fontSize: "15px",
@@ -339,11 +344,11 @@ function AddFlightContent() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
-                  boxShadow: "0 4px 6px -1px rgba(2, 132, 199, 0.2)"
+                  boxShadow: "0 4px 6px -1px rgba(212, 175, 55, 0.2)"
                 }}
               >
                 <i className="fas fa-check"></i>
-                <span>Save Flight Details</span>
+                <span>Save Train Details</span>
               </button>
             </div>
           </form>
@@ -353,10 +358,10 @@ function AddFlightContent() {
   );
 }
 
-export default function AddFlight() {
+export default function AddTrain() {
   return (
     <Suspense fallback={<div>Loading form...</div>}>
-      <AddFlightContent />
+      <AddTrainContent />
     </Suspense>
   );
 }

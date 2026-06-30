@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 
-export default function AddTrain() {
+function AddTrainContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const customerId = searchParams.get("customerId") || "";
+
   const [trnSelectedCustomerObj, setTrnSelectedCustomerObj] = useState<any | null>(null);
   const [trnLeg, setTrnLeg] = useState<"Arrival" | "Departure" | "Both Legs">("Arrival");
 
@@ -33,6 +36,17 @@ export default function AddTrain() {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
+
+  // Pre-populate customer
+  useEffect(() => {
+    if (customerId) {
+      api.getCustomer(customerId).then((res) => {
+        if (res && res.customer) {
+          setTrnSelectedCustomerObj(res.customer);
+        }
+      }).catch(err => console.error(err));
+    }
+  }, [customerId]);
 
   const handleAddTrain = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +138,7 @@ export default function AddTrain() {
       setTrnSelectedCustomerObj(null);
 
       setTimeout(() => {
-        router.push("/admin/trains");
+        router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/trains");
       }, 1000);
     } catch (err: any) {
       console.error(err);
@@ -165,9 +179,9 @@ export default function AddTrain() {
           <h2>Add Train Record</h2>
           <p>Register departure and arrival details for a customer train journey.</p>
         </div>
-        <button onClick={() => router.push("/admin/trains")} className="form-btn-back">
+        <button onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/trains")} className="form-btn-back">
           <i className="fas fa-list"></i>
-          <span>Trains List</span>
+          <span>Back</span>
         </button>
       </div>
 
@@ -293,7 +307,7 @@ export default function AddTrain() {
             <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
               <button
                 type="button"
-                onClick={() => router.push("/admin/trains")}
+                onClick={() => router.push(customerId ? `/admin/customers/view?id=${customerId}` : "/admin/trains")}
                 style={{
                   flex: 1,
                   padding: "12px",
@@ -336,5 +350,13 @@ export default function AddTrain() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AddTrain() {
+  return (
+    <Suspense fallback={<div>Loading form...</div>}>
+      <AddTrainContent />
+    </Suspense>
   );
 }

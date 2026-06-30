@@ -41,16 +41,25 @@ export default function CustomerSearchDropdown({
     const fetchCustomers = async () => {
       try {
         setLoading(true);
-        const data = await api.getCustomers(search, undefined, page, 10);
+        const isCompanyRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/company");
         let newItems: any[] = [];
-        if (data && Array.isArray(data)) {
-          newItems = data;
-        } else if (data && data.data && Array.isArray(data.data)) {
-          newItems = data.data;
-        }
-
-        if (newItems.length < 10) {
+        
+        if (isCompanyRoute) {
+          const data = await api.getCompanyCustomers(search);
+          if (data && Array.isArray(data)) {
+            newItems = data;
+          }
           setHasMore(false);
+        } else {
+          const data = await api.getCustomers(search, undefined, page, 10);
+          if (data && Array.isArray(data)) {
+            newItems = data;
+          } else if (data && data.data && Array.isArray(data.data)) {
+            newItems = data.data;
+          }
+          if (newItems.length < 10) {
+            setHasMore(false);
+          }
         }
 
         setCustomersList((prev) => {

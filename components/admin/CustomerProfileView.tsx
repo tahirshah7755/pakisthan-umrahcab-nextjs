@@ -13,7 +13,7 @@ const getFileUrl = (path: string) => {
     return path;
   }
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${IMAGE_BASE}${cleanPath}`;
+  return `${API_URL}/view-file?path=${encodeURIComponent(cleanPath)}`;
 };
 
 interface CustomerProfileViewProps {

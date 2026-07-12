@@ -66,7 +66,10 @@ export default function CustomersPage() {
             company: c.company,
             contact: c.contact,
             registeredBy: c.registered_by || "umrahcab",
-            lastUpdate: c.last_update || "No edits"
+            lastUpdate: c.last_update || "No edits",
+            bookings: c.bookings || [],
+            flights: c.flights || [],
+            trains: c.trains || []
           })));
           setTotalCustCount(response.total || response.data.length);
           setCustTotalPages(response.last_page || 1);
@@ -78,7 +81,10 @@ export default function CustomersPage() {
             company: c.company,
             contact: c.contact,
             registeredBy: c.registered_by || "umrahcab",
-            lastUpdate: c.last_update || "No edits"
+            lastUpdate: c.last_update || "No edits",
+            bookings: c.bookings || [],
+            flights: c.flights || [],
+            trains: c.trains || []
           })));
           setTotalCustCount(response.length);
           setCustTotalPages(1);

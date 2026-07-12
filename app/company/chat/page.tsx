@@ -6,6 +6,15 @@ import { api } from "../../../utils/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
 const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
 
+const getFileUrl = (path: string) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_URL}/view-file?path=${encodeURIComponent(cleanPath)}`;
+};
+
 interface ChatMessage {
   id: number;
   company_id: number;
@@ -228,7 +237,7 @@ export default function CompanyChatPage() {
   // Open attachment in custom preview modal
   const handleOpenPreview = (path: string) => {
     const filename = getFileName(path);
-    const url = path.startsWith("http://") || path.startsWith("https://") ? path : `${IMAGE_BASE}/${path}`;
+    const url = getFileUrl(path);
     const isImg = isImageFile(path);
     const isPdf = path.toLowerCase().endsWith(".pdf");
 
@@ -401,7 +410,7 @@ export default function CompanyChatPage() {
                             </div>
                           ) : (
                             <img 
-                              src={msg.attachment.startsWith("http://") || msg.attachment.startsWith("https://") ? msg.attachment : `${IMAGE_BASE}/${msg.attachment}`} 
+                              src={getFileUrl(msg.attachment)} 
                               alt="Attachment" 
                               style={{ maxWidth: "100%", maxHeight: "250px", objectFit: "cover", display: "block", cursor: "pointer" }} 
                               onClick={() => handleOpenPreview(msg.attachment!)}

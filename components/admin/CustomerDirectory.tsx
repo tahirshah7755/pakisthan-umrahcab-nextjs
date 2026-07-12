@@ -65,6 +65,94 @@ const formatContact = (contactStr: string) => {
   );
 };
 
+const formatContactForPrint = (contactStr: string) => {
+  if (!contactStr) return "N/A";
+  const parts = contactStr.split(" | ");
+  return parts.map(part => {
+    if (part.startsWith("Email: ")) {
+      return `<div style="margin-bottom: 2px; font-size: 11px;"><strong style="color: #475569;">Email:</strong> ${part.substring(7)}</div>`;
+    } else if (part.startsWith("Passport: ")) {
+      return `<div style="margin-bottom: 2px; font-size: 11px;"><strong style="color: #475569;">Passport:</strong> ${part.substring(10)}</div>`;
+    } else if (part.startsWith("Hotel: ")) {
+      return `<div style="margin-bottom: 2px; font-size: 11px;"><strong style="color: #475569;">Hotel:</strong> ${part.substring(7)}</div>`;
+    } else if (part.startsWith("Notes: ")) {
+      return `<div style="margin-bottom: 2px; font-size: 11px;"><strong style="color: #475569;">Notes:</strong> ${part.substring(7)}</div>`;
+    } else if (part.includes("Flight (") || part.includes("Train (")) {
+      return `<div style="margin-bottom: 2px; font-size: 11px; color: #4b5563;">${part}</div>`;
+    } else {
+      return `<div style="margin-bottom: 2px; font-weight: bold; color: #0f766e; font-size: 12px;"><i class="fas fa-phone" style="font-size: 10px; margin-right: 4px;"></i>${part}</div>`;
+    }
+  }).join("");
+};
+
+const formatRoutesForPrint = (c: any) => {
+  const items: string[] = [];
+  if (Array.isArray(c.bookings)) {
+    c.bookings.forEach((b: any) => {
+      if (b.pickup || b.destination) {
+        items.push(`<div style="margin-bottom: 4px; font-size: 11px;"><strong style="color: #475569;">Cab:</strong> ${b.pickup || "N/A"} ➔ ${b.destination || "N/A"}</div>`);
+      }
+    });
+  }
+  if (Array.isArray(c.flights)) {
+    c.flights.forEach((f: any) => {
+      if (f.route) {
+        items.push(`<div style="margin-bottom: 4px; font-size: 11px;"><strong style="color: #0284c7;">Flight:</strong> ${f.route}</div>`);
+      }
+    });
+  }
+  if (Array.isArray(c.trains)) {
+    c.trains.forEach((t: any) => {
+      if (t.route) {
+        items.push(`<div style="margin-bottom: 4px; font-size: 11px;"><strong style="color: #7c3aed;">Train:</strong> ${t.route}</div>`);
+      }
+    });
+  }
+  return items.length > 0 ? items.join("") : '<span style="color: #94a3b8; font-style: italic;">No routes</span>';
+};
+
+const formatRoutesForScreen = (c: any) => {
+  const items: React.ReactNode[] = [];
+  if (Array.isArray(c.bookings)) {
+    c.bookings.forEach((b: any, idx: number) => {
+      if (b.pickup || b.destination) {
+        items.push(
+          <div key={`b-${idx}`} style={{ fontSize: "11px", marginBottom: "2px", lineHeight: "1.3" }}>
+            <strong style={{ color: "#475569" }}>Cab:</strong> {b.pickup || "N/A"} ➔ {b.destination || "N/A"}
+          </div>
+        );
+      }
+    });
+  }
+  if (Array.isArray(c.flights)) {
+    c.flights.forEach((f: any, idx: number) => {
+      if (f.route) {
+        items.push(
+          <div key={`f-${idx}`} style={{ fontSize: "11px", marginBottom: "2px", lineHeight: "1.3" }}>
+            <strong style={{ color: "#0284c7" }}>Flight:</strong> {f.route}
+          </div>
+        );
+      }
+    });
+  }
+  if (Array.isArray(c.trains)) {
+    c.trains.forEach((t: any, idx: number) => {
+      if (t.route) {
+        items.push(
+          <div key={`t-${idx}`} style={{ fontSize: "11px", marginBottom: "2px", lineHeight: "1.3" }}>
+            <strong style={{ color: "#7c3aed" }}>Train:</strong> {t.route}
+          </div>
+        );
+      }
+    });
+  }
+  return items.length > 0 ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>{items}</div>
+  ) : (
+    <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: "11px" }}>No routes</span>
+  );
+};
+
 interface CustomerDirectoryProps {
   customers: CustomerItem[];
   companies: CompanyItem[];
@@ -217,16 +305,17 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       return;
     }
 
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
     
     const rowsHtml = customers.map((c: any) => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e3a8a;">${c.id}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${c.name || ""}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.company || ""}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.contact || ""}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.registeredBy || ""}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${c.lastUpdate || ""}</td>
+        <td style="font-weight: bold; color: #1e3a8a;">${c.id}</td>
+        <td style="font-weight: 600;">${c.name || ""}</td>
+        <td>${c.company || ""}</td>
+        <td>${formatContactForPrint(c.contact)}</td>
+        <td>${formatRoutesForPrint(c)}</td>
+        <td>${c.registeredBy || ""}</td>
+        <td style="color: #64748b;">${c.lastUpdate || ""}</td>
       </tr>
     `).join("");
 
@@ -235,14 +324,19 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
         <head>
           <title>${title}</title>
           <style>
-            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: #1e3a8a; font-size: 24px; }
-            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1e293b; background-color: #ffffff; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 25px; }
+            .header h1 { margin: 0; color: #1e3a8a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+            .header p { margin: 6px 0 0 0; color: #475569; font-size: 13px; font-weight: 500; }
+            .meta-info { text-align: right; font-size: 13px; color: #334155; line-height: 1.5; }
+            .meta-info strong { color: #1e3a8a; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; table-layout: fixed; }
+            th { background-color: #f1f5f9; padding: 10px 8px; border-bottom: 2px solid #cbd5e1; text-align: left; text-transform: uppercase; color: #334155; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; }
+            td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; line-height: 1.4; color: #334155; word-break: break-word; white-space: normal; }
+            tr:nth-child(even) td { background-color: #f8fafc; }
             @media print {
-              body { margin: 20px; }
+              body { margin: 15px; }
+              .header { border-bottom-width: 2px; }
             }
           </style>
         </head>
@@ -252,7 +346,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
               <h1>${title}</h1>
               <p>Umrah Cab Customer Registry</p>
             </div>
-            <div style="text-align: right;">
+            <div class="meta-info">
               <p><strong>Generated Date:</strong> ${today}</p>
               <p><strong>Total Customers:</strong> ${customers.length}</p>
             </div>
@@ -260,12 +354,13 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
           <table>
             <thead>
               <tr>
-                <th>Customer ID</th>
-                <th>Customer Name</th>
-                <th>Associated Company</th>
-                <th>Contact</th>
-                <th>Registered By</th>
-                <th>Last Update</th>
+                <th style="width: 10%;">Customer ID</th>
+                <th style="width: 14%;">Customer Name</th>
+                <th style="width: 13%;">Associated Company</th>
+                <th style="width: 23%;">Contact</th>
+                <th style="width: 23%;">Route Details</th>
+                <th style="width: 11%;">Registered By</th>
+                <th style="width: 6%;">Last Update</th>
               </tr>
             </thead>
             <tbody>
@@ -377,6 +472,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
                 <th>Customer Name</th>
                 <th>Associated Company</th>
                 <th>Contact</th>
+                <th>Route Details</th>
                 <th>Registered By</th>
                 <th>Last Update</th>
                 <th>Actions</th>
@@ -385,7 +481,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
             <tbody>
               {customers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)", fontWeight: "500" }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "30px", color: "var(--text-muted)", fontWeight: "500" }}>
                     No customer profiles found.
                   </td>
                 </tr>
@@ -400,6 +496,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
                       </span>
                     </td>
                     <td>{formatContact(c.contact)}</td>
+                    <td>{formatRoutesForScreen(c)}</td>
                     <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.registeredBy}</td>
                     <td style={{ fontSize: "12px", color: "var(--text-muted)" }}>{c.lastUpdate}</td>
                     <td>

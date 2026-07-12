@@ -9,6 +9,7 @@ async function request(endpoint: string, options: RequestInit = {}) {
     let token = null;
     if (typeof window !== "undefined") {
       const isCompanyRoute = window.location.pathname.startsWith("/company") ||
+        window.location.search.includes("type=company") ||
         endpoint.startsWith("/company-panel") ||
         endpoint.startsWith("company-panel");
       const isDriverRoute = window.location.pathname.startsWith("/driver") ||
@@ -152,7 +153,7 @@ export const api = {
   },
 
   async getCustomer(id: string) {
-    const isCompany = typeof window !== "undefined" && window.location.pathname.startsWith("/company");
+    const isCompany = typeof window !== "undefined" && (window.location.pathname.startsWith("/company") || window.location.search.includes("type=company"));
     const data = await request(isCompany ? `/company-panel/customers/${id}` : `/customers/${id}`);
     return data || null;
   },

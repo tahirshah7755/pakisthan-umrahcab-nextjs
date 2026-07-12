@@ -234,6 +234,54 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               <span>Edit</span>
             </button>
           )}
+          <button 
+            onClick={() => {
+              const url = `/print/customer?id=${rawId}&showPrice=0${isCompany ? '&type=company' : ''}`;
+              window.open(url, '_blank');
+            }} 
+            style={{ 
+              background: "#475569", 
+              color: "#ffffff", 
+              border: "none", 
+              borderRadius: "8px", 
+              padding: "10px 18px", 
+              fontWeight: "700", 
+              fontSize: "13px", 
+              cursor: "pointer", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "6px",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
+              transition: "all 0.2s"
+            }}
+          >
+            <i className="fas fa-print"></i>
+            <span>Print Detail</span>
+          </button>
+          <button 
+            onClick={() => {
+              const url = `/print/customer?id=${rawId}&showPrice=1${isCompany ? '&type=company' : ''}`;
+              window.open(url, '_blank');
+            }} 
+            style={{ 
+              background: "#f97316", 
+              color: "#ffffff", 
+              border: "none", 
+              borderRadius: "8px", 
+              padding: "10px 18px", 
+              fontWeight: "700", 
+              fontSize: "13px", 
+              cursor: "pointer", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "6px",
+              boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
+              transition: "all 0.2s"
+            }}
+          >
+            <i className="fas fa-print"></i>
+            <span>Print with Price</span>
+          </button>
         </div>
       </div>
 
@@ -981,57 +1029,63 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
 
             </div>
           </div>
-
-          {/* Bottom Quick Action Panel */}
-          <div 
-            style={{ 
-              display: "flex", 
-              gap: "10px", 
-              background: "#ffffff", 
-              border: "1px solid #e2e8f0", 
-              borderRadius: "16px", 
-              padding: "15px 20px", 
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.02)"
-            }}
-          >
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <button onClick={() => handleActionClick("Welcome Message")} style={{ background: "#22c55e", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fab fa-whatsapp"></i> Welcome Message
-              </button>
-              <button onClick={() => router.push(`${basePath}/bookings/add?customerId=${rawId}`)} style={{ background: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-calendar-plus"></i> Add Booking
-              </button>
-              <button onClick={() => router.push(`${basePath}/flights/add?customerId=${rawId}`)} style={{ background: "#0ea5e9", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-plane"></i> Add Flight
-              </button>
-              <button onClick={() => router.push(`${basePath}/trains/add?customerId=${rawId}`)} style={{ background: "#a855f7", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-train"></i> Add Train
-              </button>
-              <button onClick={() => router.push(`${basePath}/hotels/assignments/add?customerId=${rawId}`)} style={{ background: "#f97316", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-hotel"></i> Add Hotel
-              </button>
-              <button onClick={() => router.push(`${basePath}/services/add?customerId=${rawId}`)} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-bell"></i> Add Service
-              </button>
-              <button onClick={() => router.push(`${basePath}/documents/upload?customerId=${rawId}`)} style={{ background: "#ec4899", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-file-arrow-up"></i> Upload Document
-              </button>
-            </div>
-            
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <button onClick={() => handleActionClick("Print Detail")} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-print"></i> Print Detail
-              </button>
-              <button onClick={() => handleActionClick("Print with Price")} style={{ background: "#f97316", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <i className="fas fa-print"></i> Print with Price
-              </button>
-            </div>
-          </div>
-
         </div>
       )}
+
+      {/* Bottom Quick Action Panel */}
+      <div 
+        style={{ 
+          display: "flex", 
+          gap: "10px", 
+          background: "#ffffff", 
+          border: "1px solid #e2e8f0", 
+          borderRadius: "16px", 
+          padding: "15px 20px", 
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.02)",
+          marginBottom: "25px"
+        }}
+      >
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <button onClick={() => handleActionClick("Welcome Message")} style={{ background: "#22c55e", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fab fa-whatsapp"></i> Welcome Message
+          </button>
+          <button onClick={() => router.push(`${basePath}/bookings/add?customerId=${rawId}`)} style={{ background: "#3b82f6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-calendar-plus"></i> Add Booking
+          </button>
+          <button onClick={() => router.push(`${basePath}/flights/add?customerId=${rawId}`)} style={{ background: "#0ea5e9", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-plane"></i> Add Flight
+          </button>
+          <button onClick={() => router.push(`${basePath}/trains/add?customerId=${rawId}`)} style={{ background: "#a855f7", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-train"></i> Add Train
+          </button>
+          <button onClick={() => router.push(`${basePath}/hotels/assignments/add?customerId=${rawId}`)} style={{ background: "#f97316", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-hotel"></i> Add Hotel
+          </button>
+          <button onClick={() => router.push(`${basePath}/services/add?customerId=${rawId}`)} style={{ background: "#8b5cf6", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-bell"></i> Add Service
+          </button>
+          <button onClick={() => router.push(`${basePath}/documents/upload?customerId=${rawId}`)} style={{ background: "#ec4899", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-file-arrow-up"></i> Upload Document
+          </button>
+        </div>
+        
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <button onClick={() => {
+            const url = `/print/customer?id=${rawId}&showPrice=0${isCompany ? '&type=company' : ''}`;
+            window.open(url, '_blank');
+          }} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-print"></i> Print Detail
+          </button>
+          <button onClick={() => {
+            const url = `/print/customer?id=${rawId}&showPrice=1${isCompany ? '&type=company' : ''}`;
+            window.open(url, '_blank');
+          }} style={{ background: "#f97316", color: "#ffffff", border: "none", borderRadius: "8px", padding: "8px 15px", fontWeight: "700", fontSize: "12px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <i className="fas fa-print"></i> Print with Price
+          </button>
+        </div>
+      </div>
 
       {/* Global Audit Trail for Customer View */}
       <div className="table-card" style={{ padding: "20px", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px" }}>

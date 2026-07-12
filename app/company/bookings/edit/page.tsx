@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
+import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
 import { useAuth } from "@/context/AuthContext";
 
 const defaultCountryCodes = [
@@ -36,6 +37,9 @@ function parseNotes(notesStr: string, carPrice: number) {
     discountReason: "",
     tafweejRequired: false,
     cashToReceive: 0,
+    paymentMethod: "Credit",
+    receivedAmount: "",
+    pendingAmount: "",
     internalNotes: "",
     externalNotes: "",
   };
@@ -77,6 +81,15 @@ function parseNotes(notesStr: string, carPrice: number) {
       matchedCount++;
     } else if (cleanPart.startsWith("Cash to Receive:")) {
       result.cashToReceive = parseFloat(cleanPart.substring("Cash to Receive:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Payment Method:")) {
+      result.paymentMethod = cleanPart.substring("Payment Method:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Received Amount:")) {
+      result.receivedAmount = cleanPart.substring("Received Amount:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Pending Amount:")) {
+      result.pendingAmount = cleanPart.substring("Pending Amount:".length).trim();
       matchedCount++;
     } else if (cleanPart.startsWith("Internal Notes:")) {
       result.internalNotes = cleanPart.substring("Internal Notes:".length).trim();
@@ -123,6 +136,23 @@ function BookingEditContent() {
   const [tafweejRequired, setTafweejRequired] = useState(false);
   const [internalNotes, setInternalNotes] = useState("");
   const [externalNotes, setExternalNotes] = useState("");
+
+  // Payment credit/cash states
+  const [paymentMethod, setPaymentMethod] = useState("Credit");
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [pendingAmount, setPendingAmount] = useState("");
+
+  useEffect(() => {
+    if (paymentMethod === "Cash") {
+      const finalPrice = Math.max(0, (typeof priceBeforeDiscount === 'number' ? priceBeforeDiscount : 0) - (typeof discount === 'number' ? discount : 0));
+      const received = parseFloat(receivedAmount) || 0;
+      const pending = Math.max(0, finalPrice - received);
+      setPendingAmount(pending.toFixed(2));
+    } else {
+      setReceivedAmount("");
+      setPendingAmount("");
+    }
+  }, [paymentMethod, priceBeforeDiscount, discount, receivedAmount]);
 
   // Searchable Dropdown state
   const [customerSearch, setCustomerSearch] = useState("");
@@ -377,6 +407,9 @@ function BookingEditContent() {
           setDiscount(parsed.discount || 0);
           setCashToReceive(parsed.cashToReceive || 0);
           setDiscountReason(parsed.discountReason || "");
+          setPaymentMethod(b.payment_method || parsed.paymentMethod || "Credit");
+          setReceivedAmount(b.received_amount !== null && b.received_amount !== undefined ? String(b.received_amount) : (parsed.receivedAmount || ""));
+          setPendingAmount(b.pending_amount !== null && b.pending_amount !== undefined ? String(b.pending_amount) : (parsed.pendingAmount || ""));
           setTafweejRequired(parsed.tafweejRequired || false);
           setInternalNotes(parsed.internalNotes || "");
           setExternalNotes(parsed.externalNotes || "");
@@ -429,14 +462,12 @@ function BookingEditContent() {
       showToast("Customer name is required.", "error");
       return;
     }
-    if (!newCustEmail.trim()) {
-      showToast("Email address is required.", "error");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newCustEmail)) {
-      showToast("Please enter a valid email address.", "error");
-      return;
+    if (newCustEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newCustEmail)) {
+        showToast("Please enter a valid email address.", "error");
+        return;
+      }
     }
 
     try {
@@ -518,14 +549,14 @@ function BookingEditContent() {
       const whatsappContact = selectedCustomerObj?.phone || selectedCustomerObj?.secondary_phone || selectedCustomerObj?.alternative_phone || "+966567799616";
       const customerEmail = selectedCustomerObj?.email || "";
 
-      const notesField = `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`;
+      const notesField = `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`;
 
       const updatedFields = {
         customer_id: selectedCustomerObj ? selectedCustomerObj.id : null,
         pickup: pickupLocation,
         destination: dropoffLocation,
         date: pickupDate,
-        time: pickupTime,
+        time: formatTimeTo24h(pickupTime),
         passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
         car_type: vehicle,
         car_price: finalBookingPrice,
@@ -534,6 +565,9 @@ function BookingEditContent() {
         whatsapp: whatsappContact,
         notes: notesField,
         status: dbStatus,
+        payment_method: paymentMethod,
+        received_amount: paymentMethod === "Cash" ? (parseFloat(receivedAmount) || 0) : null,
+        pending_amount: paymentMethod === "Cash" ? (parseFloat(pendingAmount) || 0) : null,
       };
 
       const res = await api.updateBooking(targetId, updatedFields);
@@ -766,16 +800,64 @@ function BookingEditContent() {
           {/* Pickup Time */}
           <div>
             <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px" }}>Pick up Time *</label>
-            <div className="form-input-wrapper" style={{ position: "relative" }}>
-              <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
-              <input
-                type="time"
-                className="form-input"
-                style={{ width: "100%", padding: "10px 12px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none" }}
-                value={pickupTime}
-                onChange={(e) => setPickupTime(e.target.value)}
-                required
-              />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <div className="form-input-wrapper" style={{ position: "relative", flex: 1 }}>
+                <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", zIndex: 10 }}></i>
+                <select
+                  className="form-input form-select"
+                  style={{ width: "100%", padding: "10px 30px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none", appearance: "none" }}
+                  value={pickupTime ? pickupTime.split(":")[0] : ""}
+                  onChange={(e) => {
+                    const h = e.target.value;
+                    const m = pickupTime ? pickupTime.split(":")[1] || "00" : "00";
+                    setPickupTime(h ? `${h}:${m}` : "");
+                  }}
+                  required
+                >
+                  <option value="">Hour</option>
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const h = i < 10 ? `0${i}` : `${i}`;
+                    return (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    );
+                  })}
+                </select>
+                <i className="fas fa-chevron-down select-arrow" style={{ position: "absolute", right: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}></i>
+              </div>
+              <div className="form-input-wrapper" style={{ position: "relative", flex: 1 }}>
+                <select
+                  className="form-input form-select"
+                  style={{ width: "100%", padding: "10px 30px 10px 15px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none", appearance: "none" }}
+                  value={pickupTime ? pickupTime.split(":")[1] : ""}
+                  onChange={(e) => {
+                    const m = e.target.value;
+                    const h = pickupTime ? pickupTime.split(":")[0] || "12" : "12";
+                    setPickupTime(m ? `${h}:${m}` : "");
+                  }}
+                  required
+                >
+                  <option value="">Minute</option>
+                  {(() => {
+                    const currentMin = pickupTime ? pickupTime.split(":")[1] : "";
+                    const minutes = Array.from({ length: 12 }, (_, i) => {
+                      const m = i * 5;
+                      return m < 10 ? `0${m}` : `${m}`;
+                    });
+                    if (currentMin && !minutes.includes(currentMin)) {
+                      minutes.push(currentMin);
+                      minutes.sort();
+                    }
+                    return minutes.map((mm) => (
+                      <option key={mm} value={mm}>
+                        {mm}
+                      </option>
+                    ));
+                  })()}
+                </select>
+                <i className="fas fa-chevron-down select-arrow" style={{ position: "absolute", right: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}></i>
+              </div>
             </div>
           </div>
 
@@ -1092,23 +1174,65 @@ function BookingEditContent() {
             </div>
           </div>
 
-          {/* Cash to Receive */}
+          {/* Payment Method */}
           <div>
-            <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px" }}>Cash to Receive</label>
+            <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px" }}>Payment Method *</label>
             <div className="form-input-wrapper" style={{ position: "relative" }}>
-              <i className="fas fa-hand-holding-dollar form-icon" style={{ position: "absolute", left: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
+              <i className="fas fa-credit-card form-icon" style={{ position: "absolute", left: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+              <select
                 className="form-input"
-                style={{ width: "100%", padding: "10px 12px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none" }}
-                placeholder="0.00"
-                value={cashToReceive || ""}
-                onChange={(e) => setCashToReceive(parseFloat(e.target.value) || 0)}
-              />
+                style={{ width: "100%", padding: "10px 12px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none", background: "#fff", height: "45px" }}
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                required
+              >
+                <option value="Credit">Credit</option>
+                <option value="Cash">Cash</option>
+              </select>
             </div>
           </div>
+
+          {paymentMethod === "Cash" && (
+            <>
+              {/* Received Amount */}
+              <div>
+                <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px" }}>Received Amount *</label>
+                <div className="form-input-wrapper" style={{ position: "relative" }}>
+                  <i className="fas fa-money-bill-wave form-icon" style={{ position: "absolute", left: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                    style={{ width: "100%", padding: "10px 12px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none" }}
+                    placeholder="0.00"
+                    value={receivedAmount}
+                    onChange={(e) => setReceivedAmount(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Pending Amount */}
+              <div>
+                <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px" }}>Pending Amount</label>
+                <div className="form-input-wrapper" style={{ position: "relative" }}>
+                  <i className="fas fa-clock-rotate-left form-icon" style={{ position: "absolute", left: "15px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                    style={{ width: "100%", padding: "10px 12px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none" }}
+                    placeholder="0.00"
+                    value={pendingAmount}
+                    onChange={(e) => setPendingAmount(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Discount Reason */}
           <div style={{ gridColumn: "span 2" }}>
@@ -1272,10 +1396,9 @@ function BookingEditContent() {
                 </div>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Email Address *</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Email Address</label>
                 <input
                   type="email"
-                  required
                   value={newCustEmail}
                   onChange={(e) => setNewCustEmail(e.target.value)}
                   placeholder="customer@example.com"

@@ -12,7 +12,8 @@ function EditHotelContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hotelName, setHotelName] = useState("");
-  const [hotelCity, setHotelCity] = useState("Makkah");
+  const [hotelCitySelect, setHotelCitySelect] = useState("Makkah");
+  const [customCity, setCustomCity] = useState("");
   const [hotelActive, setHotelActive] = useState(1);
   const [customId, setCustomId] = useState("");
 
@@ -43,7 +44,16 @@ function EditHotelContent() {
         if (res && res.success && res.data) {
           const h = res.data;
           setHotelName(h.name || "");
-          setHotelCity(h.city || "Makkah");
+          
+          const standardCities = ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"];
+          if (standardCities.includes(h.city)) {
+            setHotelCitySelect(h.city);
+            setCustomCity("");
+          } else {
+            setHotelCitySelect("CUSTOM");
+            setCustomCity(h.city || "");
+          }
+          
           setHotelActive(h.active);
           setCustomId(h.custom_id || "");
         } else {
@@ -68,11 +78,17 @@ function EditHotelContent() {
     }
     if (!queryId) return;
 
+    const city = hotelCitySelect === "CUSTOM" ? customCity.trim() : hotelCitySelect;
+    if (!city) {
+      showToast("City/Area is required.", "error");
+      return;
+    }
+
     try {
       const payload = {
         customer_id: null,
         name: hotelName.trim(),
-        city: hotelCity,
+        city: city,
         active: hotelActive,
         check_in: null,
         check_out: null,
@@ -189,16 +205,34 @@ function EditHotelContent() {
                 <i className="fa-solid fa-city form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
                 <select
                   className="form-input form-select"
-                  value={hotelCity}
-                  onChange={(e) => setHotelCity(e.target.value)}
+                  value={hotelCitySelect}
+                  onChange={(e) => setHotelCitySelect(e.target.value)}
                   style={{ paddingLeft: "42px", width: "100%" }}
                   required
                 >
                   <option value="Makkah">Makkah Mukarramah</option>
                   <option value="Madinah">Madinah Munawwarah</option>
                   <option value="Jeddah">Jeddah</option>
+                  <option value="Taif">Taif</option>
+                  <option value="Riyadh">Riyadh</option>
+                  <option value="Yanbu">Yanbu</option>
+                  <option value="CUSTOM">Other (Type custom city...)</option>
                 </select>
               </div>
+              {hotelCitySelect === "CUSTOM" && (
+                <div style={{ position: "relative", marginTop: "8px" }}>
+                  <i className="fa-solid fa-map-pin form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", zIndex: 5 }}></i>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter custom city/area name..."
+                    value={customCity}
+                    onChange={(e) => setCustomCity(e.target.value)}
+                    style={{ paddingLeft: "42px", width: "100%" }}
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div>

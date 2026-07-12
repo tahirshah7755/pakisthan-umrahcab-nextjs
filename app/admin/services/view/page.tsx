@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
 
 interface ServiceItem {
   id: string;
@@ -136,26 +137,11 @@ function ServiceDetailViewContent() {
   };
 
   const formatDateForDisplay = (dateStr: string) => {
-    if (!dateStr) return "";
-    try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
-    } catch {
-      return dateStr;
-    }
+    return formatDateToCustom(dateStr);
   };
 
   const formatTimeForDisplay = (timeStr: string) => {
-    if (!timeStr) return "";
-    try {
-      const [hrsStr, minsStr] = timeStr.split(":");
-      const hrs = parseInt(hrsStr, 10);
-      const ampm = hrs >= 12 ? "PM" : "AM";
-      const displayHrs = hrs % 12 || 12;
-      return `${displayHrs}:${minsStr} ${ampm}`;
-    } catch {
-      return timeStr;
-    }
+    return formatTimeTo24h(timeStr);
   };
 
   // WhatsApp Alert Formats

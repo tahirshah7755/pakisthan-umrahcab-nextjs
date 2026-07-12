@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
 
 function parseNotes(notesStr: string, carPrice: number) {
   const result = {
@@ -17,6 +18,9 @@ function parseNotes(notesStr: string, carPrice: number) {
     discountReason: "",
     tafweejRequired: false,
     cashToReceive: 0,
+    paymentMethod: "Credit",
+    receivedAmount: "",
+    pendingAmount: "",
     internalNotes: "",
     externalNotes: "",
   };
@@ -58,6 +62,15 @@ function parseNotes(notesStr: string, carPrice: number) {
       matchedCount++;
     } else if (cleanPart.startsWith("Cash to Receive:")) {
       result.cashToReceive = parseFloat(cleanPart.substring("Cash to Receive:".length).trim()) || 0;
+      matchedCount++;
+    } else if (cleanPart.startsWith("Payment Method:")) {
+      result.paymentMethod = cleanPart.substring("Payment Method:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Received Amount:")) {
+      result.receivedAmount = cleanPart.substring("Received Amount:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Pending Amount:")) {
+      result.pendingAmount = cleanPart.substring("Pending Amount:".length).trim();
       matchedCount++;
     } else if (cleanPart.startsWith("Internal Notes:")) {
       result.internalNotes = cleanPart.substring("Internal Notes:".length).trim();
@@ -272,11 +285,11 @@ function BookingViewContent() {
               </div>
               <div>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block", textTransform: "uppercase", fontWeight: "600", marginBottom: "4px" }}>Pickup Date</span>
-                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-calendar" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.date || "N/A"}</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-calendar" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.date ? formatDateToCustom(booking.date) : "N/A"}</span>
               </div>
               <div>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block", textTransform: "uppercase", fontWeight: "600", marginBottom: "4px" }}>Pickup Time</span>
-                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-clock" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.time || "N/A"}</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-clock" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.time ? formatTimeTo24h(booking.time) : "N/A"}</span>
               </div>
             </div>
           </div>
@@ -422,9 +435,22 @@ function BookingViewContent() {
               </div>
               <hr style={{ border: 0, borderTop: "1px solid #f1f5f9", margin: "5px 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                <span style={{ color: "#64748b" }}>Cash to Receive:</span>
-                <span style={{ fontWeight: "700", color: "#b45309" }}>SR {parsed.cashToReceive.toFixed(2)}</span>
+                <span style={{ color: "#64748b" }}>Payment Method:</span>
+                <span style={{ fontWeight: "700", color: "#3b82f6" }}>{booking.payment_method || parsed.paymentMethod || "Credit"}</span>
               </div>
+
+              {(booking.payment_method === "Cash" || parsed.paymentMethod === "Cash") && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                    <span style={{ color: "#64748b" }}>Received Amount:</span>
+                    <span style={{ fontWeight: "700", color: "#10b981" }}>SR {parseFloat(booking.received_amount || parsed.receivedAmount || 0).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
+                    <span style={{ color: "#64748b" }}>Pending Amount:</span>
+                    <span style={{ fontWeight: "700", color: "#ef4444" }}>SR {parseFloat(booking.pending_amount || parsed.pendingAmount || 0).toFixed(2)}</span>
+                  </div>
+                </>
+              )}
 
               {customerObj?.company && (
                 <>

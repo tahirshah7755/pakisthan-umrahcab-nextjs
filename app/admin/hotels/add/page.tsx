@@ -7,7 +7,8 @@ import { api } from "@/utils/api";
 export default function AddHotelDirectory() {
   const router = useRouter();
   const [hotelName, setHotelName] = useState("");
-  const [hotelCity, setHotelCity] = useState("Makkah");
+  const [hotelCitySelect, setHotelCitySelect] = useState("Makkah");
+  const [customCity, setCustomCity] = useState("");
   const [hotelActive, setHotelActive] = useState(1);
 
   // Toast notifications
@@ -29,11 +30,17 @@ export default function AddHotelDirectory() {
       return;
     }
 
+    const city = hotelCitySelect === "CUSTOM" ? customCity.trim() : hotelCitySelect;
+    if (!city) {
+      showToast("City/Area is required.", "error");
+      return;
+    }
+
     try {
       const payload = {
         customer_id: null,
         name: hotelName.trim(),
-        city: hotelCity,
+        city: city,
         active: hotelActive,
         check_in: null,
         check_out: null,
@@ -44,6 +51,7 @@ export default function AddHotelDirectory() {
       if (res && res.success) {
         showToast("Hotel property registered in directory successfully!", "success");
         setHotelName("");
+        setCustomCity("");
         setTimeout(() => {
           router.push("/admin/hotels");
         }, 1500);
@@ -105,16 +113,34 @@ export default function AddHotelDirectory() {
                 <i className="fa-solid fa-city form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
                 <select
                   className="form-input form-select"
-                  value={hotelCity}
-                  onChange={(e) => setHotelCity(e.target.value)}
+                  value={hotelCitySelect}
+                  onChange={(e) => setHotelCitySelect(e.target.value)}
                   style={{ paddingLeft: "42px", width: "100%" }}
                   required
                 >
                   <option value="Makkah">Makkah Mukarramah</option>
                   <option value="Madinah">Madinah Munawwarah</option>
                   <option value="Jeddah">Jeddah</option>
+                  <option value="Taif">Taif</option>
+                  <option value="Riyadh">Riyadh</option>
+                  <option value="Yanbu">Yanbu</option>
+                  <option value="CUSTOM">Other (Type custom city...)</option>
                 </select>
               </div>
+              {hotelCitySelect === "CUSTOM" && (
+                <div style={{ position: "relative", marginTop: "8px" }}>
+                  <i className="fa-solid fa-map-pin form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", zIndex: 5 }}></i>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter custom city/area name..."
+                    value={customCity}
+                    onChange={(e) => setCustomCity(e.target.value)}
+                    style={{ paddingLeft: "42px", width: "100%" }}
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div>

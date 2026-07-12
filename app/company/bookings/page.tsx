@@ -5,6 +5,7 @@ import { api } from "@/utils/api";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { exportToExcel } from "@/utils/excelHelper";
+import { formatDateToCustom } from "@/utils/formatters";
 
 interface BookingRecord {
   id: string;
@@ -151,7 +152,7 @@ function CompanyBookingsContent() {
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #2563eb;">${b.booking_code}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${b.full_name || "Guest"}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.pickup} &rarr; ${b.destination}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.date} (${b.time})</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${formatDateToCustom(b.date)} (${b.time})</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.car_type}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: #d97706;">SAR ${Number(b.car_price || 0).toFixed(2)}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.flight_no || "N/A"}</td>
@@ -391,7 +392,7 @@ function CompanyBookingsContent() {
                       </td>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontWeight: 600 }}>{b.date}</span>
+                          <span style={{ fontWeight: 600 }}>{formatDateToCustom(b.date)}</span>
                           <span style={{ fontSize: "11px", color: "#64748b" }}>{b.time}</span>
                         </div>
                       </td>

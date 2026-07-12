@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
+import { formatDateToCustom } from "@/utils/formatters";
 import { exportToExcel } from "@/utils/excelHelper";
 
 interface FlightItem {
@@ -277,21 +278,7 @@ export default function FlightsDirectory() {
   };
 
   const formatDateString = (dateStr: string) => {
-    if (!dateStr) return "";
-    try {
-      const parts = dateStr.split("-");
-      if (parts.length === 3) {
-        const year = parts[0];
-        const monthIndex = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const monthName = months[monthIndex] || parts[1];
-        return `${day < 10 ? '0' + day : day} ${monthName}, ${year}`;
-      }
-      return dateStr;
-    } catch {
-      return dateStr;
-    }
+    return formatDateToCustom(dateStr);
   };
 
   const formatTimeString = (timeStr: string) => {

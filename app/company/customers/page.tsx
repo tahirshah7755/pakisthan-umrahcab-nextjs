@@ -285,14 +285,12 @@ export default function CompanyCustomersPage() {
       showToast("Customer name is required.", "error");
       return;
     }
-    if (!newCustEmail.trim()) {
-      showToast("Email address is required.", "error");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newCustEmail)) {
-      showToast("Please enter a valid email address.", "error");
-      return;
+    if (newCustEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newCustEmail)) {
+        showToast("Please enter a valid email address.", "error");
+        return;
+      }
     }
     try {
       setSubmitting(true);
@@ -643,10 +641,9 @@ export default function CompanyCustomersPage() {
                 </div>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Email Address *</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>Email Address</label>
                 <input
                   type="email"
-                  required
                   value={newCustEmail}
                   onChange={(e) => setNewCustEmail(e.target.value)}
                   placeholder="customer@example.com"

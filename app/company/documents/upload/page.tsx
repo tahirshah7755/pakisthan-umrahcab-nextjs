@@ -201,10 +201,12 @@ function CompanyDocumentUploadContent() {
   };
 
   const getFileUrl = (path: string) => {
+    if (!path) return "";
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
-    return `${IMAGE_BASE}${path}`;
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    return `${IMAGE_BASE}${cleanPath}`;
   };
 
   return (

@@ -275,12 +275,64 @@ export default function PublicHomePage() {
                   </div>
                   <div className="uc-form-group">
                     <label className="uc-form-label">Pickup Time *</label>
-                    <input
-                      type="time"
-                      className="uc-form-input"
-                      value={bookingData.time}
-                      onChange={(e) => setBookingData({ ...bookingData, time: e.target.value })}
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <div style={{ flex: 1, position: "relative" }}>
+                        <select
+                          className="uc-form-input"
+                          style={{ paddingRight: "30px", appearance: "none" }}
+                          value={bookingData.time ? bookingData.time.split(":")[0] : ""}
+                          onChange={(e) => {
+                            const h = e.target.value;
+                            const m = bookingData.time ? bookingData.time.split(":")[1] || "00" : "00";
+                            setBookingData({ ...bookingData, time: h ? `${h}:${m}` : "" });
+                          }}
+                          required
+                        >
+                          <option value="">Hour</option>
+                          {Array.from({ length: 24 }, (_, i) => {
+                            const h = i < 10 ? `0${i}` : `${i}`;
+                            return (
+                              <option key={h} value={h}>
+                                {h}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <i className="fas fa-chevron-down" style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}></i>
+                      </div>
+                      <div style={{ flex: 1, position: "relative" }}>
+                        <select
+                          className="uc-form-input"
+                          style={{ paddingRight: "30px", appearance: "none" }}
+                          value={bookingData.time ? bookingData.time.split(":")[1] : ""}
+                          onChange={(e) => {
+                            const m = e.target.value;
+                            const h = bookingData.time ? bookingData.time.split(":")[0] || "12" : "12";
+                            setBookingData({ ...bookingData, time: m ? `${h}:${m}` : "" });
+                          }}
+                          required
+                        >
+                          <option value="">Minute</option>
+                          {(() => {
+                            const currentMin = bookingData.time ? bookingData.time.split(":")[1] : "";
+                            const minutes = Array.from({ length: 12 }, (_, i) => {
+                              const m = i * 5;
+                              return m < 10 ? `0${m}` : `${m}`;
+                            });
+                            if (currentMin && !minutes.includes(currentMin)) {
+                              minutes.push(currentMin);
+                              minutes.sort();
+                            }
+                            return minutes.map((mm) => (
+                              <option key={mm} value={mm}>
+                                {mm}
+                              </option>
+                            ));
+                          })()}
+                        </select>
+                        <i className="fas fa-chevron-down" style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}></i>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

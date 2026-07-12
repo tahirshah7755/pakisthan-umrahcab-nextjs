@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
 
 function CustomerPrintContent() {
   const searchParams = useSearchParams();
@@ -128,7 +129,7 @@ function CustomerPrintContent() {
 
     timelineItems.push({
       date: b.date || "",
-      time: b.time || "00:00",
+      time: formatTimeTo24h(b.time || "00:00"),
       type: "Booking",
       icon: "fa-taxi",
       title: `Cab Transfer (${b.booking_code || `#BKG-${b.id}`})`,
@@ -142,7 +143,7 @@ function CustomerPrintContent() {
   flights.forEach((f) => {
     timelineItems.push({
       date: f.date || "",
-      time: f.time || "00:00",
+      time: formatTimeTo24h(f.time || "00:00"),
       type: "Flight",
       icon: "fa-plane",
       title: `Flight Depart/Arrive (${f.flight_no})`,
@@ -155,7 +156,7 @@ function CustomerPrintContent() {
   trains.forEach((t) => {
     timelineItems.push({
       date: t.date || "",
-      time: t.time || "00:00",
+      time: formatTimeTo24h(t.time || "00:00"),
       type: "Train",
       icon: "fa-train",
       title: `Train Trip (${t.train_no})`,
@@ -169,22 +170,22 @@ function CustomerPrintContent() {
     if (h.check_in) {
       timelineItems.push({
         date: h.check_in,
-        time: "14:00", // Standard check-in
+        time: formatTimeTo24h("14:00"), // Standard check-in
         type: "Hotel Check-In",
         icon: "fa-hotel",
         title: `Hotel Check-In`,
-        details: `${h.hotel_name || "N/A"} (Room: ${h.room_no || "Pending Assignment"})`,
+        details: `${h.hotel_name || h.name || "N/A"} (Room: ${h.room_no || "Pending Assignment"})`,
         badgeColor: "#7c3aed"
       });
     }
     if (h.check_out) {
       timelineItems.push({
         date: h.check_out,
-        time: "12:00", // Standard check-out
+        time: formatTimeTo24h("12:00"), // Standard check-out
         type: "Hotel Check-Out",
         icon: "fa-hotel",
         title: `Hotel Check-Out`,
-        details: `${h.hotel_name || "N/A"}`,
+        details: `${h.hotel_name || h.name || "N/A"}`,
         badgeColor: "#4b5563"
       });
     }
@@ -194,7 +195,7 @@ function CustomerPrintContent() {
   services.forEach((s) => {
     timelineItems.push({
       date: s.date || "",
-      time: s.time || "00:00",
+      time: formatTimeTo24h(s.time || "00:00"),
       type: "Service",
       icon: "fa-hand-holding-heart",
       title: `Extra Service: ${s.name}`,
@@ -218,14 +219,7 @@ function CustomerPrintContent() {
 
   // Format date helper
   const formatDateString = (dateStr: string) => {
-    if (!dateStr) return "N/A";
-    const dateObj = new Date(dateStr);
-    if (isNaN(dateObj.getTime())) return dateStr;
-    return dateObj.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric"
-    });
+    return formatDateToCustom(dateStr);
   };
 
   return (
@@ -286,7 +280,7 @@ function CustomerPrintContent() {
           <div style={{ textAlign: "right" }}>
             <h3 style={{ fontSize: "14px", fontWeight: "700", color: "#d4af37", margin: 0, textTransform: "uppercase", letterSpacing: "1px" }}>Travel Schedule Report</h3>
             <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>
-              Date: {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Date: {formatDateToCustom(new Date().toISOString().split('T')[0])} | {formatTimeTo24h(new Date().toTimeString().split(' ')[0])}
             </p>
             <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>Cust ID: {customer.custom_id || `#CST-${customer.id}`}</p>
           </div>
@@ -361,7 +355,7 @@ function CustomerPrintContent() {
                           <i className={`fas ${item.icon}`}></i> {item.type}
                         </span>
                       </td>
-                      <td style={{ padding: "10px 12px", color: "#334155" }}>
+                      <td style={{ padding: "10px 12px", color: "#334155", wordBreak: "break-word", whiteSpace: "normal" }}>
                         {item.details}
                       </td>
                       {showPrice && (
@@ -398,8 +392,8 @@ function CustomerPrintContent() {
                 {bookings.map((b, idx) => (
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "8px 10px", fontWeight: "700", color: "#475569" }}>{b.booking_code || `#BKG-${b.id}`}</td>
-                    <td style={{ padding: "8px 10px" }}>{formatDateString(b.date)} | {b.time || "N/A"}</td>
-                    <td style={{ padding: "8px 10px" }}>{b.pickup} ➔ {b.destination}</td>
+                    <td style={{ padding: "8px 10px" }}>{formatDateString(b.date)} | {formatTimeTo24h(b.time) || "N/A"}</td>
+                    <td style={{ padding: "8px 10px", wordBreak: "break-word", whiteSpace: "normal", minWidth: "180px" }}>{b.pickup} ➔ {b.destination}</td>
                     <td style={{ padding: "8px 10px" }}>{b.car_type || "Sedan"}</td>
                     <td style={{ padding: "8px 10px" }}>{b.status}</td>
                     {showPrice && <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: "600" }}>{parseFloat(b.car_price || 0).toFixed(2)} SAR</td>}
@@ -430,7 +424,7 @@ function CustomerPrintContent() {
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "8px 10px", fontWeight: "700", color: "#475569" }}>{f.flight_no}</td>
                     <td style={{ padding: "8px 10px" }}>{f.leg || "N/A"}</td>
-                    <td style={{ padding: "8px 10px" }}>{formatDateString(f.date)} | {f.time || "N/A"}</td>
+                    <td style={{ padding: "8px 10px" }}>{formatDateString(f.date)} | {formatTimeTo24h(f.time) || "N/A"}</td>
                     <td style={{ padding: "8px 10px" }}>{f.route || "N/A"}</td>
                     <td style={{ padding: "8px 10px" }}>{f.status || "Scheduled"}</td>
                   </tr>
@@ -460,7 +454,7 @@ function CustomerPrintContent() {
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "8px 10px", fontWeight: "700", color: "#475569" }}>{t.train_no}</td>
                     <td style={{ padding: "8px 10px" }}>{t.class || "N/A"}</td>
-                    <td style={{ padding: "8px 10px" }}>{formatDateString(t.date)} | {t.time || "N/A"}</td>
+                    <td style={{ padding: "8px 10px" }}>{formatDateString(t.date)} | {formatTimeTo24h(t.time) || "N/A"}</td>
                     <td style={{ padding: "8px 10px" }}>{t.route || "N/A"}</td>
                     <td style={{ padding: "8px 10px" }}>{t.status || "Scheduled"}</td>
                   </tr>
@@ -488,7 +482,7 @@ function CustomerPrintContent() {
               <tbody>
                 {hotels.map((h, idx) => (
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "8px 10px", fontWeight: "700", color: "#475569" }}>{h.hotel_name}</td>
+                    <td style={{ padding: "8px 10px", fontWeight: "700", color: "#475569" }}>{h.hotel_name || h.name}</td>
                     <td style={{ padding: "8px 10px" }}>{h.room_no || "Pending Assignment"}</td>
                     <td style={{ padding: "8px 10px" }}>{formatDateString(h.check_in)}</td>
                     <td style={{ padding: "8px 10px" }}>{formatDateString(h.check_out)}</td>
@@ -520,7 +514,7 @@ function CustomerPrintContent() {
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td style={{ padding: "8px 10px", fontWeight: "700", color: "#475569" }}>{s.name}</td>
                     <td style={{ padding: "8px 10px" }}>{s.type || "Special"}</td>
-                    <td style={{ padding: "8px 10px" }}>{formatDateString(s.date)} | {s.time || "N/A"}</td>
+                    <td style={{ padding: "8px 10px" }}>{formatDateString(s.date)} | {formatTimeTo24h(s.time) || "N/A"}</td>
                     <td style={{ padding: "8px 10px" }}>{s.description || s.details || "N/A"}</td>
                     {showPrice && <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: "600" }}>{parseFloat(s.base_price || 0).toFixed(2)} SAR</td>}
                   </tr>

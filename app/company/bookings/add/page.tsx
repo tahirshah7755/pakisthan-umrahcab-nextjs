@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 import { useAuth } from "@/context/AuthContext";
+import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
 
 const defaultCountryCodes = [
   { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
@@ -48,6 +49,23 @@ function AddNewBookingContent() {
   const [tafweejRequired, setTafweejRequired] = useState(false);
   const [internalNotes, setInternalNotes] = useState("");
   const [externalNotes, setExternalNotes] = useState("");
+
+  // Payment credit/cash states
+  const [paymentMethod, setPaymentMethod] = useState("Credit");
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [pendingAmount, setPendingAmount] = useState("");
+
+  useEffect(() => {
+    if (paymentMethod === "Cash") {
+      const finalPrice = Math.max(0, (typeof priceBeforeDiscount === 'number' ? priceBeforeDiscount : 0) - (typeof discount === 'number' ? discount : 0));
+      const received = parseFloat(receivedAmount) || 0;
+      const pending = Math.max(0, finalPrice - received);
+      setPendingAmount(pending.toFixed(2));
+    } else {
+      setReceivedAmount("");
+      setPendingAmount("");
+    }
+  }, [paymentMethod, priceBeforeDiscount, discount, receivedAmount]);
   const [agentBalance, setAgentBalance] = useState<number | null>(null);
 
   // Searchable Dropdown state
@@ -145,6 +163,7 @@ function AddNewBookingContent() {
     ];
     return fallbackLocations;
   }, [locationsList]);
+
 
   const filteredPickupSuggestions = React.useMemo(() => {
     const localMatches = extractedLocations.filter((loc) =>
@@ -334,14 +353,12 @@ function AddNewBookingContent() {
       showToast("Customer name is required.", "error");
       return;
     }
-    if (!newCustEmail.trim()) {
-      showToast("Email address is required.", "error");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(newCustEmail)) {
-      showToast("Please enter a valid email address.", "error");
-      return;
+    if (newCustEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newCustEmail)) {
+        showToast("Please enter a valid email address.", "error");
+        return;
+      }
     }
 
     try {
@@ -394,6 +411,8 @@ function AddNewBookingContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const bookingStatus = "Pending";
+
     if (agentBalance !== null && finalBookingPrice > agentBalance) {
       showToast(`Insufficient balance! Available balance is SAR ${agentBalance.toFixed(2)}, but this booking requires SAR ${finalBookingPrice.toFixed(2)}. Please top up.`, "error");
       return;
@@ -426,7 +445,7 @@ function AddNewBookingContent() {
       pickup: pickupLocation,
       destination: dropoffLocation,
       date: pickupDate,
-      time: pickupTime,
+      time: formatTimeTo24h(pickupTime),
       passengers: `${adults + childrenCount} Passengers`,
       car_type: vehicle,
       car_price: finalBookingPrice,
@@ -434,7 +453,10 @@ function AddNewBookingContent() {
       email: selectedCustomerObj?.contact?.includes("@") ? selectedCustomerObj.contact.split(" (Email)")[0].split("customer").pop() || "" : "",
       whatsapp: whatsappContact,
       flight_no: "",
-      notes: internalNotes || externalNotes
+      notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${adults + childrenCount} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`,
+      payment_method: paymentMethod,
+      received_amount: paymentMethod === "Cash" ? (parseFloat(receivedAmount) || 0) : null,
+      pending_amount: paymentMethod === "Cash" ? (parseFloat(pendingAmount) || 0) : null,
     });
 
     if (res?.success) {
@@ -670,15 +692,62 @@ function AddNewBookingContent() {
           {/* Pickup Time */}
           <div>
             <label className="form-label">Pick up Time *</label>
-            <div className="form-input-wrapper">
-              <i className="fas fa-clock form-icon"></i>
-              <input
-                type="time"
-                className="form-input"
-                value={pickupTime}
-                onChange={(e) => setPickupTime(e.target.value)}
-                required
-              />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <div className="form-input-wrapper" style={{ flex: 1 }}>
+                <i className="fas fa-clock form-icon"></i>
+                <select
+                  className="form-input form-select"
+                  value={pickupTime ? pickupTime.split(":")[0] : ""}
+                  onChange={(e) => {
+                    const h = e.target.value;
+                    const m = pickupTime ? pickupTime.split(":")[1] || "00" : "00";
+                    setPickupTime(h ? `${h}:${m}` : "");
+                  }}
+                  required
+                >
+                  <option value="">Hour</option>
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const h = i < 10 ? `0${i}` : `${i}`;
+                    return (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    );
+                  })}
+                </select>
+                <i className="fas fa-chevron-down select-arrow" style={{ right: "12px" }}></i>
+              </div>
+              <div className="form-input-wrapper" style={{ flex: 1 }}>
+                <select
+                  className="form-input form-select"
+                  value={pickupTime ? pickupTime.split(":")[1] : ""}
+                  onChange={(e) => {
+                    const m = e.target.value;
+                    const h = pickupTime ? pickupTime.split(":")[0] || "12" : "12";
+                    setPickupTime(m ? `${h}:${m}` : "");
+                  }}
+                  required
+                >
+                  <option value="">Minute</option>
+                  {(() => {
+                    const currentMin = pickupTime ? pickupTime.split(":")[1] : "";
+                    const minutes = Array.from({ length: 12 }, (_, i) => {
+                      const m = i * 5;
+                      return m < 10 ? `0${m}` : `${m}`;
+                    });
+                    if (currentMin && !minutes.includes(currentMin)) {
+                      minutes.push(currentMin);
+                      minutes.sort();
+                    }
+                    return minutes.map((mm) => (
+                      <option key={mm} value={mm}>
+                        {mm}
+                      </option>
+                    ));
+                  })()}
+                </select>
+                <i className="fas fa-chevron-down select-arrow" style={{ right: "12px" }}></i>
+              </div>
             </div>
           </div>
 
@@ -954,22 +1023,63 @@ function AddNewBookingContent() {
             </div>
           </div>
 
-          {/* Cash to Receive */}
+          {/* Payment Method */}
           <div>
-            <label className="form-label">Cash to Receive</label>
+            <label className="form-label">Payment Method *</label>
             <div className="form-input-wrapper">
-              <i className="fas fa-hand-holding-dollar form-icon"></i>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="form-input"
-                placeholder="0.00"
-                value={cashToReceive || ""}
-                onChange={(e) => setCashToReceive(parseFloat(e.target.value) || 0)}
-              />
+              <i className="fas fa-credit-card form-icon"></i>
+              <select
+                className="form-input form-select"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                required
+              >
+                <option value="Credit">Credit</option>
+                <option value="Cash">Cash</option>
+              </select>
+              <i className="fas fa-chevron-down select-arrow"></i>
             </div>
           </div>
+
+          {paymentMethod === "Cash" && (
+            <>
+              {/* Received Amount */}
+              <div>
+                <label className="form-label">Received Amount *</label>
+                <div className="form-input-wrapper">
+                  <i className="fas fa-money-bill-wave form-icon"></i>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                    placeholder="0.00"
+                    value={receivedAmount}
+                    onChange={(e) => setReceivedAmount(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Pending Amount */}
+              <div>
+                <label className="form-label">Pending Amount</label>
+                <div className="form-input-wrapper">
+                  <i className="fas fa-clock-rotate-left form-icon"></i>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                    placeholder="0.00"
+                    value={pendingAmount}
+                    onChange={(e) => setPendingAmount(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Discount Reason */}
           <div className="form-group-full">
@@ -1116,10 +1226,9 @@ function AddNewBookingContent() {
                 </div>
               </div>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Email Address *</label>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px", textAlign: "left" }}>Email Address</label>
                 <input
                   type="email"
-                  required
                   value={newCustEmail}
                   onChange={(e) => setNewCustEmail(e.target.value)}
                   placeholder="customer@example.com"

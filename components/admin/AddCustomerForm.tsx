@@ -596,10 +596,10 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         }
       }
 
-      if (!custEmail.trim()) {
-        newErrors.custEmail = "Email Address is required.";
-      } else if (!emailRegex.test(custEmail)) {
-        newErrors.custEmail = "Please enter a valid email address.";
+      if (custEmail.trim()) {
+        if (!emailRegex.test(custEmail)) {
+          newErrors.custEmail = "Please enter a valid email address.";
+        }
       }
     }
 
@@ -1214,10 +1214,10 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                   </div>
 
                   <div className="form-group-full">
-                    <label className="form-label">Email Address *</label>
+                    <label className="form-label">Email Address</label>
                     <div className="form-input-wrapper" style={{ position: "relative" }}>
                       <i className="fas fa-envelope form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                      <input type="email" className="form-input" placeholder="customer@example.com" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} required style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custEmail ? "#ef4444" : undefined }} />
+                      <input type="email" className="form-input" placeholder="customer@example.com" value={custEmail} onChange={(e) => setCustEmail(e.target.value)} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.custEmail ? "#ef4444" : undefined }} />
                     </div>
                     {errors.custEmail && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.custEmail}</span>

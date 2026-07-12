@@ -27,6 +27,7 @@ export default function DriverDashboardPage() {
   // State
   const [entries, setEntries] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -52,6 +53,7 @@ export default function DriverDashboardPage() {
     car_maintenance: 0,
     waqas_received: 0,
     mic: 0,
+    vehicle_id: "",
   });
 
   // Helpers to hold the select dropdown state separately
@@ -75,6 +77,13 @@ export default function DriverDashboardPage() {
     }
     loadEntries();
     loadCompanies();
+    loadVehicles();
+  }, [driverUser]);
+
+  useEffect(() => {
+    if (driverUser?.vehicle_id) {
+      setFormData(prev => ({ ...prev, vehicle_id: String(driverUser.vehicle_id) }));
+    }
   }, [driverUser]);
 
   const loadEntries = async () => {
@@ -95,6 +104,15 @@ export default function DriverDashboardPage() {
       setCompanies(data || []);
     } catch (err) {
       console.error("Failed to load companies:", err);
+    }
+  };
+
+  const loadVehicles = async () => {
+    try {
+      const data = await api.getFleet();
+      setVehicles(data || []);
+    } catch (err) {
+      console.error("Failed to load fleet vehicles:", err);
     }
   };
 
@@ -180,7 +198,11 @@ export default function DriverDashboardPage() {
     setSuccessMessage("");
 
     const total = calculateTotal(formData);
-    const payload = { ...formData, total };
+    const payload = {
+      ...formData,
+      total,
+      vehicle_id: formData.vehicle_id ? Number(formData.vehicle_id) : null
+    };
 
     try {
       const res = await api.submitDriverEntry(payload);
@@ -202,6 +224,7 @@ export default function DriverDashboardPage() {
           car_maintenance: 0,
           waqas_received: 0,
           mic: 0,
+          vehicle_id: driverUser?.vehicle_id ? String(driverUser.vehicle_id) : "",
         });
         setSelectedTripOpt("");
         setSelectedAgentOpt("");
@@ -247,6 +270,7 @@ export default function DriverDashboardPage() {
       car_maintenance: entry.car_maintenance || 0,
       waqas_received: entry.waqas_received || 0,
       mic: entry.mic || 0,
+      vehicle_id: entry.vehicle_id ? String(entry.vehicle_id) : "",
     });
   };
 
@@ -264,7 +288,11 @@ export default function DriverDashboardPage() {
     setSuccessMessage("");
 
     const total = calculateTotal(editFormData);
-    const payload = { ...editFormData, total };
+    const payload = {
+      ...editFormData,
+      total,
+      vehicle_id: editFormData.vehicle_id ? Number(editFormData.vehicle_id) : null
+    };
 
     try {
       const res = await api.updateMyDriverEntry(editingEntry.id, payload);
@@ -744,6 +772,19 @@ export default function DriverDashboardPage() {
             grid-template-columns: repeat(4, 1fr);
           }
         }
+
+        .inputs-row-5 {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        
+        @media (min-width: 768px) {
+          .inputs-row-5 {
+            grid-template-columns: repeat(5, 1fr);
+          }
+        }
         
         .inputs-row-3 {
           display: grid;
@@ -1221,8 +1262,8 @@ export default function DriverDashboardPage() {
           </h2>
 
           <form onSubmit={handleSubmit}>
-            {/* Row 1: General Info (4 columns) */}
-            <div className="inputs-row-4">
+            {/* Row 1: General Info (5 columns) */}
+            <div className="inputs-row-5">
               {/* Date Input */}
               <div className="form-group">
                 <label className="form-label">Date</label>
@@ -1234,6 +1275,30 @@ export default function DriverDashboardPage() {
                   onChange={handleInputChange}
                   className="form-input"
                 />
+              </div>
+
+              {/* Vehicle Select Dropdown */}
+              <div className="form-group">
+                <label className="form-label">Vehicle Assignment</label>
+                <div className="input-wrapper">
+                  <span className="input-icon">
+                    <i className="fas fa-car"></i>
+                  </span>
+                  <select
+                    name="vehicle_id"
+                    value={formData.vehicle_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, vehicle_id: e.target.value }))}
+                    className="form-input has-icon"
+                    required
+                  >
+                    <option value="">-- Select Vehicle --</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.model} ({v.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Agent Dropdown */}
@@ -1480,7 +1545,7 @@ export default function DriverDashboardPage() {
 
               <button
                 type="submit"
-                disabled={submitLoading || !driverUser?.vehicle_id}
+                disabled={submitLoading}
                 className="submit-btn"
               >
                 {submitLoading ? (
@@ -1488,7 +1553,7 @@ export default function DriverDashboardPage() {
                 ) : (
                   <>
                     <i className="fas fa-lock"></i>
-                    {!driverUser?.vehicle_id ? "Awaiting Vehicle Assignment" : "Lock & Submit Daily Sheet"}
+                    Lock & Submit Daily Sheet
                   </>
                 )}
               </button>
@@ -1662,7 +1727,7 @@ export default function DriverDashboardPage() {
             <form onSubmit={handleUpdate}>
               <div className="modal-body">
                 {/* Row 1: General Info */}
-                <div className="inputs-row-4">
+                <div className="inputs-row-5">
                   {/* Date */}
                   <div className="form-group">
                     <label className="form-label">Date</label>
@@ -1674,6 +1739,25 @@ export default function DriverDashboardPage() {
                       onChange={handleEditInputChange}
                       className="form-input"
                     />
+                  </div>
+
+                  {/* Vehicle Select Dropdown */}
+                  <div className="form-group">
+                    <label className="form-label">Vehicle Assignment</label>
+                    <select
+                      name="vehicle_id"
+                      value={editFormData.vehicle_id}
+                      onChange={(e) => setEditFormData((prev: any) => ({ ...prev, vehicle_id: e.target.value }))}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">-- Select Vehicle --</option>
+                      {vehicles.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.model} ({v.type})
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Edit Agent Dropdown */}

@@ -7,6 +7,15 @@ import { api } from "@/utils/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
 const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
 
+const getFileUrl = (path: string) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${IMAGE_BASE}${cleanPath}`;
+};
+
 interface CustomerProfileViewProps {
   currentProfile: {
     id: string;
@@ -909,9 +918,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                         {documents.map((doc: any) => {
                           const isPdf = doc.file_type?.toLowerCase() === "pdf";
-                          const docUrl = doc.file_path.startsWith("http://") || doc.file_path.startsWith("https://") 
-                            ? doc.file_path 
-                            : `${IMAGE_BASE}${doc.file_path}`;
+                          const docUrl = getFileUrl(doc.file_path);
                           return (
                             <div
                               key={doc.id}
@@ -1666,9 +1673,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
             }}>
               {(() => {
                 const ext = viewerDoc.file_type?.toLowerCase();
-                const url = viewerDoc.file_path.startsWith("http://") || viewerDoc.file_path.startsWith("https://") 
-                  ? viewerDoc.file_path 
-                  : `${IMAGE_BASE}${viewerDoc.file_path}`;
+                const url = getFileUrl(viewerDoc.file_path);
 
                 if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) {
                   return (

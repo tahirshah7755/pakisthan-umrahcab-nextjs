@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
+import { formatDateToCustom } from "@/utils/formatters";
 
 interface BookingItem {
   id: string;
@@ -172,7 +173,7 @@ export default function BookingsList() {
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1f6f8b;">${b.id}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${b.customerName || "Guest"}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
-          <div>${b.pickupDate || ""}</div>
+          <div>${formatDateToCustom(b.pickupDate)}</div>
           <div style="font-size: 10px; color: #64748b;">${b.pickupTime || ""}</div>
         </td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.pickupLocation} &rarr; ${b.dropoffLocation}</td>
@@ -397,7 +398,7 @@ export default function BookingsList() {
                   <td style={{ fontWeight: 600 }}>{b.customerName}</td>
                   <td>
                     <div style={{ display: "flex", flexDirection: "column" }}>
-                      <span>{b.pickupDate}</span>
+                      <span>{formatDateToCustom(b.pickupDate)}</span>
                       <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
                         {b.pickupTime}
                       </span>

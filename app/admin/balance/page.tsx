@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useGetBalanceSummaryQuery } from "@/store/api/balanceApi";
 import { exportToExcel } from "@/utils/excelHelper";
 import { useGetCompaniesQuery, useUpdateCompanyMutation } from "@/store/api/companiesApi";
+import { formatDateToCustom } from "@/utils/formatters";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -14,7 +15,7 @@ const formatRelativeDate = (dateStr: string | null) => {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return null;
   
-  const dStr = date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const dStr = formatDateToCustom(dateStr);
   
   // Calculate relative days
   const today = new Date();
@@ -35,9 +36,7 @@ const formatRelativeDate = (dateStr: string | null) => {
 
 const formatDateSimple = (dateStr: string | null) => {
   if (!dateStr) return "--";
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "--";
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return formatDateToCustom(dateStr);
 };
 
 const TABS = [

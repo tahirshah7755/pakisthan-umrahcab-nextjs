@@ -367,6 +367,10 @@ export default function InvoicesPage() {
             <i className="fas fa-plus" style={{ color: "#059669" }}></i>
             <span>Create New Invoice</span>
           </button>
+          <button onClick={() => router.push("/admin/hub")} className="form-btn-back">
+            <i className="fas fa-arrow-left"></i>
+            <span>Return to Hub</span>
+          </button>
         </div>
       </div>
 

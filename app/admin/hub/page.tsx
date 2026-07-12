@@ -84,7 +84,7 @@ export default function CentralHub() {
       title: "Companies",
       icon: "fa-building",
       permissionKey: "companies",
-      buttons: [{ label: "Visit", href: "/admin/mock/companies", type: "visit" as const }],
+      buttons: [{ label: "Visit", href: "/admin/companies", type: "visit" as const }],
     },
     {
       title: "Flights",
@@ -109,36 +109,36 @@ export default function CentralHub() {
       icon: "fa-headset",
       permissionKey: "agent_followups",
       buttons: [
-        { label: "List", href: "/admin/mock/agent-followups", type: "list" as const },
-        { label: "Add", href: "/admin/mock/agent-followups-add", type: "add" as const },
+        { label: "List", href: "/admin/agent-followups", type: "list" as const },
+        { label: "Add", href: "/admin/agent-followups/add", type: "add" as const },
       ],
     },
     {
       title: "Balance Statement",
       icon: "fa-file-invoice-dollar",
       permissionKey: "balance",
-      buttons: [{ label: "Visit", href: "/admin/mock/balance", type: "visit" as const }],
+      buttons: [{ label: "Visit", href: "/admin/balance", type: "visit" as const }],
     },
     {
       title: "Invoices",
       icon: "fa-receipt",
       permissionKey: "invoices",
       buttons: [
-        { label: "List", href: "/admin/mock/invoices", type: "list" as const },
-        { label: "Add", href: "/admin/mock/invoices-add", type: "add" as const },
+        { label: "List", href: "/admin/invoices", type: "list" as const },
+        { label: "Add", href: "/admin/invoices/add", type: "add" as const },
       ],
     },
     {
       title: "Ledgers",
       icon: "fa-book-open",
       permissionKey: "ledgers",
-      buttons: [{ label: "Visit", href: "/admin/mock/ledgers", type: "visit" as const }],
+      buttons: [{ label: "Visit", href: "/admin/ledgers", type: "visit" as const }],
     },
     {
       title: "General Payments",
       icon: "fa-money-bill-transfer",
       permissionKey: "payments",
-      buttons: [{ label: "Visit", href: "/admin/mock/payments", type: "visit" as const }],
+      buttons: [{ label: "Visit", href: "/admin/payments", type: "visit" as const }],
     },
     {
       title: "Drivers Registry",

@@ -15,6 +15,7 @@ export default function WebsiteSettingsPage() {
     facebook_link: "",
     instagram_link: "",
     twitter_link: "",
+    ride_notification_enabled: "1",
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -26,7 +27,7 @@ export default function WebsiteSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<"general" | "contact" | "social">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "contact" | "social" | "notifications">("general");
 
   useEffect(() => {
     async function loadSettings() {
@@ -44,6 +45,7 @@ export default function WebsiteSettingsPage() {
             facebook_link: data.facebook_link || "",
             instagram_link: data.instagram_link || "",
             twitter_link: data.twitter_link || "",
+            ride_notification_enabled: data.ride_notification_enabled !== undefined ? String(data.ride_notification_enabled) : "1",
           });
           if (data.website_logo) setLogoPreview(data.website_logo);
           if (data.favicon) setFaviconPreview(data.favicon);
@@ -57,7 +59,7 @@ export default function WebsiteSettingsPage() {
     loadSettings();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setSettings((prev: any) => ({ ...prev, [name]: value }));
   };
@@ -111,6 +113,7 @@ export default function WebsiteSettingsPage() {
             facebook_link: refreshed.facebook_link || "",
             instagram_link: refreshed.instagram_link || "",
             twitter_link: refreshed.twitter_link || "",
+            ride_notification_enabled: refreshed.ride_notification_enabled !== undefined ? String(refreshed.ride_notification_enabled) : "1",
           });
           if (refreshed.website_logo) setLogoPreview(refreshed.website_logo);
           if (refreshed.favicon) setFaviconPreview(refreshed.favicon);
@@ -498,6 +501,14 @@ export default function WebsiteSettingsPage() {
               <i className="fas fa-hashtag" style={{ marginRight: "6px" }}></i>
               Social Links
             </button>
+            <button 
+              type="button" 
+              className={`tab-btn ${activeTab === "notifications" ? "active" : ""}`}
+              onClick={() => setActiveTab("notifications")}
+            >
+              <i className="fas fa-bell" style={{ marginRight: "6px" }}></i>
+              Notifications
+            </button>
           </div>
 
           {/* Tab 1: General & SEO Meta */}
@@ -624,6 +635,34 @@ export default function WebsiteSettingsPage() {
                   className="form-input" 
                   placeholder="https://x.com/yourprofile"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Tab 4: Notifications Settings */}
+          {activeTab === "notifications" && (
+            <div style={{ flexGrow: 1 }}>
+              <div className="form-group" style={{ background: "#f8fafc", padding: "20px", borderRadius: "10px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "20px" }}>
+                  <div style={{ flex: 1 }}>
+                    <label className="form-label" style={{ margin: 0, fontSize: "14px", fontWeight: 800 }}>Ride Notification Alerts (24 Hours Before)</label>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b" }}>
+                      Enable/disable the dashboard ride notification alerts and real-time popups that warn when a ride starts in less than 24 hours without any driver assigned.
+                    </p>
+                  </div>
+                  <div>
+                    <select
+                      name="ride_notification_enabled"
+                      value={settings.ride_notification_enabled}
+                      onChange={handleChange}
+                      className="form-input"
+                      style={{ width: "130px", fontWeight: "bold" }}
+                    >
+                      <option value="1">Enabled</option>
+                      <option value="0">Disabled</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           )}

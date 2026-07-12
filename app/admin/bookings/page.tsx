@@ -24,6 +24,8 @@ interface BookingItem {
   whatsapp?: string;
   flightNo?: string;
   notes?: string;
+  driverId?: number | null;
+  driverName?: string | null;
 }
 
 export default function BookingsList() {
@@ -59,6 +61,7 @@ export default function BookingsList() {
   const [selectedCancelBooking, setSelectedCancelBooking] = useState<BookingItem | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedApproveBooking, setSelectedApproveBooking] = useState<BookingItem | null>(null);
+  const [drivers, setDrivers] = useState<any[]>([]);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -274,7 +277,7 @@ export default function BookingsList() {
           else if (b.status === "Confirmed Booking") uiStatus = "Confirmed";
           else if (b.status === "Completed") uiStatus = "Completed";
           else if (b.status === "Cancelled") uiStatus = "Cancelled";
-
+ 
           return {
             id: b.booking_code || b.id || "UCB-XXXX",
             customerName: b.full_name || b.fullName || "Guest",
@@ -292,6 +295,8 @@ export default function BookingsList() {
             whatsapp: b.whatsapp || "",
             flightNo: b.flight_no || "",
             notes: b.notes || "",
+            driverId: b.driver_id,
+            driverName: b.driver ? b.driver.name : null,
           };
         });
         setBookings(mapped);
@@ -303,9 +308,42 @@ export default function BookingsList() {
     }
   };
 
+  const handleInlineDriverChange = async (bookingId: string, driverId: string) => {
+    try {
+      setLoading(true);
+      const res = await api.updateBooking(bookingId, { 
+        driver_id: driverId ? parseInt(driverId) : null,
+        status: driverId ? "Active Dispatch" : "Confirmed Booking"
+      });
+      if (res?.success) {
+        showToast("Driver assignment updated successfully!", "success");
+        loadData();
+      } else {
+        showToast(res?.error || "Failed to update driver assignment.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver assignment.", "error");
+      setLoading(false);
+    }
+  };
+ 
   useEffect(() => {
     loadData();
   }, [debouncedSearch, currentPage, perPage]);
+ 
+  useEffect(() => {
+    async function loadDrivers() {
+      try {
+        const res = await api.getDrivers();
+        if (Array.isArray(res)) setDrivers(res);
+      } catch (err) {
+        console.warn("Could not load drivers in bookings list", err);
+      }
+    }
+    loadDrivers();
+  }, []);
 
   const filteredBookings = bookings;
 
@@ -382,6 +420,7 @@ export default function BookingsList() {
                 <th>Pickup Date/Time</th>
                 <th>Route (From → To)</th>
                 <th>Vehicle</th>
+                <th>Driver</th>
                 <th>Final Price</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -411,6 +450,29 @@ export default function BookingsList() {
                     </div>
                   </td>
                   <td>{b.vehicle}</td>
+                  <td>
+                    <select
+                      value={b.driverId || ""}
+                      onChange={(e) => handleInlineDriverChange(b.id, e.target.value)}
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: "12px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        background: "#ffffff",
+                        width: "140px",
+                        color: b.driverId ? "#1e293b" : "#94a3b8",
+                        fontWeight: b.driverId ? "600" : "normal",
+                        outline: "none"
+                      }}
+                      className="hover:border-slate-400"
+                    >
+                      <option value="">-- No Driver --</option>
+                      {drivers.map((d: any) => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
                     SR {b.finalPrice.toFixed(2)}
                   </td>
@@ -508,7 +570,7 @@ export default function BookingsList() {
               {filteredBookings.length === 0 && (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     style={{
                       textAlign: "center",
                       padding: "40px",

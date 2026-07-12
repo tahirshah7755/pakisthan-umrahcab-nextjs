@@ -141,6 +141,11 @@ export const api = {
     };
   },
 
+  async getUpcomingReminders() {
+    const data = await request(`/bookings/upcoming-reminders`);
+    return data || [];
+  },
+
   // Customers
   async getCustomers(search?: string, company?: string, page?: number, perPage?: number) {
     const q = new URLSearchParams();

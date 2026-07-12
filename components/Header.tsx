@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import NotificationBell from "./admin/NotificationBell";
 
 export default function Header() {
   const { sidebarOpen, setSidebarOpen, searchQuery, setSearchQuery, logout, user } = useAuth();
@@ -82,7 +83,8 @@ export default function Header() {
       </div>
 
       {/* Right side: User Profile Action */}
-      <div className="header-right">
+      <div className="header-right" style={{ gap: "16px", display: "flex", alignItems: "center" }}>
+        <NotificationBell />
         <div className="user-profile-wrapper">
           <button
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}

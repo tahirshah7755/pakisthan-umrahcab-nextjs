@@ -2090,6 +2090,10 @@ input:checked + .slider:before {
   color: var(--text-muted) !important;
 }
 
+.db-stat-value {
+  color: var(--dark-color) !important;
+}
+
 /* Table header specific colors */
 .db-table th {
   background-color: #f8fafc !important;

@@ -156,7 +156,9 @@ export default function OperationsDashboard() {
             status: b.status || "Confirmed Booking",
             tafweej: tafweejCode,
             customerId: matchedCust ? String(matchedCust.id) : "1",
-            date: b.date
+            date: b.date,
+            driverName: b.driver?.name || null,
+            driverPhone: b.driver?.phone || null
           };
         });
 
@@ -685,6 +687,15 @@ export default function OperationsDashboard() {
                         <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                           <span style={{ fontWeight: 600, color: "#334155", fontSize: "13px" }}>{b.route}</span>
                           <span style={{ fontSize: "11px", color: "#64748b" }}><i className="fas fa-car" style={{ marginRight: "4px" }}></i> {b.vehicle}</span>
+                          {b.driverName ? (
+                            <span style={{ fontSize: "11px", color: "#2563eb", fontWeight: 700, marginTop: "2px" }}>
+                              <i className="fas fa-user-circle" style={{ marginRight: "4px" }}></i> {b.driverName} ({b.driverPhone})
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 600, marginTop: "2px" }}>
+                              <i className="fas fa-user-slash" style={{ marginRight: "4px" }}></i> No Driver Assigned
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td>
@@ -904,6 +915,15 @@ export default function OperationsDashboard() {
                         <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                           <span style={{ fontWeight: 600, color: "#475569", fontSize: "13px" }}>{b.route}</span>
                           <span style={{ fontSize: "11px", color: "#64748b" }}><i className="fas fa-car" style={{ marginRight: "4px" }}></i> {b.vehicle}</span>
+                          {b.driverName ? (
+                            <span style={{ fontSize: "11px", color: "#2563eb", fontWeight: 700, marginTop: "2px" }}>
+                              <i className="fas fa-user-circle" style={{ marginRight: "4px" }}></i> {b.driverName} ({b.driverPhone})
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 500, marginTop: "2px" }}>
+                              <i className="fas fa-user-slash" style={{ marginRight: "4px" }}></i> No Driver
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td>

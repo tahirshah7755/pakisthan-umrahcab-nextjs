@@ -30,6 +30,7 @@ function AddHotelAssignmentContent() {
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [hotelName, setHotelName] = useState("");
   const [hotelCity, setHotelCity] = useState("Makkah");
+  const [customCity, setCustomCity] = useState("");
   const [hotelActive, setHotelActive] = useState(1);
   const [directoryHotels, setDirectoryHotels] = useState<any[]>([]);
   const [hotelId, setHotelId] = useState("");
@@ -77,12 +78,15 @@ function AddHotelAssignmentContent() {
 
   // Compute available properties for the selected city from both directory and mock list
   const cityHotels = useMemo(() => {
+    const activeCity = hotelCity === "CUSTOM" ? customCity : hotelCity;
+    if (!activeCity) return [];
+
     const dbHotelNames = directoryHotels
-      .filter((h) => h.city?.toLowerCase() === hotelCity?.toLowerCase() && h.name)
+      .filter((h) => h.city?.toLowerCase() === activeCity.toLowerCase() && h.name)
       .map((h) => h.name.trim());
 
     const mockHotelNames = mockHotels
-      .filter((h) => h.city.toLowerCase() === hotelCity?.toLowerCase())
+      .filter((h) => h.city.toLowerCase() === activeCity.toLowerCase())
       .map((h) => h.name.trim());
 
     const allNames = Array.from(new Set([...dbHotelNames, ...mockHotelNames]));
@@ -91,7 +95,7 @@ function AddHotelAssignmentContent() {
       id: name,
       name: name
     }));
-  }, [directoryHotels, hotelCity]);
+  }, [directoryHotels, hotelCity, customCity]);
 
   const handleHotelSelect = (val: string) => {
     setHotelId(val);
@@ -117,11 +121,17 @@ function AddHotelAssignmentContent() {
       return;
     }
 
+    const city = hotelCity === "CUSTOM" ? customCity.trim() : hotelCity;
+    if (!city) {
+      showToast("City/Area is required.", "error");
+      return;
+    }
+
     try {
       const payload = {
         customer_id: selectedCustomer.id,
         name: finalHotelName.trim(),
-        city: hotelCity,
+        city: city,
         active: hotelActive,
         check_in: checkIn || null,
         check_out: checkOut || null,
@@ -212,8 +222,26 @@ function AddHotelAssignmentContent() {
                   <option value="Makkah">Makkah Mukarramah</option>
                   <option value="Madinah">Madinah Munawwarah</option>
                   <option value="Jeddah">Jeddah</option>
+                  <option value="Taif">Taif</option>
+                  <option value="Riyadh">Riyadh</option>
+                  <option value="Yanbu">Yanbu</option>
+                  <option value="CUSTOM">Other (Type custom city...)</option>
                 </select>
               </div>
+              {hotelCity === "CUSTOM" && (
+                <div style={{ position: "relative", marginTop: "8px" }}>
+                  <i className="fa-solid fa-map-pin form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", zIndex: 5 }}></i>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Enter custom city/area name..."
+                    value={customCity}
+                    onChange={(e) => setCustomCity(e.target.value)}
+                    style={{ paddingLeft: "42px", width: "100%" }}
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div>

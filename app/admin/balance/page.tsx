@@ -677,14 +677,14 @@ export default function BalancePage() {
                 </tbody>
                 {rows.length > 0 && (
                   <tfoot>
-                    <tr style={{ background: "#f8fafc", borderTop: "2px solid #e2e8f0", fontWeight: 800 }}>
-                      <td style={{ paddingLeft: "16px", color: "#0f172a" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
-                      <td style={{ color: "#0f172a" }}>{fmt(totalLedgerBalance)}</td>
+                    <tr style={{ background: "#0f172a", borderTop: "2px solid #b48a1d", fontWeight: 800, color: "#ffffff" }}>
+                      <td style={{ paddingLeft: "16px", color: "#ffffff" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
+                      <td style={{ color: "#d4af37", fontWeight: 800 }}>{fmt(totalLedgerBalance)}</td>
                       <td colSpan={4}></td>
-                      <td style={{ color: "#1e293b" }}>{fmt(totals.total_business)}</td>
+                      <td style={{ color: "#ffffff", fontWeight: 800 }}>{fmt(totals.total_business)}</td>
                       <td colSpan={6}></td>
-                      <td style={{ color: "#ef4444" }}>{fmt(totals.total_rec_vw)}</td>
-                      <td style={{ color: "#f97316" }}>{fmt(totals.total_rec_pw)}</td>
+                      <td style={{ color: "#f43f5e", fontWeight: 800 }}>{fmt(totals.total_rec_vw)}</td>
+                      <td style={{ color: "#fbbf24", fontWeight: 800 }}>{fmt(totals.total_rec_pw)}</td>
                       <td colSpan={2} style={{ paddingRight: "16px" }}></td>
                     </tr>
                   </tfoot>

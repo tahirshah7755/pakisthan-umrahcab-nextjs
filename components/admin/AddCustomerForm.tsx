@@ -231,6 +231,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     priceBeforeDiscount: number | "";
     discount: number | "";
     cashToReceive: number | "";
+    paymentMethod: string;
+    receivedAmount: number | "";
+    pendingAmount: number | "";
     discountReason: string;
     tafweejRequired: boolean;
     internalNotes: string;
@@ -258,6 +261,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       priceBeforeDiscount: "",
       discount: "",
       cashToReceive: "",
+      paymentMethod: "Credit",
+      receivedAmount: "",
+      pendingAmount: "",
       discountReason: "",
       tafweejRequired: false,
       internalNotes: "",
@@ -312,13 +318,29 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         const base = Number(resolvedPrice || 0);
         const disc = Number(route.discount || 0);
         route.cashToReceive = Math.max(0, base - disc);
+
+        // Update received/pending amounts
+        const received = Number(route.receivedAmount || 0);
+        if (route.paymentMethod === "Cash") {
+          route.pendingAmount = Math.max(0, base - disc - received);
+        }
       }
       
-      // If priceBeforeDiscount or discount changed, update cashToReceive
-      if (field === "priceBeforeDiscount" || field === "discount") {
+      // If priceBeforeDiscount, discount, paymentMethod, or receivedAmount changed, update cashToReceive / pendingAmount
+      if (field === "priceBeforeDiscount" || field === "discount" || field === "paymentMethod" || field === "receivedAmount") {
         const base = Number(field === "priceBeforeDiscount" ? value : route.priceBeforeDiscount || 0);
         const disc = Number(field === "discount" ? value : route.discount || 0);
+        const method = field === "paymentMethod" ? value : route.paymentMethod;
+        const received = Number(field === "receivedAmount" ? value : route.receivedAmount || 0);
+        
         route.cashToReceive = Math.max(0, base - disc);
+        
+        if (method === "Cash") {
+          route.pendingAmount = Math.max(0, base - disc - received);
+        } else {
+          route.receivedAmount = "";
+          route.pendingAmount = "";
+        }
       }
       
       updated[index] = route;
@@ -411,6 +433,17 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [hotelCheckout, setHotelCheckout] = useState("");
   const [custNotes, setCustNotes] = useState("");
   const [hotelsList, setHotelsList] = useState<any[]>([]);
+
+  const DEFAULT_CITIES = React.useMemo(() => ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"], []);
+  const dynamicCities = React.useMemo(() => {
+    const dbCities = hotelsList.map((h) => h.city).filter(Boolean);
+    const combined = Array.from(new Set([...DEFAULT_CITIES, ...dbCities]));
+    return combined.sort((a, b) => {
+      if (a === "Makkah" || a === "Madinah") return -1;
+      if (b === "Makkah" || b === "Madinah") return 1;
+      return a.localeCompare(b);
+    });
+  }, [hotelsList]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -876,6 +909,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           whatsapp: custPhone || "N/A",
           flight_no: bookingFlightNo,
           notes: `Route: ${route.tripPackage} | Vehicle: ${route.vehicle} | Passengers: ${Number(route.adults || 0) + Number(route.childrenCount || 0)} | Timing Status: ${route.timingStatus} | Booking Status: ${route.bookingStatus} | Bags: ${route.bags || 0} | Discount Reason: ${route.discountReason} | Tafweej Required: ${route.tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${route.cashToReceive || 0} | Internal Notes: ${route.internalNotes} | External Notes: ${route.externalNotes}${notesInfo}`,
+          payment_method: route.paymentMethod || "Credit",
+          received_amount: route.paymentMethod === "Cash" ? (Number(route.receivedAmount) || 0) : null,
+          pending_amount: route.paymentMethod === "Cash" ? (Number(route.pendingAmount) || 0) : null,
         };
 
         const bookingRes = await api.createBooking(bookingData);
@@ -1672,26 +1708,64 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                         </div>
 
-                        {/* Cash to Receive */}
+                        {/* Payment Method */}
                         <div>
-                          <label className="form-label">Cash to Receive</label>
+                          <label className="form-label">Payment Method *</label>
                           <div className="form-input-wrapper" style={{ position: "relative" }}>
-                            <i className="fas fa-hand-holding-dollar form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              className="form-input"
-                              placeholder="0.00"
-                              value={route.cashToReceive}
-                              onChange={(e) => updateRouteField(index, "cashToReceive", e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
-                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_cashToReceive`] ? "#ef4444" : undefined }}
-                            />
+                            <i className="fas fa-credit-card form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <select
+                              className="form-input form-select"
+                              value={route.paymentMethod || "Credit"}
+                              onChange={(e) => updateRouteField(index, "paymentMethod", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%" }}
+                            >
+                              <option value="Credit">Credit</option>
+                              <option value="Cash">Cash</option>
+                            </select>
                           </div>
-                          {errors[`route_${index}_cashToReceive`] && (
-                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_cashToReceive`]}</span>
-                          )}
                         </div>
+
+                        {route.paymentMethod === "Cash" && (
+                          <>
+                            {/* Received Amount */}
+                            <div>
+                              <label className="form-label">Received Amount *</label>
+                              <div className="form-input-wrapper" style={{ position: "relative" }}>
+                                <i className="fas fa-money-bill-wave form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  className="form-input"
+                                  placeholder="0.00"
+                                  value={route.receivedAmount}
+                                  onChange={(e) => updateRouteField(index, "receivedAmount", e.target.value === "" ? "" : parseFloat(e.target.value) || 0)}
+                                  required
+                                  style={{ paddingLeft: "42px", width: "100%" }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Pending Amount */}
+                            <div>
+                              <label className="form-label">Pending Amount</label>
+                              <div className="form-input-wrapper" style={{ position: "relative" }}>
+                                <i className="fas fa-clock-rotate-left form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  className="form-input form-input-readonly"
+                                  placeholder="0.00"
+                                  value={route.pendingAmount}
+                                  readOnly
+                                  style={{ paddingLeft: "42px", width: "100%", background: "#f1f5f9" }}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
 
                         {/* Discount Reason */}
                         <div className="form-group-full">
@@ -1788,6 +1862,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         priceBeforeDiscount: "",
                         discount: "",
                         cashToReceive: "",
+                        paymentMethod: "Credit",
+                        receivedAmount: "",
+                        pendingAmount: "",
                         discountReason: "",
                         tafweejRequired: false,
                         internalNotes: "",
@@ -2181,9 +2258,9 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         <i className="fa-solid fa-city form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
                         <select className="form-input form-select" value={hotelCity} onChange={(e) => { setHotelCity(e.target.value); setHotelId(""); }} style={{ paddingLeft: "42px", width: "100%", borderColor: errors.hotelCity ? "#ef4444" : undefined }}>
                           <option value="">-- Choose City --</option>
-                          <option value="Makkah">Makkah Mukarramah</option>
-                          <option value="Madinah">Madinah Munawwarah</option>
-                          <option value="Jeddah">Jeddah</option>
+                          {dynamicCities.map(city => (
+                            <option key={city} value={city}>{city === "Makkah" ? "Makkah Mukarramah" : city === "Madinah" ? "Madinah Munawwarah" : city}</option>
+                          ))}
                         </select>
                       </div>
                       {errors.hotelCity && (

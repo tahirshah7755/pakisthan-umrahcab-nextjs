@@ -28,6 +28,18 @@ function EditCustomerContent() {
   const [hotelCheckout, setHotelCheckout] = useState("");
   const [availableHotels, setAvailableHotels] = useState<any[]>([]);
 
+  const DEFAULT_CITIES = ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"];
+
+  const dynamicCities = React.useMemo(() => {
+    const dbCities = availableHotels.map((h) => h.city).filter(Boolean);
+    const combined = Array.from(new Set([...DEFAULT_CITIES, ...dbCities]));
+    return combined.sort((a, b) => {
+      if (a === "Makkah" || a === "Madinah") return -1;
+      if (b === "Makkah" || b === "Madinah") return 1;
+      return a.localeCompare(b);
+    });
+  }, [availableHotels]);
+
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -423,9 +435,9 @@ function EditCustomerContent() {
                       required={requireHotel}
                     >
                       <option value="">-- Choose City --</option>
-                      <option value="Makkah">Makkah Mukarramah</option>
-                      <option value="Madinah">Madinah Munawwarah</option>
-                      <option value="Jeddah">Jeddah</option>
+                      {dynamicCities.map(city => (
+                        <option key={city} value={city}>{city === "Makkah" ? "Makkah Mukarramah" : city === "Madinah" ? "Madinah Munawwarah" : city}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

@@ -22,6 +22,8 @@ const mockHotels = [
   { id: "m14", name: "Rosewood Jeddah", city: "Jeddah" }
 ];
 
+const DEFAULT_CITIES = ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"];
+
 function AddHotelAssignmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,6 +40,16 @@ function AddHotelAssignmentContent() {
   const [customHotelName, setCustomHotelName] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+
+  const dynamicCities = useMemo(() => {
+    const dbCities = directoryHotels.map((h) => h.city).filter(Boolean);
+    const combined = Array.from(new Set([...DEFAULT_CITIES, ...dbCities]));
+    return combined.sort((a, b) => {
+      if (a === "Makkah" || a === "Madinah") return -1;
+      if (b === "Makkah" || b === "Madinah") return 1;
+      return a.localeCompare(b);
+    });
+  }, [directoryHotels]);
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -219,12 +231,9 @@ function AddHotelAssignmentContent() {
                   style={{ paddingLeft: "42px", width: "100%" }}
                   required
                 >
-                  <option value="Makkah">Makkah Mukarramah</option>
-                  <option value="Madinah">Madinah Munawwarah</option>
-                  <option value="Jeddah">Jeddah</option>
-                  <option value="Taif">Taif</option>
-                  <option value="Riyadh">Riyadh</option>
-                  <option value="Yanbu">Yanbu</option>
+                  {dynamicCities.map(city => (
+                    <option key={city} value={city}>{city === "Makkah" ? "Makkah Mukarramah" : city === "Madinah" ? "Madinah Munawwarah" : city}</option>
+                  ))}
                   <option value="CUSTOM">Other (Type custom city...)</option>
                 </select>
               </div>

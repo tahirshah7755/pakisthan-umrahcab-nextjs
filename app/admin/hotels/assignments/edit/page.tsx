@@ -21,6 +21,7 @@ const mockHotels = [
   { id: "m13", name: "Sheraton Jeddah Hotel", city: "Jeddah" },
   { id: "m14", name: "Rosewood Jeddah", city: "Jeddah" }
 ];
+const DEFAULT_CITIES = ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"];
 
 function EditHotelAssignmentContent() {
   const router = useRouter();
@@ -41,6 +42,16 @@ function EditHotelAssignmentContent() {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [customId, setCustomId] = useState("");
+
+  const dynamicCities = useMemo(() => {
+    const dbCities = directoryHotels.map((h) => h.city).filter(Boolean);
+    const combined = Array.from(new Set([...DEFAULT_CITIES, ...dbCities]));
+    return combined.sort((a, b) => {
+      if (a === "Makkah" || a === "Madinah") return -1;
+      if (b === "Makkah" || b === "Madinah") return 1;
+      return a.localeCompare(b);
+    });
+  }, [directoryHotels]);
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -89,24 +100,25 @@ function EditHotelAssignmentContent() {
     }));
   }, [directoryHotels, hotelCity, customCity]);
 
+  // Fetch the assignment details and pre-populate the form
   useEffect(() => {
     if (!queryId) {
-      setError("No stay assignment ID provided.");
+      setError("No Hotel Assignment ID provided.");
       setLoading(false);
       return;
     }
 
-    const fetchAssignmentDetails = async () => {
+    const fetchAssignment = async () => {
       try {
         setLoading(true);
         setError("");
         const res = await api.getHotel(queryId);
         if (res && res.success && res.data) {
           const h = res.data;
+          setHotelName(h.name || "");
           
-          const standardCities = ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"];
-          if (standardCities.includes(h.city)) {
-            setHotelCity(h.city || "Makkah");
+          if (DEFAULT_CITIES.includes(h.city)) {
+            setHotelCity(h.city);
             setCustomCity("");
           } else {
             setHotelCity("CUSTOM");
@@ -114,43 +126,45 @@ function EditHotelAssignmentContent() {
           }
 
           setHotelActive(h.active);
-          setSelectedCustomer(h.customer || null);
           setCheckIn(h.check_in || "");
           setCheckOut(h.check_out || "");
           setCustomId(h.custom_id || "");
 
-          const cleanName = h.name ? h.name.trim() : "";
-          // Check if this hotel name exists in our computed cityHotels list
-          const exists = cityHotels.some(
-            (c) => c.name.toLowerCase() === cleanName.toLowerCase()
-          );
-
-          if (exists) {
-            setHotelId(cleanName);
-            setHotelName(cleanName);
-            setIsCustomHotel(false);
-            setCustomHotelName("");
-          } else {
-            setHotelId("custom");
-            setHotelName(cleanName);
-            setIsCustomHotel(true);
-            setCustomHotelName(cleanName);
+          // Load customer details
+          if (h.customer_id) {
+            const cRes = await api.getCustomer(h.customer_id);
+            if (cRes && cRes.customer) {
+              setSelectedCustomer(cRes.customer);
+            }
           }
         } else {
-          setError("Failed to load stay assignment details.");
+          setError("Failed to load assignment details.");
         }
       } catch (err: any) {
-        console.error("Failed to load stay assignment details:", err);
-        setError(err.message || "An error occurred while loading details.");
+        console.error("Failed to load assignment details:", err);
+        setError(err.message || "An error occurred while loading assignment.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (directoryHotels.length > 0 || cityHotels.length > 0) {
-      fetchAssignmentDetails();
+    fetchAssignment();
+  }, [queryId]);
+
+  // Set selected hotel property select value after hotelCity/name/directoryHotels are set
+  useEffect(() => {
+    if (!loading && hotelName) {
+      const matched = cityHotels.find((h) => h.name.toLowerCase() === hotelName.toLowerCase());
+      if (matched) {
+        setHotelId(matched.name);
+        setIsCustomHotel(false);
+      } else {
+        setHotelId("custom");
+        setIsCustomHotel(true);
+        setCustomHotelName(hotelName);
+      }
     }
-  }, [queryId, directoryHotels]);
+  }, [loading, directoryHotels, hotelCity, customCity, hotelName, cityHotels]);
 
   const handleHotelSelect = (val: string) => {
     setHotelId(val);
@@ -166,16 +180,16 @@ function EditHotelAssignmentContent() {
   const handleUpdateAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer) {
-      showToast("Please select a customer first.", "error");
+      showToast("Customer is required.", "error");
       return;
     }
+    if (!queryId) return;
 
     const finalHotelName = isCustomHotel ? customHotelName : hotelName;
     if (!finalHotelName.trim()) {
       showToast("Hotel property selection or name is required.", "error");
       return;
     }
-    if (!queryId) return;
 
     const city = hotelCity === "CUSTOM" ? customCity.trim() : hotelCity;
     if (!city) {
@@ -196,12 +210,12 @@ function EditHotelAssignmentContent() {
       const res = await api.updateHotel(queryId, payload);
 
       if (res && res.success) {
-        showToast("Stay assignment updated successfully!", "success");
+        showToast("Hotel assignment updated successfully!", "success");
         setTimeout(() => {
-          router.push("/admin/hotels/assignments");
+          router.push(selectedCustomer?.id ? `/admin/customers/view?id=${selectedCustomer.id}` : "/admin/hotels/assignments");
         }, 1500);
       } else {
-        showToast(res?.error || "Failed to update stay assignment.", "error");
+        showToast(res?.error || "Failed to update assignment.", "error");
       }
     } catch (err: any) {
       console.error(err);
@@ -216,17 +230,17 @@ function EditHotelAssignmentContent() {
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         <div className="form-header-card" style={{ background: "linear-gradient(135deg, #b48a1d 0%, #8c6b12 100%)" }}>
           <div>
-            <h2>Edit Customer Stay</h2>
-            <p>Modify check-in/check-out dates and status tracker details for customer hotel stays.</p>
+            <h2>Edit Hotel Assignment</h2>
+            <p>Update check-in/out details for customer stay.</p>
           </div>
-          <button onClick={() => router.push("/admin/hotels/assignments")} className="form-btn-back">
-            <i className="fas fa-list"></i>
-            <span>Customer Stays</span>
+          <button onClick={() => router.push(selectedCustomer?.id ? `/admin/customers/view?id=${selectedCustomer.id}` : "/admin/hotels/assignments")} className="form-btn-back">
+            <i className="fas fa-arrow-left"></i>
+            <span>Back</span>
           </button>
         </div>
         <div className="form-card" style={{ textAlign: "center", padding: "40px", color: "#64748b", background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
           <i className="fas fa-spinner fa-spin" style={{ fontSize: "40px", color: GOLD_COLOR, marginBottom: "15px" }}></i>
-          <h3>Loading Stay Details...</h3>
+          <h3>Loading assignment details...</h3>
         </div>
       </div>
     );
@@ -237,20 +251,20 @@ function EditHotelAssignmentContent() {
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         <div className="form-header-card" style={{ background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)" }}>
           <div>
-            <h2>Edit Customer Stay Error</h2>
-            <p>{error || "Customer stay details could not be found."}</p>
+            <h2>Edit Assignment Error</h2>
+            <p>{error || "Assignment details could not be found."}</p>
           </div>
           <button onClick={() => router.push("/admin/hotels/assignments")} className="form-btn-back">
             <i className="fas fa-list"></i>
-            <span>Customer Stays</span>
+            <span>Assignments List</span>
           </button>
         </div>
         <div className="form-card" style={{ textAlign: "center", padding: "40px", color: "#64748b", background: "#ffffff", borderRadius: "16px", border: "1px solid #e2e8f0" }}>
           <i className="fas fa-circle-exclamation" style={{ fontSize: "48px", color: "#ef4444", marginBottom: "15px" }}></i>
-          <h3>Unable to retrieve stay details</h3>
+          <h3>Unable to retrieve assignment details</h3>
           <p>{error || "The assignment may have been deleted, or there was a communication issue with the server."}</p>
           <button onClick={() => router.push("/admin/hotels/assignments")} className="btn-submit" style={{ marginTop: "15px", background: GOLD_COLOR, color: "#ffffff" }}>
-            Return to Customer Stays
+            Return to Assignments
           </button>
         </div>
       </div>
@@ -285,12 +299,12 @@ function EditHotelAssignmentContent() {
 
       <div className="form-header-card" style={{ background: "linear-gradient(135deg, #b48a1d 0%, #8c6b12 100%)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2>Edit Customer Stay: {customId || `#HTL-${queryId}`}</h2>
-          <p>Update check-in dates, selected property name, and operational status for this stay.</p>
+          <h2>Edit Hotel Assignment: {customId || `#ASG-${queryId}`}</h2>
+          <p>Modify check-in and check-out tracking dates for customer hotel stay.</p>
         </div>
-        <button onClick={() => router.push("/admin/hotels/assignments")} className="form-btn-back">
-          <i className="fas fa-list"></i>
-          <span>Customer Stays</span>
+        <button onClick={() => router.push(selectedCustomer?.id ? `/admin/customers/view?id=${selectedCustomer.id}` : "/admin/hotels/assignments")} className="form-btn-back">
+          <i className="fas fa-arrow-left"></i>
+          <span>Back</span>
         </button>
       </div>
 
@@ -303,6 +317,7 @@ function EditHotelAssignmentContent() {
               selectedCustomer={selectedCustomer}
               onSelectCustomer={setSelectedCustomer}
               themeColor={GOLD_COLOR}
+              disabled={true}
             />
 
             <div>
@@ -320,12 +335,9 @@ function EditHotelAssignmentContent() {
                   style={{ paddingLeft: "42px", width: "100%" }}
                   required
                 >
-                  <option value="Makkah">Makkah Mukarramah</option>
-                  <option value="Madinah">Madinah Munawwarah</option>
-                  <option value="Jeddah">Jeddah</option>
-                  <option value="Taif">Taif</option>
-                  <option value="Riyadh">Riyadh</option>
-                  <option value="Yanbu">Yanbu</option>
+                  {dynamicCities.map(city => (
+                    <option key={city} value={city}>{city === "Makkah" ? "Makkah Mukarramah" : city === "Madinah" ? "Madinah Munawwarah" : city}</option>
+                  ))}
                   <option value="CUSTOM">Other (Type custom city...)</option>
                 </select>
               </div>

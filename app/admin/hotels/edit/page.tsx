@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+
+const DEFAULT_CITIES = ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"];
 
 function EditHotelContent() {
   const router = useRouter();
@@ -16,6 +18,31 @@ function EditHotelContent() {
   const [customCity, setCustomCity] = useState("");
   const [hotelActive, setHotelActive] = useState(1);
   const [customId, setCustomId] = useState("");
+  const [directoryHotels, setDirectoryHotels] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDirectoryHotels = async () => {
+      try {
+        const data = await api.getHotels(undefined, undefined, "directory");
+        if (data) {
+          setDirectoryHotels(data);
+        }
+      } catch (err) {
+        console.error("Failed to load directory hotels list:", err);
+      }
+    };
+    fetchDirectoryHotels();
+  }, []);
+
+  const dynamicCities = useMemo(() => {
+    const dbCities = directoryHotels.map((h) => h.city).filter(Boolean);
+    const combined = Array.from(new Set([...DEFAULT_CITIES, ...dbCities]));
+    return combined.sort((a, b) => {
+      if (a === "Makkah" || a === "Madinah") return -1;
+      if (b === "Makkah" || b === "Madinah") return 1;
+      return a.localeCompare(b);
+    });
+  }, [directoryHotels]);
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -45,8 +72,7 @@ function EditHotelContent() {
           const h = res.data;
           setHotelName(h.name || "");
           
-          const standardCities = ["Makkah", "Madinah", "Jeddah", "Taif", "Riyadh", "Yanbu"];
-          if (standardCities.includes(h.city)) {
+          if (DEFAULT_CITIES.includes(h.city)) {
             setHotelCitySelect(h.city);
             setCustomCity("");
           } else {
@@ -210,12 +236,9 @@ function EditHotelContent() {
                   style={{ paddingLeft: "42px", width: "100%" }}
                   required
                 >
-                  <option value="Makkah">Makkah Mukarramah</option>
-                  <option value="Madinah">Madinah Munawwarah</option>
-                  <option value="Jeddah">Jeddah</option>
-                  <option value="Taif">Taif</option>
-                  <option value="Riyadh">Riyadh</option>
-                  <option value="Yanbu">Yanbu</option>
+                  {dynamicCities.map(city => (
+                    <option key={city} value={city}>{city === "Makkah" ? "Makkah Mukarramah" : city === "Madinah" ? "Madinah Munawwarah" : city}</option>
+                  ))}
                   <option value="CUSTOM">Other (Type custom city...)</option>
                 </select>
               </div>

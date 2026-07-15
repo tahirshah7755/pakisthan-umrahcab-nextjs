@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
+import { parseTimeTo12hParts, format12hPartsTo24h } from "@/utils/formatters";
 
 function AddServicePageContent() {
   const router = useRouter();
@@ -28,7 +29,7 @@ function AddServicePageContent() {
   const [srvStatus, setSrvStatus] = useState("Pending");
   const [srvDriverCash, setSrvDriverCash] = useState("");
   const [srvDate, setSrvDate] = useState("");
-  const [srvTime, setSrvTime] = useState("");
+  const [srvTime, setSrvTime] = useState("12:00");
   const [srvRemarks, setSrvRemarks] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -96,7 +97,7 @@ function AddServicePageContent() {
         setSelectedCustomer(null);
         setSrvName(""); setSrvType("Service"); setSrvPrice("");
         setSrvPickupLocation(""); setSrvStatus("Pending"); setSrvDriverCash("");
-        setSrvDate(""); setSrvTime(""); setSrvRemarks("");
+        setSrvDate(""); setSrvTime("12:00"); setSrvRemarks("");
         setSelectedCatalogObj(null); setCatalogSearch("");
         setTimeout(() => router.push("/admin/services"), 1200);
       } else {
@@ -113,6 +114,8 @@ function AddServicePageContent() {
   const filteredCatalog = catalogList.filter((item) =>
     item.name.toLowerCase().includes(catalogSearch.toLowerCase())
   );
+
+  const { hour: srvHour, minute: srvMinute, merid: srvPeriod } = parseTimeTo12hParts(srvTime);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -301,12 +304,44 @@ function AddServicePageContent() {
             </div>
           </div>
 
-          {/* Service Time */}
           <div>
             <label className="form-label">Service Time</label>
-            <div className="form-input-wrapper">
-              <i className="fas fa-clock form-icon"></i>
-              <input type="time" className="form-input" value={srvTime} onChange={(e) => setSrvTime(e.target.value)} />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <select
+                className="form-input form-select"
+                value={srvHour}
+                onChange={(e) => {
+                  const newTime = format12hPartsTo24h(e.target.value, srvMinute, srvPeriod);
+                  setSrvTime(newTime);
+                }}
+              >
+                {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <select
+                className="form-input form-select"
+                value={srvMinute}
+                onChange={(e) => {
+                  const newTime = format12hPartsTo24h(srvHour, e.target.value, srvPeriod);
+                  setSrvTime(newTime);
+                }}
+              >
+                {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <select
+                className="form-input form-select"
+                value={srvPeriod}
+                onChange={(e) => {
+                  const newTime = format12hPartsTo24h(srvHour, srvMinute, e.target.value);
+                  setSrvTime(newTime);
+                }}
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
             </div>
           </div>
 

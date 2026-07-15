@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
-import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
+import { formatDateToCustom, formatTimeTo24h, parseTimeTo12hParts, format12hPartsTo24h } from "@/utils/formatters";
 
 interface ServiceItem {
   id: string;
@@ -257,6 +257,8 @@ _Thank you for choosing UmrahCab!_`;
       showToast("Error updating service record", "error");
     }
   };
+
+  const { hour: editHour, minute: editMinute, merid: editPeriod } = parseTimeTo12hParts(editTime);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
@@ -545,7 +547,43 @@ _Thank you for choosing UmrahCab!_`;
 
               <div>
                 <label className="form-label">Service Time</label>
-                <input type="time" className="form-input" value={editTime} onChange={(e) => setEditTime(e.target.value)} />
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <select
+                    className="form-input form-select"
+                    value={editHour}
+                    onChange={(e) => {
+                      const newTime = format12hPartsTo24h(e.target.value, editMinute, editPeriod);
+                      setEditTime(newTime);
+                    }}
+                  >
+                    {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="form-input form-select"
+                    value={editHour ? editMinute : "00"}
+                    onChange={(e) => {
+                      const newTime = format12hPartsTo24h(editHour, e.target.value, editPeriod);
+                      setEditTime(newTime);
+                    }}
+                  >
+                    {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="form-input form-select"
+                    value={editPeriod}
+                    onChange={(e) => {
+                      const newTime = format12hPartsTo24h(editHour, editMinute, e.target.value);
+                      setEditTime(newTime);
+                    }}
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
               </div>
 
               <div>

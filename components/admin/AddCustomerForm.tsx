@@ -5,6 +5,7 @@ import { api, getDefaultPhoneCode } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
+import { parseTimeTo12hParts, format12hPartsTo24h } from "@/utils/formatters";
 
 interface CompanyItem {
   id: string;
@@ -1356,17 +1357,71 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         {/* Pickup Time */}
                         <div>
                           <label className="form-label">Pick up Time *</label>
-                          <div className="form-input-wrapper" style={{ position: "relative" }}>
-                            <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                            <input
-                              type="time"
-                              className="form-input"
-                              value={route.pickupTime}
-                              onChange={(e) => updateRouteField(index, "pickupTime", e.target.value)}
-                              required
-                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_pickupTime`] ? "#ef4444" : undefined }}
-                            />
-                          </div>
+                          {(() => {
+                            const { hour, minute, merid } = parseTimeTo12hParts(route.pickupTime);
+                            return (
+                              <div style={{ display: "flex", gap: "8px" }}>
+                                <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                  <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                                  <select
+                                    className="form-input form-select"
+                                    value={hour}
+                                    onChange={(e) => {
+                                      const h = e.target.value;
+                                      const newTime = format12hPartsTo24h(h, minute || "00", merid);
+                                      updateRouteField(index, "pickupTime", newTime);
+                                    }}
+                                    required
+                                    style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_pickupTime`] ? "#ef4444" : undefined }}
+                                  >
+                                    <option value="">Hour</option>
+                                    {Array.from({ length: 12 }, (_, i) => {
+                                      const val = String(i + 1).padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                  <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                </div>
+                                <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                  <select
+                                    className="form-input form-select"
+                                    value={minute}
+                                    onChange={(e) => {
+                                      const m = e.target.value;
+                                      const newTime = format12hPartsTo24h(hour || "12", m, merid);
+                                      updateRouteField(index, "pickupTime", newTime);
+                                    }}
+                                    required
+                                    style={{ width: "100%", borderColor: errors[`route_${index}_pickupTime`] ? "#ef4444" : undefined }}
+                                  >
+                                    <option value="">Min</option>
+                                    {Array.from({ length: 60 }, (_, i) => {
+                                      const val = String(i).padStart(2, "0");
+                                      return <option key={val} value={val}>{val}</option>;
+                                    })}
+                                  </select>
+                                  <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                </div>
+                                <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                  <select
+                                    className="form-input form-select"
+                                    value={merid}
+                                    onChange={(e) => {
+                                      const mer = e.target.value;
+                                      const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
+                                      updateRouteField(index, "pickupTime", newTime);
+                                    }}
+                                    required
+                                    style={{ width: "100%", borderColor: errors[`route_${index}_pickupTime`] ? "#ef4444" : undefined }}
+                                  >
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                  </select>
+                                  <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                </div>
+                              </div>
+                            );
+                          })()}
                           {errors[`route_${index}_pickupTime`] && (
                             <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_pickupTime`]}</span>
                           )}
@@ -2000,7 +2055,71 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Time *</label>
-                            <input type="time" className="form-input" value={fltArrTime} onChange={(e) => setFltArrTime(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltArrTime ? "#ef4444" : undefined }} />
+                            {(() => {
+                              const { hour, minute, merid } = parseTimeTo12hParts(fltArrTime);
+                              return (
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                                    <select
+                                      className="form-input form-select"
+                                      value={hour}
+                                      onChange={(e) => {
+                                        const h = e.target.value;
+                                        const newTime = format12hPartsTo24h(h, minute || "00", merid);
+                                        setFltArrTime(newTime);
+                                      }}
+                                      required={fltLeg === "Arrival" || fltLeg === "Both Legs"}
+                                      style={{ paddingLeft: "42px", width: "100%", borderColor: errors.fltArrTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Hour</option>
+                                      {Array.from({ length: 12 }, (_, i) => {
+                                        const val = String(i + 1).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={minute}
+                                      onChange={(e) => {
+                                        const m = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", m, merid);
+                                        setFltArrTime(newTime);
+                                      }}
+                                      required={fltLeg === "Arrival" || fltLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.fltArrTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Min</option>
+                                      {Array.from({ length: 60 }, (_, i) => {
+                                        const val = String(i).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={merid}
+                                      onChange={(e) => {
+                                        const mer = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
+                                        setFltArrTime(newTime);
+                                      }}
+                                      required={fltLeg === "Arrival" || fltLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.fltArrTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="AM">AM</option>
+                                      <option value="PM">PM</option>
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {errors.fltArrTime && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltArrTime}</span>
                             )}
@@ -2046,7 +2165,71 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Time *</label>
-                            <input type="time" className="form-input" value={fltDepTime} onChange={(e) => setFltDepTime(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltDepTime ? "#ef4444" : undefined }} />
+                            {(() => {
+                              const { hour, minute, merid } = parseTimeTo12hParts(fltDepTime);
+                              return (
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                                    <select
+                                      className="form-input form-select"
+                                      value={hour}
+                                      onChange={(e) => {
+                                        const h = e.target.value;
+                                        const newTime = format12hPartsTo24h(h, minute || "00", merid);
+                                        setFltDepTime(newTime);
+                                      }}
+                                      required={fltLeg === "Departure" || fltLeg === "Both Legs"}
+                                      style={{ paddingLeft: "42px", width: "100%", borderColor: errors.fltDepTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Hour</option>
+                                      {Array.from({ length: 12 }, (_, i) => {
+                                        const val = String(i + 1).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={minute}
+                                      onChange={(e) => {
+                                        const m = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", m, merid);
+                                        setFltDepTime(newTime);
+                                      }}
+                                      required={fltLeg === "Departure" || fltLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.fltDepTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Min</option>
+                                      {Array.from({ length: 60 }, (_, i) => {
+                                        const val = String(i).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={merid}
+                                      onChange={(e) => {
+                                        const mer = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
+                                        setFltDepTime(newTime);
+                                      }}
+                                      required={fltLeg === "Departure" || fltLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.fltDepTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="AM">AM</option>
+                                      <option value="PM">PM</option>
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {errors.fltDepTime && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltDepTime}</span>
                             )}
@@ -2165,7 +2348,71 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Time *</label>
-                            <input type="time" className="form-input" value={trnArrTime} onChange={(e) => setTrnArrTime(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnArrTime ? "#ef4444" : undefined }} />
+                            {(() => {
+                              const { hour, minute, merid } = parseTimeTo12hParts(trnArrTime);
+                              return (
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                                    <select
+                                      className="form-input form-select"
+                                      value={hour}
+                                      onChange={(e) => {
+                                        const h = e.target.value;
+                                        const newTime = format12hPartsTo24h(h, minute || "00", merid);
+                                        setTrnArrTime(newTime);
+                                      }}
+                                      required={trnLeg === "Arrival" || trnLeg === "Both Legs"}
+                                      style={{ paddingLeft: "42px", width: "100%", borderColor: errors.trnArrTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Hour</option>
+                                      {Array.from({ length: 12 }, (_, i) => {
+                                        const val = String(i + 1).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={minute}
+                                      onChange={(e) => {
+                                        const m = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", m, merid);
+                                        setTrnArrTime(newTime);
+                                      }}
+                                      required={trnLeg === "Arrival" || trnLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.trnArrTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Min</option>
+                                      {Array.from({ length: 60 }, (_, i) => {
+                                        const val = String(i).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={merid}
+                                      onChange={(e) => {
+                                        const mer = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
+                                        setTrnArrTime(newTime);
+                                      }}
+                                      required={trnLeg === "Arrival" || trnLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.trnArrTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="AM">AM</option>
+                                      <option value="PM">PM</option>
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {errors.trnArrTime && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnArrTime}</span>
                             )}
@@ -2211,7 +2458,71 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Time *</label>
-                            <input type="time" className="form-input" value={trnDepTime} onChange={(e) => setTrnDepTime(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnDepTime ? "#ef4444" : undefined }} />
+                            {(() => {
+                              const { hour, minute, merid } = parseTimeTo12hParts(trnDepTime);
+                              return (
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                                    <select
+                                      className="form-input form-select"
+                                      value={hour}
+                                      onChange={(e) => {
+                                        const h = e.target.value;
+                                        const newTime = format12hPartsTo24h(h, minute || "00", merid);
+                                        setTrnDepTime(newTime);
+                                      }}
+                                      required={trnLeg === "Departure" || trnLeg === "Both Legs"}
+                                      style={{ paddingLeft: "42px", width: "100%", borderColor: errors.trnDepTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Hour</option>
+                                      {Array.from({ length: 12 }, (_, i) => {
+                                        const val = String(i + 1).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={minute}
+                                      onChange={(e) => {
+                                        const m = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", m, merid);
+                                        setTrnDepTime(newTime);
+                                      }}
+                                      required={trnLeg === "Departure" || trnLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.trnDepTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="">Min</option>
+                                      {Array.from({ length: 60 }, (_, i) => {
+                                        const val = String(i).padStart(2, "0");
+                                        return <option key={val} value={val}>{val}</option>;
+                                      })}
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
+                                    <select
+                                      className="form-input form-select"
+                                      value={merid}
+                                      onChange={(e) => {
+                                        const mer = e.target.value;
+                                        const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
+                                        setTrnDepTime(newTime);
+                                      }}
+                                      required={trnLeg === "Departure" || trnLeg === "Both Legs"}
+                                      style={{ width: "100%", borderColor: errors.trnDepTime ? "#ef4444" : undefined }}
+                                    >
+                                      <option value="AM">AM</option>
+                                      <option value="PM">PM</option>
+                                    </select>
+                                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                             {errors.trnDepTime && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnDepTime}</span>
                             )}

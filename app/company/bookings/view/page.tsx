@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
-import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
+import { formatDateOnly, formatTimeOnly } from "@/utils/formatters";
 
 function parseNotes(notesStr: string, carPrice: number) {
   const result = {
@@ -411,11 +411,11 @@ function BookingViewContent() {
               </div>
               <div>
                 <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Pickup Date</span>
-                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-calendar" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.date ? formatDateToCustom(booking.date) : "N/A"}</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-calendar" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.date ? formatDateOnly(booking.date) : "N/A"}</span>
               </div>
               <div>
                 <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Pickup Time</span>
-                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-clock" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.time ? formatTimeTo24h(booking.time) : "N/A"}</span>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-clock" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.time ? formatTimeOnly(booking.time) : "N/A"}</span>
               </div>
             </div>
           </div>

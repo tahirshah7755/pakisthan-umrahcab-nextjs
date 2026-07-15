@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { CustomerProfileView } from "@/components/admin/CustomerProfileView";
+import { formatDateTime, formatDateOnly } from "@/utils/formatters";
 
 interface CustomerItem {
   id: string;
@@ -358,9 +359,9 @@ function CustomerViewContent() {
     company: selectedCust ? selectedCust.company : "Corporate Account",
     meta: {
       registeredBy: selectedCust?.registered_by || selectedCust?.registeredBy || "umrahcab",
-      registeredDate: selectedCust?.created_at ? new Date(selectedCust.created_at).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "22 May, 2026 | 08:32 PM",
+      registeredDate: selectedCust?.created_at ? formatDateTime(selectedCust.created_at) : "22 May, 2026 08:32 PM",
       lastEditedBy: selectedCust?.registered_by || selectedCust?.registeredBy || "umrahcab",
-      lastEditedDate: selectedCust?.updated_at ? new Date(selectedCust.updated_at).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : (selectedCust?.last_update || selectedCust?.lastUpdate || "No edits")
+      lastEditedDate: selectedCust?.updated_at ? formatDateTime(selectedCust.updated_at) : (selectedCust?.last_update || selectedCust?.lastUpdate || "No edits")
     },
     externalRemarks: selectedCust ? parsedNotes : "No external notes.",
     internalRemarks: "No internal notes."

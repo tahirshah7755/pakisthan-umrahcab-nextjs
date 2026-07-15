@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetAuditsQuery } from "@/store/api/auditsApi";
+import { formatDateTime } from "@/utils/formatters";
 
 interface AuditItem {
   id: number | string;
@@ -40,14 +41,6 @@ export default function AuditTrailPage() {
     ? paginator.total
     : auditsList.length;
 
-  const formatTimestamp = (dateStr: string) => {
-    if (!dateStr) return "N/A";
-    try {
-      return dateStr.substring(0, 19).replace("T", " ");
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   // Professional sliding window pagination logic
   const getPageNumbers = () => {
@@ -144,7 +137,7 @@ export default function AuditTrailPage() {
                         }}>
                           {a.performed_action}
                         </td>
-                        <td>{formatTimestamp(a.created_at)}</td>
+                        <td>{formatDateTime(a.created_at)}</td>
                       </tr>
                     ))
                   )}

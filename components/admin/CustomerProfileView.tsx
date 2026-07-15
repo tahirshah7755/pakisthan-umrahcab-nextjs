@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { CustomerItem } from "./CustomerDirectory";
 import { api } from "@/utils/api";
+import { formatDateTime, formatDateOnly, formatTimeOnly } from "@/utils/formatters";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
 const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
@@ -388,7 +389,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                   {currentProfile.name}
                 </h3>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "600" }}>
-                  Joined: {currentProfile.meta.registeredDate.split(" | ")[0] || "22 May, 2026"}
+                  Joined: {currentProfile.meta.registeredDate ? formatDateOnly(currentProfile.meta.registeredDate) : "22 May, 2026"}
                 </span>
               </div>
 
@@ -606,7 +607,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                       ) : profileBookings.map((b: any) => (
                         <tr key={b.id}>
                           <td style={{ fontWeight: 700, color: "var(--primary-color)" }}>{b.id}</td>
-                          <td>{b.date} {b.time}</td>
+                          <td>{formatDateTime(b.date, b.time)}</td>
                           <td style={{ fontWeight: 600 }}>{b.details}</td>
                           <td><span className="status-pill active" style={{ background: "#ecfeff", color: "#0891b2" }}>{b.vehicle}</span></td>
                           <td>
@@ -703,7 +704,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                         <td><span className="status-pill active" style={{ background: "#eff6ff", color: "#1e40af" }}>{f.leg}</span></td>
                         <td style={{ fontWeight: 700 }}>{f.flightNo}</td>
                         <td style={{ fontWeight: 600 }}>{f.route}</td>
-                        <td>{f.date} | {f.time}</td>
+                        <td>{formatDateTime(f.date, f.time)}</td>
                         <td>
                           <span className={`status-pill ${f.status === "On Time" || f.status === "on time" ? "completed" : "pending"}`}>
                             {(f.status || "SCHEDULED").toUpperCase()}
@@ -717,7 +718,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                               flightNo: f.flightNo,
                               airline: "N/A",
                               sector: f.route,
-                              dateTime: `${f.date} | ${f.time}`,
+                              dateTime: formatDateTime(f.date, f.time),
                               status: f.status
                             })}
                             style={{ background: "#f1f5f9", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#3b82f6", cursor: "pointer" }}
@@ -746,35 +747,39 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                   <tbody>
                     {custTrains.length === 0 ? (
                       <tr><td colSpan={6} style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>No trains found for this customer.</td></tr>
-                    ) : custTrains.map((t: any) => (
-                      <tr key={t.id}>
-                        <td style={{ fontWeight: 700 }}>{t.id}</td>
-                        <td>{t.dateTime}</td>
-                        <td style={{ fontWeight: 600 }}>{t.route}</td>
-                        <td>{t.allocation}</td>
-                        <td>
-                          <span className={`status-pill ${t.status === "Confirmed" || t.status === "confirmed" ? "completed" : "pending"}`}>
-                            {(t.status || "SCHEDULED").toUpperCase()}
-                          </span>
-                        </td>
-                        <td>
-                          <button
-                            onClick={() => setSelectedProfileTrain({
-                              id: t.id,
-                              dateTime: t.dateTime,
-                              route: t.route,
-                              allocation: t.allocation,
-                              classType: t.classType || "Standard",
-                              pricing: t.pricing || "SAR 0.00",
-                              status: t.status
-                            })}
-                            style={{ background: "#f1f5f9", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#8b5cf6", cursor: "pointer" }}
-                          >
-                            <i className="fas fa-eye"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    ) : custTrains.map((t: any) => {
+                      const trainDateTime = t.dateTime || (t.date ? formatDateTime(t.date, t.time) : "N/A");
+                      const trainAllocation = t.allocation || (t.train_no ? `${t.train_no}${t.class ? ` (${t.class})` : t.leg ? ` (${t.leg})` : ""}` : "N/A");
+                      return (
+                        <tr key={t.id}>
+                          <td style={{ fontWeight: 700 }}>{t.id}</td>
+                          <td>{trainDateTime}</td>
+                          <td style={{ fontWeight: 600 }}>{t.route}</td>
+                          <td>{trainAllocation}</td>
+                          <td>
+                            <span className={`status-pill ${t.status === "Confirmed" || t.status === "confirmed" ? "completed" : "pending"}`}>
+                              {(t.status || "SCHEDULED").toUpperCase()}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => setSelectedProfileTrain({
+                                id: t.id,
+                                dateTime: trainDateTime,
+                                route: t.route,
+                                allocation: trainAllocation,
+                                classType: t.classType || t.class || "Standard",
+                                pricing: t.pricing || "SAR 0.00",
+                                status: t.status
+                              })}
+                              style={{ background: "#f1f5f9", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#8b5cf6", cursor: "pointer" }}
+                            >
+                              <i className="fas fa-eye"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -798,7 +803,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                       ) : profileServices.map((s: any) => (
                         <tr key={s.id}>
                           <td style={{ fontWeight: 700 }}>{s.id}</td>
-                          <td>{s.date}</td>
+                          <td>{formatDateOnly(s.date)}</td>
                           <td style={{ fontWeight: 600 }}>{s.details}</td>
                           <td>
                             <span className={`status-pill ${s.status === "Active" || s.status === "active" ? "completed" : "pending"}`}>
@@ -841,36 +846,42 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                     <tbody>
                       {profileHotels.length === 0 ? (
                         <tr><td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>No hotel stays found for this customer.</td></tr>
-                      ) : profileHotels.map((h: any) => (
-                        <tr key={h.id}>
-                          <td style={{ fontWeight: 700 }}>{h.id}</td>
-                          <td style={{ fontWeight: 700 }}>{h.name}</td>
-                          <td style={{ fontWeight: 600 }}>{h.city}</td>
-                          <td>{h.checkIn || "N/A"}</td>
-                          <td>{h.checkOut || "N/A"}</td>
-                          <td>
-                            <span className={`status-pill ${h.active ? "completed" : "pending"}`}>
-                              {h.active ? "ACTIVE" : "INACTIVE"}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              onClick={() => setSelectedProfileHotel({
-                                id: h.id,
-                                name: h.name,
-                                city: h.city,
-                                checkIn: h.checkIn,
-                                checkOut: h.checkOut,
-                                status: h.active ? "Active" : "Inactive"
-                              })}
-                              style={{ background: "#eff6ff", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#f97316", cursor: "pointer" }}
-                              title="View Details"
-                            >
-                              <i className="fas fa-eye"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      ) : profileHotels.map((h: any) => {
+                        const checkInVal = h.checkIn || h.check_in;
+                        const checkOutVal = h.checkOut || h.check_out;
+                        const checkInFormatted = checkInVal ? formatDateOnly(checkInVal) : "N/A";
+                        const checkOutFormatted = checkOutVal ? formatDateOnly(checkOutVal) : "N/A";
+                        return (
+                          <tr key={h.id}>
+                            <td style={{ fontWeight: 700 }}>{h.id}</td>
+                            <td style={{ fontWeight: 700 }}>{h.name || h.hotel_name || "N/A"}</td>
+                            <td style={{ fontWeight: 600 }}>{h.city || "N/A"}</td>
+                            <td>{checkInFormatted}</td>
+                            <td>{checkOutFormatted}</td>
+                            <td>
+                              <span className={`status-pill ${h.active || h.status === "Active" || h.status === "ACTIVE" ? "completed" : "pending"}`}>
+                                {h.active || h.status === "Active" || h.status === "ACTIVE" ? "ACTIVE" : "INACTIVE"}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                onClick={() => setSelectedProfileHotel({
+                                  id: h.id,
+                                  name: h.name || h.hotel_name || "N/A",
+                                  city: h.city || "N/A",
+                                  checkIn: checkInFormatted,
+                                  checkOut: checkOutFormatted,
+                                  status: h.active || h.status === "Active" || h.status === "ACTIVE" ? "Active" : "Inactive"
+                                })}
+                                style={{ background: "#eff6ff", border: "none", borderRadius: "6px", width: "30px", height: "30px", color: "#f97316", cursor: "pointer" }}
+                                title="View Details"
+                              >
+                                <i className="fas fa-eye"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 );

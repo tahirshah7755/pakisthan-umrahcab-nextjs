@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
-import { parseTimeTo12hParts, format12hPartsTo24h } from "@/utils/formatters";
+import TimePicker24h from "@/components/admin/TimePicker24h";
 
 function AddTrainContent() {
   const router = useRouter();
@@ -264,68 +264,7 @@ function AddTrainContent() {
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Time <span style={{ color: "#ef4444" }}>*</span></label>
-                    {(() => {
-                      const { hour, minute, merid } = parseTimeTo12hParts(trnArrTime);
-                      return (
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                            <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                            <select
-                              className="form-input form-select"
-                              value={hour}
-                              onChange={(e) => {
-                                const h = e.target.value;
-                                const newTime = format12hPartsTo24h(h, minute || "00", merid);
-                                setTrnArrTime(newTime);
-                              }}
-                              style={{ paddingLeft: "42px", width: "100%" }}
-                            >
-                              <option value="">Hour</option>
-                              {Array.from({ length: 12 }, (_, i) => {
-                                const val = String(i + 1).padStart(2, "0");
-                                return <option key={val} value={val}>{val}</option>;
-                              })}
-                            </select>
-                            <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                          </div>
-                          <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                            <select
-                              className="form-input form-select"
-                              value={minute}
-                              onChange={(e) => {
-                                const m = e.target.value;
-                                const newTime = format12hPartsTo24h(hour || "12", m, merid);
-                                setTrnArrTime(newTime);
-                              }}
-                              style={{ width: "100%" }}
-                            >
-                              <option value="">Min</option>
-                              {Array.from({ length: 60 }, (_, i) => {
-                                const val = String(i).padStart(2, "0");
-                                return <option key={val} value={val}>{val}</option>;
-                              })}
-                            </select>
-                            <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                          </div>
-                          <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                            <select
-                              className="form-input form-select"
-                              value={merid}
-                              onChange={(e) => {
-                                const mer = e.target.value;
-                                const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
-                                setTrnArrTime(newTime);
-                              }}
-                              style={{ width: "100%" }}
-                            >
-                              <option value="AM">AM</option>
-                              <option value="PM">PM</option>
-                            </select>
-                            <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <TimePicker24h value={trnArrTime} onChange={setTrnArrTime} />
                   </div>
                 </div>
               </div>
@@ -361,68 +300,7 @@ function AddTrainContent() {
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Time <span style={{ color: "#ef4444" }}>*</span></label>
-                    {(() => {
-                      const { hour, minute, merid } = parseTimeTo12hParts(trnDepTime);
-                      return (
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                            <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                            <select
-                              className="form-input form-select"
-                              value={hour}
-                              onChange={(e) => {
-                                const h = e.target.value;
-                                const newTime = format12hPartsTo24h(h, minute || "00", merid);
-                                setTrnDepTime(newTime);
-                              }}
-                              style={{ paddingLeft: "42px", width: "100%" }}
-                            >
-                              <option value="">Hour</option>
-                              {Array.from({ length: 12 }, (_, i) => {
-                                const val = String(i + 1).padStart(2, "0");
-                                return <option key={val} value={val}>{val}</option>;
-                              })}
-                            </select>
-                            <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                          </div>
-                          <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                            <select
-                              className="form-input form-select"
-                              value={minute}
-                              onChange={(e) => {
-                                const m = e.target.value;
-                                const newTime = format12hPartsTo24h(hour || "12", m, merid);
-                                setTrnDepTime(newTime);
-                              }}
-                              style={{ width: "100%" }}
-                            >
-                              <option value="">Min</option>
-                              {Array.from({ length: 60 }, (_, i) => {
-                                const val = String(i).padStart(2, "0");
-                                return <option key={val} value={val}>{val}</option>;
-                              })}
-                            </select>
-                            <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                          </div>
-                          <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                            <select
-                              className="form-input form-select"
-                              value={merid}
-                              onChange={(e) => {
-                                const mer = e.target.value;
-                                const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
-                                setTrnDepTime(newTime);
-                              }}
-                              style={{ width: "100%" }}
-                            >
-                              <option value="AM">AM</option>
-                              <option value="PM">PM</option>
-                            </select>
-                            <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    <TimePicker24h value={trnDepTime} onChange={setTrnDepTime} />
                   </div>
                 </div>
               </div>

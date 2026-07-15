@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
-import { parseTimeTo12hParts, format12hPartsTo24h } from "@/utils/formatters";
+import TimePicker24h from "@/components/admin/TimePicker24h";
 
 function AddServicePageContent() {
   const router = useRouter();
@@ -133,7 +133,6 @@ function AddServicePageContent() {
   };
 
   const GOLD_COLOR = "#d4af37";
-  const { hour: srvHour, minute: srvMinute, merid: srvPeriod } = parseTimeTo12hParts(srvTime);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -259,43 +258,7 @@ function AddServicePageContent() {
 
               <div style={{ flex: 1 }}>
                 <label className="form-label">Service Time</label>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <select
-                    className="form-input form-select"
-                    value={srvHour}
-                    onChange={(e) => {
-                      const newTime = format12hPartsTo24h(e.target.value, srvMinute, srvPeriod);
-                      setSrvTime(newTime);
-                    }}
-                  >
-                    {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  <select
-                    className="form-input form-select"
-                    value={srvMinute}
-                    onChange={(e) => {
-                      const newTime = format12hPartsTo24h(srvHour, e.target.value, srvPeriod);
-                      setSrvTime(newTime);
-                    }}
-                  >
-                    {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                  <select
-                    className="form-input form-select"
-                    value={srvPeriod}
-                    onChange={(e) => {
-                      const newTime = format12hPartsTo24h(srvHour, srvMinute, e.target.value);
-                      setSrvTime(newTime);
-                    }}
-                  >
-                    <option value="AM">AM</option>
-                    <option value="PM">PM</option>
-                  </select>
-                </div>
+                <TimePicker24h value={srvTime} onChange={setSrvTime} />
               </div>
             </div>
 

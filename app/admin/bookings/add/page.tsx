@@ -4,7 +4,8 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
-import { formatDateToCustom, formatTimeTo24h, parseTimeTo12hParts, format12hPartsTo24h } from "@/utils/formatters";
+import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
+import TimePicker24h from "@/components/admin/TimePicker24h";
 
 const defaultCountryCodes = [
   { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
@@ -771,74 +772,9 @@ function AddNewBookingContent() {
             </div>
           </div>
 
-          {/* Pickup Time */}
           <div>
             <label className="form-label">Pick up Time *</label>
-            {(() => {
-              const { hour, minute, merid } = parseTimeTo12hParts(pickupTime);
-              return (
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                    <i className="fas fa-clock form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                    <select
-                      className="form-input form-select"
-                      value={hour}
-                      onChange={(e) => {
-                        const h = e.target.value;
-                        const newTime = format12hPartsTo24h(h, minute || "00", merid);
-                        setPickupTime(newTime);
-                      }}
-                      required
-                      style={{ paddingLeft: "42px", width: "100%" }}
-                    >
-                      <option value="">Hour</option>
-                      {Array.from({ length: 12 }, (_, i) => {
-                        const val = String(i + 1).padStart(2, "0");
-                        return <option key={val} value={val}>{val}</option>;
-                      })}
-                    </select>
-                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                  </div>
-                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                    <select
-                      className="form-input form-select"
-                      value={minute}
-                      onChange={(e) => {
-                        const m = e.target.value;
-                        const newTime = format12hPartsTo24h(hour || "12", m, merid);
-                        setPickupTime(newTime);
-                      }}
-                      required
-                      style={{ width: "100%" }}
-                    >
-                      <option value="">Min</option>
-                      {Array.from({ length: 60 }, (_, i) => {
-                        const val = String(i).padStart(2, "0");
-                        return <option key={val} value={val}>{val}</option>;
-                      })}
-                    </select>
-                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                  </div>
-                  <div className="form-input-wrapper" style={{ flex: 1, position: "relative" }}>
-                    <select
-                      className="form-input form-select"
-                      value={merid}
-                      onChange={(e) => {
-                        const mer = e.target.value;
-                        const newTime = format12hPartsTo24h(hour || "12", minute || "00", mer);
-                        setPickupTime(newTime);
-                      }}
-                      required
-                      style={{ width: "100%" }}
-                    >
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
-                    <i className="fas fa-chevron-down select-arrow" style={{ right: "12px", position: "absolute", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", pointerEvents: "none" }}></i>
-                  </div>
-                </div>
-              );
-            })()}
+            <TimePicker24h value={pickupTime} onChange={setPickupTime} />
           </div>
 
           {/* Pickup Location */}

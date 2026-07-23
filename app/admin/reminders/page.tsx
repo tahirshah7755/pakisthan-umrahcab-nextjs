@@ -91,19 +91,23 @@ export default function RemindersPage() {
 
         if (bkList) {
           setBookings(bkList.map((b: any, idx: number) => {
-            const matchedCust = custList ? custList.find((c: any) => c.name === b.fullName) : null;
+            const customerNameVal = b.full_name || b.fullName || "Guest";
+            const matchedCust = custList ? custList.find((c: any) => c.name === customerNameVal) : null;
             return {
               id: b.booking_code || `#BKG-87${idx + 10}`,
               rawId: b.id ? String(b.id) : `87${idx + 10}`,
               type: "BKG",
               date: b.date || getTodayStr(),
               time: formatTimeOnly(b.time || "10:30 AM"),
-              customerName: b.fullName || "Guest",
+              customerName: customerNameVal,
               companyName: matchedCust ? matchedCust.company : "Zahid Travels",
               details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
-              vehicle: b.carType || "Sedan (Standard)",
-              phones: matchedCust && matchedCust.contact ? [matchedCust.contact.split(" ")[0]] : ["+966501234567"],
-              customerId: matchedCust ? (matchedCust.custom_id || matchedCust.id) : `1`
+              vehicle: b.car_type || b.carType || "Sedan (Standard)",
+              phones: b.whatsapp ? [b.whatsapp] : (matchedCust && matchedCust.contact ? [matchedCust.contact.split(" ")[0]] : ["+966501234567"]),
+              customerId: matchedCust ? (matchedCust.custom_id || matchedCust.id) : `1`,
+              driverName: b.driver ? b.driver.name : null,
+              driverPhone: b.driver ? b.driver.phone : null,
+              driverTripStatus: b.driver_trip_status || ""
             };
           }));
         }
@@ -122,7 +126,10 @@ export default function RemindersPage() {
               details: `${s.name} (${s.description || "Service Details"})`,
               vehicle: "N/A",
               phones: matchedCust && matchedCust.contact ? [matchedCust.contact.split(" ")[0]] : ["+966549876543"],
-              customerId: matchedCust ? (matchedCust.custom_id || matchedCust.id) : `3`
+              customerId: matchedCust ? (matchedCust.custom_id || matchedCust.id) : `3`,
+              driverName: null,
+              driverPhone: null,
+              driverTripStatus: ""
             };
           }));
         }
@@ -140,17 +147,17 @@ export default function RemindersPage() {
   const dbReminders = [...bookings, ...services];
   const allReminders = dbReminders.length > 0 ? dbReminders : [
     // Yesterday
-    { id: "#BKG-9710", rawId: "9710", type: "BKG", date: getYesterdayStr(), time: "09:15", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-9711", rawId: "9711", type: "SRV", date: getYesterdayStr(), time: "11:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Premium Umrah Visa Service", vehicle: "N/A", phones: ["+966549876543"], customerId: "3" },
+    { id: "#BKG-9710", rawId: "9710", type: "BKG", date: getYesterdayStr(), time: "09:15", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1", driverName: "Muhammad Ali", driverPhone: "+966555123456", driverTripStatus: "On The Way" },
+    { id: "#SRV-9711", rawId: "9711", type: "SRV", date: getYesterdayStr(), time: "11:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Premium Umrah Visa Service", vehicle: "N/A", phones: ["+966549876543"], customerId: "3", driverName: null, driverPhone: null, driverTripStatus: "" },
 
     // Today
-    { id: "#BKG-9843", rawId: "9843", type: "BKG", date: getTodayStr(), time: "10:30", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-001", rawId: "001", type: "SRV", date: getTodayStr(), time: "12:00", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Premium Umrah Visa Service (Juice, Cake & Lays)", vehicle: "N/A", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-002", rawId: "002", type: "SRV", date: getTodayStr(), time: "14:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Private Makkah Ziyarah Tour (Guided)", vehicle: "N/A", phones: ["+966549876543"], customerId: "3" },
+    { id: "#BKG-9843", rawId: "9843", type: "BKG", date: getTodayStr(), time: "10:30", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1", driverName: "Ahmed Khan", driverPhone: "+966555987654", driverTripStatus: "Reached At Location" },
+    { id: "#SRV-001", rawId: "001", type: "SRV", date: getTodayStr(), time: "12:00", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Premium Umrah Visa Service (Juice, Cake & Lays)", vehicle: "N/A", phones: ["+966501234567"], customerId: "1", driverName: null, driverPhone: null, driverTripStatus: "" },
+    { id: "#SRV-002", rawId: "002", type: "SRV", date: getTodayStr(), time: "14:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Private Makkah Ziyarah Tour (Guided)", vehicle: "N/A", phones: ["+966549876543"], customerId: "3", driverName: null, driverPhone: null, driverTripStatus: "" },
 
     // Tomorrow
-    { id: "#BKG-9845", rawId: "9845", type: "BKG", date: getTomorrowStr(), time: "08:00", customerName: "Imran Khan", companyName: "Zahid Travels", details: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-003", rawId: "003", type: "SRV", date: getTomorrowStr(), time: "09:30", customerName: "Amjad", companyName: "Zahid Travels", details: "VIP Makkah Meet & Greet (Fast-track)", vehicle: "N/A", phones: ["+923114567890"], customerId: "2" }
+    { id: "#BKG-9845", rawId: "9845", type: "BKG", date: getTomorrowStr(), time: "08:00", customerName: "Imran Khan", companyName: "Zahid Travels", details: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", phones: ["+966501234567"], customerId: "1", driverName: "Tariq Shah", driverPhone: "+966555456789", driverTripStatus: "Assigned" },
+    { id: "#SRV-003", rawId: "003", type: "SRV", date: getTomorrowStr(), time: "09:30", customerName: "Amjad", companyName: "Zahid Travels", details: "VIP Makkah Meet & Greet (Fast-track)", vehicle: "N/A", phones: ["+923114567890"], customerId: "2", driverName: null, driverPhone: null, driverTripStatus: "" }
   ];
 
   // Filtering operations based on active date
@@ -167,13 +174,27 @@ export default function RemindersPage() {
     );
   });
 
-  const handleCopyReminder = (row: any, buttonNo: number) => {
+  const getReminderMessageText = (row: any, buttonNo: number) => {
     let message = "";
     if (buttonNo === 1) { // Trip / Service Reminder
       if (row.type === "BKG") {
         const pickup = row.details.split("→")[0]?.trim() || "Airport";
         const dropoff = row.details.split("→")[1]?.trim() || "Hotel";
-        message = `🤝 *Reminder Confirmation* 🤝\n\nالسلام عليكم\n\nDear *${row.customerName}*,\n\n✅ We have your confirmed booking for a pickup from *${pickup}* to *${dropoff}* on *${row.date}* at *${row.time}*.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n\n⚠️ *You are requested to please let us know if there is any change in the plan by 3pm today, after that the schedule shall be considered confirmed.*\n📝 *Please acknowledge the pickup time. Thanks and regards*`;
+        const status = row.driverTripStatus || "";
+
+        if (status === "On The Way") {
+          message = `🤝 *Driver On The Way* 🤝\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n🚗 Your driver is now *On the Way* to pick you up.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n👤 Driver: *${row.driverName || "Assigned"}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n\nPlease be ready at the pickup location. Thanks and regards`;
+        } else if (status === "Reached At Location") {
+          message = `🤝 *Driver Arrived* 🤝\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n📍 Your driver has *Arrived* at your pickup location.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n👤 Driver: *${row.driverName || "Assigned"}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n\nPlease proceed to meet the driver. Thanks and regards`;
+        } else if (status === "Guest In Contact") {
+          message = `🤝 *Driver in Contact* 🤝\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n📞 Your driver is now *In Contact* with you for the pickup.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n👤 Driver: *${row.driverName || "Assigned"}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n\nThanks and regards`;
+        } else {
+          let driverInfo = "";
+          if (row.driverName) {
+            driverInfo = `👤 Driver: *${row.driverName}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n_________________________\n`;
+          }
+          message = `🤝 *Reminder Confirmation* 🤝\n\nالسلام عليكم\n\nDear Guest,\n\n✅ We have your confirmed booking for a pickup from *${pickup}* to *${dropoff}* on *${row.date}* at *${row.time}*.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n${driverInfo}⚠️ *You are requested to please let us know if there is any change in the plan by 3pm today, after that the schedule shall be considered confirmed.*\n📝 *Please acknowledge the pickup time. Thanks and regards*`;
+        }
       } else {
         message = `||| 📌 *Service Reminder* |||\n\nالسلام عليكم\n\nDear *${row.customerName}*,\n\n✅ We have your confirmed service: *${row.details}*\n📅 Date: *${row.date}*\n⏰ Time: *${row.time}*\n\nHope to serve you best!`;
       }
@@ -188,10 +209,24 @@ export default function RemindersPage() {
         message = `🤝 Dear Valuable Partner *${row.companyName}*\n\n👤 Regarding Client *${row.customerName}*\n🛠 Service *${row.details}*\n\n✅ Has Been *Successfully Completed.*`;
       }
     }
+    return message;
+  };
 
+  const handleCopyReminder = (row: any, buttonNo: number) => {
+    const message = getReminderMessageText(row, buttonNo);
     navigator.clipboard.writeText(message);
     setCopiedReminders(prev => ({ ...prev, [`${row.id}_${buttonNo}`]: true }));
     showToast(`Template ${buttonNo} copied to clipboard successfully!`, "success");
+  };
+
+  const handleSendWhatsApp = (row: any, buttonNo: number) => {
+    const message = getReminderMessageText(row, buttonNo);
+    const phone = row.phones && row.phones[0] ? row.phones[0] : "";
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    const encodedText = encodeURIComponent(message);
+    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, "_blank");
+    setCopiedReminders(prev => ({ ...prev, [`${row.id}_${buttonNo}`]: true }));
+    showToast(`WhatsApp tab opened for Template ${buttonNo}!`, "success");
   };
 
   const handleCopyPhone = (phone: string) => {
@@ -429,11 +464,35 @@ export default function RemindersPage() {
                     </td>
 
                     {/* Details specs */}
+                    {/* Details specs */}
                     <td>
-                      <span style={{ fontSize: "12px", color: "#475569", fontWeight: 500 }}>
-                        {row.details}
-                        {row.vehicle !== "N/A" && ` (${row.vehicle})`}
-                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "12px", color: "#475569", fontWeight: 500 }}>
+                          {row.details}
+                          {row.vehicle !== "N/A" && ` (${row.vehicle})`}
+                        </span>
+                        {row.driverName && (
+                          <div style={{ fontSize: "11px", color: "#4f46e5", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <i className="fas fa-id-card"></i> Driver: {row.driverName} {row.driverPhone ? `(${row.driverPhone})` : ""}
+                          </div>
+                        )}
+                        {row.driverTripStatus && (
+                          <div>
+                            <span style={{
+                              background: "#e0f2fe",
+                              color: "#0369a1",
+                              padding: "2px 8px",
+                              borderRadius: "10px",
+                              fontSize: "10px",
+                              fontWeight: "700",
+                              border: "1px solid #bae6fd",
+                              display: "inline-block"
+                            }}>
+                              Status: {row.driverTripStatus}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     {/* stacked phone numbers with individual copy */}
@@ -456,75 +515,138 @@ export default function RemindersPage() {
 
                     {/* Template Reminders 1-2-3 Actions Panel */}
                     <td>
-                      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                      <div style={{ display: "flex", gap: "12px", justifyContent: "center", alignItems: "center" }}>
                         {/* Button 1: Trip / Service Reminder (Green) */}
-                        <button 
-                          onClick={() => handleCopyReminder(row, 1)}
-                          title="Copy Trip / Service Reminder Message"
-                          style={{ 
-                            width: "34px", 
-                            height: "34px", 
-                            borderRadius: "50%", 
-                            border: "none", 
-                            background: "#10b981", 
-                            color: "#fff", 
-                            display: "flex", 
-                            alignItems: "center", 
-                            justifyContent: "center", 
-                            cursor: "pointer",
-                            boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)",
-                            opacity: copiedReminders[`${row.id}_1`] ? 0.45 : 1,
-                            transition: "opacity 0.2s"
-                          }}
-                        >
-                          <i className="fas fa-bell" style={{ fontSize: "13px" }}></i>
-                        </button>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                          <button 
+                            onClick={() => handleCopyReminder(row, 1)}
+                            title="Copy Trip / Service Reminder Message"
+                            style={{ 
+                              width: "34px", 
+                              height: "34px", 
+                              borderRadius: "50%", 
+                              border: "none", 
+                              background: "#10b981", 
+                              color: "#fff", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)",
+                              opacity: copiedReminders[`${row.id}_1`] ? 0.45 : 1,
+                              transition: "opacity 0.2s"
+                            }}
+                          >
+                            <i className="fas fa-bell" style={{ fontSize: "13px" }}></i>
+                          </button>
+                          <button 
+                            onClick={() => handleSendWhatsApp(row, 1)}
+                            title="Send Template 1 via WhatsApp"
+                            style={{ 
+                              width: "26px", 
+                              height: "26px", 
+                              borderRadius: "50%", 
+                              border: "none", 
+                              background: "#25d366", 
+                              color: "#fff", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              boxShadow: "0 1px 3px rgba(37, 211, 102, 0.3)",
+                            }}
+                          >
+                            <i className="fab fa-whatsapp" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        </div>
 
                         {/* Button 2: Night Notice Rules Reminder (Blue) */}
-                        <button 
-                          onClick={() => handleCopyReminder(row, 2)}
-                          title="Copy Night Notice / Rules Rules Message"
-                          style={{ 
-                            width: "34px", 
-                            height: "34px", 
-                            borderRadius: "50%", 
-                            border: "none", 
-                            background: "#3b82f6", 
-                            color: "#fff", 
-                            display: "flex", 
-                            alignItems: "center", 
-                            justifyContent: "center", 
-                            cursor: "pointer",
-                            boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
-                            opacity: copiedReminders[`${row.id}_2`] ? 0.45 : 1,
-                            transition: "opacity 0.2s"
-                          }}
-                        >
-                          <i className="fas fa-moon" style={{ fontSize: "13px" }}></i>
-                        </button>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                          <button 
+                            onClick={() => handleCopyReminder(row, 2)}
+                            title="Copy Night Notice / Rules Rules Message"
+                            style={{ 
+                              width: "34px", 
+                              height: "34px", 
+                              borderRadius: "50%", 
+                              border: "none", 
+                              background: "#3b82f6", 
+                              color: "#fff", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
+                              opacity: copiedReminders[`${row.id}_2`] ? 0.45 : 1,
+                              transition: "opacity 0.2s"
+                            }}
+                          >
+                            <i className="fas fa-moon" style={{ fontSize: "13px" }}></i>
+                          </button>
+                          <button 
+                            onClick={() => handleSendWhatsApp(row, 2)}
+                            title="Send Template 2 via WhatsApp"
+                            style={{ 
+                              width: "26px", 
+                              height: "26px", 
+                              borderRadius: "50%", 
+                              border: "none", 
+                              background: "#25d366", 
+                              color: "#fff", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              boxShadow: "0 1px 3px rgba(37, 211, 102, 0.3)",
+                            }}
+                          >
+                            <i className="fab fa-whatsapp" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        </div>
 
                         {/* Button 3: Dispatch Completion Alert (Teal) */}
-                        <button 
-                          onClick={() => handleCopyReminder(row, 3)}
-                          title="Copy Dispatch / Completion Confirmation Message"
-                          style={{ 
-                            width: "34px", 
-                            height: "34px", 
-                            borderRadius: "50%", 
-                            border: "none", 
-                            background: "#0d9488", 
-                            color: "#fff", 
-                            display: "flex", 
-                            alignItems: "center", 
-                            justifyContent: "center", 
-                            cursor: "pointer",
-                            boxShadow: "0 2px 4px rgba(13, 148, 136, 0.2)",
-                            opacity: copiedReminders[`${row.id}_3`] ? 0.45 : 1,
-                            transition: "opacity 0.2s"
-                          }}
-                        >
-                          <i className="fas fa-check" style={{ fontSize: "13px" }}></i>
-                        </button>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                          <button 
+                            onClick={() => handleCopyReminder(row, 3)}
+                            title="Copy Dispatch / Completion Confirmation Message"
+                            style={{ 
+                              width: "34px", 
+                              height: "34px", 
+                              borderRadius: "50%", 
+                              border: "none", 
+                              background: "#0d9488", 
+                              color: "#fff", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              boxShadow: "0 2px 4px rgba(13, 148, 136, 0.2)",
+                              opacity: copiedReminders[`${row.id}_3`] ? 0.45 : 1,
+                              transition: "opacity 0.2s"
+                            }}
+                          >
+                            <i className="fas fa-check" style={{ fontSize: "13px" }}></i>
+                          </button>
+                          <button 
+                            onClick={() => handleSendWhatsApp(row, 3)}
+                            title="Send Template 3 via WhatsApp"
+                            style={{ 
+                              width: "26px", 
+                              height: "26px", 
+                              borderRadius: "50%", 
+                              border: "none", 
+                              background: "#25d366", 
+                              color: "#fff", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              boxShadow: "0 1px 3px rgba(37, 211, 102, 0.3)",
+                            }}
+                          >
+                            <i className="fab fa-whatsapp" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>

@@ -22,6 +22,7 @@ interface TrainItem {
   };
   driver_id?: number | null;
   driver?: any;
+  driver_trip_status?: string | null;
 }
 
 export default function TrainsDirectory() {
@@ -61,6 +62,8 @@ export default function TrainsDirectory() {
   const [trnEndDate, setTrnEndDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [drivers, setDrivers] = useState<any[]>([]);
+  const [selectedShareTrain, setSelectedShareTrain] = useState<TrainItem | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     async function loadDrivers() {
@@ -88,7 +91,8 @@ export default function TrainsDirectory() {
         date: train.date,
         time: train.time,
         route: train.route,
-        status: (train as any).status || "Confirmed"
+        status: (train as any).status || "Confirmed",
+        driver_trip_status: (train as any).driver_trip_status || null
       };
 
       const res = await api.updateTrain(trainId, payload);
@@ -102,6 +106,39 @@ export default function TrainsDirectory() {
     } catch (err) {
       console.error(err);
       showToast("Error updating driver assignment.", "error");
+      setLoading(false);
+    }
+  };
+
+  const handleInlineDriverTripStatusChange = async (trainId: number, tripStatus: string) => {
+    try {
+      setLoading(true);
+      const train = trains.find(t => t.rawId === trainId);
+      if (!train) return;
+
+      const payload = {
+        customer_id: train.customer?.id,
+        driver_id: train.driver_id || null,
+        train_no: train.trainNo,
+        leg: train.leg,
+        date: train.date,
+        time: train.time,
+        route: train.route,
+        status: (train as any).status || "Confirmed",
+        driver_trip_status: tripStatus || null
+      };
+
+      const res = await api.updateTrain(trainId, payload);
+      if (res && res.success) {
+        showToast("Driver trip status updated successfully!", "success");
+        fetchTrainsList();
+      } else {
+        showToast(res?.error || "Failed to update driver trip status.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver trip status.", "error");
       setLoading(false);
     }
   };
@@ -305,6 +342,7 @@ export default function TrainsDirectory() {
             customer: t.customer,
             driver_id: t.driver_id,
             driver: t.driver,
+            driver_trip_status: t.driver_trip_status,
           }))
         );
         setTotalTrnCount(res.total || 0);
@@ -540,6 +578,7 @@ export default function TrainsDirectory() {
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left" }}>Date</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left" }}>Time</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left", width: "150px" }}>Driver</th>
+                <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left", width: "180px" }}>Driver Trip Status</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "center" }}>Action</th>
               </tr>
             </thead>
@@ -615,6 +654,60 @@ export default function TrainsDirectory() {
                           <option key={d.id} value={d.id}>{d.name}</option>
                         ))}
                       </select>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <select
+                          value={(t as any).driver_trip_status || ""}
+                          onChange={(e) => handleInlineDriverTripStatusChange(t.rawId, e.target.value)}
+                          style={{
+                            padding: "4px 8px",
+                            fontSize: "12px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            background: "#ffffff",
+                            width: "155px",
+                            color: (t as any).driver_trip_status ? "#1e293b" : "#94a3b8",
+                            fontWeight: (t as any).driver_trip_status ? "600" : "normal",
+                            outline: "none"
+                          }}
+                        >
+                          <option value="">Select Status</option>
+                          <option value="Assigned">Assigned</option>
+                          <option value="Guest In Contact">Guest In Contact</option>
+                          <option value="No Reply From Guest">No Reply From Guest</option>
+                          <option value="On The Way">On The Way</option>
+                          <option value="Reached At Location">Reached At Location</option>
+                          <option value="Pickup Done">Pickup Done</option>
+                          <option value="Ride End">Ride End</option>
+                          <option value="Ride Cancelled">Ride Cancelled</option>
+                          <option value="Ride Miss">Ride Miss</option>
+                          <option value="No Show">No Show</option>
+                          <option value="Driver Copy Shared">Driver Copy Shared</option>
+                        </select>
+                        <button
+                          onClick={() => {
+                            setSelectedShareTrain(t);
+                            setShowShareModal(true);
+                          }}
+                          style={{
+                            border: "none",
+                            background: "#e0f2fe",
+                            color: "#4f46e5",
+                            borderRadius: "50%",
+                            width: "24px",
+                            height: "24px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            fontSize: "12px"
+                          }}
+                          title="Share template messages"
+                        >
+                          <i className="fas fa-info-circle"></i>
+                        </button>
+                      </div>
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
                       <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>

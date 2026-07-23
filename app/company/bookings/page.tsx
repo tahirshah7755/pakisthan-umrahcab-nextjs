@@ -24,6 +24,7 @@ interface BookingRecord {
   status: string;
   driver_id?: number | null;
   driver?: any;
+  driver_trip_status?: string | null;
 }
 
 function CompanyBookingsContent() {
@@ -35,6 +36,8 @@ function CompanyBookingsContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [drivers, setDrivers] = useState<any[]>([]);
+  const [selectedShareBooking, setSelectedShareBooking] = useState<BookingRecord | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -321,6 +324,26 @@ function CompanyBookingsContent() {
     }
   };
 
+  const handleInlineDriverTripStatusChange = async (bookingId: string, tripStatus: string) => {
+    try {
+      setLoading(true);
+      const res = await api.updateBooking(bookingId, { 
+        driver_trip_status: tripStatus || null
+      });
+      if (res?.success) {
+        showToast("Driver trip status updated successfully!", "success");
+        loadBookings();
+      } else {
+        showToast(res?.error || "Failed to update driver trip status.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver trip status.", "error");
+      setLoading(false);
+    }
+  };
+
   const getStatusClass = (status: string) => {
     const s = (status || "").toLowerCase();
     if (s.includes("completed")) return "completed";
@@ -408,6 +431,7 @@ function CompanyBookingsContent() {
                   <th>Date & Time</th>
                   <th>Car Type</th>
                   <th>Driver</th>
+                  <th>Driver Trip Status</th>
                   <th>Price</th>
                   <th>Flight No</th>
                   <th>Status</th>
@@ -455,6 +479,60 @@ function CompanyBookingsContent() {
                             <option key={d.id} value={d.id}>{d.name}</option>
                           ))}
                         </select>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <select
+                            value={b.driver_trip_status || ""}
+                            onChange={(e) => handleInlineDriverTripStatusChange(b.id, e.target.value)}
+                            style={{
+                              padding: "4px 8px",
+                              fontSize: "12px",
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              background: "#ffffff",
+                              width: "155px",
+                              color: b.driver_trip_status ? "#1e293b" : "#94a3b8",
+                              fontWeight: b.driver_trip_status ? "600" : "normal",
+                              outline: "none"
+                            }}
+                          >
+                            <option value="">Select Status</option>
+                            <option value="Assigned">Assigned</option>
+                            <option value="Guest In Contact">Guest In Contact</option>
+                            <option value="No Reply From Guest">No Reply From Guest</option>
+                            <option value="On The Way">On The Way</option>
+                            <option value="Reached At Location">Reached At Location</option>
+                            <option value="Pickup Done">Pickup Done</option>
+                            <option value="Ride End">Ride End</option>
+                            <option value="Ride Cancelled">Ride Cancelled</option>
+                            <option value="Ride Miss">Ride Miss</option>
+                            <option value="No Show">No Show</option>
+                            <option value="Driver Copy Shared">Driver Copy Shared</option>
+                          </select>
+                          <button
+                            onClick={() => {
+                              setSelectedShareBooking(b);
+                              setShowShareModal(true);
+                            }}
+                            style={{
+                              border: "none",
+                              background: "#e0f2fe",
+                              color: "#2563eb",
+                              borderRadius: "50%",
+                              width: "24px",
+                              height: "24px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              fontSize: "12px"
+                            }}
+                            title="Share template messages"
+                          >
+                            <i className="fas fa-info-circle"></i>
+                          </button>
+                        </div>
                       </td>
                       <td style={{ fontWeight: 700, color: "#d97706" }}>SAR {parseFloat(b.car_price as any || 0).toFixed(2)}</td>
                       <td>{b.flight_no || "N/A"}</td>
@@ -576,6 +654,18 @@ function CompanyBookingsContent() {
           </div>
         </div>
       </div>
+
+      {showShareModal && selectedShareBooking && (
+        <ShareTemplateModal
+          booking={selectedShareBooking}
+          isOpen={showShareModal}
+          onClose={() => {
+            setShowShareModal(false);
+            setSelectedShareBooking(null);
+          }}
+        />
+      )}
+
       <style>{`
         @keyframes spin { 
           0% { transform: rotate(0deg); } 
@@ -609,7 +699,7 @@ function CompanyBookingsContent() {
             padding: 6px 10px !important;
             font-size: 11px !important;
           }
-          .mobile-search-box {
+          .mobile-toolbar.mobile-search-box {
             width: 100% !important;
             justify-content: space-between !important;
           }
@@ -619,6 +709,150 @@ function CompanyBookingsContent() {
           }
         }
       `}</style>
+    </div>
+  );
+}
+
+function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen: boolean; onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<"driver" | "agent" | "client">("driver");
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen || !booking) return null;
+
+  const getDriverCopy = (b: any) => {
+    return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.date} at ${b.time}\n*Pickup Location:* ${b.pickup}\n*Destination:* ${b.destination}\n*Vehicle:* ${b.car_type}\n*Flight No:* ${b.flight_no || "N/A"}\n*Notes:* ${b.notes || "N/A"}`;
+  };
+
+  const getAgentCopy = (b: any) => {
+    const dName = b.driver ? b.driver.name : "None";
+    const dPhone = b.driver ? b.driver.phone : "";
+    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Date & Time:* ${b.date} at ${b.time}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}`;
+  };
+
+  const getClientCopy = (b: any) => {
+    const dName = b.driver ? b.driver.name : "TBD";
+    const dPhone = b.driver ? b.driver.phone : "TBD";
+    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.full_name}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n*Vehicle:* ${b.car_type}\n\nThank you for choosing Umrah Cab!`;
+  };
+
+  const textMap = {
+    driver: getDriverCopy(booking),
+    agent: getAgentCopy(booking),
+    client: getClientCopy(booking),
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(textMap[activeTab]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSendWhatsApp = () => {
+    let phone = "";
+    if (activeTab === "driver") {
+      phone = booking.driver ? booking.driver.phone : "";
+    } else if (activeTab === "client") {
+      phone = booking.whatsapp || "";
+    }
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    const encodedText = encodeURIComponent(textMap[activeTab]);
+    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, "_blank");
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
+      <div style={{ background: "#ffffff", borderRadius: "16px", width: "500px", maxWidth: "90%", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>Share Booking / Trip Details</h3>
+          <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", fontSize: "20px", color: "#64748b" }}>&times;</button>
+        </div>
+        
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: "2px solid #f1f5f9", marginBottom: "16px", gap: "16px" }}>
+          {(["driver", "agent", "client"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: "8px 4px",
+                fontWeight: "600",
+                fontSize: "14px",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                borderBottom: activeTab === tab ? "2px solid #2563eb" : "2px solid transparent",
+                color: activeTab === tab ? "#2563eb" : "#64748b",
+                textTransform: "capitalize",
+                marginBottom: "-2px"
+              }}
+            >
+              {tab} Copy
+            </button>
+          ))}
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          readOnly
+          value={textMap[activeTab]}
+          style={{
+            width: "100%",
+            height: "180px",
+            padding: "12px",
+            fontFamily: "monospace",
+            fontSize: "13px",
+            lineHeight: "1.5",
+            borderRadius: "8px",
+            border: "1px solid #e2e8f0",
+            background: "#f8fafc",
+            color: "#334155",
+            resize: "none",
+            outline: "none"
+          }}
+        />
+
+        {/* Actions */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "20px" }}>
+          <button
+            onClick={handleCopy}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
+              background: "#ffffff",
+              color: "#334155",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <i className={copied ? "fas fa-check text-green-500" : "fas fa-copy"}></i>
+            {copied ? "Copied!" : "Copy"}
+          </button>
+          <button
+            onClick={handleSendWhatsApp}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "8px",
+              border: "none",
+              background: "#25d366",
+              color: "#ffffff",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <i className="fab fa-whatsapp"></i>
+            Send via WhatsApp
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

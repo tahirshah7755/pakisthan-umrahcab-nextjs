@@ -26,6 +26,8 @@ interface BookingItem {
   notes?: string;
   driverId?: number | null;
   driverName?: string | null;
+  driverPhone?: string | null;
+  driverTripStatus?: string;
 }
 
 export default function BookingsList() {
@@ -62,6 +64,8 @@ export default function BookingsList() {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedApproveBooking, setSelectedApproveBooking] = useState<BookingItem | null>(null);
   const [drivers, setDrivers] = useState<any[]>([]);
+  const [selectedShareBooking, setSelectedShareBooking] = useState<BookingItem | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -297,6 +301,8 @@ export default function BookingsList() {
             notes: b.notes || "",
             driverId: b.driver_id,
             driverName: b.driver ? b.driver.name : null,
+            driverPhone: b.driver ? b.driver.phone : null,
+            driverTripStatus: b.driver_trip_status || "",
           };
         });
         setBookings(mapped);
@@ -325,6 +331,26 @@ export default function BookingsList() {
     } catch (err) {
       console.error(err);
       showToast("Error updating driver assignment.", "error");
+      setLoading(false);
+    }
+  };
+
+  const handleInlineDriverTripStatusChange = async (bookingId: string, tripStatus: string) => {
+    try {
+      setLoading(true);
+      const res = await api.updateBooking(bookingId, { 
+        driver_trip_status: tripStatus || null
+      });
+      if (res?.success) {
+        showToast("Driver trip status updated successfully!", "success");
+        loadData();
+      } else {
+        showToast(res?.error || "Failed to update driver trip status.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver trip status.", "error");
       setLoading(false);
     }
   };
@@ -421,6 +447,7 @@ export default function BookingsList() {
                 <th>Route (From → To)</th>
                 <th>Vehicle</th>
                 <th>Driver</th>
+                <th>Driver Trip Status</th>
                 <th>Final Price</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -472,6 +499,60 @@ export default function BookingsList() {
                         <option key={d.id} value={d.id}>{d.name}</option>
                       ))}
                     </select>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <select
+                        value={b.driverTripStatus || ""}
+                        onChange={(e) => handleInlineDriverTripStatusChange(b.id, e.target.value)}
+                        style={{
+                          padding: "4px 8px",
+                          fontSize: "12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          background: "#ffffff",
+                          width: "155px",
+                          color: b.driverTripStatus ? "#1e293b" : "#94a3b8",
+                          fontWeight: b.driverTripStatus ? "600" : "normal",
+                          outline: "none"
+                        }}
+                      >
+                        <option value="">Select Status</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Guest In Contact">Guest In Contact</option>
+                        <option value="No Reply From Guest">No Reply From Guest</option>
+                        <option value="On The Way">On The Way</option>
+                        <option value="Reached At Location">Reached At Location</option>
+                        <option value="Pickup Done">Pickup Done</option>
+                        <option value="Ride End">Ride End</option>
+                        <option value="Ride Cancelled">Ride Cancelled</option>
+                        <option value="Ride Miss">Ride Miss</option>
+                        <option value="No Show">No Show</option>
+                        <option value="Driver Copy Shared">Driver Copy Shared</option>
+                      </select>
+                      <button
+                        onClick={() => {
+                          setSelectedShareBooking(b);
+                          setShowShareModal(true);
+                        }}
+                        style={{
+                          border: "none",
+                          background: "#e0f2fe",
+                          color: "#2563eb",
+                          borderRadius: "50%",
+                          width: "24px",
+                          height: "24px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          fontSize: "12px"
+                        }}
+                        title="Share template messages"
+                      >
+                        <i className="fas fa-info-circle"></i>
+                      </button>
+                    </div>
                   </td>
                   <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
                     SR {b.finalPrice.toFixed(2)}
@@ -937,12 +1018,163 @@ export default function BookingsList() {
         </div>
       )}
 
+      {showShareModal && selectedShareBooking && (
+        <ShareTemplateModal
+          booking={selectedShareBooking}
+          isOpen={showShareModal}
+          onClose={() => {
+            setShowShareModal(false);
+            setSelectedShareBooking(null);
+          }}
+        />
+      )}
+
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
       `}</style>
+    </div>
+  );
+}
+
+function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen: boolean; onClose: () => void }) {
+  const [activeTab, setActiveTab] = useState<"driver" | "agent" | "client">("driver");
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen || !booking) return null;
+
+  const getDriverCopy = (b: any) => {
+    return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.id}\n*Guest Name:* ${b.customerName}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.pickupDate} at ${b.pickupTime}\n*Pickup Location:* ${b.pickupLocation}\n*Destination:* ${b.dropoffLocation}\n*Vehicle:* ${b.vehicle}\n*Flight No:* ${b.flightNo || "N/A"}\n*Notes:* ${b.notes || "N/A"}`;
+  };
+
+  const getAgentCopy = (b: any) => {
+    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.id}\n*Guest Name:* ${b.customerName}\n*Date & Time:* ${b.pickupDate} at ${b.pickupTime}\n*Driver Assigned:* ${b.driverName || "None"} ${b.driverPhone ? `(${b.driverPhone})` : ""}\n*Trip Status:* ${b.driverTripStatus || "Not Set"}`;
+  };
+
+  const getClientCopy = (b: any) => {
+    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.customerName}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driverTripStatus || "Assigned"}\n*Driver Name:* ${b.driverName || "TBD"}\n*Driver Phone:* ${b.driverPhone || "TBD"}\n*Vehicle:* ${b.vehicle}\n\nThank you for choosing Umrah Cab!`;
+  };
+
+  const textMap = {
+    driver: getDriverCopy(booking),
+    agent: getAgentCopy(booking),
+    client: getClientCopy(booking),
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(textMap[activeTab]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSendWhatsApp = () => {
+    let phone = "";
+    if (activeTab === "driver") {
+      phone = booking.driverPhone || "";
+    } else if (activeTab === "client") {
+      phone = booking.whatsapp || "";
+    }
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    const encodedText = encodeURIComponent(textMap[activeTab]);
+    window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, "_blank");
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
+      <div style={{ background: "#ffffff", borderRadius: "16px", width: "500px", maxWidth: "90%", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>Share Booking / Trip Details</h3>
+          <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", fontSize: "20px", color: "#64748b" }}>&times;</button>
+        </div>
+        
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: "2px solid #f1f5f9", marginBottom: "16px", gap: "16px" }}>
+          {(["driver", "agent", "client"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: "8px 4px",
+                fontWeight: "600",
+                fontSize: "14px",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                borderBottom: activeTab === tab ? "2px solid #2563eb" : "2px solid transparent",
+                color: activeTab === tab ? "#2563eb" : "#64748b",
+                textTransform: "capitalize",
+                marginBottom: "-2px"
+              }}
+            >
+              {tab} Copy
+            </button>
+          ))}
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          readOnly
+          value={textMap[activeTab]}
+          style={{
+            width: "100%",
+            height: "180px",
+            padding: "12px",
+            fontFamily: "monospace",
+            fontSize: "13px",
+            lineHeight: "1.5",
+            borderRadius: "8px",
+            border: "1px solid #e2e8f0",
+            background: "#f8fafc",
+            color: "#334155",
+            resize: "none",
+            outline: "none"
+          }}
+        />
+
+        {/* Actions */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "20px" }}>
+          <button
+            onClick={handleCopy}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
+              background: "#ffffff",
+              color: "#334155",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <i className={copied ? "fas fa-check text-green-500" : "fas fa-copy"}></i>
+            {copied ? "Copied!" : "Copy"}
+          </button>
+          <button
+            onClick={handleSendWhatsApp}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "8px",
+              border: "none",
+              background: "#25d366",
+              color: "#ffffff",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <i className="fab fa-whatsapp"></i>
+            Send via WhatsApp
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

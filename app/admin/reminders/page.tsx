@@ -3,9 +3,57 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { formatTimeOnly } from "@/utils/formatters";
 
 export default function RemindersPage() {
   const router = useRouter();
+
+  const getYesterdayStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const getTomorrowStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const getFormattedLabel = (dateStr: string) => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    if (dateStr === getYesterdayStr()) {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return `Yesterday (${d.getDate()} ${monthNames[d.getMonth()]})`;
+    }
+    if (dateStr === getTodayStr()) {
+      const d = new Date();
+      return `Today (${d.getDate()} ${monthNames[d.getMonth()]})`;
+    }
+    if (dateStr === getTomorrowStr()) {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      return `Tomorrow (${d.getDate()} ${monthNames[d.getMonth()]})`;
+    }
+    try {
+      const parts = dateStr.split("-");
+      if (parts.length === 3) {
+        const year = parts[0];
+        const monthIdx = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        if (!isNaN(day) && monthIdx >= 0 && monthIdx < 12) {
+          return `${day} ${monthNames[monthIdx]}, ${year}`;
+        }
+      }
+    } catch {}
+    return dateStr;
+  };
 
   // State hooks
   const [reminderDate, setReminderDate] = useState("2026-05-25");
@@ -30,6 +78,8 @@ export default function RemindersPage() {
   };
 
   useEffect(() => {
+    setReminderDate(getTodayStr());
+
     const loadRemindersData = async () => {
       try {
         setLoading(true);
@@ -46,8 +96,8 @@ export default function RemindersPage() {
               id: b.booking_code || `#BKG-87${idx + 10}`,
               rawId: b.id ? String(b.id) : `87${idx + 10}`,
               type: "BKG",
-              date: b.date || "2026-05-25",
-              time: b.time || "10:30 AM",
+              date: b.date || getTodayStr(),
+              time: formatTimeOnly(b.time || "10:30 AM"),
               customerName: b.fullName || "Guest",
               companyName: matchedCust ? matchedCust.company : "Zahid Travels",
               details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
@@ -65,8 +115,8 @@ export default function RemindersPage() {
               id: s.custom_id || `#SRV-${s.id}`,
               rawId: s.id ? String(s.id) : `00${idx + 1}`,
               type: "SRV",
-              date: s.date || "2026-05-25",
-              time: s.time || "12:00 AM",
+              date: s.date || getTodayStr(),
+              time: formatTimeOnly(s.time || "12:00 AM"),
               customerName: matchedCust ? matchedCust.name : "Zubair Ahmad",
               companyName: matchedCust ? matchedCust.company : "Zahid Travels",
               details: `${s.name} (${s.description || "Service Details"})`,
@@ -89,18 +139,18 @@ export default function RemindersPage() {
   // Dynamically load active reminders, falling back to beautiful defaults if no records are found
   const dbReminders = [...bookings, ...services];
   const allReminders = dbReminders.length > 0 ? dbReminders : [
-    // Yesterday (2026-05-24)
-    { id: "#BKG-9710", rawId: "9710", type: "BKG", date: "2026-05-24", time: "09:15 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-9711", rawId: "9711", type: "SRV", date: "2026-05-24", time: "11:00 AM", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Premium Umrah Visa Service", vehicle: "N/A", phones: ["+966549876543"], customerId: "3" },
+    // Yesterday
+    { id: "#BKG-9710", rawId: "9710", type: "BKG", date: getYesterdayStr(), time: "09:15", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1" },
+    { id: "#SRV-9711", rawId: "9711", type: "SRV", date: getYesterdayStr(), time: "11:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Premium Umrah Visa Service", vehicle: "N/A", phones: ["+966549876543"], customerId: "3" },
 
-    // Today (2026-05-25)
-    { id: "#BKG-9843", rawId: "9843", type: "BKG", date: "2026-05-25", time: "10:30 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-001", rawId: "001", type: "SRV", date: "2026-05-25", time: "12:00 AM", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Premium Umrah Visa Service (Juice, Cake & Lays)", vehicle: "N/A", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-002", rawId: "002", type: "SRV", date: "2026-05-25", time: "02:00 PM", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Private Makkah Ziyarah Tour (Guided)", vehicle: "N/A", phones: ["+966549876543"], customerId: "3" },
+    // Today
+    { id: "#BKG-9843", rawId: "9843", type: "BKG", date: getTodayStr(), time: "10:30", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1" },
+    { id: "#SRV-001", rawId: "001", type: "SRV", date: getTodayStr(), time: "12:00", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Premium Umrah Visa Service (Juice, Cake & Lays)", vehicle: "N/A", phones: ["+966501234567"], customerId: "1" },
+    { id: "#SRV-002", rawId: "002", type: "SRV", date: getTodayStr(), time: "14:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Private Makkah Ziyarah Tour (Guided)", vehicle: "N/A", phones: ["+966549876543"], customerId: "3" },
 
-    // Tomorrow (2026-05-26)
-    { id: "#BKG-9845", rawId: "9845", type: "BKG", date: "2026-05-26", time: "08:00 AM", customerName: "Imran Khan", companyName: "Zahid Travels", details: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", phones: ["+966501234567"], customerId: "1" },
-    { id: "#SRV-003", rawId: "003", type: "SRV", date: "2026-05-26", time: "09:30 AM", customerName: "Amjad", companyName: "Zahid Travels", details: "VIP Makkah Meet & Greet (Fast-track)", vehicle: "N/A", phones: ["+923114567890"], customerId: "2" }
+    // Tomorrow
+    { id: "#BKG-9845", rawId: "9845", type: "BKG", date: getTomorrowStr(), time: "08:00", customerName: "Imran Khan", companyName: "Zahid Travels", details: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", phones: ["+966501234567"], customerId: "1" },
+    { id: "#SRV-003", rawId: "003", type: "SRV", date: getTomorrowStr(), time: "09:30", customerName: "Amjad", companyName: "Zahid Travels", details: "VIP Makkah Meet & Greet (Fast-track)", vehicle: "N/A", phones: ["+923114567890"], customerId: "2" }
   ];
 
   // Filtering operations based on active date
@@ -189,7 +239,7 @@ export default function RemindersPage() {
         {/* Dynamic Date pill */}
         <div style={{ background: "#eff6ff", color: "#7c3aed", fontWeight: 700, padding: "8px 16px", borderRadius: "20px", fontSize: "13px" }}>
           <i className="fas fa-calendar-alt" style={{ marginRight: "6px" }}></i>
-          {reminderDate === "2026-05-24" ? "Yesterday (24 May)" : reminderDate === "2026-05-25" ? "Today (25 May)" : reminderDate === "2026-05-26" ? "Tomorrow (26 May)" : reminderDate}
+          {getFormattedLabel(reminderDate)}
         </div>
       </div>
 
@@ -210,10 +260,10 @@ export default function RemindersPage() {
         {/* Shortcut Pills */}
         <div style={{ display: "flex", gap: "8px" }}>
           <button 
-            onClick={() => setReminderDate("2026-05-24")}
+            onClick={() => setReminderDate(getYesterdayStr())}
             style={{ 
-              background: reminderDate === "2026-05-24" ? "#7c3aed" : "#f1f5f9", 
-              color: reminderDate === "2026-05-24" ? "#ffffff" : "#475569", 
+              background: reminderDate === getYesterdayStr() ? "#7c3aed" : "#f1f5f9", 
+              color: reminderDate === getYesterdayStr() ? "#ffffff" : "#475569", 
               padding: "8px 18px", 
               borderRadius: "20px", 
               border: "none", 
@@ -226,10 +276,10 @@ export default function RemindersPage() {
             Yesterday
           </button>
           <button 
-            onClick={() => setReminderDate("2026-05-25")}
+            onClick={() => setReminderDate(getTodayStr())}
             style={{ 
-              background: reminderDate === "2026-05-25" ? "#7c3aed" : "#f1f5f9", 
-              color: reminderDate === "2026-05-25" ? "#ffffff" : "#475569", 
+              background: reminderDate === getTodayStr() ? "#7c3aed" : "#f1f5f9", 
+              color: reminderDate === getTodayStr() ? "#ffffff" : "#475569", 
               padding: "8px 18px", 
               borderRadius: "20px", 
               border: "none", 
@@ -242,10 +292,10 @@ export default function RemindersPage() {
             Today
           </button>
           <button 
-            onClick={() => setReminderDate("2026-05-26")}
+            onClick={() => setReminderDate(getTomorrowStr())}
             style={{ 
-              background: reminderDate === "2026-05-26" ? "#7c3aed" : "#f1f5f9", 
-              color: reminderDate === "2026-05-26" ? "#ffffff" : "#475569", 
+              background: reminderDate === getTomorrowStr() ? "#7c3aed" : "#f1f5f9", 
+              color: reminderDate === getTomorrowStr() ? "#ffffff" : "#475569", 
               padding: "8px 18px", 
               borderRadius: "20px", 
               border: "none", 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { api } from "@/utils/api";
+import { formatTimeTo24h } from "@/utils/formatters";
 
 interface Driver {
   id: number;
@@ -127,7 +128,8 @@ export default function NotificationBell() {
   // Helper to format date nicely
   const formatDateTime = (dateStr: string, timeStr: string) => {
     try {
-      const bookingDate = new Date(`${dateStr}T${timeStr}`);
+      const cleanTime = formatTimeTo24h(timeStr) || timeStr;
+      const bookingDate = new Date(`${dateStr}T${cleanTime}`);
       if (isNaN(bookingDate.getTime())) {
         return `${dateStr} ${timeStr}`;
       }

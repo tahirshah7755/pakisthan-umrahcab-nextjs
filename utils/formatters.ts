@@ -121,27 +121,23 @@ export const formatDateTime = (
 
     let hh = "";
     let mm = "";
-    let merid = "";
 
     if (timeStr) {
-      const parts = parseTimeTo12hParts(timeStr);
-      if (parts.hour && parts.minute) {
-        hh = parts.hour;
-        mm = parts.minute;
-        merid = parts.merid;
+      const formatted24h = formatTimeTo24h(timeStr);
+      if (formatted24h) {
+        const parts = formatted24h.split(":");
+        hh = parts[0] ? parts[0].padStart(2, "0") : "";
+        mm = parts[1] ? parts[1].padStart(2, "0") : "";
       }
     } else if (hasTimeVal) {
-      let hours = d.getHours();
+      const hours = d.getHours();
       const minutes = d.getMinutes();
-      merid = hours >= 12 ? "PM" : "AM";
-      hours = hours % 12;
-      if (hours === 0) hours = 12;
       hh = String(hours).padStart(2, "0");
       mm = String(minutes).padStart(2, "0");
     }
 
-    if (hh && mm && merid) {
-      return `${dayStr} ${monthName}, ${year} ${hh}:${mm} ${merid}`;
+    if (hh && mm) {
+      return `${dayStr} ${monthName}, ${year} ${hh}:${mm}`;
     }
     return `${dayStr} ${monthName}, ${year}`;
   } catch {
@@ -194,9 +190,9 @@ export const formatDateOnly = (dateInput: string | Date | null | undefined): str
  */
 export const formatTimeOnly = (timeStr: string | null | undefined): string => {
   if (!timeStr) return "N/A";
-  const { hour, minute, merid } = parseTimeTo12hParts(timeStr);
-  if (hour && minute) {
-    return `${hour}:${minute} ${merid}`;
+  const formatted24h = formatTimeTo24h(timeStr);
+  if (formatted24h) {
+    return formatted24h;
   }
   return String(timeStr);
 };

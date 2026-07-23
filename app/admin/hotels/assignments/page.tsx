@@ -16,6 +16,8 @@ interface AssignmentItem {
   check_out?: string;
   created_at?: string;
   updated_at?: string;
+  driver_id?: number | null;
+  driver?: any;
 }
 
 export default function HotelAssignmentsList() {
@@ -23,6 +25,51 @@ export default function HotelAssignmentsList() {
   const [assignments, setAssignments] = useState<AssignmentItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [drivers, setDrivers] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadDrivers() {
+      try {
+        const res = await api.getDrivers();
+        if (Array.isArray(res)) setDrivers(res);
+      } catch (err) {
+        console.warn("Could not load drivers in hotel assignments", err);
+      }
+    }
+    loadDrivers();
+  }, []);
+
+  const handleInlineDriverChange = async (assignmentId: number, driverId: string) => {
+    try {
+      setLoading(true);
+      const assignment = assignments.find(h => h.id === assignmentId);
+      if (!assignment) return;
+
+      const payload = {
+        customer_id: assignment.customer_id,
+        driver_id: driverId ? parseInt(driverId) : null,
+        name: assignment.name,
+        city: assignment.city,
+        active: assignment.active,
+        check_in: assignment.check_in,
+        check_out: assignment.check_out,
+        type: "assignment"
+      };
+
+      const res = await api.updateHotel(assignmentId, payload);
+      if (res && res.success) {
+        showToast("Driver assignment updated successfully!", "success");
+        fetchAssignments();
+      } else {
+        showToast(res?.error || "Failed to update driver assignment.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver assignment.", "error");
+      setLoading(false);
+    }
+  };
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -161,6 +208,7 @@ export default function HotelAssignmentsList() {
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "130px" }}>City / Area</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "120px" }}>Check-In</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "120px" }}>Check-Out</th>
+                <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "150px" }}>Driver</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "100px" }}>Status</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "120px", textAlign: "center" }}>Action</th>
               </tr>
@@ -168,13 +216,13 @@ export default function HotelAssignmentsList() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
                     <i className="fas fa-spinner fa-spin" style={{ marginRight: "8px" }}></i> Loading stays...
                   </td>
                 </tr>
               ) : assignments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
                     No customer hotel stays assigned.
                   </td>
                 </tr>
@@ -213,6 +261,28 @@ export default function HotelAssignmentsList() {
                     </td>
                     <td>
                       <div style={{ fontWeight: 600, color: "#475569" }}>{h.check_out || "—"}</div>
+                    </td>
+                    <td>
+                      <select
+                        value={h.driver_id || ""}
+                        onChange={(e) => handleInlineDriverChange(h.id, e.target.value)}
+                        style={{
+                          padding: "4px 8px",
+                          fontSize: "12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          background: "#ffffff",
+                          width: "140px",
+                          color: h.driver_id ? "#1e293b" : "#94a3b8",
+                          fontWeight: h.driver_id ? "600" : "normal",
+                          outline: "none"
+                        }}
+                      >
+                        <option value="">-- No Driver --</option>
+                        {drivers.map((d: any) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
                     </td>
                     <td>
                       {h.active === 1 ? (

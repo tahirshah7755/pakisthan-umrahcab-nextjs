@@ -694,7 +694,9 @@ export const api = {
 
   // === DRIVERS MANAGEMENT (ADMIN SIDE) ===
   async getDrivers() {
-    const data = await request(`/admin/drivers`);
+    const isCompany = typeof window !== "undefined" && window.location.pathname.startsWith("/company");
+    const prefix = isCompany ? "/company-panel" : "/admin";
+    const data = await request(`${prefix}/drivers`);
     return data || [];
   },
 

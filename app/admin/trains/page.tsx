@@ -20,6 +20,8 @@ interface TrainItem {
     name: string;
     company: string;
   };
+  driver_id?: number | null;
+  driver?: any;
 }
 
 export default function TrainsDirectory() {
@@ -58,6 +60,51 @@ export default function TrainsDirectory() {
   const [trnStartDate, setTrnStartDate] = useState("");
   const [trnEndDate, setTrnEndDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [drivers, setDrivers] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadDrivers() {
+      try {
+        const res = await api.getDrivers();
+        if (Array.isArray(res)) setDrivers(res);
+      } catch (err) {
+        console.warn("Could not load drivers in trains list", err);
+      }
+    }
+    loadDrivers();
+  }, []);
+
+  const handleInlineDriverChange = async (trainId: number, driverId: string) => {
+    try {
+      setLoading(true);
+      const train = trains.find(t => t.rawId === trainId);
+      if (!train) return;
+
+      const payload = {
+        customer_id: train.customer?.id,
+        driver_id: driverId ? parseInt(driverId) : null,
+        train_no: train.trainNo,
+        leg: train.leg,
+        date: train.date,
+        time: train.time,
+        route: train.route,
+        status: (train as any).status || "Confirmed"
+      };
+
+      const res = await api.updateTrain(trainId, payload);
+      if (res && res.success) {
+        showToast("Driver assignment updated successfully!", "success");
+        fetchTrainsList();
+      } else {
+        showToast(res?.error || "Failed to update driver assignment.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver assignment.", "error");
+      setLoading(false);
+    }
+  };
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -256,6 +303,8 @@ export default function TrainsDirectory() {
             date: t.date,
             time: t.time ? t.time.substring(0, 5) : "",
             customer: t.customer,
+            driver_id: t.driver_id,
+            driver: t.driver,
           }))
         );
         setTotalTrnCount(res.total || 0);
@@ -490,19 +539,20 @@ export default function TrainsDirectory() {
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left" }}>Station / City</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left" }}>Date</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left" }}>Time</th>
+                <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "left", width: "150px" }}>Driver</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", padding: "12px 16px", textAlign: "center" }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
                     <i className="fas fa-spinner fa-spin" style={{ marginRight: "8px" }}></i> Loading train records...
                   </td>
                 </tr>
               ) : trains.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontWeight: "500" }}>
+                  <td colSpan={9} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontWeight: "500" }}>
                     No train records found matching criteria.
                   </td>
                 </tr>
@@ -543,6 +593,28 @@ export default function TrainsDirectory() {
                     </td>
                     <td style={{ padding: "12px 16px", color: "#334155" }}>
                       {t.time ? formatTime12h(t.time) : "N/A"}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <select
+                        value={t.driver_id || ""}
+                        onChange={(e) => handleInlineDriverChange(t.rawId, e.target.value)}
+                        style={{
+                          padding: "4px 8px",
+                          fontSize: "12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          background: "#ffffff",
+                          width: "140px",
+                          color: t.driver_id ? "#1e293b" : "#94a3b8",
+                          fontWeight: t.driver_id ? "600" : "normal",
+                          outline: "none"
+                        }}
+                      >
+                        <option value="">-- No Driver --</option>
+                        {drivers.map((d: any) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
                       <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>

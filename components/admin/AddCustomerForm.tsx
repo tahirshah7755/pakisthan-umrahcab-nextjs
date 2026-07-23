@@ -87,6 +87,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [agentBalance, setAgentBalance] = useState<number | null>(null);
 
+
   // Step 1 States: Customer Setup
   const [custCompany, setCustCompany] = useState("");
   const [custName, setCustName] = useState("");
@@ -913,6 +914,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           payment_method: route.paymentMethod || "Credit",
           received_amount: route.paymentMethod === "Cash" ? (Number(route.receivedAmount) || 0) : null,
           pending_amount: route.paymentMethod === "Cash" ? (Number(route.pendingAmount) || 0) : null,
+          driver_id: null,
         };
 
         const bookingRes = await api.createBooking(bookingData);
@@ -933,7 +935,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
             date: fltArrDate || todayStr,
             time: fltArrTime || "12:00",
             route: fltArrPlace,
-            status: "On Time"
+            status: "On Time",
+            driver_id: null,
           };
           await api.createFlight(flightData);
         }
@@ -945,7 +948,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
             date: fltDepDate || todayStr,
             time: fltDepTime || "12:00",
             route: fltDepPlace,
-            status: "On Time"
+            status: "On Time",
+            driver_id: null,
           };
           await api.createFlight(flightData);
         }
@@ -961,7 +965,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
             date: trnArrDate || todayStr,
             time: trnArrTime || "12:00",
             route: trnArrStation,
-            status: "Scheduled"
+            status: "Scheduled",
+            driver_id: null,
           };
           await api.createTrain(trainData);
         }
@@ -973,7 +978,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
             date: trnDepDate || todayStr,
             time: trnDepTime || "12:00",
             route: trnDepStation,
-            status: "Scheduled"
+            status: "Scheduled",
+            driver_id: null,
           };
           await api.createTrain(trainData);
         }
@@ -987,7 +993,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           city: hotelCity,
           active: 1,
           check_in: hotelCheckin || null,
-          check_out: hotelCheckout || null
+          check_out: hotelCheckout || null,
+          driver_id: null,
         };
         await api.createHotel(hotelData);
       }
@@ -1529,6 +1536,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           )}
                         </div>
 
+
+
                         {/* Adults */}
                         <div>
                           <label className="form-label">Adults</label>
@@ -1867,7 +1876,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         showPickupSuggestions: false,
                         showDropoffSuggestions: false,
                         externalPickupLocations: [],
-                        externalDropoffLocations: []
+                        externalDropoffLocations: [],
+                        driverId: ""
                       }
                     ]);
                   }}
@@ -2004,6 +2014,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltArrTime}</span>
                             )}
                           </div>
+
                         </div>
                       </div>
                     )}
@@ -2054,6 +2065,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltDepTime}</span>
                             )}
                           </div>
+
                         </div>
                       </div>
                     )}
@@ -2177,6 +2189,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnArrTime}</span>
                             )}
                           </div>
+
                         </div>
                       </div>
                     )}
@@ -2227,6 +2240,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnDepTime}</span>
                             )}
                           </div>
+
                         </div>
                       </div>
                     )}
@@ -2312,6 +2326,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.hotelCheckout}</span>
                       )}
                     </div>
+
+
                   </div>
                 )}
 

@@ -22,6 +22,8 @@ interface BookingRecord {
   flight_no: string;
   notes: string;
   status: string;
+  driver_id?: number | null;
+  driver?: any;
 }
 
 function CompanyBookingsContent() {
@@ -32,6 +34,7 @@ function CompanyBookingsContent() {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [drivers, setDrivers] = useState<any[]>([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -285,6 +288,39 @@ function CompanyBookingsContent() {
     loadBookings();
   }, [debouncedSearch, filter, currentPage, perPage]);
 
+  useEffect(() => {
+    async function loadDrivers() {
+      try {
+        const res = await api.getDrivers();
+        if (Array.isArray(res)) setDrivers(res);
+      } catch (err) {
+        console.warn("Could not load drivers in company bookings list", err);
+      }
+    }
+    loadDrivers();
+  }, []);
+
+  const handleInlineDriverChange = async (bookingId: string, driverId: string) => {
+    try {
+      setLoading(true);
+      const res = await api.updateBooking(bookingId, { 
+        driver_id: driverId ? parseInt(driverId) : null,
+        status: driverId ? "Active Dispatch" : "Confirmed Booking"
+      });
+      if (res?.success) {
+        showToast("Driver assignment updated successfully!", "success");
+        loadBookings();
+      } else {
+        showToast(res?.error || "Failed to update driver assignment.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver assignment.", "error");
+      setLoading(false);
+    }
+  };
+
   const getStatusClass = (status: string) => {
     const s = (status || "").toLowerCase();
     if (s.includes("completed")) return "completed";
@@ -371,6 +407,7 @@ function CompanyBookingsContent() {
                   <th>Trip Details</th>
                   <th>Date & Time</th>
                   <th>Car Type</th>
+                  <th>Driver</th>
                   <th>Price</th>
                   <th>Flight No</th>
                   <th>Status</th>
@@ -380,7 +417,7 @@ function CompanyBookingsContent() {
               <tbody>
                 {bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={9} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No bookings found.</td>
+                    <td colSpan={10} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No bookings found.</td>
                   </tr>
                 ) : (
                   bookings.map((b) => (
@@ -397,6 +434,28 @@ function CompanyBookingsContent() {
                         </div>
                       </td>
                       <td>{b.car_type}</td>
+                      <td>
+                        <select
+                          value={b.driver_id || ""}
+                          onChange={(e) => handleInlineDriverChange(b.id, e.target.value)}
+                          style={{
+                            padding: "4px 8px",
+                            fontSize: "12px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            background: "#ffffff",
+                            width: "140px",
+                            color: b.driver_id ? "#1e293b" : "#94a3b8",
+                            fontWeight: b.driver_id ? "600" : "normal",
+                            outline: "none"
+                          }}
+                        >
+                          <option value="">-- No Driver --</option>
+                          {drivers.map((d: any) => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                          ))}
+                        </select>
+                      </td>
                       <td style={{ fontWeight: 700, color: "#d97706" }}>SAR {parseFloat(b.car_price as any || 0).toFixed(2)}</td>
                       <td>{b.flight_no || "N/A"}</td>
                       <td>

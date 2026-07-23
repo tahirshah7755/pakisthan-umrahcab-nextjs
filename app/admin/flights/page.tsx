@@ -22,6 +22,9 @@ interface FlightItem {
     company: string;
     contact: string;
   };
+  driver_id?: number | null;
+  driver?: any;
+  status?: string;
 }
 
 export default function FlightsDirectory() {
@@ -59,6 +62,51 @@ export default function FlightsDirectory() {
   const [fltStartDate, setFltStartDate] = useState("");
   const [fltEndDate, setFltEndDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [drivers, setDrivers] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadDrivers() {
+      try {
+        const res = await api.getDrivers();
+        if (Array.isArray(res)) setDrivers(res);
+      } catch (err) {
+        console.warn("Could not load drivers in flights list", err);
+      }
+    }
+    loadDrivers();
+  }, []);
+
+  const handleInlineDriverChange = async (flightId: string | number, driverId: string) => {
+    try {
+      setLoading(true);
+      const flight = flights.find(f => String(f.id) === String(flightId));
+      if (!flight) return;
+
+      const payload = {
+        customer_id: flight.customer?.id || (flight as any).customer_id,
+        driver_id: driverId ? parseInt(driverId) : null,
+        flight_no: (flight as any).flight_no || flight.flightNo,
+        leg: flight.leg,
+        date: flight.date,
+        time: flight.time,
+        route: flight.route,
+        status: flight.status || "On Time"
+      };
+
+      const res = await api.updateFlight(flightId, payload);
+      if (res && res.success) {
+        showToast("Driver assignment updated successfully!", "success");
+        fetchFlightsList();
+      } else {
+        showToast(res?.error || "Failed to update driver assignment.", "error");
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error updating driver assignment.", "error");
+      setLoading(false);
+    }
+  };
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -495,6 +543,7 @@ export default function FlightsDirectory() {
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Port / City</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Date</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569" }}>Time</th>
+                <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "150px" }}>Driver</th>
                 <th style={{ textTransform: "uppercase", fontSize: "11px", fontWeight: "700", color: "#475569", width: "120px", textAlign: "center" }}>Action</th>
               </tr>
             </thead>
@@ -573,6 +622,28 @@ export default function FlightsDirectory() {
                     <td style={{ color: "#475569", fontSize: "13px" }}>{f.route}</td>
                     <td style={{ color: "#0f172a", fontSize: "13px", fontWeight: "500" }}>{formatDateString(f.date)}</td>
                     <td style={{ color: "#0f172a", fontSize: "13px", fontWeight: "500" }}>{formatTimeString(f.time)}</td>
+                    <td>
+                      <select
+                        value={(f as any).driver_id || ""}
+                        onChange={(e) => handleInlineDriverChange(f.id, e.target.value)}
+                        style={{
+                          padding: "4px 8px",
+                          fontSize: "12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          background: "#ffffff",
+                          width: "140px",
+                          color: (f as any).driver_id ? "#1e293b" : "#94a3b8",
+                          fontWeight: (f as any).driver_id ? "600" : "normal",
+                          outline: "none"
+                        }}
+                      >
+                        <option value="">-- No Driver --</option>
+                        {drivers.map((d: any) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </td>
                     <td>
                       <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                         <button

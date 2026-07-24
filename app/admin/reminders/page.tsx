@@ -89,10 +89,37 @@ export default function RemindersPage() {
           api.getCustomers()
         ]);
 
+        let rawBookings = [];
         if (bkList) {
-          setBookings(bkList.map((b: any, idx: number) => {
+          if (Array.isArray(bkList)) {
+            rawBookings = bkList;
+          } else if (bkList.data && Array.isArray(bkList.data)) {
+            rawBookings = bkList.data;
+          }
+        }
+
+        let rawServices = [];
+        if (srvList) {
+          if (Array.isArray(srvList)) {
+            rawServices = srvList;
+          } else if (srvList.data && Array.isArray(srvList.data)) {
+            rawServices = srvList.data;
+          }
+        }
+
+        let rawCustomers = [];
+        if (custList) {
+          if (Array.isArray(custList)) {
+            rawCustomers = custList;
+          } else if (custList.data && Array.isArray(custList.data)) {
+            rawCustomers = custList.data;
+          }
+        }
+
+        if (rawBookings.length > 0) {
+          setBookings(rawBookings.map((b: any, idx: number) => {
             const customerNameVal = b.full_name || b.fullName || "Guest";
-            const matchedCust = custList ? custList.find((c: any) => c.name === customerNameVal) : null;
+            const matchedCust = rawCustomers.find((c: any) => c.name === customerNameVal) || null;
             return {
               id: b.booking_code || `#BKG-87${idx + 10}`,
               rawId: b.id ? String(b.id) : `87${idx + 10}`,
@@ -112,9 +139,9 @@ export default function RemindersPage() {
           }));
         }
 
-        if (srvList) {
-          setServices(srvList.map((s: any, idx: number) => {
-            const matchedCust = custList ? custList.find((c: any) => c.company === "Zahid Travels" || c.company === "Al-Latif Group") : null;
+        if (rawServices.length > 0) {
+          setServices(rawServices.map((s: any, idx: number) => {
+            const matchedCust = rawCustomers.find((c: any) => c.company === "Zahid Travels" || c.company === "Al-Latif Group") || null;
             return {
               id: s.custom_id || `#SRV-${s.id}`,
               rawId: s.id ? String(s.id) : `00${idx + 1}`,

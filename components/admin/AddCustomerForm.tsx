@@ -1342,6 +1342,31 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
                       {/* Form Grid */}
                       <div className="form-grid">
+                        {/* Package */}
+                        <div className="form-group-full">
+                          <label className="form-label">Package *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-box-archive form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <select
+                              className="form-input form-select"
+                              value={route.tripPackage}
+                              onChange={(e) => updateRouteField(index, "tripPackage", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_tripPackage`] ? "#ef4444" : undefined }}
+                            >
+                              <option value="">Choose package...</option>
+                              {packagesList.map((p, i) => (
+                                <option key={i} value={p}>
+                                  {p}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          {errors[`route_${index}_tripPackage`] && (
+                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_tripPackage`]}</span>
+                          )}
+                        </div>
+
                         {/* Pickup Date */}
                         <div>
                           <label className="form-label">Pick up Date *</label>
@@ -1626,31 +1651,6 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           {errors[`route_${index}_vehicle`] && (
                             <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_vehicle`]}</span>
-                          )}
-                        </div>
-
-                        {/* Package */}
-                        <div className="form-group-full">
-                          <label className="form-label">Package *</label>
-                          <div className="form-input-wrapper" style={{ position: "relative" }}>
-                            <i className="fas fa-box-archive form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
-                            <select
-                              className="form-input form-select"
-                              value={route.tripPackage}
-                              onChange={(e) => updateRouteField(index, "tripPackage", e.target.value)}
-                              required
-                              style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_tripPackage`] ? "#ef4444" : undefined }}
-                            >
-                              <option value="">Choose package...</option>
-                              {packagesList.map((p, i) => (
-                                <option key={i} value={p}>
-                                  {p}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          {errors[`route_${index}_tripPackage`] && (
-                            <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors[`route_${index}_tripPackage`]}</span>
                           )}
                         </div>
 

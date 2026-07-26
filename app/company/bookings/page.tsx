@@ -25,6 +25,9 @@ interface BookingRecord {
   driver_id?: number | null;
   driver?: any;
   driver_trip_status?: string | null;
+  payment_method?: string;
+  received_amount?: number | string | null;
+  pending_amount?: number | string | null;
 }
 
 function CompanyBookingsContent() {
@@ -534,7 +537,24 @@ function CompanyBookingsContent() {
                           </button>
                         </div>
                       </td>
-                      <td style={{ fontWeight: 700, color: "#d97706" }}>SAR {parseFloat(b.car_price as any || 0).toFixed(2)}</td>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontWeight: 700, color: "#d97706" }}>
+                            SAR {parseFloat(b.car_price as any || 0).toFixed(2)}
+                          </span>
+                          {b.payment_method && (
+                            <span style={{ fontSize: "11px", color: b.payment_method === "Cash" ? "#d97706" : "#2563eb", fontWeight: "600", marginTop: "2px" }}>
+                              <i className={b.payment_method === "Cash" ? "fas fa-money-bill-wave" : "fas fa-credit-card"} style={{ marginRight: "3px" }}></i>
+                              {b.payment_method}
+                              {b.payment_method === "Cash" && b.pending_amount !== undefined && b.pending_amount !== null && (
+                                <span style={{ display: "block", fontSize: "10px", color: "#ef4444" }}>
+                                  Pending: SAR {parseFloat(b.pending_amount as any || 0).toFixed(2)}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td>{b.flight_no || "N/A"}</td>
                       <td>
                         <span className={`status-pill ${getStatusClass(b.status)}`}>{b.status}</span>
@@ -720,19 +740,35 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
   if (!isOpen || !booking) return null;
 
   const getDriverCopy = (b: any) => {
-    return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.date} at ${b.time}\n*Pickup Location:* ${b.pickup}\n*Destination:* ${b.destination}\n*Vehicle:* ${b.car_type}\n*Flight No:* ${b.flight_no || "N/A"}\n*Notes:* ${b.notes || "N/A"}`;
+    let paymentStr = "";
+    if (b.payment_method === "Cash") {
+      paymentStr = `\n*Payment Method:* Cash\n*Cash to Collect (Pending):* SR ${parseFloat(b.pending_amount as any || 0).toFixed(2)}\n*Amount Received:* SR ${parseFloat(b.received_amount as any || 0).toFixed(2)}`;
+    } else {
+      paymentStr = `\n*Payment Method:* Credit (Paid)`;
+    }
+    return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.date} at ${b.time}\n*Pickup Location:* ${b.pickup}\n*Destination:* ${b.destination}\n*Vehicle:* ${b.car_type}\n*Flight No:* ${b.flight_no || "N/A"}${paymentStr}\n*Notes:* ${b.notes || "N/A"}`;
   };
 
   const getAgentCopy = (b: any) => {
+    let paymentStr = "";
+    if (b.payment_method === "Cash") {
+      paymentStr = `\n*Payment Info:* Cash (Received: SR ${parseFloat(b.received_amount as any || 0).toFixed(2)}, Pending: SR ${parseFloat(b.pending_amount as any || 0).toFixed(2)})`;
+    } else {
+      paymentStr = `\n*Payment Info:* Credit`;
+    }
     const dName = b.driver ? b.driver.name : "None";
     const dPhone = b.driver ? b.driver.phone : "";
-    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Date & Time:* ${b.date} at ${b.time}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}`;
+    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Date & Time:* ${b.date} at ${b.time}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}${paymentStr}`;
   };
 
   const getClientCopy = (b: any) => {
+    let paymentStr = "";
+    if (b.payment_method === "Cash") {
+      paymentStr = `\n*Pending Cash to Pay:* SR ${parseFloat(b.pending_amount as any || 0).toFixed(2)}`;
+    }
     const dName = b.driver ? b.driver.name : "TBD";
     const dPhone = b.driver ? b.driver.phone : "TBD";
-    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.full_name}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n*Vehicle:* ${b.car_type}\n\nThank you for choosing Umrah Cab!`;
+    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.full_name}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n*Vehicle:* ${b.car_type}${paymentStr}\n\nThank you for choosing Umrah Cab!`;
   };
 
   const textMap = {

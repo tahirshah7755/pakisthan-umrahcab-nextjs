@@ -28,6 +28,9 @@ interface BookingItem {
   driverName?: string | null;
   driverPhone?: string | null;
   driverTripStatus?: string;
+  paymentMethod?: string;
+  receivedAmount?: number | null;
+  pendingAmount?: number | null;
 }
 
 export default function BookingsList() {
@@ -303,6 +306,9 @@ export default function BookingsList() {
             driverName: b.driver ? b.driver.name : null,
             driverPhone: b.driver ? b.driver.phone : null,
             driverTripStatus: b.driver_trip_status || "",
+            paymentMethod: b.payment_method || "",
+            receivedAmount: b.received_amount !== null && b.received_amount !== undefined ? parseFloat(b.received_amount) : null,
+            pendingAmount: b.pending_amount !== null && b.pending_amount !== undefined ? parseFloat(b.pending_amount) : null,
           };
         });
         setBookings(mapped);
@@ -554,8 +560,23 @@ export default function BookingsList() {
                       </button>
                     </div>
                   </td>
-                  <td style={{ fontWeight: 700, color: "var(--success-color)" }}>
-                    SR {b.finalPrice.toFixed(2)}
+                  <td>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontWeight: 700, color: "var(--success-color)" }}>
+                        SR {b.finalPrice.toFixed(2)}
+                      </span>
+                      {b.paymentMethod && (
+                        <span style={{ fontSize: "11px", color: b.paymentMethod === "Cash" ? "#d97706" : "#2563eb", fontWeight: "600", marginTop: "2px" }}>
+                          <i className={b.paymentMethod === "Cash" ? "fas fa-money-bill-wave" : "fas fa-credit-card"} style={{ marginRight: "3px" }}></i>
+                          {b.paymentMethod}
+                          {b.paymentMethod === "Cash" && b.pendingAmount !== undefined && b.pendingAmount !== null && (
+                            <span style={{ display: "block", fontSize: "10px", color: "#ef4444" }}>
+                              Pending: SR {b.pendingAmount.toFixed(2)}
+                            </span>
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span
@@ -1050,15 +1071,31 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
   const [phone, setPhone] = useState("");
 
   const getDriverCopy = (b: any) => {
-    return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.id}\n*Guest Name:* ${b.customerName}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.pickupDate} at ${b.pickupTime}\n*Pickup Location:* ${b.pickupLocation}\n*Destination:* ${b.dropoffLocation}\n*Vehicle:* ${b.vehicle}\n*Flight No:* ${b.flightNo || "N/A"}\n*Notes:* ${b.notes || "N/A"}`;
+    let paymentStr = "";
+    if (b.paymentMethod === "Cash") {
+      paymentStr = `\n*Payment Method:* Cash\n*Cash to Collect (Pending):* SR ${(b.pendingAmount || 0).toFixed(2)}\n*Amount Received:* SR ${(b.receivedAmount || 0).toFixed(2)}`;
+    } else {
+      paymentStr = `\n*Payment Method:* Credit (Paid)`;
+    }
+    return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.id}\n*Guest Name:* ${b.customerName}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.pickupDate} at ${b.pickupTime}\n*Pickup Location:* ${b.pickupLocation}\n*Destination:* ${b.dropoffLocation}\n*Vehicle:* ${b.vehicle}\n*Flight No:* ${b.flightNo || "N/A"}${paymentStr}\n*Notes:* ${b.notes || "N/A"}`;
   };
 
   const getAgentCopy = (b: any) => {
-    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.id}\n*Guest Name:* ${b.customerName}\n*Date & Time:* ${b.pickupDate} at ${b.pickupTime}\n*Driver Assigned:* ${b.driverName || "None"} ${b.driverPhone ? `(${b.driverPhone})` : ""}\n*Trip Status:* ${b.driverTripStatus || "Not Set"}`;
+    let paymentStr = "";
+    if (b.paymentMethod === "Cash") {
+      paymentStr = `\n*Payment Info:* Cash (Received: SR ${(b.receivedAmount || 0).toFixed(2)}, Pending: SR ${(b.pendingAmount || 0).toFixed(2)})`;
+    } else {
+      paymentStr = `\n*Payment Info:* Credit`;
+    }
+    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.id}\n*Guest Name:* ${b.customerName}\n*Date & Time:* ${b.pickupDate} at ${b.pickupTime}\n*Driver Assigned:* ${b.driverName || "None"} ${b.driverPhone ? `(${b.driverPhone})` : ""}\n*Trip Status:* ${b.driverTripStatus || "Not Set"}${paymentStr}`;
   };
 
   const getClientCopy = (b: any) => {
-    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.customerName}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driverTripStatus || "Assigned"}\n*Driver Name:* ${b.driverName || "TBD"}\n*Driver Phone:* ${b.driverPhone || "TBD"}\n*Vehicle:* ${b.vehicle}\n\nThank you for choosing Umrah Cab!`;
+    let paymentStr = "";
+    if (b.paymentMethod === "Cash") {
+      paymentStr = `\n*Pending Cash to Pay:* SR ${(b.pendingAmount || 0).toFixed(2)}`;
+    }
+    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.customerName}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driverTripStatus || "Assigned"}\n*Driver Name:* ${b.driverName || "TBD"}\n*Driver Phone:* ${b.driverPhone || "TBD"}\n*Vehicle:* ${b.vehicle}${paymentStr}\n\nThank you for choosing Umrah Cab!`;
   };
 
   useEffect(() => {

@@ -146,6 +146,24 @@ export const api = {
     return data || [];
   },
 
+  async getRemindersList(date: string) {
+    const data = await request(`/bookings/reminders-list?date=${encodeURIComponent(date)}`);
+    return data || [];
+  },
+
+  async markReminderSent(id: string | number, type: string, templateId: number) {
+    const data = await request(`/bookings/reminders-list/mark-sent`, {
+      method: "POST",
+      body: JSON.stringify({ id, type, template_id: templateId }),
+    });
+    return data;
+  },
+
+  async getReminderHistory(id: string | number, type: string) {
+    const data = await request(`/bookings/reminders-list/${id}/history?type=${encodeURIComponent(type)}`);
+    return data;
+  },
+
   // Customers
   async getCustomers(search?: string, company?: string, page?: number, perPage?: number) {
     const q = new URLSearchParams();

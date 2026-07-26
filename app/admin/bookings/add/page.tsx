@@ -517,36 +517,38 @@ function AddNewBookingContent() {
     const whatsappContact = selectedCustomerObj?.phone || selectedCustomerObj?.secondary_phone || selectedCustomerObj?.alternative_phone || "+966567799616";
     const customerEmail = selectedCustomerObj?.email || "";
 
-    // Call Laravel Backend API
-    const res = await api.createBooking({
-      customer_id: selectedCustomerObj ? selectedCustomerObj.id : null,
-      pickup: pickupLocation,
-      destination: dropoffLocation,
-      date: pickupDate,
-      time: formatTimeTo24h(pickupTime),
-      passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
-      car_type: vehicle,
-      car_price: finalBookingPrice,
-      full_name: fullName,
-      email: customerEmail,
-      whatsapp: whatsappContact,
-      flight_no: "",
-      notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`,
-      payment_method: paymentMethod,
-      received_amount: paymentMethod === "Cash" ? (parseFloat(receivedAmount) || 0) : null,
-      pending_amount: paymentMethod === "Cash" ? (parseFloat(pendingAmount) || 0) : null,
-    });
+    try {
+      // Call Laravel Backend API
+      const res = await api.createBooking({
+        customer_id: selectedCustomerObj ? selectedCustomerObj.id : null,
+        pickup: pickupLocation,
+        destination: dropoffLocation,
+        date: pickupDate,
+        time: formatTimeTo24h(pickupTime),
+        passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
+        car_type: vehicle,
+        car_price: finalBookingPrice,
+        full_name: fullName,
+        email: customerEmail,
+        whatsapp: whatsappContact,
+        flight_no: "",
+        notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`,
+        payment_method: paymentMethod,
+        received_amount: paymentMethod === "Cash" ? (parseFloat(receivedAmount) || 0) : null,
+        pending_amount: paymentMethod === "Cash" ? (parseFloat(pendingAmount) || 0) : null,
+      });
 
-    if (res?.success) {
-      showToast("Booking registered successfully!", "success");
-      setTimeout(() => {
-        router.push(prefilledCustomerId ? `/admin/customers/view?id=${prefilledCustomerId}` : "/admin/bookings");
-      }, 1500);
-    } else {
-      showToast("Saved with fallback.", "success");
-      setTimeout(() => {
-        router.push(prefilledCustomerId ? `/admin/customers/view?id=${prefilledCustomerId}` : "/admin/bookings");
-      }, 1500);
+      if (res?.success) {
+        showToast("Booking registered successfully!", "success");
+        setTimeout(() => {
+          router.push(prefilledCustomerId ? `/admin/customers/view?id=${prefilledCustomerId}` : "/admin/bookings");
+        }, 1500);
+      } else {
+        showToast(res?.error || "Failed to register booking.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("An unexpected error occurred while saving the booking.", "error");
     }
   };
 

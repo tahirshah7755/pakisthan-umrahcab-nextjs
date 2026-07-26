@@ -56,14 +56,17 @@ export default function RemindersPage() {
   };
 
   // State hooks
-  const [reminderDate, setReminderDate] = useState("2026-05-25");
+  const [reminderDate, setReminderDate] = useState("");
   const [reminderSearch, setReminderSearch] = useState("");
   const [reminderLimit, setReminderLimit] = useState(100);
   const [copiedReminders, setCopiedReminders] = useState<Record<string, boolean>>({});
 
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
+  const [reminders, setReminders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // History logs modal states
+  const [historyModal, setHistoryModal] = useState<{ show: boolean; row: any; logs: any[] }>({ show: false, row: null, logs: [] });
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Toast notification
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -77,114 +80,97 @@ export default function RemindersPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleOpenHistory = async (row: any) => {
+    setHistoryModal({ show: true, row, logs: [] });
+    
+    // Fallback logic for mock entries
+    if (row.rawId === "9710" || row.rawId === "9711" || row.rawId === "9843" || row.rawId === "001" || row.rawId === "002" || row.rawId === "9845" || row.rawId === "003") {
+      setHistoryModal({
+        show: true,
+        row,
+        logs: [
+          {
+            id: 1,
+            reminder_type: 1,
+            recipient: row.phones[0] || "+966501234567",
+            driver_name: row.driverName || "N/A",
+            driver_trip_status: row.driverTripStatus || "Assigned",
+            created_at: new Date().toISOString()
+          }
+        ]
+      });
+      return;
+    }
+
+    try {
+      setLoadingHistory(true);
+      const res = await api.getReminderHistory(row.rawId, row.type);
+      let logsList = [];
+      if (Array.isArray(res)) {
+        logsList = res;
+      } else if (res && Array.isArray(res.data)) {
+        logsList = res.data;
+      } else if (res && res.success && Array.isArray(res.data)) {
+        logsList = res.data;
+      }
+      setHistoryModal({ show: true, row, logs: logsList });
+    } catch (err) {
+      console.error("Failed to load reminder log history", err);
+      showToast("Failed to retrieve reminder logs.", "error");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
     setReminderDate(getTodayStr());
+  }, []);
+
+  useEffect(() => {
+    if (!reminderDate) return;
 
     const loadRemindersData = async () => {
       try {
         setLoading(true);
-        const [bkList, srvList, custList] = await Promise.all([
-          api.getBookings(),
-          api.getServices(),
-          api.getCustomers()
-        ]);
-
-        let rawBookings = [];
-        if (bkList) {
-          if (Array.isArray(bkList)) {
-            rawBookings = bkList;
-          } else if (bkList.data && Array.isArray(bkList.data)) {
-            rawBookings = bkList.data;
+        const res = await api.getRemindersList(reminderDate);
+        if (res) {
+          let rawList = [];
+          if (Array.isArray(res)) {
+            rawList = res;
+          } else if (res.data && Array.isArray(res.data)) {
+            rawList = res.data;
           }
-        }
-
-        let rawServices = [];
-        if (srvList) {
-          if (Array.isArray(srvList)) {
-            rawServices = srvList;
-          } else if (srvList.data && Array.isArray(srvList.data)) {
-            rawServices = srvList.data;
-          }
-        }
-
-        let rawCustomers = [];
-        if (custList) {
-          if (Array.isArray(custList)) {
-            rawCustomers = custList;
-          } else if (custList.data && Array.isArray(custList.data)) {
-            rawCustomers = custList.data;
-          }
-        }
-
-        if (rawBookings.length > 0) {
-          setBookings(rawBookings.map((b: any, idx: number) => {
-            const customerNameVal = b.full_name || b.fullName || "Guest";
-            const matchedCust = rawCustomers.find((c: any) => c.name === customerNameVal) || null;
-            return {
-              id: b.booking_code || `#BKG-87${idx + 10}`,
-              rawId: b.id ? String(b.id) : `87${idx + 10}`,
-              type: "BKG",
-              date: b.date || getTodayStr(),
-              time: formatTimeOnly(b.time || "10:30 AM"),
-              customerName: customerNameVal,
-              companyName: matchedCust ? matchedCust.company : "Zahid Travels",
-              details: `${b.pickup || "Jeddah Airport"} → ${b.destination || "Makkah Hotel"}`,
-              vehicle: b.car_type || b.carType || "Sedan (Standard)",
-              phones: b.whatsapp ? [b.whatsapp] : (matchedCust && matchedCust.contact ? [matchedCust.contact.split(" ")[0]] : ["+966501234567"]),
-              customerId: matchedCust ? (matchedCust.custom_id || matchedCust.id) : `1`,
-              driverName: b.driver ? b.driver.name : null,
-              driverPhone: b.driver ? b.driver.phone : null,
-              driverTripStatus: b.driver_trip_status || ""
-            };
-          }));
-        }
-
-        if (rawServices.length > 0) {
-          setServices(rawServices.map((s: any, idx: number) => {
-            const matchedCust = rawCustomers.find((c: any) => c.company === "Zahid Travels" || c.company === "Al-Latif Group") || null;
-            return {
-              id: s.custom_id || `#SRV-${s.id}`,
-              rawId: s.id ? String(s.id) : `00${idx + 1}`,
-              type: "SRV",
-              date: s.date || getTodayStr(),
-              time: formatTimeOnly(s.time || "12:00 AM"),
-              customerName: matchedCust ? matchedCust.name : "Zubair Ahmad",
-              companyName: matchedCust ? matchedCust.company : "Zahid Travels",
-              details: `${s.name} (${s.description || "Service Details"})`,
-              vehicle: "N/A",
-              phones: matchedCust && matchedCust.contact ? [matchedCust.contact.split(" ")[0]] : ["+966549876543"],
-              customerId: matchedCust ? (matchedCust.custom_id || matchedCust.id) : `3`,
-              driverName: null,
-              driverPhone: null,
-              driverTripStatus: ""
-            };
-          }));
+          setReminders(rawList.map((item: any) => ({
+            ...item,
+            time: formatTimeOnly(item.time || "10:30 AM")
+          })));
+        } else {
+          setReminders([]);
         }
       } catch (err) {
         console.error("Failed to load reminders backend data", err);
-        showToast("Failed to fetch reminders datasets.", "error");
+        showToast("Failed to fetch reminders dataset.", "error");
       } finally {
         setLoading(false);
       }
     };
     loadRemindersData();
-  }, []);
+  }, [reminderDate]);
 
-  // Dynamically load active reminders, falling back to beautiful defaults if no records are found
-  const dbReminders = [...bookings, ...services];
-  const allReminders = dbReminders.length > 0 ? dbReminders : [
+  // Dynamically load active reminders, falling back to beautiful defaults if no records are found in database
+  const allReminders = reminders.length > 0 ? reminders : [
     // Yesterday
-    { id: "#BKG-9710", rawId: "9710", type: "BKG", date: getYesterdayStr(), time: "09:15", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1", driverName: "Muhammad Ali", driverPhone: "+966555123456", driverTripStatus: "On The Way" },
-    { id: "#SRV-9711", rawId: "9711", type: "SRV", date: getYesterdayStr(), time: "11:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Premium Umrah Visa Service", vehicle: "N/A", phones: ["+966549876543"], customerId: "3", driverName: null, driverPhone: null, driverTripStatus: "" },
+    { id: "#BKG-9710", rawId: "9710", type: "BKG", date: getYesterdayStr(), time: "09:15", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1", driverName: "Muhammad Ali", driverPhone: "+966555123456", driverTripStatus: "On The Way", reminder1_sent: false, reminder2_sent: false, reminder3_sent: false },
+    { id: "#SRV-9711", rawId: "9711", type: "SRV", date: getYesterdayStr(), time: "11:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Premium Umrah Visa Service", vehicle: "N/A", phones: ["+966549876543"], customerId: "3", driverName: null, driverPhone: null, driverTripStatus: "", reminder1_sent: false, reminder2_sent: false, reminder3_sent: false },
 
     // Today
-    { id: "#BKG-9843", rawId: "9843", type: "BKG", date: getTodayStr(), time: "10:30", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1", driverName: "Ahmed Khan", driverPhone: "+966555987654", driverTripStatus: "Reached At Location" },
-    { id: "#SRV-001", rawId: "001", type: "SRV", date: getTodayStr(), time: "12:00", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Premium Umrah Visa Service (Juice, Cake & Lays)", vehicle: "N/A", phones: ["+966501234567"], customerId: "1", driverName: null, driverPhone: null, driverTripStatus: "" },
-    { id: "#SRV-002", rawId: "002", type: "SRV", date: getTodayStr(), time: "14:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Private Makkah Ziyarah Tour (Guided)", vehicle: "N/A", phones: ["+966549876543"], customerId: "3", driverName: null, driverPhone: null, driverTripStatus: "" },
+    { id: "#BKG-9843", rawId: "9843", type: "BKG", date: getTodayStr(), time: "10:30", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Jeddah Airport → Makkah Hotel", vehicle: "Sedan (Standard)", phones: ["+966501234567"], customerId: "1", driverName: "Ahmed Khan", driverPhone: "+966555987654", driverTripStatus: "Reached At Location", reminder1_sent: false, reminder2_sent: false, reminder3_sent: false },
+    { id: "#SRV-001", rawId: "001", type: "SRV", date: getTodayStr(), time: "12:00", customerName: "Zubair Ahmad", companyName: "Zahid Travels", details: "Premium Umrah Visa Service (Juice, Cake & Lays)", vehicle: "N/A", phones: ["+966501234567"], customerId: "1", driverName: null, driverPhone: null, driverTripStatus: "", reminder1_sent: false, reminder2_sent: false, reminder3_sent: false },
+    { id: "#SRV-002", rawId: "002", type: "SRV", date: getTodayStr(), time: "14:00", customerName: "Abu Bakar", companyName: "Al-Latif Group", details: "Private Makkah Ziyarah Tour (Guided)", vehicle: "N/A", phones: ["+966549876543"], customerId: "3", driverName: null, driverPhone: null, driverTripStatus: "", reminder1_sent: false, reminder2_sent: false, reminder3_sent: false },
 
     // Tomorrow
-    { id: "#BKG-9845", rawId: "9845", type: "BKG", date: getTomorrowStr(), time: "08:00", customerName: "Imran Khan", companyName: "Zahid Travels", details: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", phones: ["+966501234567"], customerId: "1", driverName: "Tariq Shah", driverPhone: "+966555456789", driverTripStatus: "Assigned" },
-    { id: "#SRV-003", rawId: "003", type: "SRV", date: getTomorrowStr(), time: "09:30", customerName: "Amjad", companyName: "Zahid Travels", details: "VIP Makkah Meet & Greet (Fast-track)", vehicle: "N/A", phones: ["+923114567890"], customerId: "2", driverName: null, driverPhone: null, driverTripStatus: "" }
+    { id: "#BKG-9845", rawId: "9845", type: "BKG", date: getTomorrowStr(), time: "08:00", customerName: "Imran Khan", companyName: "Zahid Travels", details: "Jeddah Airport → Madinah Hotel", vehicle: "Hyundai Staria", phones: ["+966501234567"], customerId: "1", driverName: "Tariq Shah", driverPhone: "+966555456789", driverTripStatus: "Assigned", reminder1_sent: false, reminder2_sent: false, reminder3_sent: false },
+    { id: "#SRV-003", rawId: "003", type: "SRV", date: getTomorrowStr(), time: "09:30", customerName: "Amjad", companyName: "Zahid Travels", details: "VIP Makkah Meet & Greet (Fast-track)", vehicle: "N/A", phones: ["+923114567890"], customerId: "2", driverName: null, driverPhone: null, driverTripStatus: "", reminder1_sent: false, reminder2_sent: false, reminder3_sent: false }
   ];
 
   // Filtering operations based on active date
@@ -239,11 +225,29 @@ export default function RemindersPage() {
     return message;
   };
 
+  const markReminderAsSent = async (row: any, buttonNo: number) => {
+    try {
+      await api.markReminderSent(row.rawId, row.type, buttonNo);
+      setReminders(prev => prev.map(r => {
+        if (r.rawId === row.rawId && r.type === row.type) {
+          return {
+            ...r,
+            [`reminder${buttonNo}_sent`]: true
+          };
+        }
+        return r;
+      }));
+    } catch (err) {
+      console.warn("Failed to mark reminder as sent in DB", err);
+    }
+  };
+
   const handleCopyReminder = (row: any, buttonNo: number) => {
     const message = getReminderMessageText(row, buttonNo);
     navigator.clipboard.writeText(message);
     setCopiedReminders(prev => ({ ...prev, [`${row.id}_${buttonNo}`]: true }));
     showToast(`Template ${buttonNo} copied to clipboard successfully!`, "success");
+    markReminderAsSent(row, buttonNo);
   };
 
   const handleSendWhatsApp = (row: any, buttonNo: number) => {
@@ -254,6 +258,7 @@ export default function RemindersPage() {
     window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, "_blank");
     setCopiedReminders(prev => ({ ...prev, [`${row.id}_${buttonNo}`]: true }));
     showToast(`WhatsApp tab opened for Template ${buttonNo}!`, "success");
+    markReminderAsSent(row, buttonNo);
   };
 
   const handleCopyPhone = (phone: string) => {
@@ -547,24 +552,28 @@ export default function RemindersPage() {
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                           <button 
                             onClick={() => handleCopyReminder(row, 1)}
-                            title="Copy Trip / Service Reminder Message"
+                            title={row.reminder1_sent ? "Reminder Sent (Click to copy again)" : "Copy Trip / Service Reminder Message"}
                             style={{ 
                               width: "34px", 
                               height: "34px", 
                               borderRadius: "50%", 
                               border: "none", 
-                              background: "#10b981", 
+                              background: row.reminder1_sent ? "#059669" : "#10b981", 
                               color: "#fff", 
                               display: "flex", 
                               alignItems: "center", 
                               justifyContent: "center", 
                               cursor: "pointer",
                               boxShadow: "0 2px 4px rgba(16, 185, 129, 0.2)",
-                              opacity: copiedReminders[`${row.id}_1`] ? 0.45 : 1,
+                              opacity: (copiedReminders[`${row.id}_1`] || row.reminder1_sent) ? 0.65 : 1,
                               transition: "opacity 0.2s"
                             }}
                           >
-                            <i className="fas fa-bell" style={{ fontSize: "13px" }}></i>
+                            {row.reminder1_sent ? (
+                              <i className="fas fa-check-double" style={{ fontSize: "12px" }}></i>
+                            ) : (
+                              <i className="fas fa-bell" style={{ fontSize: "13px" }}></i>
+                            )}
                           </button>
                           <button 
                             onClick={() => handleSendWhatsApp(row, 1)}
@@ -591,24 +600,28 @@ export default function RemindersPage() {
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                           <button 
                             onClick={() => handleCopyReminder(row, 2)}
-                            title="Copy Night Notice / Rules Rules Message"
+                            title={row.reminder2_sent ? "Night Notice Sent (Click to copy again)" : "Copy Night Notice / Rules Rules Message"}
                             style={{ 
                               width: "34px", 
                               height: "34px", 
                               borderRadius: "50%", 
                               border: "none", 
-                              background: "#3b82f6", 
+                              background: row.reminder2_sent ? "#2563eb" : "#3b82f6", 
                               color: "#fff", 
                               display: "flex", 
                               alignItems: "center", 
                               justifyContent: "center", 
                               cursor: "pointer",
                               boxShadow: "0 2px 4px rgba(59, 130, 246, 0.2)",
-                              opacity: copiedReminders[`${row.id}_2`] ? 0.45 : 1,
+                              opacity: (copiedReminders[`${row.id}_2`] || row.reminder2_sent) ? 0.65 : 1,
                               transition: "opacity 0.2s"
                             }}
                           >
-                            <i className="fas fa-moon" style={{ fontSize: "13px" }}></i>
+                            {row.reminder2_sent ? (
+                              <i className="fas fa-check-double" style={{ fontSize: "12px" }}></i>
+                            ) : (
+                              <i className="fas fa-moon" style={{ fontSize: "13px" }}></i>
+                            )}
                           </button>
                           <button 
                             onClick={() => handleSendWhatsApp(row, 2)}
@@ -635,24 +648,28 @@ export default function RemindersPage() {
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
                           <button 
                             onClick={() => handleCopyReminder(row, 3)}
-                            title="Copy Dispatch / Completion Confirmation Message"
+                            title={row.reminder3_sent ? "Dispatch Alert Sent (Click to copy again)" : "Copy Dispatch / Completion Confirmation Message"}
                             style={{ 
                               width: "34px", 
                               height: "34px", 
                               borderRadius: "50%", 
                               border: "none", 
-                              background: "#0d9488", 
+                              background: row.reminder3_sent ? "#0f766e" : "#0d9488", 
                               color: "#fff", 
                               display: "flex", 
                               alignItems: "center", 
                               justifyContent: "center", 
                               cursor: "pointer",
                               boxShadow: "0 2px 4px rgba(13, 148, 136, 0.2)",
-                              opacity: copiedReminders[`${row.id}_3`] ? 0.45 : 1,
+                              opacity: (copiedReminders[`${row.id}_3`] || row.reminder3_sent) ? 0.65 : 1,
                               transition: "opacity 0.2s"
                             }}
                           >
-                            <i className="fas fa-check" style={{ fontSize: "13px" }}></i>
+                            {row.reminder3_sent ? (
+                              <i className="fas fa-check-double" style={{ fontSize: "12px" }}></i>
+                            ) : (
+                              <i className="fas fa-check" style={{ fontSize: "13px" }}></i>
+                            )}
                           </button>
                           <button 
                             onClick={() => handleSendWhatsApp(row, 3)}
@@ -674,6 +691,31 @@ export default function RemindersPage() {
                             <i className="fab fa-whatsapp" style={{ fontSize: "12px" }}></i>
                           </button>
                         </div>
+
+                        {/* Button 4: Log History (Grey) */}
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                          <button 
+                            onClick={() => handleOpenHistory(row)}
+                            title="View Dispatch History Logs"
+                            style={{ 
+                              width: "34px", 
+                              height: "34px", 
+                              borderRadius: "50%", 
+                              border: "none", 
+                              background: "#64748b", 
+                              color: "#fff", 
+                              display: "flex", 
+                              alignItems: "center", 
+                              justifyContent: "center", 
+                              cursor: "pointer",
+                              boxShadow: "0 2px 4px rgba(100, 116, 139, 0.2)",
+                              transition: "background 0.2s"
+                            }}
+                          >
+                            <i className="fas fa-history" style={{ fontSize: "13px" }}></i>
+                          </button>
+                          <span style={{ fontSize: "9px", color: "#64748b", fontWeight: "600" }}>Logs</span>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -692,6 +734,198 @@ export default function RemindersPage() {
           </div>
         )}
       </div>
+      {/* History Logs Modal */}
+      {historyModal.show && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(15, 23, 42, 0.4)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: "#fff",
+            borderRadius: "16px",
+            width: "500px",
+            maxWidth: "90%",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: "16px 20px",
+              borderBottom: "1px solid #f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#f8fafc"
+            }}>
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                  Reminder Dispatch Logs
+                </h3>
+                <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
+                  History for {historyModal.row?.id} ({historyModal.row?.customerName})
+                </p>
+              </div>
+              <button
+                onClick={() => setHistoryModal({ show: false, row: null, logs: [] })}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  padding: "4px"
+                }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "20px", maxHeight: "400px", overflowY: "auto" }}>
+              {loadingHistory ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
+                  <div style={{
+                    width: "24px",
+                    height: "24px",
+                    border: "3px solid #e2e8f0",
+                    borderTopColor: "#3b82f6",
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite"
+                  }}></div>
+                </div>
+              ) : historyModal.logs.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
+                  <i className="fas fa-history" style={{ fontSize: "32px", color: "#cbd5e1", marginBottom: "8px" }}></i>
+                  <p style={{ fontSize: "14px", margin: 0 }}>No dispatch history logs found for this item.</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {historyModal.logs.map((log: any, idx: number) => (
+                    <div key={log.id || idx} style={{
+                      display: "flex",
+                      gap: "12px",
+                      position: "relative",
+                      paddingBottom: idx === historyModal.logs.length - 1 ? 0 : "16px",
+                      borderLeft: idx === historyModal.logs.length - 1 ? "none" : "2px solid #e2e8f0",
+                      marginLeft: "6px",
+                      paddingLeft: "16px"
+                    }}>
+                      {/* Timeline dot */}
+                      <div style={{
+                        position: "absolute",
+                        left: "-6px",
+                        top: "2px",
+                        width: "10px",
+                        height: "10px",
+                        borderRadius: "50%",
+                        background: log.reminder_type === 1 ? "#10b981" : 
+                                    log.reminder_type === 2 ? "#3b82f6" : 
+                                    log.reminder_type === 3 ? "#0d9488" : "#f59e0b",
+                        border: "2px solid #fff"
+                      }}></div>
+
+                      {/* Log details */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <span style={{
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            color: log.reminder_type === 1 ? "#047857" : 
+                                   log.reminder_type === 2 ? "#1d4ed8" : 
+                                   log.reminder_type === 3 ? "#0f766e" : "#b45309"
+                          }}>
+                            {log.reminder_type === 1 ? "Template 1: Trip Reminder" : 
+                             log.reminder_type === 2 ? "Template 2: Notice Rules" : 
+                             log.reminder_type === 3 ? "Template 3: Dispatch Confirmation" :
+                             log.reminder_type === 4 ? "System Log: Driver Assigned / Trip Status Updated" :
+                             log.reminder_type === 5 ? "System Log: Status Updated" : "System Log"}
+                          </span>
+                          <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                            {new Date(log.created_at).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: "12px", color: "#475569", margin: "4px 0 0 0" }}>
+                          {log.recipient === "System Update" ? (
+                            <span>Type: <span style={{ fontWeight: 600, color: "#b45309" }}>System Auto-Log</span></span>
+                          ) : (
+                            <span>Sent to: <span style={{ fontWeight: 600 }}>{log.recipient || "N/A"}</span></span>
+                          )}
+                        </p>
+                        {(log.driver_name || log.driver_trip_status) && (
+                          <div style={{
+                            marginTop: "6px",
+                            background: "#f8fafc",
+                            padding: "6px 8px",
+                            borderRadius: "6px",
+                            border: "1px solid #e2e8f0",
+                            fontSize: "11px",
+                            color: "#475569"
+                          }}>
+                            {log.driver_name && <div>👤 Driver: <span style={{ fontWeight: 600 }}>{log.driver_name}</span></div>}
+                            {log.driver_trip_status && (
+                              <div style={{ marginTop: "2px" }}>
+                                {log.reminder_type === 5 ? "📋 Booking Status: " : "🏁 Driver Status: "}
+                                <span style={{ 
+                                  fontWeight: 700, 
+                                  color: log.driver_trip_status === "On The Way" ? "#0369a1" : 
+                                         log.driver_trip_status === "Reached At Location" ? "#047857" : 
+                                         log.driver_trip_status === "Active Dispatch" ? "#10b981" : "#475569"
+                                }}>{log.driver_trip_status}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: "12px 20px",
+              borderTop: "1px solid #f1f5f9",
+              display: "flex",
+              justifyContent: "flex-end",
+              background: "#f8fafc"
+            }}>
+              <button
+                onClick={() => setHistoryModal({ show: false, row: null, logs: [] })}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  padding: "6px 16px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#475569",
+                  cursor: "pointer"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes spin { 
           0% { transform: rotate(0deg); } 

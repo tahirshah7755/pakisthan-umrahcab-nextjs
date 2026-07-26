@@ -68,6 +68,21 @@ export default function RemindersPage() {
   const [historyModal, setHistoryModal] = useState<{ show: boolean; row: any; logs: any[] }>({ show: false, row: null, logs: [] });
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // WhatsApp Preview Modal States
+  const [previewModal, setPreviewModal] = useState<{
+    show: boolean;
+    message: string;
+    phone: string;
+    row: any;
+    buttonNo: number;
+  }>({
+    show: false,
+    message: "",
+    phone: "",
+    row: null,
+    buttonNo: 1,
+  });
+
   // Toast notification
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -78,6 +93,28 @@ export default function RemindersPage() {
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const formatWhatsAppMessage = (text: string) => {
+    if (!text) return "";
+    let formatted = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    
+    // Replace *bold* with <strong>bold</strong>
+    formatted = formatted.replace(/\*(.*?)\*/g, "<strong>$1</strong>");
+    
+    // Replace _italic_ with <em>italic</em>
+    formatted = formatted.replace(/_(.*?)_/g, "<em>$1</em>");
+    
+    // Replace ~strikethrough~ with <del>strikethrough</del>
+    formatted = formatted.replace(/~(.*?)~/g, "<del>$1</del>");
+    
+    // Replace newlines with <br />
+    formatted = formatted.replace(/\n/g, "<br />");
+    
+    return formatted;
   };
 
   const handleOpenHistory = async (row: any) => {
@@ -188,6 +225,22 @@ export default function RemindersPage() {
   });
 
   const getReminderMessageText = (row: any, buttonNo: number) => {
+    const emojiHandshake = String.fromCodePoint(0x1F91D);
+    const emojiCar = String.fromCodePoint(0x1F697);
+    const emojiCalendar = String.fromCodePoint(0x1F4C5);
+    const emojiPin = String.fromCodePoint(0x1F4CD);
+    const emojiClock = String.fromCodePoint(0x23F0);
+    const emojiFlag = String.fromCodePoint(0x1F3C1);
+    const emojiUser = String.fromCodePoint(0x1F464);
+    const emojiPhone = String.fromCodePoint(0x1F4DE);
+    const emojiCheck = String.fromCodePoint(0x2705);
+    const emojiWarning = String.fromCodePoint(0x26A0);
+    const emojiMemo = String.fromCodePoint(0x1F4DD);
+    const emojiPushpin = String.fromCodePoint(0x1F4CC);
+    const emojiScroll = String.fromCodePoint(0x1F4DC);
+    const emojiSparkles = String.fromCodePoint(0x2728);
+    const emojiWrench = String.fromCodePoint(0x1F6E0);
+
     let message = "";
     if (buttonNo === 1) { // Trip / Service Reminder
       if (row.type === "BKG") {
@@ -196,30 +249,43 @@ export default function RemindersPage() {
         const status = row.driverTripStatus || "";
 
         if (status === "On The Way") {
-          message = `🤝 *Driver On The Way* 🤝\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n🚗 Your driver is now *On the Way* to pick you up.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n👤 Driver: *${row.driverName || "Assigned"}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n\nPlease be ready at the pickup location. Thanks and regards`;
+          message = `${emojiHandshake} *Driver On The Way* ${emojiHandshake}\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n${emojiCar} Your driver is now *On the Way* to pick you up.\n_________________________\n${emojiCalendar} Pick Up Date: *${row.date}*\n${emojiPin} Pick Up Location: *${pickup}*\n${emojiClock} Pick Up Time: *${row.time}*\n${emojiFlag} Drop Off Location: *${dropoff}*\n_________________________\n${emojiCar} Vehicle: *${row.vehicle}*\n${emojiUser} Driver: *${row.driverName || "Assigned"}*\n${emojiPhone} Driver Contact: *${row.driverPhone || "N/A"}*\n\nPlease be ready at the pickup location. Thanks and regards`;
         } else if (status === "Reached At Location") {
-          message = `🤝 *Driver Arrived* 🤝\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n📍 Your driver has *Arrived* at your pickup location.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n👤 Driver: *${row.driverName || "Assigned"}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n\nPlease proceed to meet the driver. Thanks and regards`;
+          message = `${emojiHandshake} *Driver Arrived* ${emojiHandshake}\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n${emojiPin} Your driver has *Arrived* at your pickup location.\n_________________________\n${emojiCalendar} Pick Up Date: *${row.date}*\n${emojiPin} Pick Up Location: *${pickup}*\n${emojiClock} Pick Up Time: *${row.time}*\n${emojiFlag} Drop Off Location: *${dropoff}*\n_________________________\n${emojiCar} Vehicle: *${row.vehicle}*\n${emojiUser} Driver: *${row.driverName || "Assigned"}*\n${emojiPhone} Driver Contact: *${row.driverPhone || "N/A"}*\n\nPlease proceed to meet the driver. Thanks and regards`;
         } else if (status === "Guest In Contact") {
-          message = `🤝 *Driver in Contact* 🤝\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n📞 Your driver is now *In Contact* with you for the pickup.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n👤 Driver: *${row.driverName || "Assigned"}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n\nThanks and regards`;
+          message = `${emojiHandshake} *Driver in Contact* ${emojiHandshake}\n\nالسلام عليكم\n\nDear Guest *${row.customerName}*,\n\n${emojiPhone} Your driver is now *In Contact* with you for the pickup.\n_________________________\n${emojiCalendar} Pick Up Date: *${row.date}*\n${emojiPin} Pick Up Location: *${pickup}*\n${emojiClock} Pick Up Time: *${row.time}*\n${emojiFlag} Drop Off Location: *${dropoff}*\n_________________________\n${emojiCar} Vehicle: *${row.vehicle}*\n${emojiUser} Driver: *${row.driverName || "Assigned"}*\n${emojiPhone} Driver Contact: *${row.driverPhone || "N/A"}*\n\nThanks and regards`;
         } else {
           let driverInfo = "";
           if (row.driverName) {
-            driverInfo = `👤 Driver: *${row.driverName}*\n📞 Driver Contact: *${row.driverPhone || "N/A"}*\n_________________________\n`;
+            driverInfo = `${emojiUser} Driver: *${row.driverName}*\n${emojiPhone} Driver Contact: *${row.driverPhone || "N/A"}*\n_________________________\n`;
           }
-          message = `🤝 *Reminder Confirmation* 🤝\n\nالسلام عليكم\n\nDear Guest,\n\n✅ We have your confirmed booking for a pickup from *${pickup}* to *${dropoff}* on *${row.date}* at *${row.time}*.\n_________________________\n📅 Pick Up Date: *${row.date}*\n📍 Pick Up Location: *${pickup}*\n⏰ Pick Up Time: *${row.time}*\n🏁 Drop Off Location: *${dropoff}*\n_________________________\n🚗 Vehicle: *${row.vehicle}*\n${driverInfo}⚠️ *You are requested to please let us know if there is any change in the plan by 3pm today, after that the schedule shall be considered confirmed.*\n📝 *Please acknowledge the pickup time. Thanks and regards*`;
+          message = `${emojiHandshake} *Reminder Confirmation* ${emojiHandshake}\n\n` +
+            `السلام عليكم\n\n` +
+            `Dear *Guest*,\n\n` +
+            `${emojiCheck} We have your confirmed booking for a pickup from *${pickup}* to *${dropoff}* on *${row.date}* at *${row.time}*.\n` +
+            `_________________________\n` +
+            `${emojiCalendar} Pick Up Date: *${row.date}*\n` +
+            `${emojiPin} Pick Up Location: *${pickup}*\n` +
+            `${emojiClock} Pick Up Time: *${row.time}*\n` +
+            `${emojiFlag} Drop Off Location: *${dropoff}*\n` +
+            `_________________________\n` +
+            `${emojiCar} Vehicle: *${row.vehicle}*\n\n` +
+            driverInfo +
+            `${emojiWarning} *You are requested to please let us know if there is any change in the plan by 3pm today, after that the schedule shall be considered confirmed.*\n` +
+            `${emojiMemo} *Please acknowledge the pickup time. Thanks and regards*`;
         }
       } else {
-        message = `||| 📌 *Service Reminder* |||\n\nالسلام عليكم\n\nDear *${row.customerName}*,\n\n✅ We have your confirmed service: *${row.details}*\n📅 Date: *${row.date}*\n⏰ Time: *${row.time}*\n\nHope to serve you best!`;
+        message = `||| ${emojiPushpin} *Service Reminder* |||\n\nالسلام عليكم\n\nDear *${row.customerName}*,\n\n${emojiCheck} We have your confirmed service: *${row.details}*\n${emojiCalendar} Date: *${row.date}*\n${emojiClock} Time: *${row.time}*\n\nHope to serve you best!`;
       }
     } else if (buttonNo === 2) { // Guest Notice Rules
-      message = `📜 *Subject: Guest Notice*,\n\nDear *${row.customerName}*,\n\nالسلام عليكم\n\nFollowing these instructions is mandatory to maintain a travel process.\n\n*1️⃣ Response Time:* Please confirm trip details within 8 hours of reminder.\n*2️⃣ Cancellation:* Must be 3:30 hours prior to pickup window.\n📞 Support: +966504861551.\n✨ *Safe journey and blessings.*`;
+      message = `${emojiScroll} *Subject: Guest Notice*,\n\nDear *${row.customerName}*,\n\nالسلام عليكم\n\nFollowing these instructions is mandatory to maintain a travel process.\n\n*1\u{FE0F}\u{20E3} Response Time:* Please confirm trip details within 8 hours of reminder.\n*2\u{FE0F}\u{20E3} Cancellation:* Must be 3:30 hours prior to pickup window.\n${emojiPhone} Support: +966504861551.\n${emojiSparkles} *Safe journey and blessings.*`;
     } else if (buttonNo === 3) { // Completion / Partner Alert
       if (row.type === "BKG") {
         const pickup = row.details.split("→")[0]?.trim() || "Airport";
         const dropoff = row.details.split("→")[1]?.trim() || "Hotel";
-        message = `🤝 Dear Valuable Partner *${row.companyName}*\n\n👤 Regarding Client *${row.customerName}*\n📍 From *${pickup}* to *${dropoff}*\n🚗 On *${row.vehicle}*\n\n✅ Their Pickup Has Been *Successful.*`;
+        message = `${emojiHandshake} Dear Valuable Partner *${row.companyName}*\n\n${emojiUser} Regarding Client *${row.customerName}*\n${emojiPin} From *${pickup}* to *${dropoff}*\n${emojiCar} On *${row.vehicle}*\n\n${emojiCheck} Their Pickup Has Been *Successful.*`;
       } else {
-        message = `🤝 Dear Valuable Partner *${row.companyName}*\n\n👤 Regarding Client *${row.customerName}*\n🛠 Service *${row.details}*\n\n✅ Has Been *Successfully Completed.*`;
+        message = `${emojiHandshake} Dear Valuable Partner *${row.companyName}*\n\n${emojiUser} Regarding Client *${row.customerName}*\n${emojiWrench} Service *${row.details}*\n\n${emojiCheck} Has Been *Successfully Completed.*`;
       }
     }
     return message;
@@ -253,12 +319,33 @@ export default function RemindersPage() {
   const handleSendWhatsApp = (row: any, buttonNo: number) => {
     const message = getReminderMessageText(row, buttonNo);
     const phone = row.phones && row.phones[0] ? row.phones[0] : "";
-    const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const encodedText = encodeURIComponent(message);
+    setPreviewModal({
+      show: true,
+      message,
+      phone,
+      row,
+      buttonNo,
+    });
+  };
+
+  const executeSendWhatsApp = () => {
+    if (!previewModal.row) return;
+    const cleanPhone = previewModal.phone.replace(/[^0-9]/g, "");
+    const encodedText = encodeURIComponent(previewModal.message);
     window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, "_blank");
-    setCopiedReminders(prev => ({ ...prev, [`${row.id}_${buttonNo}`]: true }));
-    showToast(`WhatsApp tab opened for Template ${buttonNo}!`, "success");
-    markReminderAsSent(row, buttonNo);
+    setCopiedReminders(prev => ({ ...prev, [`${previewModal.row.id}_${previewModal.buttonNo}`]: true }));
+    showToast(`WhatsApp tab opened for Template ${previewModal.buttonNo}!`, "success");
+    markReminderAsSent(previewModal.row, previewModal.buttonNo);
+    setPreviewModal({ show: false, message: "", phone: "", row: null, buttonNo: 1 });
+  };
+
+  const handleCopyFromPreview = () => {
+    if (!previewModal.row) return;
+    navigator.clipboard.writeText(previewModal.message);
+    setCopiedReminders(prev => ({ ...prev, [`${previewModal.row.id}_${previewModal.buttonNo}`]: true }));
+    showToast(`Template ${previewModal.buttonNo} copied to clipboard successfully!`, "success");
+    markReminderAsSent(previewModal.row, previewModal.buttonNo);
+    setPreviewModal({ show: false, message: "", phone: "", row: null, buttonNo: 1 });
   };
 
   const handleCopyPhone = (phone: string) => {
@@ -920,6 +1007,206 @@ export default function RemindersPage() {
                 }}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Preview Modal */}
+      {previewModal.show && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(15, 23, 42, 0.4)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: "#fff",
+            borderRadius: "16px",
+            width: "550px",
+            maxWidth: "90%",
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: "16px 20px",
+              borderBottom: "1px solid #f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#f8fafc"
+            }}>
+              <div>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                  WhatsApp Message Preview
+                </h3>
+                <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
+                  Review and edit message for {previewModal.row?.id} ({previewModal.row?.customerName})
+                </p>
+              </div>
+              <button
+                onClick={() => setPreviewModal({ show: false, message: "", phone: "", row: null, buttonNo: 1 })}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#94a3b8",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  padding: "4px"
+                }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "450px", overflowY: "auto" }}>
+              
+              {/* Phone number field */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: 700, color: "#475569" }}>Recipient Phone Number</label>
+                <input
+                  type="text"
+                  value={previewModal.phone}
+                  onChange={(e) => setPreviewModal(prev => ({ ...prev, phone: e.target.value }))}
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    color: "#334155",
+                    outline: "none",
+                    fontWeight: 600,
+                    fontFamily: "monospace"
+                  }}
+                />
+              </div>
+
+              {/* Message text area */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: 700, color: "#475569" }}>Edit Message Content</label>
+                <textarea
+                  value={previewModal.message}
+                  onChange={(e) => setPreviewModal(prev => ({ ...prev, message: e.target.value }))}
+                  rows={8}
+                  style={{
+                    padding: "10px 12px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    lineHeight: "1.5",
+                    color: "#334155",
+                    outline: "none",
+                    fontFamily: "monospace",
+                    resize: "vertical"
+                  }}
+                />
+              </div>
+
+              {/* Live Preview section */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "13px", fontWeight: 700, color: "#475569" }}>Live Preview (WhatsApp Format)</label>
+                <div style={{
+                  background: "#efeae2",
+                  padding: "16px",
+                  borderRadius: "12px",
+                  maxHeight: "220px",
+                  overflowY: "auto",
+                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  flexDirection: "column"
+                }}>
+                  <div style={{
+                    background: "#d9fdd3",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    maxWidth: "85%",
+                    fontSize: "13.5px",
+                    lineHeight: "1.5",
+                    color: "#111b21",
+                    boxShadow: "0 1px 0.5px rgba(11,20,26,.13)",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                    wordBreak: "break-word",
+                    whiteSpace: "pre-wrap"
+                  }} dangerouslySetInnerHTML={{ __html: formatWhatsAppMessage(previewModal.message) }} />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: "12px 20px",
+              borderTop: "1px solid #f1f5f9",
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+              background: "#f8fafc"
+            }}>
+              <button
+                onClick={() => setPreviewModal({ show: false, message: "", phone: "", row: null, buttonNo: 1 })}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#475569",
+                  cursor: "pointer"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCopyFromPreview}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#475569",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <i className="fas fa-copy" style={{ fontSize: "14px" }}></i>
+                Copy Message
+              </button>
+              <button
+                onClick={executeSendWhatsApp}
+                style={{
+                  background: "#25d366",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "8px 18px",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "#fff",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 6px -1px rgba(37, 211, 102, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <i className="fab fa-whatsapp" style={{ fontSize: "14px" }}></i>
+                Send to WhatsApp
               </button>
             </div>
           </div>

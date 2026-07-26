@@ -1042,8 +1042,12 @@ export default function BookingsList() {
 function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen: boolean; onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<"driver" | "agent" | "client">("driver");
   const [copied, setCopied] = useState(false);
-
-  if (!isOpen || !booking) return null;
+  const [texts, setTexts] = useState({
+    driver: "",
+    agent: "",
+    client: ""
+  });
+  const [phone, setPhone] = useState("");
 
   const getDriverCopy = (b: any) => {
     return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.id}\n*Guest Name:* ${b.customerName}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.pickupDate} at ${b.pickupTime}\n*Pickup Location:* ${b.pickupLocation}\n*Destination:* ${b.dropoffLocation}\n*Vehicle:* ${b.vehicle}\n*Flight No:* ${b.flightNo || "N/A"}\n*Notes:* ${b.notes || "N/A"}`;
@@ -1057,33 +1061,67 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.customerName}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driverTripStatus || "Assigned"}\n*Driver Name:* ${b.driverName || "TBD"}\n*Driver Phone:* ${b.driverPhone || "TBD"}\n*Vehicle:* ${b.vehicle}\n\nThank you for choosing Umrah Cab!`;
   };
 
-  const textMap = {
-    driver: getDriverCopy(booking),
-    agent: getAgentCopy(booking),
-    client: getClientCopy(booking),
+  useEffect(() => {
+    if (booking) {
+      setTexts({
+        driver: getDriverCopy(booking),
+        agent: getAgentCopy(booking),
+        client: getClientCopy(booking)
+      });
+      if (activeTab === "driver") {
+        setPhone(booking.driverPhone || "");
+      } else if (activeTab === "client") {
+        setPhone(booking.whatsapp || "");
+      } else {
+        setPhone("");
+      }
+    }
+  }, [booking, activeTab]);
+
+  if (!isOpen || !booking) return null;
+
+  const handleTextChange = (val: string) => {
+    setTexts(prev => ({ ...prev, [activeTab]: val }));
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(textMap[activeTab]);
+    navigator.clipboard.writeText(texts[activeTab]);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSendWhatsApp = () => {
-    let phone = "";
-    if (activeTab === "driver") {
-      phone = booking.driverPhone || "";
-    } else if (activeTab === "client") {
-      phone = booking.whatsapp || "";
-    }
     const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const encodedText = encodeURIComponent(textMap[activeTab]);
+    const encodedText = encodeURIComponent(texts[activeTab]);
     window.open(`https://wa.me/${cleanPhone}?text=${encodedText}`, "_blank");
+  };
+
+  const formatWhatsAppMessage = (text: string) => {
+    if (!text) return "";
+    let formatted = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    
+    // Replace *bold* with <strong>bold</strong>
+    formatted = formatted.replace(/\*(.*?)\*/g, "<strong>$1</strong>");
+    
+    // Replace _italic_ with <em>italic</em>
+    formatted = formatted.replace(/_(.*?)_/g, "<em>$1</em>");
+    
+    // Replace ~strikethrough~ with <del>strikethrough</del>
+    formatted = formatted.replace(/~(.*?)~/g, "<del>$1</del>");
+    
+    // Replace newlines with <br />
+    formatted = formatted.replace(/\n/g, "<br />");
+    
+    return formatted;
   };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 99999 }}>
-      <div style={{ background: "#ffffff", borderRadius: "16px", width: "500px", maxWidth: "90%", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}>
+      <div style={{ background: "#ffffff", borderRadius: "16px", width: "500px", maxWidth: "90%", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)", display: "flex", flexDirection: "column" }}>
+        {/* Modal Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
           <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>Share Booking / Trip Details</h3>
           <button onClick={onClose} style={{ border: "none", background: "none", cursor: "pointer", fontSize: "20px", color: "#64748b" }}>&times;</button>
@@ -1113,28 +1151,96 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
           ))}
         </div>
 
+        {/* Recipient Phone Number */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "16px" }}>
+          <label style={{ fontSize: "13px", fontWeight: "600", color: "#64748b" }}>Recipient Phone Number</label>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#334155",
+              outline: "none",
+              fontWeight: "600",
+              fontFamily: "monospace"
+            }}
+          />
+        </div>
+
         {/* Text Area */}
-        <textarea
-          readOnly
-          value={textMap[activeTab]}
-          style={{
-            width: "100%",
-            height: "180px",
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "16px" }}>
+          <label style={{ fontSize: "13px", fontWeight: "600", color: "#64748b" }}>Edit Message Content</label>
+          <textarea
+            value={texts[activeTab]}
+            onChange={(e) => handleTextChange(e.target.value)}
+            style={{
+              width: "100%",
+              height: "150px",
+              padding: "12px",
+              fontFamily: "monospace",
+              fontSize: "13px",
+              lineHeight: "1.5",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+              background: "#f8fafc",
+              color: "#334155",
+              resize: "none",
+              outline: "none"
+            }}
+          />
+        </div>
+
+        {/* Live Preview (WhatsApp Simulator) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "20px" }}>
+          <label style={{ fontSize: "13px", fontWeight: "600", color: "#64748b" }}>Live Preview (WhatsApp Format)</label>
+          <div style={{
+            background: "#efeae2",
             padding: "12px",
-            fontFamily: "monospace",
-            fontSize: "13px",
-            lineHeight: "1.5",
             borderRadius: "8px",
+            maxHeight: "130px",
+            overflowY: "auto",
             border: "1px solid #e2e8f0",
-            background: "#f8fafc",
-            color: "#334155",
-            resize: "none",
-            outline: "none"
-          }}
-        />
+            display: "flex",
+            flexDirection: "column"
+          }}>
+            <div style={{
+              background: "#d9fdd3",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              maxWidth: "90%",
+              fontSize: "13px",
+              lineHeight: "1.5",
+              color: "#111b21",
+              boxShadow: "0 1px 0.5px rgba(11,20,26,.13)",
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+              wordBreak: "break-word",
+              whiteSpace: "pre-wrap"
+            }} dangerouslySetInnerHTML={{ __html: formatWhatsAppMessage(texts[activeTab]) }} />
+          </div>
+        </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
+              background: "#ffffff",
+              color: "#334155",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            Cancel
+          </button>
           <button
             onClick={handleCopy}
             style={{

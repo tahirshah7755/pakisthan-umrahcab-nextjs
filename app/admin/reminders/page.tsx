@@ -348,6 +348,16 @@ export default function RemindersPage() {
     setPreviewModal({ show: false, message: "", phone: "", row: null, buttonNo: 1 });
   };
 
+  const handleTabChange = (buttonNo: number) => {
+    if (!previewModal.row) return;
+    const message = getReminderMessageText(previewModal.row, buttonNo);
+    setPreviewModal(prev => ({
+      ...prev,
+      buttonNo,
+      message
+    }));
+  };
+
   const handleCopyPhone = (phone: string) => {
     navigator.clipboard.writeText(phone);
     showToast(`Phone number ${phone} copied to clipboard!`, "success");
@@ -1017,153 +1027,175 @@ export default function RemindersPage() {
       {previewModal.show && (
         <div style={{
           position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "rgba(15, 23, 42, 0.4)",
+          inset: 0,
+          background: "rgba(15, 23, 42, 0.6)",
           backdropFilter: "blur(4px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          zIndex: 9999
+          zIndex: 99999
         }}>
           <div style={{
-            background: "#fff",
+            background: "#ffffff",
             borderRadius: "16px",
-            width: "550px",
+            width: "500px",
             maxWidth: "90%",
+            padding: "24px",
             boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
             display: "flex",
-            flexDirection: "column",
-            overflow: "hidden"
+            flexDirection: "column"
           }}>
             {/* Modal Header */}
-            <div style={{
-              padding: "16px 20px",
-              borderBottom: "1px solid #f1f5f9",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              background: "#f8fafc"
-            }}>
-              <div>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                  WhatsApp Message Preview
-                </h3>
-                <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>
-                  Review and edit message for {previewModal.row?.id} ({previewModal.row?.customerName})
-                </p>
-              </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>Share Booking / Trip Details</h3>
               <button
                 onClick={() => setPreviewModal({ show: false, message: "", phone: "", row: null, buttonNo: 1 })}
+                style={{ border: "none", background: "none", cursor: "pointer", fontSize: "20px", color: "#64748b" }}
+              >
+                &times;
+              </button>
+            </div>
+            
+            {/* Tabs */}
+            <div style={{ display: "flex", borderBottom: "2px solid #f1f5f9", marginBottom: "16px", gap: "16px" }}>
+              <button
+                onClick={() => handleTabChange(1)}
                 style={{
-                  background: "none",
+                  padding: "8px 4px",
+                  fontWeight: "600",
+                  fontSize: "14px",
                   border: "none",
-                  color: "#94a3b8",
+                  background: "none",
                   cursor: "pointer",
-                  fontSize: "18px",
-                  padding: "4px"
+                  borderBottom: previewModal.buttonNo === 1 ? "2px solid #2563eb" : "2px solid transparent",
+                  color: previewModal.buttonNo === 1 ? "#2563eb" : "#64748b",
+                  textTransform: "capitalize",
+                  marginBottom: "-2px"
                 }}
               >
-                <i className="fas fa-times"></i>
+                Reminder Copy
+              </button>
+              <button
+                onClick={() => handleTabChange(2)}
+                style={{
+                  padding: "8px 4px",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
+                  borderBottom: previewModal.buttonNo === 2 ? "2px solid #2563eb" : "2px solid transparent",
+                  color: previewModal.buttonNo === 2 ? "#2563eb" : "#64748b",
+                  textTransform: "capitalize",
+                  marginBottom: "-2px"
+                }}
+              >
+                Notice Copy
+              </button>
+              <button
+                onClick={() => handleTabChange(3)}
+                style={{
+                  padding: "8px 4px",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
+                  borderBottom: previewModal.buttonNo === 3 ? "2px solid #2563eb" : "2px solid transparent",
+                  color: previewModal.buttonNo === 3 ? "#2563eb" : "#64748b",
+                  textTransform: "capitalize",
+                  marginBottom: "-2px"
+                }}
+              >
+                Partner Copy
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "450px", overflowY: "auto" }}>
-              
-              {/* Phone number field */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "13px", fontWeight: 700, color: "#475569" }}>Recipient Phone Number</label>
-                <input
-                  type="text"
-                  value={previewModal.phone}
-                  onChange={(e) => setPreviewModal(prev => ({ ...prev, phone: e.target.value }))}
-                  style={{
-                    padding: "8px 12px",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    color: "#334155",
-                    outline: "none",
-                    fontWeight: 600,
-                    fontFamily: "monospace"
-                  }}
-                />
-              </div>
-
-              {/* Message text area */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "13px", fontWeight: 700, color: "#475569" }}>Edit Message Content</label>
-                <textarea
-                  value={previewModal.message}
-                  onChange={(e) => setPreviewModal(prev => ({ ...prev, message: e.target.value }))}
-                  rows={8}
-                  style={{
-                    padding: "10px 12px",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    lineHeight: "1.5",
-                    color: "#334155",
-                    outline: "none",
-                    fontFamily: "monospace",
-                    resize: "vertical"
-                  }}
-                />
-              </div>
-
-              {/* Live Preview section */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "13px", fontWeight: 700, color: "#475569" }}>Live Preview (WhatsApp Format)</label>
-                <div style={{
-                  background: "#efeae2",
-                  padding: "16px",
-                  borderRadius: "12px",
-                  maxHeight: "220px",
-                  overflowY: "auto",
-                  border: "1px solid #e2e8f0",
-                  display: "flex",
-                  flexDirection: "column"
-                }}>
-                  <div style={{
-                    background: "#d9fdd3",
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    maxWidth: "85%",
-                    fontSize: "13.5px",
-                    lineHeight: "1.5",
-                    color: "#111b21",
-                    boxShadow: "0 1px 0.5px rgba(11,20,26,.13)",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                    wordBreak: "break-word",
-                    whiteSpace: "pre-wrap"
-                  }} dangerouslySetInnerHTML={{ __html: formatWhatsAppMessage(previewModal.message) }} />
-                </div>
-              </div>
-
+            {/* Recipient Phone Number */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "16px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#64748b" }}>Recipient Phone Number</label>
+              <input
+                type="text"
+                value={previewModal.phone}
+                onChange={(e) => setPreviewModal(prev => ({ ...prev, phone: e.target.value }))}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  color: "#334155",
+                  outline: "none",
+                  fontWeight: "600",
+                  fontFamily: "monospace"
+                }}
+              />
             </div>
 
-            {/* Modal Footer */}
-            <div style={{
-              padding: "12px 20px",
-              borderTop: "1px solid #f1f5f9",
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "10px",
-              background: "#f8fafc"
-            }}>
+            {/* Text Area */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "16px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#64748b" }}>Edit Message Content</label>
+              <textarea
+                value={previewModal.message}
+                onChange={(e) => setPreviewModal(prev => ({ ...prev, message: e.target.value }))}
+                style={{
+                  width: "100%",
+                  height: "150px",
+                  padding: "12px",
+                  fontFamily: "monospace",
+                  fontSize: "13px",
+                  lineHeight: "1.5",
+                  borderRadius: "8px",
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  color: "#334155",
+                  resize: "none",
+                  outline: "none"
+                }}
+              />
+            </div>
+
+            {/* Live Preview (WhatsApp Simulator) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "20px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "600", color: "#64748b" }}>Live Preview (WhatsApp Format)</label>
+              <div style={{
+                background: "#efeae2",
+                padding: "12px",
+                borderRadius: "8px",
+                maxHeight: "130px",
+                overflowY: "auto",
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                flexDirection: "column"
+              }}>
+                <div style={{
+                  background: "#d9fdd3",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  maxWidth: "90%",
+                  fontSize: "13px",
+                  lineHeight: "1.5",
+                  color: "#111b21",
+                  boxShadow: "0 1px 0.5px rgba(11,20,26,.13)",
+                  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                  wordBreak: "break-word",
+                  whiteSpace: "pre-wrap"
+                }} dangerouslySetInnerHTML={{ __html: formatWhatsAppMessage(previewModal.message) }} />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
               <button
                 onClick={() => setPreviewModal({ show: false, message: "", phone: "", row: null, buttonNo: 1 })}
                 style={{
-                  background: "#fff",
-                  border: "1px solid #cbd5e1",
+                  padding: "10px 16px",
                   borderRadius: "8px",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#475569",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#334155",
+                  fontSize: "14px",
+                  fontWeight: "600",
                   cursor: "pointer"
                 }}
               >
@@ -1172,41 +1204,40 @@ export default function RemindersPage() {
               <button
                 onClick={handleCopyFromPreview}
                 style={{
-                  background: "#fff",
-                  border: "1px solid #cbd5e1",
+                  padding: "10px 16px",
                   borderRadius: "8px",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#475569",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#334155",
+                  fontSize: "14px",
+                  fontWeight: "600",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px"
+                  gap: "8px"
                 }}
               >
-                <i className="fas fa-copy" style={{ fontSize: "14px" }}></i>
-                Copy Message
+                <i className="fas fa-copy"></i>
+                Copy
               </button>
               <button
                 onClick={executeSendWhatsApp}
                 style={{
-                  background: "#25d366",
-                  border: "none",
+                  padding: "10px 16px",
                   borderRadius: "8px",
-                  padding: "8px 18px",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "#fff",
+                  border: "none",
+                  background: "#25d366",
+                  color: "#ffffff",
+                  fontSize: "14px",
+                  fontWeight: "600",
                   cursor: "pointer",
-                  boxShadow: "0 4px 6px -1px rgba(37, 211, 102, 0.2)",
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px"
+                  gap: "8px"
                 }}
               >
-                <i className="fab fa-whatsapp" style={{ fontSize: "14px" }}></i>
-                Send to WhatsApp
+                <i className="fab fa-whatsapp"></i>
+                Send via WhatsApp
               </button>
             </div>
           </div>

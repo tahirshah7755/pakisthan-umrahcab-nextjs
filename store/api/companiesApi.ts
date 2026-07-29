@@ -20,7 +20,7 @@ export const companiesApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: comp,
       }),
-      invalidatesTags: ["Companies"],
+      invalidatesTags: ["Companies", "Ledgers", "Invoices", "Payments"],
     }),
   }),
 });

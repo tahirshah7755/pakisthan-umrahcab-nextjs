@@ -269,13 +269,13 @@ export default function BalancePage() {
   const totalLedgerBalance = rows.reduce((s: number, r: any) => s + Number(r.ledger_balance || 0), 0);
 
   const handleToggleLock = async (item: any) => {
-    const originalCompany = companies.find((c: any) => c.id === item.id);
-    if (!originalCompany) return;
+    const originalCompany = companies.find((c: any) => c.id === item.id) || {};
     const nextVal = !item.vouchers_lock;
     setLocalLocks(prev => ({ ...prev, [item.id]: nextVal }));
     try {
       await updateCompany({
         ...originalCompany,
+        id: item.id,
         vouchers: nextVal,
       }).unwrap();
       showToast(`Voucher lock status updated for ${item.company}!`, "success");
@@ -287,12 +287,12 @@ export default function BalancePage() {
   };
 
   const handleChangeStatementStatus = async (item: any, status: string) => {
-    const originalCompany = companies.find((c: any) => c.id === item.id);
-    if (!originalCompany) return;
+    const originalCompany = companies.find((c: any) => c.id === item.id) || {};
     setLocalStatuses(prev => ({ ...prev, [item.id]: status }));
     try {
       await updateCompany({
         ...originalCompany,
+        id: item.id,
         statement_status: status,
       }).unwrap();
       showToast(`Statement status updated to "${status}" for ${item.company}`, "success");
@@ -304,11 +304,11 @@ export default function BalancePage() {
   };
 
   const handleSaveRemarks = async (item: any) => {
-    const originalCompany = companies.find((c: any) => c.id === item.id);
-    if (!originalCompany) return;
+    const originalCompany = companies.find((c: any) => c.id === item.id) || {};
     try {
       await updateCompany({
         ...originalCompany,
+        id: item.id,
         remarks: tempRemarks,
       }).unwrap();
       setEditingRemarks(null);

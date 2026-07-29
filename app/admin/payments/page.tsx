@@ -959,9 +959,15 @@ export default function PaymentsPage() {
                     }}
                   />
                 </div>
-                <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
-                  If the received amount is less than the requested amount, a new pending payment of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created as due.
-                </span>
+                {selectedPayment?.method && (selectedPayment.method.toLowerCase().includes("loan") || selectedPayment.method.toLowerCase().includes("credit")) ? (
+                  <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                    If the received amount is less than the requested amount, a new pending payment of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created as due.
+                  </span>
+                ) : (
+                  <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                    The approved received amount of <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> will be credited directly to <strong>{selectedPayment.company}</strong>'s ledger balance.
+                  </span>
+                )}
               </div>
 
               <div>

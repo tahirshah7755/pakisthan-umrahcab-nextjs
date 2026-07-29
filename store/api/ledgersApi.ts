@@ -14,10 +14,19 @@ export const ledgersApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["Ledgers"],
     }),
+    getDirectClientsLedger: builder.query({
+      query: (params) => ({
+        url: `/ledgers/direct-clients`,
+        params: params,
+      }),
+      providesTags: ["Ledgers"],
+    }),
   }),
 });
 
 export const {
   useGetLedgersQuery,
+  useGetDirectClientsLedgerQuery,
   useCreateLedgerMutation,
 } = ledgersApi;
+

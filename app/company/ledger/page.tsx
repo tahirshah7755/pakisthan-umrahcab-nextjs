@@ -15,8 +15,23 @@ interface LedgerRecord {
 }
 
 export default function CompanyLedgerPage() {
+  const [activeTab, setActiveTab] = useState<"settlement" | "client">("settlement");
   const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
+  const [clientLedgerData, setClientLedgerData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [clientLoading, setClientLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [paymentModal, setPaymentModal] = useState<{
+    show: boolean;
+    booking: any;
+    receivedAmount: string;
+    saving: boolean;
+  }>({
+    show: false,
+    booking: null,
+    receivedAmount: "",
+    saving: false,
+  });
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -28,6 +43,75 @@ export default function CompanyLedgerPage() {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
+
+  const handleOpenPaymentModal = (item: any) => {
+    setPaymentModal({
+      show: true,
+      booking: item,
+      receivedAmount: String(item.received_amount || 0),
+      saving: false,
+    });
+  };
+
+  const handleSavePayment = async () => {
+    if (!paymentModal.booking) return;
+    try {
+      setPaymentModal(prev => ({ ...prev, saving: true }));
+      const newReceived = parseFloat(paymentModal.receivedAmount) || 0;
+      const res = await api.updateCompanyBookingPayment(paymentModal.booking.id, newReceived);
+      if (res && res.success) {
+        showToast("Client payment updated successfully!", "success");
+        setPaymentModal({ show: false, booking: null, receivedAmount: "", saving: false });
+        loadClientLedger(search);
+      } else {
+        showToast(res?.message || "Failed to update payment.", "error");
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast("Error updating payment: " + (err.message || "Unknown error"), "error");
+    } finally {
+      setPaymentModal(prev => ({ ...prev, saving: false }));
+    }
+  };
+
+
+  const loadLedgers = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getCompanyLedgers();
+      setLedgers(data);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to retrieve ledger statements.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadClientLedger = async (searchTerm = search) => {
+    try {
+      setClientLoading(true);
+      const res = await api.getCompanyClientLedger({ search: searchTerm });
+      setClientLedgerData(res);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to load client payment ledger.", "error");
+    } finally {
+      setClientLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLedgers();
+    loadClientLedger();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "client") {
+      loadClientLedger(search);
+    }
+  }, [search, activeTab]);
+
 
   const handleExportExcel = () => {
     if (ledgers.length === 0) {
@@ -192,22 +276,6 @@ export default function CompanyLedgerPage() {
     else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Ledger Statement - PDF Report" : "Ledger Statement");
   };
 
-  const loadLedgers = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getCompanyLedgers();
-      setLedgers(data);
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to retrieve ledger statements.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadLedgers();
-  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -221,13 +289,280 @@ export default function CompanyLedgerPage() {
       {/* Header Banner */}
       <div className="form-header-card mobile-header-card" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", padding: "20px 30px", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>Account Ledger</h2>
-          <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>View detailed account ledgers, payments, and outstanding balances.</p>
+          <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>Account Ledger & Client Reports</h2>
+          <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>Manage Admin Settlement Ledger and Client Payment Accounts.</p>
         </div>
       </div>
 
-      {/* Ledger Table Card */}
-      <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+      {/* Workflow Tabs */}
+      <div style={{ display: "flex", gap: "12px", background: "#ffffff", padding: "12px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <button
+          onClick={() => setActiveTab("settlement")}
+          style={{
+            flex: 1,
+            padding: "12px 20px",
+            borderRadius: "8px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            border: activeTab === "settlement" ? "2px solid #2563eb" : "1px solid #e2e8f0",
+            background: activeTab === "settlement" ? "#eff6ff" : "#f8fafc",
+            color: activeTab === "settlement" ? "#2563eb" : "#64748b",
+            transition: "all 0.2s ease"
+          }}
+        >
+          Admin Settlement Ledger (Agent ↔ Admin)
+        </button>
+        <button
+          onClick={() => setActiveTab("client")}
+          style={{
+            flex: 1,
+            padding: "12px 20px",
+            borderRadius: "8px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            border: activeTab === "client" ? "2px solid #2563eb" : "1px solid #e2e8f0",
+            background: activeTab === "client" ? "#eff6ff" : "#f8fafc",
+            color: activeTab === "client" ? "#2563eb" : "#64748b",
+            transition: "all 0.2s ease"
+          }}
+        >
+          Client Payment Ledger (Agent ↔ Client)
+        </button>
+      </div>
+
+      {activeTab === "client" ? (() => {
+        const clientBookingsList = Array.isArray(clientLedgerData)
+          ? clientLedgerData
+          : (Array.isArray(clientLedgerData?.data)
+              ? clientLedgerData.data
+              : (Array.isArray(clientLedgerData?.data?.data) ? clientLedgerData.data.data : []));
+
+        const clientSummary = clientLedgerData?.summary || clientLedgerData?.data?.summary || {
+          total_billed: clientBookingsList.reduce((s: number, b: any) => s + Number(b.car_price || 0), 0),
+          total_received: clientBookingsList.reduce((s: number, b: any) => s + Number(b.received_amount || 0), 0),
+          total_pending: clientBookingsList.reduce((s: number, b: any) => s + Number(b.pending_amount || 0), 0),
+          total_bookings: clientBookingsList.length
+        };
+
+        return (
+          /* Client Payment Ledger View */
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Summary Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+              <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", borderLeft: "4px solid #3b82f6" }}>
+                <div style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Total Client Billed</div>
+                <div style={{ fontSize: "22px", fontWeight: "800", color: "#1e293b", marginTop: "6px" }}>
+                  SAR {Number(clientSummary.total_billed || 0).toLocaleString('en-US', {minimumFractionDigits:2})}
+                </div>
+                <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                  {clientSummary.total_bookings || 0} Client Bookings
+                </div>
+              </div>
+
+              <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", borderLeft: "4px solid #10b981" }}>
+                <div style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Total Collected from Clients</div>
+                <div style={{ fontSize: "22px", fontWeight: "800", color: "#10b981", marginTop: "6px" }}>
+                  SAR {Number(clientSummary.total_received || 0).toLocaleString('en-US', {minimumFractionDigits:2})}
+                </div>
+                <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                  Payments received into Agent account
+                </div>
+              </div>
+
+              <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", borderLeft: "4px solid #ef4444" }}>
+                <div style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Outstanding Client Due</div>
+                <div style={{ fontSize: "22px", fontWeight: "800", color: "#ef4444", marginTop: "6px" }}>
+                  SAR {Number(clientSummary.total_pending || 0).toLocaleString('en-US', {minimumFractionDigits:2})}
+                </div>
+                <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                  Pending payment from Clients to Agent
+                </div>
+              </div>
+            </div>
+
+            {/* Client Ledger Table */}
+            <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
+                <h3 style={{ margin: 0, fontSize: "16px", color: "#1e293b", fontWeight: "700" }}>
+                  Client Payment Ledger Breakdown
+                </h3>
+                <div style={{ width: "260px" }}>
+                  <input
+                    type="text"
+                    placeholder="Filter client or booking..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                  />
+                </div>
+              </div>
+
+              {clientLoading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: "30px" }}>
+                  <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #2563eb", borderRadius: "50%", width: "30px", height: "30px", animation: "spin 1s linear infinite" }}></div>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="db-table" style={{ width: "100%", fontSize: "13px" }}>
+                    <thead>
+                      <tr>
+                        <th>Booking Code</th>
+                        <th>Client Name</th>
+                        <th>Route</th>
+                        <th>Date</th>
+                        <th style={{ textAlign: "right" }}>Car Price</th>
+                        <th style={{ textAlign: "right" }}>Received</th>
+                        <th style={{ textAlign: "right" }}>Pending</th>
+                        <th style={{ textAlign: "center" }}>Status</th>
+                        <th style={{ textAlign: "center" }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clientBookingsList.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} style={{ textAlign: "center", color: "#64748b", padding: "30px" }}>
+                            No client booking ledger entries found.
+                          </td>
+                        </tr>
+                      ) : (
+                        clientBookingsList.map((item: any) => {
+                          const isPaid = (item.pending_amount || 0) <= 0;
+                          return (
+                            <tr key={item.id}>
+                              <td style={{ fontWeight: 700, color: "#2563eb" }}>{item.booking_code || `UCB-${item.id}`}</td>
+                              <td>
+                                <div style={{ fontWeight: "600" }}>{item.full_name || item.customer?.name || "Client"}</div>
+                                <div style={{ fontSize: "11px", color: "#64748b" }}>{item.whatsapp || "N/A"}</div>
+                              </td>
+                              <td>{item.pickup} → {item.destination}</td>
+                              <td>{item.date}</td>
+                              <td style={{ textAlign: "right", fontWeight: "600" }}>SAR {Number(item.car_price || 0).toFixed(2)}</td>
+                              <td style={{ textAlign: "right", color: "#10b981", fontWeight: "700" }}>SAR {Number(item.received_amount || 0).toFixed(2)}</td>
+                              <td style={{ textAlign: "right", color: item.pending_amount > 0 ? "#ef4444" : "#64748b", fontWeight: "700" }}>
+                                SAR {Number(item.pending_amount || 0).toFixed(2)}
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <span style={{
+                                  padding: "4px 8px",
+                                  borderRadius: "12px",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  background: isPaid ? "#dcfce7" : "#fee2e2",
+                                  color: isPaid ? "#15803d" : "#b91c1c"
+                                }}>
+                                  {isPaid ? "Paid" : "Pending"}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                <button
+                                  onClick={() => handleOpenPaymentModal(item)}
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: "6px",
+                                    border: "none",
+                                    background: isPaid ? "#64748b" : "#2563eb",
+                                    color: "#ffffff",
+                                    fontSize: "11px",
+                                    fontWeight: "700",
+                                    cursor: "pointer",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px"
+                                  }}
+                                >
+                                  <i className="fas fa-edit"></i>
+                                  <span>{isPaid ? "Edit" : "Update Payment"}</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Update Payment Modal */}
+            {paymentModal.show && paymentModal.booking && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px" }}>
+                <div style={{ background: "#ffffff", borderRadius: "12px", width: "100%", maxWidth: "450px", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                    <h3 style={{ margin: 0, fontSize: "18px", color: "#1e293b", fontWeight: "700" }}>
+                      Update Client Payment
+                    </h3>
+                    <button
+                      onClick={() => setPaymentModal({ show: false, booking: null, receivedAmount: "", saving: false })}
+                      style={{ border: "none", background: "none", fontSize: "18px", color: "#94a3b8", cursor: "pointer" }}
+                    >
+                      &times;
+                    </button>
+                  </div>
+
+                  <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", fontSize: "13px", color: "#334155", marginBottom: "16px" }}>
+                    <div style={{ marginBottom: "4px" }}><strong>Booking:</strong> <span style={{ color: "#2563eb", fontWeight: "700" }}>{paymentModal.booking.booking_code || `UCB-${paymentModal.booking.id}`}</span></div>
+                    <div style={{ marginBottom: "4px" }}><strong>Client Name:</strong> {paymentModal.booking.full_name || paymentModal.booking.customer?.name}</div>
+                    <div><strong>Car Price:</strong> SAR {Number(paymentModal.booking.car_price || 0).toFixed(2)}</div>
+                  </div>
+
+                  <div style={{ marginBottom: "16px" }}>
+                    <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                      Received Amount from Client (SAR)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={paymentModal.receivedAmount}
+                      onChange={(e) => setPaymentModal(prev => ({ ...prev, receivedAmount: e.target.value }))}
+                      style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700" }}
+                    />
+                    <div style={{ fontSize: "12px", fontWeight: "600", color: (Number(paymentModal.booking.car_price || 0) - (parseFloat(paymentModal.receivedAmount) || 0)) > 0 ? "#ef4444" : "#10b981", marginTop: "6px" }}>
+                      Calculated Pending Balance: SAR {Math.max(0, Number(paymentModal.booking.car_price || 0) - (parseFloat(paymentModal.receivedAmount) || 0)).toFixed(2)}
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: "20px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentModal(prev => ({ ...prev, receivedAmount: String(paymentModal.booking.car_price || 0) }))}
+                      style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #10b981", background: "#ecfdf5", color: "#047857", fontSize: "13px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                    >
+                      <i className="fas fa-check-circle"></i>
+                      <span>Mark Fully Paid (SAR {Number(paymentModal.booking.car_price || 0).toFixed(2)})</span>
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentModal({ show: false, booking: null, receivedAmount: "", saving: false })}
+                      style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#64748b", fontWeight: "600", cursor: "pointer" }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSavePayment}
+                      disabled={paymentModal.saving}
+                      style={{ padding: "8px 20px", borderRadius: "6px", border: "none", background: "#2563eb", color: "#ffffff", fontWeight: "700", cursor: "pointer" }}
+                    >
+                      {paymentModal.saving ? "Saving..." : "Save Payment"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })() : (
+
+
+        /* Ledger Table Card (Admin Settlement Ledger) */
+        <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+
         {/* Toolbar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
           <div className="mobile-toolbar" style={{ display: "flex", gap: "6px" }}>
@@ -286,6 +621,9 @@ export default function CompanyLedgerPage() {
           </div>
         )}
       </div>
+      )}
+
+
       <style>{`
         @keyframes spin { 
           0% { transform: rotate(0deg); } 

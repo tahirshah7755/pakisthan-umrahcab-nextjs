@@ -2,15 +2,32 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGetLedgersQuery } from "@/store/api/ledgersApi";
+import { useGetLedgersQuery, useGetDirectClientsLedgerQuery } from "@/store/api/ledgersApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToExcel } from "@/utils/excelHelper";
+import { api } from "@/utils/api";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function LedgersPage() {
   const router = useRouter();
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<"agent" | "direct">("agent");
+
+  // Admin Payment Modal State
+  const [adminPaymentModal, setAdminPaymentModal] = useState<{
+    show: boolean;
+    booking: any;
+    receivedAmount: string;
+    saving: boolean;
+  }>({
+    show: false,
+    booking: null,
+    receivedAmount: "",
+    saving: false,
+  });
 
   // Filter input states
   const [companyFilter, setCompanyFilter] = useState("");
@@ -42,9 +59,47 @@ export default function LedgersPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const handleOpenAdminPaymentModal = (item: any) => {
+    setAdminPaymentModal({
+      show: true,
+      booking: item,
+      receivedAmount: String(item.received_amount || 0),
+      saving: false,
+    });
+  };
+
+  const handleSaveAdminPayment = async () => {
+    if (!adminPaymentModal.booking) return;
+    try {
+      setAdminPaymentModal(prev => ({ ...prev, saving: true }));
+      const newReceived = parseFloat(adminPaymentModal.receivedAmount) || 0;
+      const res = await api.updateAdminBookingPayment(adminPaymentModal.booking.id, newReceived);
+      if (res && (res.success || res.id)) {
+        showToast("Payment updated successfully!", "success");
+        setAdminPaymentModal({ show: false, booking: null, receivedAmount: "", saving: false });
+        refetchDirectLedger();
+      } else {
+        showToast(res?.message || "Failed to update payment.", "error");
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast("Error updating payment: " + (err.message || "Unknown error"), "error");
+    } finally {
+      setAdminPaymentModal(prev => ({ ...prev, saving: false }));
+    }
+  };
+
+
   // RTK Queries
   const { data: ledgersData, isLoading, isFetching } = useGetLedgersQuery(undefined);
+  const { data: directLedgerRes, isLoading: isDirectLoading, refetch: refetchDirectLedger } = useGetDirectClientsLedgerQuery({
+    search,
+    start_date: appliedFilters.start_date,
+    end_date: appliedFilters.end_date
+  });
   const { data: companiesData } = useGetCompaniesQuery(undefined);
+
+
 
   const companies = Array.isArray(companiesData)
     ? companiesData
@@ -329,20 +384,280 @@ export default function LedgersPage() {
           <h2>Ledger Directory</h2>
           <p>Audit cash transfers, balance adjustments, and dynamic voucher balances.</p>
         </div>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <button onClick={() => router.push("/admin/ledgers/add")} className="form-btn-back" style={{ background: "#ffffff", color: "#059669", fontWeight: "700", border: "1px solid #cbd5e1" }}>
-            <i className="fas fa-plus" style={{ color: "#059669" }}></i>
-            <span>Add New Ledger</span>
-          </button>
-          <button onClick={() => router.push("/admin/hub")} className="form-btn-back">
-            <i className="fas fa-arrow-left"></i>
-            <span>Back to Hub</span>
-          </button>
-        </div>
       </div>
 
-      {/* Legacy Quick Filters row */}
-      <div className="filter-card" style={{ padding: "20px" }}>
+      {/* Mode / Workflow Tab Navigation */}
+      <div style={{ display: "flex", gap: "12px", background: "#ffffff", padding: "12px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <button
+          onClick={() => setActiveTab("agent")}
+          style={{
+            flex: 1,
+            padding: "12px 20px",
+            borderRadius: "8px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            border: activeTab === "agent" ? "2px solid #ea580c" : "1px solid #e2e8f0",
+            background: activeTab === "agent" ? "#fff7ed" : "#f8fafc",
+            color: activeTab === "agent" ? "#ea580c" : "#64748b",
+            transition: "all 0.2s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
+          }}
+        >
+          <i className="fas fa-building"></i>
+          <span>Agent / B2B Settlement Ledger</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("direct")}
+          style={{
+            flex: 1,
+            padding: "12px 20px",
+            borderRadius: "8px",
+            fontWeight: "700",
+            fontSize: "14px",
+            cursor: "pointer",
+            border: activeTab === "direct" ? "2px solid #ea580c" : "1px solid #e2e8f0",
+            background: activeTab === "direct" ? "#fff7ed" : "#f8fafc",
+            color: activeTab === "direct" ? "#ea580c" : "#64748b",
+            transition: "all 0.2s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
+          }}
+        >
+          <i className="fas fa-user-check"></i>
+          <span>Direct Client Payment Ledger</span>
+        </button>
+      </div>
+
+      {activeTab === "direct" ? (
+        /* Direct Client Payment Ledger View */
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {/* Summary Cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+            <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", borderLeft: "4px solid #3b82f6" }}>
+              <div style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Total Direct Billed</div>
+              <div style={{ fontSize: "22px", fontWeight: "800", color: "#1e293b", marginTop: "6px" }}>
+                {fmt(directLedgerRes?.summary?.total_billed || 0)}
+              </div>
+              <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                {directLedgerRes?.summary?.total_bookings || 0} Direct Bookings
+              </div>
+            </div>
+
+            <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", borderLeft: "4px solid #10b981" }}>
+              <div style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Total Received</div>
+              <div style={{ fontSize: "22px", fontWeight: "800", color: "#10b981", marginTop: "6px" }}>
+                {fmt(directLedgerRes?.summary?.total_received || 0)}
+              </div>
+              <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                Collected from direct clients
+              </div>
+            </div>
+
+            <div style={{ background: "#ffffff", padding: "20px", borderRadius: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)", borderLeft: "4px solid #ef4444" }}>
+              <div style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", textTransform: "uppercase" }}>Pending Balance</div>
+              <div style={{ fontSize: "22px", fontWeight: "800", color: "#ef4444", marginTop: "6px" }}>
+                {fmt(directLedgerRes?.summary?.total_pending || 0)}
+              </div>
+              <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+                Outstanding from direct clients
+              </div>
+            </div>
+          </div>
+
+          {/* Direct Clients Search & Table */}
+          <div className="table-card" style={{ padding: "20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", color: "#1e293b", fontWeight: "700" }}>
+                Direct Clients Payment Registry
+              </h3>
+              <div style={{ width: "300px" }}>
+                <input
+                  type="text"
+                  placeholder="Search code, name, phone..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="form-input"
+                  style={{ width: "100%" }}
+                />
+              </div>
+            </div>
+
+            {isDirectLoading ? (
+              <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>Loading Direct Client Ledger...</div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc", borderBottom: "2px solid #e2e8f0" }}>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Booking Code</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Client Details</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Route / Service</th>
+                      <th style={{ padding: "12px", textAlign: "left" }}>Date</th>
+                      <th style={{ padding: "12px", textAlign: "right" }}>Total Price</th>
+                      <th style={{ padding: "12px", textAlign: "right" }}>Received</th>
+                      <th style={{ padding: "12px", textAlign: "right" }}>Pending</th>
+                      <th style={{ padding: "12px", textAlign: "center" }}>Status</th>
+                      <th style={{ padding: "12px", textAlign: "center" }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(!directLedgerRes?.data || directLedgerRes.data.length === 0) ? (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>
+                          No direct client entries found.
+                        </td>
+                      </tr>
+                    ) : (
+                      directLedgerRes.data.map((item: any) => {
+                        const isPaid = (item.pending_amount || 0) <= 0;
+                        return (
+                          <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "12px", fontWeight: "700", color: "#ea580c" }}>
+                              {item.booking_code || `UCB-${item.id}`}
+                            </td>
+                            <td style={{ padding: "12px" }}>
+                              <div style={{ fontWeight: "600", color: "#1e293b" }}>{item.full_name || item.customer?.name || "Direct Client"}</div>
+                              <div style={{ fontSize: "11px", color: "#64748b" }}>{item.whatsapp || item.email || "No contact"}</div>
+                            </td>
+                            <td style={{ padding: "12px", fontSize: "12px" }}>
+                              {item.pickup} → {item.destination}
+                            </td>
+                            <td style={{ padding: "12px", fontSize: "12px" }}>{item.date}</td>
+                            <td style={{ padding: "12px", textAlign: "right", fontWeight: "600" }}>
+                              {fmt(item.car_price)}
+                            </td>
+                            <td style={{ padding: "12px", textAlign: "right", color: "#10b981", fontWeight: "600" }}>
+                              {fmt(item.received_amount)}
+                            </td>
+                            <td style={{ padding: "12px", textAlign: "right", color: item.pending_amount > 0 ? "#ef4444" : "#64748b", fontWeight: "700" }}>
+                              {fmt(item.pending_amount)}
+                            </td>
+                            <td style={{ padding: "12px", textAlign: "center" }}>
+                              <span style={{
+                                padding: "4px 8px",
+                                borderRadius: "12px",
+                                fontSize: "11px",
+                                fontWeight: "700",
+                                background: isPaid ? "#dcfce7" : "#fee2e2",
+                                color: isPaid ? "#15803d" : "#b91c1c"
+                              }}>
+                                {isPaid ? "Paid" : "Pending"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px", textAlign: "center" }}>
+                              <button
+                                onClick={() => handleOpenAdminPaymentModal(item)}
+                                style={{
+                                  padding: "6px 12px",
+                                  borderRadius: "6px",
+                                  border: "none",
+                                  background: isPaid ? "#64748b" : "#ea580c",
+                                  color: "#ffffff",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px"
+                                }}
+                              >
+                                <span>{isPaid ? "Edit" : "Update Payment"}</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Admin Quick Update Payment Modal */}
+          {adminPaymentModal.show && adminPaymentModal.booking && (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: "15px" }}>
+              <div style={{ background: "#ffffff", borderRadius: "12px", width: "100%", maxWidth: "450px", padding: "24px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", color: "#1e293b", fontWeight: "700" }}>
+                    Update Direct Client Payment
+                  </h3>
+                  <button
+                    onClick={() => setAdminPaymentModal({ show: false, booking: null, receivedAmount: "", saving: false })}
+                    style={{ border: "none", background: "none", fontSize: "18px", color: "#94a3b8", cursor: "pointer" }}
+                  >
+                    &times;
+                  </button>
+                </div>
+
+                <div style={{ background: "#fff7ed", borderLeft: "4px solid #ea580c", padding: "12px", borderRadius: "8px", fontSize: "13px", color: "#334155", marginBottom: "16px" }}>
+                  <div style={{ marginBottom: "4px" }}><strong>Booking:</strong> <span style={{ color: "#ea580c", fontWeight: "700" }}>{adminPaymentModal.booking.booking_code || `UCB-${adminPaymentModal.booking.id}`}</span></div>
+                  <div style={{ marginBottom: "4px" }}><strong>Client:</strong> {adminPaymentModal.booking.full_name || adminPaymentModal.booking.customer?.name}</div>
+                  <div><strong>Total Price:</strong> SAR {Number(adminPaymentModal.booking.car_price || 0).toFixed(2)}</div>
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#475569", marginBottom: "6px" }}>
+                    Received Amount (SAR)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={adminPaymentModal.receivedAmount}
+                    onChange={(e) => setAdminPaymentModal(prev => ({ ...prev, receivedAmount: e.target.value }))}
+                    style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "700" }}
+                  />
+                  <div style={{ fontSize: "12px", fontWeight: "600", color: (Number(adminPaymentModal.booking.car_price || 0) - (parseFloat(adminPaymentModal.receivedAmount) || 0)) > 0 ? "#ef4444" : "#10b981", marginTop: "6px" }}>
+                    Calculated Pending Balance: SAR {Math.max(0, Number(adminPaymentModal.booking.car_price || 0) - (parseFloat(adminPaymentModal.receivedAmount) || 0)).toFixed(2)}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setAdminPaymentModal(prev => ({ ...prev, receivedAmount: String(adminPaymentModal.booking.car_price || 0) }))}
+                    style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #10b981", background: "#ecfdf5", color: "#047857", fontSize: "13px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                  >
+                    <i className="fas fa-check-circle"></i>
+                    <span>Mark Fully Paid (SAR {Number(adminPaymentModal.booking.car_price || 0).toFixed(2)})</span>
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setAdminPaymentModal({ show: false, booking: null, receivedAmount: "", saving: false })}
+                    style={{ padding: "8px 16px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#ffffff", color: "#64748b", fontWeight: "600", cursor: "pointer" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAdminPayment}
+                    disabled={adminPaymentModal.saving}
+                    style={{ padding: "8px 20px", borderRadius: "6px", border: "none", background: "#ea580c", color: "#ffffff", fontWeight: "700", cursor: "pointer" }}
+                  >
+                    {adminPaymentModal.saving ? "Saving..." : "Save Payment"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+
+        /* Agent / B2B Settlement Ledger View */
+        <>
+          {/* Legacy Quick Filters row */}
+          <div className="filter-card" style={{ padding: "20px" }}>
+
         <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", alignItems: "center" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase" }}>Voucher Wise (VW)</span>
@@ -589,8 +904,12 @@ export default function LedgersPage() {
           </div>
         )}
       </div>
+      </>
+      )}
+
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
+
         <span>&copy; 2026 Umrah Cab. Ledger Auditor Module.</span>
         <span>v2.0</span>
       </div>

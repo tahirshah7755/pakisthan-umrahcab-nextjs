@@ -599,6 +599,34 @@ export const api = {
     return data || [];
   },
 
+  async getCompanyClientLedger(params?: any) {
+    const q = new URLSearchParams();
+    if (params?.search) q.append("search", params.search);
+    if (params?.start_date) q.append("start_date", params.start_date);
+    if (params?.end_date) q.append("end_date", params.end_date);
+    const data = await request(`/company-panel/client-ledger?${q.toString()}`);
+    return data || { success: false, summary: {}, data: [] };
+  },
+
+  async updateCompanyBookingPayment(id: string | number, receivedAmount: number) {
+    const data = await request(`/company-panel/bookings/${id}/payment`, {
+      method: "PUT",
+      body: JSON.stringify({ received_amount: receivedAmount }),
+    });
+    return data;
+  },
+
+  async updateAdminBookingPayment(id: string | number, receivedAmount: number) {
+    const data = await request(`/bookings/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ received_amount: receivedAmount }),
+    });
+    return data;
+  },
+
+
+
+
   async getCompanyPayments(status?: string) {
     const q = new URLSearchParams();
     if (status && status !== "all") q.append("status", status);

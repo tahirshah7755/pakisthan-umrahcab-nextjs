@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGetPaymentsQuery, useUpdatePaymentStatusMutation } from "@/store/api/paymentsApi";
+import { useGetPaymentsQuery, useUpdatePaymentStatusMutation, useDeletePaymentMutation } from "@/store/api/paymentsApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToExcel } from "@/utils/excelHelper";
 
@@ -236,6 +236,7 @@ export default function PaymentsPage() {
   });
   const { data: companiesData } = useGetCompaniesQuery(undefined);
   const [updatePaymentStatus] = useUpdatePaymentStatusMutation();
+  const [deletePayment] = useDeletePaymentMutation();
 
   const companies = Array.isArray(companiesData)
     ? companiesData
@@ -757,14 +758,33 @@ export default function PaymentsPage() {
                           <option value="Failed">Failed</option>
                         </select>
                       </td>
-                      <td style={{ paddingRight: "16px", textAlign: "right" }}>
-                        <button
-                          title="Print Receipt"
-                          onClick={() => showToast(`Downloading receipt for payment ${p.custom_id || p.id}...`, "success")}
-                          style={{ background: "#f0fdf4", color: "#16a34a", border: "none", borderRadius: "6px", width: "28px", height: "28px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-                        >
-                          <i className="fas fa-print"></i>
-                        </button>
+                      <td style={{ paddingRight: "16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                        <div style={{ display: "inline-flex", gap: "6px" }}>
+                          <button
+                            title="Print Receipt"
+                            onClick={() => showToast(`Downloading receipt for payment ${p.custom_id || p.id}...`, "success")}
+                            style={{ background: "#f0fdf4", color: "#16a34a", border: "none", borderRadius: "6px", width: "28px", height: "28px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                          >
+                            <i className="fas fa-print"></i>
+                          </button>
+                          <button
+                            title="Delete Payment Record"
+                            onClick={async () => {
+                              if (confirm(`Are you sure you want to delete payment record ${p.custom_id || `PAY-${p.id}`}?`)) {
+                                try {
+                                  await deletePayment(p.id).unwrap();
+                                  showToast(`Payment ${p.custom_id || `PAY-${p.id}`} deleted successfully!`, "success");
+                                } catch (err) {
+                                  console.error(err);
+                                  showToast("Failed to delete payment record.", "error");
+                                }
+                              }
+                            }}
+                            style={{ background: "#fef2f2", color: "#ef4444", border: "none", borderRadius: "6px", width: "28px", height: "28px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                          >
+                            <i className="fas fa-trash-alt"></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

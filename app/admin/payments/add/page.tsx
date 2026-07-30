@@ -211,6 +211,7 @@ export default function AddPaymentPage() {
                       <option value="Bank Transfer">Bank Transfer</option>
                       <option value="Cash Receipt">Cash Deposit (Physical)</option>
                       <option value="Online Gateway">Online Checkout Card</option>
+                      <option value="Loan Balance">Loan / Credit Balance</option>
                     </select>
                     <i className="fas fa-chevron-down select-arrow"></i>
                   </div>

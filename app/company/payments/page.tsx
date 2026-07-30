@@ -577,6 +577,7 @@ export default function CompanyPaymentsPage() {
                   <option value="Bank Transfer">Bank Transfer</option>
                   <option value="Cash Receipt">Cash Deposit (Physical)</option>
                   <option value="Online Gateway">Online Checkout Card</option>
+                  <option value="Loan Balance">Request Loan / Credit Balance</option>
                 </select>
               </div>
 

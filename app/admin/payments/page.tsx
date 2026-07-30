@@ -472,6 +472,7 @@ export default function PaymentsPage() {
                 <option value="Bank Transfer">Bank Transfer</option>
                 <option value="Cash Receipt">Cash Deposit (Physical)</option>
                 <option value="Online Gateway">Online Checkout Card</option>
+                <option value="Loan Balance">Loan / Credit Balance</option>
               </select>
               <i className="fas fa-chevron-down select-arrow" style={{ fontSize: "10px" }}></i>
             </div>

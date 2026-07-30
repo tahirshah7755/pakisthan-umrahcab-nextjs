@@ -418,7 +418,7 @@ export default function PaymentsPage() {
             <i className="fas fa-clock"></i>
           </div>
           <div>
-            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Pending Approval</span>
+            <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>Pending Approval / Due Amount</span>
             <strong style={{ fontSize: "18px", color: "#d97706" }}>{fmt(pendingSum)}</strong>
           </div>
         </div>

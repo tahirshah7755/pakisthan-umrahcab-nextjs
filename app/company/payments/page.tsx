@@ -297,9 +297,9 @@ export default function CompanyPaymentsPage() {
   };
 
   const fmt = (n: number) => `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const totalSum = payments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
-  const approvedSum = payments.filter((p: any) => p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
-  const pendingSum = payments.filter((p: any) => p.status === "Pending" || p.status === "pending").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const totalSum = payments.filter((p: any) => p.method !== "Loan Due").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const approvedSum = payments.filter((p: any) => p.method !== "Loan Due" && (p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified")).reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const pendingSum = payments.filter((p: any) => p.method === "Loan Due" && (p.status === "Pending" || p.status === "pending")).reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
 
   const filteredPayments = payments.filter((p) => {
     if (statusFilter !== "all") {

@@ -355,8 +355,8 @@ export default function PaymentsPage() {
     }
   }
 
-  const totalSum = allPayments.reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
-  const approvedSum = allPayments.filter((p: any) => p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const totalSum = allPayments.filter((p: any) => p.method !== "Loan Due").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
+  const approvedSum = allPayments.filter((p: any) => p.method !== "Loan Due" && (p.status === "Approved" || p.status === "approved" || p.status === "success" || p.status === "Verified")).reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
   const pendingSum = allPayments.filter((p: any) => p.status === "Pending" || p.status === "pending").reduce((acc: number, p: any) => acc + parseFloat(p.amount || 0), 0);
 
   return (

@@ -5,6 +5,17 @@ export const apiSlice = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab",
     credentials: "include",
+    prepareHeaders: (headers) => {
+      if (typeof window !== "undefined") {
+        const token =
+          localStorage.getItem("umrahcab_token") ||
+          localStorage.getItem("umrahcab_company_token");
+        if (token) {
+          headers.set("Authorization", `Bearer ${token}`);
+        }
+      }
+      return headers;
+    },
   }),
   tagTypes: [
     "Bookings",

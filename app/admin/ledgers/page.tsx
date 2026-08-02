@@ -516,7 +516,10 @@ export default function LedgersPage() {
                       </tr>
                     ) : (
                       directLedgerRes.data.map((item: any) => {
-                        const isPaid = (item.pending_amount || 0) <= 0;
+                        const pendingVal = typeof item.calculated_pending !== "undefined" 
+                          ? Number(item.calculated_pending) 
+                          : Math.max(0, Number(item.car_price || 0) - Number(item.received_amount || 0));
+                        const isPaid = pendingVal <= 0;
                         return (
                           <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                             <td style={{ padding: "12px", fontWeight: "700", color: "#ea580c" }}>
@@ -536,8 +539,8 @@ export default function LedgersPage() {
                             <td style={{ padding: "12px", textAlign: "right", color: "#10b981", fontWeight: "600" }}>
                               {fmt(item.received_amount)}
                             </td>
-                            <td style={{ padding: "12px", textAlign: "right", color: item.pending_amount > 0 ? "#ef4444" : "#64748b", fontWeight: "700" }}>
-                              {fmt(item.pending_amount)}
+                            <td style={{ padding: "12px", textAlign: "right", color: pendingVal > 0 ? "#ef4444" : "#64748b", fontWeight: "700" }}>
+                              {fmt(pendingVal)}
                             </td>
                             <td style={{ padding: "12px", textAlign: "center" }}>
                               <span style={{

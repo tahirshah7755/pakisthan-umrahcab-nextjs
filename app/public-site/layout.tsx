@@ -905,13 +905,52 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           }
         }
 
+        @media (max-width: 768px) {
+          .uc-vehicles-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+          }
+          .uc-vehicle-card {
+            padding: 16px 12px;
+          }
+          .uc-vehicle-icon {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+          }
+          .uc-vehicle-name {
+            font-size: 14px;
+          }
+          .uc-vehicle-price {
+            font-size: 18px;
+          }
+          .uc-offers-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+          .uc-offer-card {
+            padding: 20px;
+          }
+          .uc-app-section {
+            padding: 48px 16px;
+          }
+          .uc-contact-item {
+            gap: 12px;
+            margin-bottom: 16px;
+          }
+          .uc-contact-icon {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+          }
+        }
+
         @media (max-width: 480px) {
+          .uc-vehicles-grid {
+            grid-template-columns: 1fr;
+          }
           .uc-footer-grid { grid-template-columns: 1fr; }
           .uc-nav-logo-text { font-size: 16px; }
           .uc-nav-logo img { height: 36px; width: 36px; }
-          .uc-wizard-step {
-            flex: 1 1 100%;
-          }
           .uc-offer-vehicle {
             font-size: 26px;
           }
@@ -920,6 +959,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           }
           .uc-app-btns {
             flex-direction: column;
+          }
+          .uc-btn-primary, .uc-btn-outline, .uc-btn-whatsapp {
+            width: 100%;
+            justify-content: center;
           }
         }
       `}</style>

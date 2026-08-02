@@ -154,6 +154,44 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           transform: translateY(-1px);
         }
 
+        /* ===== LOGIN DROPDOWN ===== */
+        .uc-dropdown {
+          position: relative;
+          display: inline-block;
+        }
+        .uc-dropdown-menu {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          background: #161b22;
+          border: 1px solid rgba(200, 168, 75, 0.4);
+          border-radius: 12px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+          min-width: 210px;
+          padding: 8px 0;
+          display: none;
+          z-index: 1001;
+        }
+        .uc-dropdown:hover .uc-dropdown-menu,
+        .uc-dropdown:focus-within .uc-dropdown-menu {
+          display: block;
+        }
+        .uc-dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 16px;
+          color: #d0d7de;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 600;
+          transition: background 0.2s, color 0.2s;
+        }
+        .uc-dropdown-item:hover {
+          background: rgba(200, 168, 75, 0.15);
+          color: var(--uc-primary);
+        }
+
         /* ===== HERO ===== */
         .uc-hero {
           min-height: 100vh;
@@ -661,22 +699,51 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       {/* ===== NAVBAR ===== */}
       <nav className={`uc-nav ${scrolled ? "scrolled" : ""}`} style={{ background: scrolled ? undefined : "linear-gradient(180deg, rgba(13,17,23,0.9) 0%, transparent 100%)" }}>
         <div className="uc-nav-inner">
-          <Link href="/public-site" className="uc-nav-logo">
+          <Link href="/" className="uc-nav-logo">
             <img src={siteLogo} alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
             <span className="uc-nav-logo-text">{siteTitle}</span>
           </Link>
 
           <ul className="uc-nav-links">
-            {navLinks.map((l) => (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className={`uc-nav-link ${l.label === "Members" ? "uc-nav-cta" : ""} ${pathname === l.href ? "active" : ""}`}
-                >
-                  {l.label}
+            <li>
+              <Link href="/" className={`uc-nav-link ${pathname === "/" || pathname === "/public-site" ? "active" : ""}`}>
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link href="/public-site/booking-status" className={`uc-nav-link ${pathname === "/public-site/booking-status" ? "active" : ""}`}>
+                Booking Status
+              </Link>
+            </li>
+            <li>
+              <Link href="/#contact" className="uc-nav-link">
+                Contact Us
+              </Link>
+            </li>
+            <li>
+              <Link href="/public-site/signup" className={`uc-nav-link ${pathname === "/public-site/signup" ? "active" : ""}`}>
+                Members
+              </Link>
+            </li>
+            <li className="uc-dropdown">
+              <button className="uc-nav-link uc-nav-cta" style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", border: "none" }}>
+                <i className="fas fa-sign-in-alt"></i> Login Portals <i className="fas fa-chevron-down" style={{ fontSize: "10px" }}></i>
+              </button>
+              <div className="uc-dropdown-menu">
+                <Link href="/login" className="uc-dropdown-item">
+                  <i className="fas fa-shield-alt" style={{ color: "#c8a84b", width: "16px" }}></i>
+                  <span>Admin Login</span>
                 </Link>
-              </li>
-            ))}
+                <Link href="/company/login" className="uc-dropdown-item">
+                  <i className="fas fa-building" style={{ color: "#3b82f6", width: "16px" }}></i>
+                  <span>B2B Agent Login</span>
+                </Link>
+                <Link href="/driver/login" className="uc-dropdown-item">
+                  <i className="fas fa-car" style={{ color: "#10b981", width: "16px" }}></i>
+                  <span>Driver Login</span>
+                </Link>
+              </div>
+            </li>
           </ul>
 
           {/* WhatsApp CTA */}
@@ -732,17 +799,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
           <div>
             <div className="uc-footer-heading">Quick Links</div>
-            <Link href="/public-site" className="uc-footer-link">Home</Link>
+            <Link href="/" className="uc-footer-link">Home</Link>
             <Link href="/public-site/booking-status" className="uc-footer-link">Booking Status</Link>
-            <Link href="/public-site#contact" className="uc-footer-link">Contact Us</Link>
+            <Link href="/#contact" className="uc-footer-link">Contact Us</Link>
             <Link href="/public-site/signup" className="uc-footer-link">Members</Link>
           </div>
           <div>
-            <div className="uc-footer-heading">Services</div>
-            <span className="uc-footer-link">Jeddah Airport Transfers</span>
-            <span className="uc-footer-link">Makkah ↔ Madinah</span>
-            <span className="uc-footer-link">Ziyarah Tours</span>
-            <span className="uc-footer-link">VIP Vehicles</span>
+            <div className="uc-footer-heading">Portal Logins</div>
+            <Link href="/login" className="uc-footer-link">Admin Login</Link>
+            <Link href="/company/login" className="uc-footer-link">B2B Agent Login</Link>
+            <Link href="/driver/login" className="uc-footer-link">Driver Login</Link>
           </div>
           <div>
             <div className="uc-footer-heading">Contact</div>

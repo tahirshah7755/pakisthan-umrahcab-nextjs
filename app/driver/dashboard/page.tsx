@@ -333,6 +333,7 @@ export default function DriverDashboardPage() {
       "Rate", "Voucher", "Cash Collected", "Fuel / Petrol", "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
+      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
       const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                        Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
       const isLocked = item.is_locked && !driverUser?.edit_rights;
@@ -343,7 +344,7 @@ export default function DriverDashboardPage() {
         item.agent || "—",
         item.rate || 0,
         item.voucher || 0,
-        item.cash || 0,
+        totalCash,
         item.fuel || 0,
         expenses,
         item.total || 0,
@@ -368,6 +369,7 @@ export default function DriverDashboardPage() {
     const csvContent = [
       headers.join(","),
       ...entries.map((item: any) => {
+        const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
         const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                          Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
         const isLocked = item.is_locked && !driverUser?.edit_rights;
@@ -378,7 +380,7 @@ export default function DriverDashboardPage() {
           `"${(item.agent || "—").replace(/"/g, '""')}"`,
           item.rate || 0,
           item.voucher || 0,
-          item.cash || 0,
+          totalCash,
           item.fuel || 0,
           expenses,
           item.total || 0,
@@ -408,6 +410,7 @@ export default function DriverDashboardPage() {
       "Rate", "Voucher", "Cash Collected", "Fuel / Petrol", "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
+      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
       const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                        Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
       const isLocked = item.is_locked && !driverUser?.edit_rights;
@@ -418,7 +421,7 @@ export default function DriverDashboardPage() {
         item.agent || "—",
         item.rate || 0,
         item.voucher || 0,
-        item.cash || 0,
+        totalCash,
         item.fuel || 0,
         expenses,
         item.total || 0,
@@ -457,6 +460,7 @@ export default function DriverDashboardPage() {
     const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     
     const rowsHtml = entries.map((item: any) => {
+      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
       const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                        Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
       const isLocked = item.is_locked && !driverUser?.edit_rights;
@@ -472,7 +476,7 @@ export default function DriverDashboardPage() {
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.agent || "—"}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${Number(item.cash || 0).toFixed(0)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${totalCash.toFixed(0)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${Number(item.fuel || 0).toFixed(0)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${expenses.toFixed(0)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
@@ -1655,7 +1659,12 @@ export default function DriverDashboardPage() {
                           {Number(item.voucher || 0).toFixed(0)} SAR
                         </td>
                         <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
-                          {Number(item.cash || 0).toFixed(0)} SAR
+                          <div>{(Number(item.cash || 0) + Number(item.waqas_received || 0)).toFixed(0)} SAR</div>
+                          {Number(item.waqas_received || 0) > 0 && (
+                            <div style={{ fontSize: "10px", color: "#10b981", fontWeight: "bold" }}>
+                              ({Number(item.cash || 0)} + {Number(item.waqas_received || 0)} Waqas)
+                            </div>
+                          )}
                         </td>
                         <td style={{ textAlign: "right", color: "var(--danger-color)", whiteSpace: "nowrap" }}>
                           {Number(item.fuel || 0).toFixed(0)} SAR

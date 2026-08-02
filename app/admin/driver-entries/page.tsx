@@ -298,6 +298,7 @@ export default function AdminDriverEntriesPage() {
       "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Waqas Received", "Misc", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
+      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         item.driver?.name || `Driver ID #${item.driver_id}`,
@@ -308,7 +309,7 @@ export default function AdminDriverEntriesPage() {
         item.agent || "—",
         item.rate || 0,
         item.voucher || 0,
-        item.cash || 0,
+        totalCash,
         item.fuel || 0,
         item.parking || 0,
         item.wash || 0,
@@ -348,7 +349,7 @@ export default function AdminDriverEntriesPage() {
         `"${(item.agent || "—").replace(/"/g, '""')}"`,
         item.rate || 0,
         item.voucher || 0,
-        item.cash || 0,
+        Number(item.cash || 0) + Number(item.waqas_received || 0),
         item.fuel || 0,
         item.parking || 0,
         item.wash || 0,
@@ -392,7 +393,7 @@ export default function AdminDriverEntriesPage() {
       item.agent || "—",
       item.rate || 0,
       item.voucher || 0,
-      item.cash || 0,
+      Number(item.cash || 0) + Number(item.waqas_received || 0),
       item.fuel || 0,
       item.parking || 0,
       item.wash || 0,
@@ -429,6 +430,7 @@ export default function AdminDriverEntriesPage() {
     const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     
     const rowsHtml = entries.map((item: any) => {
+      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
       const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                        Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
       return `
@@ -446,7 +448,7 @@ export default function AdminDriverEntriesPage() {
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.agent || "—"}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${Number(item.cash || 0).toFixed(0)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${totalCash.toFixed(0)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${expenses.toFixed(0)}</td>
           <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
             ${Number(item.total || 0).toFixed(0)}
@@ -1316,7 +1318,12 @@ export default function AdminDriverEntriesPage() {
                         </div>
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "700", color: "#0f172a" }}>
-                        {Number(item.cash || 0).toLocaleString()} SAR
+                        <div>{(Number(item.cash || 0) + Number(item.waqas_received || 0)).toLocaleString()} SAR</div>
+                        {Number(item.waqas_received || 0) > 0 && (
+                          <div style={{ fontSize: "10px", color: "#059669", fontWeight: "600" }}>
+                            ({Number(item.cash || 0)} + {Number(item.waqas_received || 0)} Waqas)
+                          </div>
+                        )}
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "500", color: "#64748b" }}>
                         {expenses.toLocaleString()} SAR

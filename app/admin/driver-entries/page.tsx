@@ -127,11 +127,12 @@ export default function AdminDriverEntriesPage() {
     }
   };
 
-  // Formula: Cash - (Fuel + Parking + Wash + Oil + Maint + Mic)
+  // Formula: (Cash + Waqas Received) - (Fuel + Parking + Wash + Oil + Maint + Mic)
   const calculateTotal = (data: typeof formData) => {
-    const expenses = Number(data.fuel) + Number(data.parking) + Number(data.wash) + 
-                     Number(data.oil_change) + Number(data.car_maintenance) + Number(data.mic);
-    return Number(data.cash) - expenses;
+    const earnings = Number(data.cash || 0) + Number(data.waqas_received || 0);
+    const expenses = Number(data.fuel || 0) + Number(data.parking || 0) + Number(data.wash || 0) + 
+                     Number(data.oil_change || 0) + Number(data.car_maintenance || 0) + Number(data.mic || 0);
+    return earnings - expenses;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -517,7 +518,7 @@ export default function AdminDriverEntriesPage() {
   };
 
   // Stats summaries
-  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0), 0);
+  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0) + Number(item.waqas_received || 0), 0);
   const totalExpenses = entries.reduce((sum, item) => 
     sum + Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
           Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0)
@@ -1462,30 +1463,16 @@ export default function AdminDriverEntriesPage() {
                   </div>
                 </div>
 
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label>Hotel Drop Off</label>
-                    <input
-                      type="text"
-                      name="hotel_drop_off"
-                      value={formData.hotel_drop_off}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Hilton Suites Makkah"
-                      className="input-control"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Waqas Received</label>
-                    <input
-                      type="number"
-                      name="waqas_received"
-                      min="0"
-                      value={formData.waqas_received || ""}
-                      onChange={handleInputChange}
-                      className="input-control"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label>Hotel Drop Off</label>
+                  <input
+                    type="text"
+                    name="hotel_drop_off"
+                    value={formData.hotel_drop_off}
+                    onChange={handleInputChange}
+                    placeholder="e.g. Hilton Suites Makkah"
+                    className="input-control"
+                  />
                 </div>
 
                 {/* Cash & Earnings */}
@@ -1521,6 +1508,21 @@ export default function AdminDriverEntriesPage() {
                       min="0"
                       value={formData.cash || ""}
                       onChange={handleInputChange}
+                      className="input-control"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-3" style={{ marginTop: "12px" }}>
+                  <div className="form-group">
+                    <label>Received From Waqas</label>
+                    <input
+                      type="number"
+                      name="waqas_received"
+                      min="0"
+                      value={formData.waqas_received || ""}
+                      onChange={handleInputChange}
+                      placeholder="0"
                       className="input-control"
                     />
                   </div>

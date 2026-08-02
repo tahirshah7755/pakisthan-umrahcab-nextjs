@@ -116,11 +116,12 @@ export default function DriverDashboardPage() {
     }
   };
 
-  // Formula: Cash - (Fuel + Parking + Wash + Oil + Maint + Mic)
+  // Formula: (Cash + Waqas Received) - (Fuel + Parking + Wash + Oil + Maint + Mic)
   const calculateTotal = (data: typeof formData) => {
-    const expenses = Number(data.fuel) + Number(data.parking) + Number(data.wash) + 
-                     Number(data.oil_change) + Number(data.car_maintenance) + Number(data.mic);
-    return Number(data.cash) - expenses;
+    const earnings = Number(data.cash || 0) + Number(data.waqas_received || 0);
+    const expenses = Number(data.fuel || 0) + Number(data.parking || 0) + Number(data.wash || 0) + 
+                     Number(data.oil_change || 0) + Number(data.car_maintenance || 0) + Number(data.mic || 0);
+    return earnings - expenses;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -546,7 +547,7 @@ export default function DriverDashboardPage() {
 
   // Stats
   const totalSubmissions = entries.length;
-  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0), 0);
+  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0) + Number(item.waqas_received || 0), 0);
 
   return (
     <div className="driver-dashboard-page">
@@ -1393,7 +1394,7 @@ export default function DriverDashboardPage() {
               </div>
             </div>
 
-            {/* Row 2: Earnings (3 columns) */}
+            {/* Row 2: Earnings (SAR) */}
             <div className="section-divider">
               <h3 className="section-title">Earnings (SAR)</h3>
               <div className="inputs-row-3">
@@ -1434,9 +1435,24 @@ export default function DriverDashboardPage() {
                   />
                 </div>
               </div>
+
+              <div className="inputs-row-3" style={{ marginTop: "16px" }}>
+                <div className="form-group">
+                  <label className="sub-input-label">Received From Waqas</label>
+                  <input
+                    type="number"
+                    name="waqas_received"
+                    min="0"
+                    value={formData.waqas_received || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Row 3: Expenses & Petrol (4 columns row 1, 3 columns row 2) */}
+            {/* Row 3: Expenses & Petrol (SAR) */}
             <div className="section-divider">
               <h3 className="section-title">Expenses & Petrol (SAR)</h3>
               
@@ -1511,18 +1527,6 @@ export default function DriverDashboardPage() {
                     name="mic"
                     min="0"
                     value={formData.mic || ""}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    className="form-input"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="sub-input-label">Waqas Received</label>
-                  <input
-                    type="number"
-                    name="waqas_received"
-                    min="0"
-                    value={formData.waqas_received || ""}
                     onChange={handleInputChange}
                     placeholder="0"
                     className="form-input"
@@ -1873,6 +1877,20 @@ export default function DriverDashboardPage() {
                       />
                     </div>
                   </div>
+
+                  <div className="inputs-row-3" style={{ marginTop: "16px" }}>
+                    <div className="form-group">
+                      <label className="sub-input-label">Received From Waqas</label>
+                      <input
+                        type="number"
+                        name="waqas_received"
+                        min="0"
+                        value={editFormData.waqas_received || ""}
+                        onChange={handleEditInputChange}
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="section-divider">
@@ -1943,17 +1961,6 @@ export default function DriverDashboardPage() {
                         name="mic"
                         min="0"
                         value={editFormData.mic}
-                        onChange={handleEditInputChange}
-                        className="form-input"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="sub-input-label">Waqas Received</label>
-                      <input
-                        type="number"
-                        name="waqas_received"
-                        min="0"
-                        value={editFormData.waqas_received}
                         onChange={handleEditInputChange}
                         className="form-input"
                       />

@@ -462,79 +462,118 @@ function CompanyBookingsContent() {
                       </td>
                       <td>{b.car_type}</td>
                       <td>
-                        <select
-                          value={b.driver_id || ""}
-                          onChange={(e) => handleInlineDriverChange(b.id, e.target.value)}
-                          style={{
-                            padding: "4px 8px",
-                            fontSize: "12px",
+                        {b.driver_id ? (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "4px 10px",
                             borderRadius: "6px",
-                            border: "1px solid #cbd5e1",
-                            background: "#ffffff",
-                            width: "140px",
-                            color: b.driver_id ? "#1e293b" : "#94a3b8",
-                            fontWeight: b.driver_id ? "600" : "normal",
-                            outline: "none"
-                          }}
-                        >
-                          <option value="">-- No Driver --</option>
-                          {drivers.map((d: any) => (
-                            <option key={d.id} value={d.id}>{d.name}</option>
-                          ))}
-                        </select>
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            backgroundColor: "#ecfdf5",
+                            color: "#047857",
+                            border: "1px solid #a7f3d0",
+                            whiteSpace: "nowrap"
+                          }}>
+                            <i className="fas fa-user-check" style={{ fontSize: "11px" }}></i>
+                            {b.driver?.name || drivers.find((d: any) => String(d.id) === String(b.driver_id))?.name || `Driver #${b.driver_id}`}
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            backgroundColor: "#f1f5f9",
+                            color: "#64748b",
+                            border: "1px solid #e2e8f0",
+                            whiteSpace: "nowrap"
+                          }}>
+                            <i className="fas fa-user-clock" style={{ fontSize: "11px" }}></i>
+                            Not Assigned
+                          </span>
+                        )}
                       </td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <select
-                            value={b.driver_trip_status || ""}
-                            onChange={(e) => handleInlineDriverTripStatusChange(b.id, e.target.value)}
-                            style={{
-                              padding: "4px 8px",
-                              fontSize: "12px",
-                              borderRadius: "6px",
-                              border: "1px solid #cbd5e1",
-                              background: "#ffffff",
-                              width: "155px",
-                              color: b.driver_trip_status ? "#1e293b" : "#94a3b8",
-                              fontWeight: b.driver_trip_status ? "600" : "normal",
-                              outline: "none"
-                            }}
-                          >
-                            <option value="">Select Status</option>
-                            <option value="Assigned">Assigned</option>
-                            <option value="Guest In Contact">Guest In Contact</option>
-                            <option value="No Reply From Guest">No Reply From Guest</option>
-                            <option value="On The Way">On The Way</option>
-                            <option value="Reached At Location">Reached At Location</option>
-                            <option value="Pickup Done">Pickup Done</option>
-                            <option value="Ride End">Ride End</option>
-                            <option value="Ride Cancelled">Ride Cancelled</option>
-                            <option value="Ride Miss">Ride Miss</option>
-                            <option value="No Show">No Show</option>
-                            <option value="Driver Copy Shared">Driver Copy Shared</option>
-                          </select>
-                          <button
-                            onClick={() => {
-                              setSelectedShareBooking(b);
-                              setShowShareModal(true);
-                            }}
-                            style={{
-                              border: "none",
-                              background: "#e0f2fe",
-                              color: "#2563eb",
-                              borderRadius: "50%",
-                              width: "24px",
-                              height: "24px",
-                              display: "flex",
+                          {b.driver_trip_status ? (
+                            <span style={{
+                              display: "inline-flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              fontSize: "12px"
-                            }}
-                            title="Share template messages"
-                          >
-                            <i className="fas fa-info-circle"></i>
-                          </button>
+                              gap: "5px",
+                              padding: "4px 10px",
+                              borderRadius: "6px",
+                              fontSize: "12px",
+                              fontWeight: "600",
+                              backgroundColor: b.driver_trip_status === "Ride End" || b.driver_trip_status === "Pickup Done" 
+                                ? "#ecfdf5" 
+                                : b.driver_trip_status.includes("Cancel") || b.driver_trip_status.includes("Miss") || b.driver_trip_status === "No Show"
+                                ? "#fef2f2"
+                                : "#eff6ff",
+                              color: b.driver_trip_status === "Ride End" || b.driver_trip_status === "Pickup Done"
+                                ? "#047857"
+                                : b.driver_trip_status.includes("Cancel") || b.driver_trip_status.includes("Miss") || b.driver_trip_status === "No Show"
+                                ? "#dc2626"
+                                : "#1d4ed8",
+                              border: `1px solid ${
+                                b.driver_trip_status === "Ride End" || b.driver_trip_status === "Pickup Done"
+                                  ? "#a7f3d0"
+                                  : b.driver_trip_status.includes("Cancel") || b.driver_trip_status.includes("Miss") || b.driver_trip_status === "No Show"
+                                  ? "#fecaca"
+                                  : "#bfdbfe"
+                              }`,
+                              whiteSpace: "nowrap"
+                            }}>
+                              <i className="fas fa-route" style={{ fontSize: "11px" }}></i>
+                              {b.driver_trip_status}
+                            </span>
+                          ) : (
+                            <span style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              padding: "4px 10px",
+                              borderRadius: "6px",
+                              fontSize: "12px",
+                              fontWeight: "500",
+                              backgroundColor: "#f8fafc",
+                              color: "#94a3b8",
+                              border: "1px solid #e2e8f0",
+                              whiteSpace: "nowrap"
+                            }}>
+                              Pending Status
+                            </span>
+                          )}
+
+                          {b.driver_id && (
+                            <button
+                              onClick={() => {
+                                setSelectedShareBooking(b);
+                                setShowShareModal(true);
+                              }}
+                              style={{
+                                border: "none",
+                                background: "#e0f2fe",
+                                color: "#2563eb",
+                                borderRadius: "50%",
+                                width: "24px",
+                                height: "24px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                flexShrink: 0
+                              }}
+                              title="View / Share Driver Details"
+                            >
+                              <i className="fas fa-info-circle"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                       <td>

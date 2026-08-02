@@ -26,13 +26,38 @@ export default function PublicHomePage() {
   ];
 
   const [activeOffer, setActiveOffer] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveOffer((prev) => (prev + 1) % offers.length);
-    }, 4000);
+    }, 4500);
     return () => clearInterval(timer);
   }, [offers.length]);
+
+  const handleNextOffer = () => setActiveOffer((prev) => (prev + 1) % offers.length);
+  const handlePrevOffer = () => setActiveOffer((prev) => (prev - 1 + offers.length) % offers.length);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 40) {
+      handleNextOffer();
+    } else if (distance < -40) {
+      handlePrevOffer();
+    }
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
 
   // Booking Wizard State
   const [step, setStep] = useState(1);
@@ -117,12 +142,19 @@ export default function PublicHomePage() {
     <div>
       {/* ===== HERO BANNER ===== */}
       <section className="uc-hero">
-        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center" }}>
+        <div className="uc-hero-grid" style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center" }}>
           <div>
-            <div className="uc-carousel-wrapper">
+            <div
+              className="uc-carousel-wrapper"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               {offers.map((offer, idx) => (
                 <div key={idx} className={`uc-slide ${idx === activeOffer ? "active" : ""}`}>
-                  <span className="uc-offer-badge">Mega Offer</span>
+                  <span className="uc-offer-badge">
+                    <i className={`fas ${offer.icon}`} style={{ marginRight: "6px" }}></i> Mega Offer
+                  </span>
                   <h1 className="uc-offer-vehicle">{offer.vehicle}</h1>
                   <div className="uc-offer-route">
                     <i className="fas fa-route" style={{ color: "var(--uc-primary)" }}></i>
@@ -131,7 +163,7 @@ export default function PublicHomePage() {
                   <div className="uc-offer-price">{offer.price} SAR</div>
                   <p className="uc-offer-price-sub">All inclusive price: Toll tax, Fuel & Driver charges.</p>
                   
-                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  <div className="uc-slide-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                     <a href="https://wa.me/966567799616?text=HI" target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp">
                       <i className="fab fa-whatsapp"></i> Book via WhatsApp
                     </a>
@@ -154,23 +186,32 @@ export default function PublicHomePage() {
               ))}
             </div>
 
-            {/* Dots navigation */}
-            <div style={{ display: "flex", gap: "8px", marginTop: "24px" }}>
-              {offers.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveOffer(idx)}
-                  style={{
-                    width: "12px",
-                    height: "12px",
-                    borderRadius: "50%",
-                    border: "none",
-                    background: idx === activeOffer ? "var(--uc-primary)" : "#30363d",
-                    cursor: "pointer",
-                    transition: "background 0.3s"
-                  }}
-                ></button>
-              ))}
+            {/* Slider Navigation & Pill Indicators */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "24px", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                {offers.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveOffer(idx)}
+                    className="uc-slide-pill"
+                    style={{
+                      width: idx === activeOffer ? "28px" : "10px",
+                      background: idx === activeOffer ? "var(--uc-primary)" : "#30363d",
+                    }}
+                    aria-label={`Slide ${idx + 1}`}
+                  ></button>
+                ))}
+              </div>
+
+              {/* Next/Prev Arrow Controls */}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button onClick={handlePrevOffer} className="uc-slider-nav-btn" aria-label="Previous Slide">
+                  <i className="fas fa-chevron-left"></i>
+                </button>
+                <button onClick={handleNextOffer} className="uc-slider-nav-btn" aria-label="Next Slide">
+                  <i className="fas fa-chevron-right"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -211,19 +252,19 @@ export default function PublicHomePage() {
           <div className="uc-wizard-steps">
             <div className={`uc-wizard-step ${step >= 1 ? "active" : ""}`} onClick={() => setStep(1)}>
               <span className="step-num">1</span>
-              <div>Route & Time</div>
+              <span>Route</span>
             </div>
             <div className={`uc-wizard-step ${step >= 2 ? "active" : ""}`} onClick={() => setStep(2)}>
               <span className="step-num">2</span>
-              <div>Vehicle Selection</div>
+              <span>Vehicle</span>
             </div>
             <div className={`uc-wizard-step ${step >= 3 ? "active" : ""}`} onClick={() => setStep(3)}>
               <span className="step-num">3</span>
-              <div>Contact Details</div>
+              <span>Contact</span>
             </div>
             <div className={`uc-wizard-step ${step >= 4 ? "active" : ""}`} onClick={() => setStep(4)}>
               <span className="step-num">4</span>
-              <div>Confirm Summary</div>
+              <span>Summary</span>
             </div>
           </div>
 
@@ -470,7 +511,7 @@ export default function PublicHomePage() {
                 <div style={{ background: "#f8f9fa", border: "1px solid #e1e4e8", borderRadius: "12px", padding: "24px", marginBottom: "24px" }}>
                   <h4 style={{ fontSize: "16px", fontWeight: 700, borderBottom: "1px solid #e1e4e8", paddingBottom: "10px", marginBottom: "16px" }}>Booking Reservation Summary</h4>
                   
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "14px" }}>
+                  <div className="uc-summary-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", fontSize: "14px" }}>
                     <div>
                       <span style={{ color: "var(--uc-muted)" }}>Route Trip:</span>
                       <p style={{ fontWeight: 600 }}>{bookingData.pickup} → {bookingData.destination}</p>

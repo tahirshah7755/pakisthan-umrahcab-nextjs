@@ -219,20 +219,47 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           pointer-events: none;
         }
 
-        /* ===== CAROUSEL ===== */
+        /* ===== CAROUSEL & SLIDER ===== */
         .uc-carousel-wrapper {
           position: relative;
           width: 100%;
           overflow: hidden;
+          touch-action: pan-y;
         }
         .uc-slide {
           display: none;
-          animation: fadeInSlide 0.6s ease;
+          animation: fadeInSlide 0.5s ease-out;
         }
         .uc-slide.active { display: block; }
         @keyframes fadeInSlide {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .uc-slider-nav-btn {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: rgba(22, 27, 34, 0.8);
+          border: 1px solid rgba(200, 168, 75, 0.4);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-size: 14px;
+        }
+        .uc-slider-nav-btn:hover {
+          background: var(--uc-primary);
+          color: #000;
+          border-color: var(--uc-primary);
+        }
+        .uc-slide-pill {
+          height: 8px;
+          border-radius: 10px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s ease;
         }
 
         /* ===== OFFER CARD ===== */
@@ -681,18 +708,219 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           margin: 0 auto;
         }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-          .uc-nav { padding: 0 20px; }
-          .uc-nav-links { display: none; }
-          .uc-section { padding: 60px 20px; }
-          .uc-form-row { grid-template-columns: 1fr; }
-          .uc-contact-grid { grid-template-columns: 1fr; }
-          .uc-footer-grid { grid-template-columns: 1fr 1fr; }
-          .uc-wizard-body { padding: 20px; }
+        /* ===== FULL MOBILE & TABLET RESPONSIVENESS ===== */
+        .uc-mobile-toggle {
+          display: none;
+          background: none;
+          border: none;
+          color: var(--uc-primary);
+          font-size: 22px;
+          cursor: pointer;
+          padding: 8px;
         }
+
+        .uc-mobile-menu {
+          position: fixed;
+          top: 70px;
+          left: 0;
+          right: 0;
+          background: rgba(13, 17, 23, 0.98);
+          backdrop-filter: blur(14px);
+          border-bottom: 1px solid rgba(200, 168, 75, 0.3);
+          padding: 20px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          z-index: 999;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+          animation: slideDown 0.25s ease-out;
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .uc-mobile-menu .uc-nav-link {
+          font-size: 15px;
+          padding: 10px 16px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+        }
+
+        .uc-mobile-login-box {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-top: 10px;
+          padding-top: 14px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 992px) {
+          .uc-hero-grid {
+            grid-template-columns: 1fr !important;
+            gap: 30px !important;
+            padding: 0 20px !important;
+          }
+          .uc-contact-grid {
+            grid-template-columns: 1fr !important;
+            gap: 32px !important;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .uc-nav { padding: 0 16px; }
+          .uc-nav-links { display: none; }
+          .uc-mobile-toggle { display: block; }
+          .uc-hero {
+            padding-top: 80px;
+            min-height: auto;
+            padding-bottom: 40px;
+          }
+          .uc-section { padding: 32px 16px; }
+          .uc-section-title { font-size: 22px !important; }
+          .uc-section-subtitle { font-size: 13px !important; margin-bottom: 20px !important; }
+          .uc-form-row { grid-template-columns: 1fr; }
+          .uc-footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+          .uc-footer { padding: 36px 20px 20px; }
+          .uc-wizard-wrap {
+            border-radius: 16px;
+            margin: 0 4px;
+          }
+          .uc-wizard-body { padding: 16px; }
+          .uc-wizard-steps {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            background: #0d1117;
+            border-bottom: 1px solid rgba(200, 168, 75, 0.3);
+            padding: 6px;
+            gap: 4px;
+          }
+          .uc-wizard-step {
+            flex: 1;
+            padding: 8px 4px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #8b949e;
+            border-radius: 8px;
+            border-bottom: none;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+          }
+          .uc-wizard-step.active {
+            color: #000;
+            background: var(--uc-primary);
+            border-bottom-color: transparent;
+            font-weight: 700;
+            box-shadow: 0 2px 10px rgba(200,168,75,0.3);
+          }
+          .uc-wizard-step .step-num {
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            margin-bottom: 0;
+            background: rgba(255,255,255,0.2);
+            color: inherit;
+          }
+          .uc-wizard-step.active .step-num {
+            background: #000;
+            color: var(--uc-primary);
+          }
+          .uc-summary-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .uc-status-box {
+            padding: 20px;
+            margin: 0 16px;
+          }
+        }
+
+        /* ===== NATIVE MOBILE APP BOTTOM TAB BAR ===== */
+        .uc-mobile-bottom-nav {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .uc-mobile-bottom-nav {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(13, 17, 23, 0.96);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(200, 168, 75, 0.35);
+            z-index: 9999;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+          }
+          .uc-mobile-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 600;
+            flex: 1;
+            height: 100%;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+            cursor: pointer;
+          }
+          .uc-mobile-tab i {
+            font-size: 18px;
+            transition: transform 0.2s ease, color 0.2s ease;
+          }
+          .uc-mobile-tab.active, .uc-mobile-tab:hover {
+            color: var(--uc-primary);
+          }
+          .uc-mobile-tab.active i {
+            transform: translateY(-2px);
+            color: var(--uc-primary);
+          }
+          main {
+            padding-bottom: 70px;
+          }
+          .uc-floating-wa {
+            bottom: 78px !important;
+            right: 18px !important;
+            width: 48px !important;
+            height: 48px !important;
+            font-size: 22px !important;
+            box-shadow: 0 6px 20px rgba(37,211,102,0.5) !important;
+          }
+        }
+
         @media (max-width: 480px) {
           .uc-footer-grid { grid-template-columns: 1fr; }
+          .uc-nav-logo-text { font-size: 16px; }
+          .uc-nav-logo img { height: 36px; width: 36px; }
+          .uc-wizard-step {
+            flex: 1 1 100%;
+          }
+          .uc-offer-vehicle {
+            font-size: 26px;
+          }
+          .uc-offer-price {
+            font-size: 34px;
+          }
+          .uc-app-btns {
+            flex-direction: column;
+          }
         }
       `}</style>
 
@@ -746,21 +974,86 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </li>
           </ul>
 
-          {/* WhatsApp CTA */}
-          <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "8px 16px", display: "none" }}>
-            <i className="fab fa-whatsapp"></i> WhatsApp
-          </a>
+          {/* Mobile Hamburger Toggle */}
+          <button
+            className="uc-mobile-toggle"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle Navigation Menu"
+          >
+            <i className={menuOpen ? "fas fa-times" : "fas fa-bars"}></i>
+          </button>
         </div>
       </nav>
 
+      {/* Mobile Drawer Navigation Menu */}
+      {menuOpen && (
+        <div className="uc-mobile-menu">
+          <Link href="/" onClick={() => setMenuOpen(false)} className={`uc-nav-link ${pathname === "/" || pathname === "/public-site" ? "active" : ""}`}>
+            <i className="fas fa-home" style={{ marginRight: "10px", color: "var(--uc-primary)" }}></i> Home
+          </Link>
+          <Link href="/public-site/booking-status" onClick={() => setMenuOpen(false)} className={`uc-nav-link ${pathname === "/public-site/booking-status" ? "active" : ""}`}>
+            <i className="fas fa-search" style={{ marginRight: "10px", color: "var(--uc-primary)" }}></i> Booking Status
+          </Link>
+          <Link href="/#contact" onClick={() => setMenuOpen(false)} className="uc-nav-link">
+            <i className="fas fa-envelope" style={{ marginRight: "10px", color: "var(--uc-primary)" }}></i> Contact Us
+          </Link>
+          <Link href="/public-site/signup" onClick={() => setMenuOpen(false)} className={`uc-nav-link ${pathname === "/public-site/signup" ? "active" : ""}`}>
+            <i className="fas fa-user-plus" style={{ marginRight: "10px", color: "var(--uc-primary)" }}></i> Members Signup
+          </Link>
+
+          <div className="uc-mobile-login-box">
+            <span style={{ fontSize: "11px", fontWeight: "700", color: "var(--uc-primary)", textTransform: "uppercase", letterSpacing: "1px", paddingLeft: "10px" }}>
+              Portal Logins
+            </span>
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="uc-dropdown-item">
+              <i className="fas fa-shield-alt" style={{ color: "#c8a84b", width: "16px" }}></i>
+              <span>Admin Login</span>
+            </Link>
+            <Link href="/company/login" onClick={() => setMenuOpen(false)} className="uc-dropdown-item">
+              <i className="fas fa-building" style={{ color: "#3b82f6", width: "16px" }}></i>
+              <span>B2B Agent Login</span>
+            </Link>
+            <Link href="/driver/login" onClick={() => setMenuOpen(false)} className="uc-dropdown-item">
+              <i className="fas fa-car" style={{ color: "#10b981", width: "16px" }}></i>
+              <span>Driver Login</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Page content */}
       <main>{children}</main>
+
+      {/* ===== NATIVE MOBILE APP BOTTOM TAB BAR ===== */}
+      <div className="uc-mobile-bottom-nav">
+        <Link href="/" className={`uc-mobile-tab ${pathname === "/" || pathname === "/public-site" ? "active" : ""}`}>
+          <i className="fas fa-home"></i>
+          <span>Home</span>
+        </Link>
+        <a href="/#booking-wizard" className="uc-mobile-tab">
+          <i className="fas fa-taxi"></i>
+          <span>Book Ride</span>
+        </a>
+        <Link href="/public-site/booking-status" className={`uc-mobile-tab ${pathname === "/public-site/booking-status" ? "active" : ""}`}>
+          <i className="fas fa-search-location"></i>
+          <span>Status</span>
+        </Link>
+        <button className="uc-mobile-tab" onClick={() => setMenuOpen(!menuOpen)}>
+          <i className="fas fa-key"></i>
+          <span>Logins</span>
+        </button>
+        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="uc-mobile-tab" style={{ color: "#25D366" }}>
+          <i className="fab fa-whatsapp"></i>
+          <span>WhatsApp</span>
+        </a>
+      </div>
 
       {/* Floating WhatsApp button */}
       <a
         href={whatsappLink}
         target="_blank"
         rel="noopener noreferrer"
+        className="uc-floating-wa"
         style={{
           position: "fixed",
           bottom: "28px",

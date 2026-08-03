@@ -856,10 +856,10 @@ export const api = {
     const data = await request(`/public/website-settings`);
     if (data && typeof data === "object") {
       const backendOrigin = API_BASE.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
-      if (typeof data.website_logo === "string" && data.website_logo.startsWith("/uploads/")) {
+      if (typeof data.website_logo === "string" && data.website_logo.startsWith("/")) {
         data.website_logo = `${backendOrigin}${data.website_logo}`;
       }
-      if (typeof data.favicon === "string" && data.favicon.startsWith("/uploads/")) {
+      if (typeof data.favicon === "string" && data.favicon.startsWith("/")) {
         data.favicon = `${backendOrigin}${data.favicon}`;
       }
     }
@@ -873,10 +873,10 @@ export const api = {
     });
     if (data) {
       const backendOrigin = API_BASE.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
-      if (typeof data.website_logo === "string" && data.website_logo.startsWith("/uploads/")) {
+      if (typeof data.website_logo === "string" && data.website_logo.startsWith("/")) {
         data.website_logo = `${backendOrigin}${data.website_logo}`;
       }
-      if (typeof data.favicon === "string" && data.favicon.startsWith("/uploads/")) {
+      if (typeof data.favicon === "string" && data.favicon.startsWith("/")) {
         data.favicon = `${backendOrigin}${data.favicon}`;
       }
       return { success: true, data };

@@ -854,6 +854,15 @@ export const api = {
   // === WEBSITE SETTINGS ===
   async getWebsiteSettings() {
     const data = await request(`/public/website-settings`);
+    if (data && typeof data === "object") {
+      const backendOrigin = API_BASE.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
+      if (typeof data.website_logo === "string" && data.website_logo.startsWith("/uploads/")) {
+        data.website_logo = `${backendOrigin}${data.website_logo}`;
+      }
+      if (typeof data.favicon === "string" && data.favicon.startsWith("/uploads/")) {
+        data.favicon = `${backendOrigin}${data.favicon}`;
+      }
+    }
     return data || {};
   },
 
@@ -862,7 +871,16 @@ export const api = {
       method: "POST",
       body: formData,
     });
-    if (data) return { success: true, data };
+    if (data) {
+      const backendOrigin = API_BASE.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
+      if (typeof data.website_logo === "string" && data.website_logo.startsWith("/uploads/")) {
+        data.website_logo = `${backendOrigin}${data.website_logo}`;
+      }
+      if (typeof data.favicon === "string" && data.favicon.startsWith("/uploads/")) {
+        data.favicon = `${backendOrigin}${data.favicon}`;
+      }
+      return { success: true, data };
+    }
     return { success: false, error: "API connection failed" };
   },
 

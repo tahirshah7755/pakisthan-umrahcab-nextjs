@@ -425,7 +425,14 @@ export default function WebsiteSettingsPage() {
               <span className="form-label">Website Logo</span>
               <div className="logo-box">
                 {logoPreview ? (
-                  <img src={logoPreview} alt="Site Logo" />
+                  <img
+                    src={logoPreview}
+                    alt="Site Logo"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).onerror = null;
+                      (e.target as HTMLImageElement).src = "/logo2.png";
+                    }}
+                  />
                 ) : (
                   <div style={{ color: "#94a3b8", fontSize: "12px" }}>
                     <i className="fas fa-image" style={{ fontSize: "28px", display: "block", marginBottom: "6px" }}></i>
@@ -451,7 +458,13 @@ export default function WebsiteSettingsPage() {
               <span className="form-label" style={{ width: "100%", textAlign: "left" }}>Browser Favicon</span>
               <div className="favicon-box">
                 {faviconPreview ? (
-                  <img src={faviconPreview} alt="Site Favicon" />
+                  <img
+                    src={faviconPreview}
+                    alt="Site Favicon"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
                 ) : (
                   <div style={{ color: "#94a3b8", fontSize: "11px" }}>
                     <i className="fas fa-star" style={{ fontSize: "20px" }}></i>

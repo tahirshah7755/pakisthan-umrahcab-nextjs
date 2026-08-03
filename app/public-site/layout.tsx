@@ -65,7 +65,6 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
     { label: "Home", href: "/public-site" },
     { label: "Booking Status", href: "/public-site/booking-status" },
     { label: "Contact Us", href: "/public-site#contact" },
-    { label: "Members", href: "/public-site/signup" },
   ];
 
   // Fallbacks
@@ -1007,11 +1006,6 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
                 Contact Us
               </Link>
             </li>
-            <li>
-              <Link href="/public-site/signup" className={`uc-nav-link ${pathname === "/public-site/signup" ? "active" : ""}`}>
-                Members
-              </Link>
-            </li>
             <li className="uc-dropdown">
               <button className="uc-nav-link uc-nav-cta" style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", border: "none" }}>
                 <i className="fas fa-sign-in-alt"></i> Login Portals <i className="fas fa-chevron-down" style={{ fontSize: "10px" }}></i>
@@ -1055,9 +1049,6 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
           </Link>
           <Link href="/#contact" onClick={() => setMenuOpen(false)} className="uc-nav-link">
             <i className="fas fa-envelope" style={{ marginRight: "10px", color: "var(--uc-primary)" }}></i> Contact Us
-          </Link>
-          <Link href="/public-site/signup" onClick={() => setMenuOpen(false)} className={`uc-nav-link ${pathname === "/public-site/signup" ? "active" : ""}`}>
-            <i className="fas fa-user-plus" style={{ marginRight: "10px", color: "var(--uc-primary)" }}></i> Members Signup
           </Link>
 
           <div className="uc-mobile-login-box">
@@ -1154,7 +1145,6 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
             <Link href="/" className="uc-footer-link">Home</Link>
             <Link href="/public-site/booking-status" className="uc-footer-link">Booking Status</Link>
             <Link href="/#contact" className="uc-footer-link">Contact Us</Link>
-            <Link href="/public-site/signup" className="uc-footer-link">Members</Link>
           </div>
           <div>
             <div className="uc-footer-heading">Portal Logins</div>

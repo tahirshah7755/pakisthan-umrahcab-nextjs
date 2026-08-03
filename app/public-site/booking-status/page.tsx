@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { api } from "@/utils/api";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface StatusItem {
   id: string;
@@ -16,6 +17,12 @@ interface StatusItem {
 }
 
 export default function BookingStatusPage() {
+  const { settings: websiteSettings } = useWebsiteSettings();
+  const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
+  const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
+  const baseWa = cleanPhone ? `https://wa.me/${cleanPhone}` : "https://wa.me/966567799616";
+  const whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<StatusItem[]>([]);
   const [searched, setSearched] = useState(false);

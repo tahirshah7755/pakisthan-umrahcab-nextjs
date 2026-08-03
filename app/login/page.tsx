@@ -135,73 +135,10 @@ export default function LoginPage() {
         <div className="login-form-side">
           <img src="/logo2.png" className="login-logo" alt="Logo" />
           
-          {/* Tab Selector */}
-          <div style={{ display: "flex", background: "#0f172a", borderRadius: "10px", padding: "4px", marginBottom: "25px" }}>
-            <button
-              type="button"
-              onClick={() => setMode("login")}
-              style={{
-                flex: 1,
-                padding: "10px",
-                borderRadius: "8px",
-                border: "none",
-                fontWeight: "600",
-                fontSize: "14px",
-                cursor: "pointer",
-                background: mode === "login" ? "var(--accent-color)" : "transparent",
-                color: mode === "login" ? "#0f172a" : "#94a3b8",
-                transition: "all 0.2s ease"
-              }}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("register")}
-              style={{
-                flex: 1,
-                padding: "10px",
-                borderRadius: "8px",
-                border: "none",
-                fontWeight: "600",
-                fontSize: "14px",
-                cursor: "pointer",
-                background: mode === "register" ? "var(--accent-color)" : "transparent",
-                color: mode === "register" ? "#0f172a" : "#94a3b8",
-                transition: "all 0.2s ease"
-              }}
-            >
-              Register Admin
-            </button>
-          </div>
-
-          <h2 className="login-title">
-            {mode === "login" ? "Sign in to your account" : "Register a new Administrator"}
-          </h2>
-          <p className="login-subtitle">
-            {mode === "login"
-              ? "Enter your credentials to access your dashboard"
-              : "Set up a new administrator profile on the database"}
-          </p>
+          <h2 className="login-title">Sign in to your account</h2>
+          <p className="login-subtitle">Enter your credentials to access your dashboard</p>
 
           <form onSubmit={handleSubmit}>
-            {/* Full Name field (Register only) */}
-            {mode === "register" && (
-              <div className="input-container">
-                <span className="login-input-icon">
-                  <i className="fas fa-user"></i>
-                </span>
-                <input
-                  type="text"
-                  className="login-input"
-                  placeholder="Full Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
-
             {/* Email field */}
             <div className="input-container">
               <span className="login-input-icon">
@@ -241,41 +178,11 @@ export default function LoginPage() {
               </span>
             </div>
 
-            {/* Confirm Password field (Register only) */}
-            {mode === "register" && (
-              <div className="input-container">
-                <span className="login-input-icon">
-                  <i className="fas fa-lock"></i>
-                </span>
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  className="login-input"
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-                <span
-                  className="login-password-toggle"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <i
-                    className={`far ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`}
-                  ></i>
-                </span>
-              </div>
-            )}
-
             <div style={{ marginBottom: "1.5rem" }}></div>
 
             {/* Submit Button */}
             <button type="submit" className="login-btn" disabled={loading}>
-              {loading
-                ? "Processing..."
-                : mode === "login"
-                ? "Sign In"
-                : "Create Admin Account"}
+              {loading ? "Processing..." : "Sign In"}
             </button>
           </form>
         </div>

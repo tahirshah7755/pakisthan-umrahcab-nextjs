@@ -5,11 +5,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { api } from "../../utils/api";
 
+import { WebsiteSettingsProvider, useWebsiteSettings } from "@/context/WebsiteSettingsContext";
+
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <WebsiteSettingsProvider>
+      <PublicLayoutContent>{children}</PublicLayoutContent>
+    </WebsiteSettingsProvider>
+  );
+}
+
+function PublicLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [websiteSettings, setWebsiteSettings] = useState<any>(null);
+  const { settings: websiteSettings } = useWebsiteSettings();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -17,22 +27,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Fetch website settings from the public API
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const data = await api.getWebsiteSettings();
-        if (data) {
-          setWebsiteSettings(data);
-        }
-      } catch (err) {
-        console.warn("Could not load dynamic website settings", err);
-      }
-    }
-    fetchSettings();
-  }, []);
-
-  // Dynamically update document title & favicon
+  // Dynamically update document title, favicon, and SEO meta tags
   useEffect(() => {
     if (websiteSettings?.site_title) {
       document.title = websiteSettings.site_title;
@@ -45,6 +40,24 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         document.getElementsByTagName('head')[0].appendChild(link);
       }
       link.href = websiteSettings.favicon;
+    }
+    if (websiteSettings?.meta_description) {
+      let metaDesc = document.querySelector("meta[name='description']") as HTMLMetaElement;
+      if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.name = 'description';
+        document.getElementsByTagName('head')[0].appendChild(metaDesc);
+      }
+      metaDesc.content = websiteSettings.meta_description;
+    }
+    if (websiteSettings?.meta_keywords) {
+      let metaKw = document.querySelector("meta[name='keywords']") as HTMLMetaElement;
+      if (!metaKw) {
+        metaKw = document.createElement('meta');
+        metaKw.name = 'keywords';
+        document.getElementsByTagName('head')[0].appendChild(metaKw);
+      }
+      metaKw.content = websiteSettings.meta_keywords;
     }
   }, [websiteSettings]);
 
@@ -61,7 +74,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
   const siteEmail = websiteSettings?.contact_email || "Info@umrahcab.com";
   const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";
-  const whatsappLink = websiteSettings?.whatsapp_link || "https://wa.me/966567799616?text=HI";
+
+  const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
+  const whatsappLink = websiteSettings?.whatsapp_link || (cleanPhone ? `https://wa.me/${cleanPhone}?text=HI` : "https://wa.me/966567799616?text=HI");
+
 
   return (
     <div style={{ fontFamily: "'Poppins', 'Inter', sans-serif", minHeight: "100vh", background: "#fff", color: "#222" }}>
@@ -1151,6 +1167,25 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <span className="uc-footer-link">{sitePhone}</span>
             <span className="uc-footer-link">{siteEmail}</span>
             <span className="uc-footer-link" style={{ fontSize: "12px" }}>{siteAddress}</span>
+            {(websiteSettings?.facebook_link || websiteSettings?.instagram_link || websiteSettings?.twitter_link) && (
+              <div style={{ display: "flex", gap: "14px", marginTop: "14px" }}>
+                {websiteSettings?.facebook_link && (
+                  <a href={websiteSettings.facebook_link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--uc-primary)", fontSize: "18px" }} title="Facebook">
+                    <i className="fab fa-facebook"></i>
+                  </a>
+                )}
+                {websiteSettings?.instagram_link && (
+                  <a href={websiteSettings.instagram_link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--uc-primary)", fontSize: "18px" }} title="Instagram">
+                    <i className="fab fa-instagram"></i>
+                  </a>
+                )}
+                {websiteSettings?.twitter_link && (
+                  <a href={websiteSettings.twitter_link} target="_blank" rel="noopener noreferrer" style={{ color: "var(--uc-primary)", fontSize: "18px" }} title="Twitter / X">
+                    <i className="fab fa-x-twitter"></i>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div className="uc-footer-bottom">

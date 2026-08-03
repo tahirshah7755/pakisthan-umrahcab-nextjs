@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface VehicleOption {
   name: string;
@@ -15,6 +16,15 @@ interface VehicleOption {
 
 export default function PublicHomePage() {
   const router = useRouter();
+  const { settings: websiteSettings } = useWebsiteSettings();
+
+  const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
+  const siteEmail = websiteSettings?.contact_email || "Info@umrahcab.com";
+  const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";
+  const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
+  const baseWa = cleanPhone ? `https://wa.me/${cleanPhone}` : "https://wa.me/966567799616";
+  const whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
+
 
   // Mega Offers Carousel
   const offers = [
@@ -133,7 +143,8 @@ export default function PublicHomePage() {
     const whatsappMsg = `Assalamu Alaikum, I would like to book a cab.\n\n*Booking Summary*:\n• Code: ${bookingCode}\n• From: ${bookingData.pickup}\n• To: ${bookingData.destination}\n• Date: ${bookingData.date} @ ${bookingData.time}\n• Vehicle: ${bookingData.carType} (${bookingData.carPrice} SAR)\n• Client: ${bookingData.fullName}\n• WhatsApp: ${bookingData.whatsapp}\n\nPlease confirm my booking.`;
     const encoded = encodeURIComponent(whatsappMsg);
 
-    window.open(`https://wa.me/966567799616?text=${encoded}`, "_blank");
+    const targetWa = websiteSettings?.whatsapp_link ? websiteSettings.whatsapp_link.split('?')[0] : baseWa;
+    window.open(`${targetWa}?text=${encoded}`, "_blank");
     alert(`Your booking has been compiled successfully! Booking Reference: ${bookingCode}. Redirecting you to WhatsApp for immediate dispatcher assignment.`);
     router.push("/public-site/booking-status");
   };
@@ -164,7 +175,7 @@ export default function PublicHomePage() {
                   <p className="uc-offer-price-sub">All inclusive price: Toll tax, Fuel & Driver charges.</p>
                   
                   <div className="uc-slide-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <a href="https://wa.me/966567799616?text=HI" target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp">
+                    <a href={whatsappLink.includes('?') ? whatsappLink : `${whatsappLink}?text=HI`} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp">
                       <i className="fab fa-whatsapp"></i> Book via WhatsApp
                     </a>
                     <button onClick={() => {
@@ -639,7 +650,7 @@ export default function PublicHomePage() {
               </div>
               <div>
                 <div className="uc-contact-label">Office Address</div>
-                <div className="uc-contact-value">Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA</div>
+                <div className="uc-contact-value">{siteAddress}</div>
               </div>
             </div>
 
@@ -649,7 +660,7 @@ export default function PublicHomePage() {
               </div>
               <div>
                 <div className="uc-contact-label">Helpline Numbers</div>
-                <div className="uc-contact-value">+966 567 799 616 (WhatsApp & Call)</div>
+                <div className="uc-contact-value">{sitePhone} (WhatsApp & Call)</div>
               </div>
             </div>
 
@@ -659,7 +670,7 @@ export default function PublicHomePage() {
               </div>
               <div>
                 <div className="uc-contact-label">Email Queries</div>
-                <div className="uc-contact-value">Info@umrahcab.com</div>
+                <div className="uc-contact-value">{siteEmail}</div>
               </div>
             </div>
           </div>

@@ -137,14 +137,41 @@ export default function PublicHomePage() {
     loadPublicData();
   }, []);
 
-  // Helper to find pricing route match
+  // Helper to find pricing route match with smart location normalization
   const findRouteMatch = (pickup: string, destination: string) => {
     if (!pickup || !destination || allRates.length === 0) return null;
-    const normalizedInput1 = `${pickup.trim().toLowerCase()} to ${destination.trim().toLowerCase()}`;
-    const normalizedInput2 = `${destination.trim().toLowerCase()} to ${pickup.trim().toLowerCase()}`;
-    return allRates.find(r => {
-      const routeStr = r.route.trim().toLowerCase();
-      return routeStr === normalizedInput1 || routeStr === normalizedInput2;
+
+    const clean = (str: string) =>
+      str
+        .toLowerCase()
+        .replace(/\(jed\)/g, "")
+        .replace(/- terminal \d+/gi, "")
+        .replace(/- north terminal/gi, "")
+        .replace(/\(haramain\)/gi, "")
+        .replace(/\(.*?\)/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const pClean = clean(pickup);
+    const dClean = clean(destination);
+
+    const match1 = `${pClean} to ${dClean}`;
+    const match2 = `${dClean} to ${pClean}`;
+
+    return allRates.find((r) => {
+      const rClean = clean(r.route);
+      if (rClean === match1 || rClean === match2) return true;
+
+      // Secondary check: match main city/location keywords
+      const cities = ["jeddah", "makkah", "madinah", "taif", "yanbu"];
+      const pCity = cities.find(c => pClean.includes(c));
+      const dCity = cities.find(c => dClean.includes(c));
+
+      if (pCity && dCity && pCity !== dCity) {
+        return (rClean.includes(pCity) && rClean.includes(dCity));
+      }
+
+      return false;
     });
   };
 

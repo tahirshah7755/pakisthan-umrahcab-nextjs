@@ -104,9 +104,8 @@ export default function PriceListMatrix() {
         : []);
 
   const activeVehicles = React.useMemo(() => {
-    let list: any[] = [];
     if (fleetList.length > 0) {
-      list = fleetList.map((f: any) => {
+      return fleetList.map((f: any) => {
         const modelLower = f.model.toLowerCase();
         let dbField = "sedan";
         if (modelLower.includes("taurus")) {
@@ -117,43 +116,18 @@ export default function PriceListMatrix() {
           dbField = "suv";
         } else if (modelLower.includes("coaster") || modelLower.includes("bus") || modelLower.includes("coach")) {
           dbField = "coach";
-        } else if (modelLower.includes("sedan")) {
-          dbField = "sedan";
         }
-        
+
         return {
           id: String(f.id),
           key: dbField,
           name: f.model,
-          isCore: true
+          isCore: false
         };
       });
-    } else {
-      list = [
-        { id: "sedan", key: "sedan", name: "Sedan (Core)", isCore: true },
-        { id: "taurus", key: "taurus", name: "Ford Taurus (Core)", isCore: true },
-        { id: "staria", key: "van", name: "Hyundai Staria (Core)", isCore: true },
-        { id: "starex", key: "van", name: "Hyundai Starex (Core)", isCore: true },
-        { id: "yukon", key: "suv", name: "GMC XL Yukon (Core)", isCore: true },
-        { id: "hiace", key: "van", name: "Hiace Grand Cabin (Core)", isCore: true },
-        { id: "coaster", key: "coach", name: "Coaster (Core)", isCore: true },
-        { id: "bus", key: "coach", name: "Bus (Core)", isCore: true },
-        { id: "luxury_bus", key: "coach", name: "Luxury Bus (Core)", isCore: true },
-      ];
     }
 
-    const hasTaurus = list.some((v: any) => v.name.toLowerCase().includes("taurus") || v.id === "taurus" || v.key === "taurus");
-    if (!hasTaurus) {
-      const sedanIdx = list.findIndex((v: any) => v.key === "sedan" || v.id === "sedan");
-      const taurusItem = { id: "taurus", key: "taurus", name: "Ford Taurus (Core)", isCore: true };
-      if (sedanIdx !== -1) {
-        list.splice(sedanIdx + 1, 0, taurusItem);
-      } else {
-        list.unshift(taurusItem);
-      }
-    }
-
-    return list;
+    return [];
   }, [fleetList]);
 
   // Redirect if extras not unlocked

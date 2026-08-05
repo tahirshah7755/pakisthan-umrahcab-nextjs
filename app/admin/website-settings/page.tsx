@@ -16,6 +16,20 @@ export default function WebsiteSettingsPage() {
     instagram_link: "",
     twitter_link: "",
     ride_notification_enabled: "1",
+    hero_title: "",
+    hero_desc: "",
+    feature_1: "",
+    feature_2: "",
+    feature_3: "",
+    booking_title: "",
+    booking_subtitle: "",
+    app_title: "",
+    app_desc: "",
+    app_store_link: "",
+    play_store_link: "",
+    contact_title: "",
+    contact_desc: "",
+    homepage_offers: "[]",
   });
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -27,7 +41,8 @@ export default function WebsiteSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<"general" | "contact" | "social" | "notifications">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "contact" | "social" | "notifications" | "homepage" | "offers">("general");
+  const [offersList, setOffersList] = useState<any[]>([]);
 
   useEffect(() => {
     async function loadSettings() {
@@ -46,9 +61,29 @@ export default function WebsiteSettingsPage() {
             instagram_link: data.instagram_link || "",
             twitter_link: data.twitter_link || "",
             ride_notification_enabled: data.ride_notification_enabled !== undefined ? String(data.ride_notification_enabled) : "1",
+            hero_title: data.hero_title || "",
+            hero_desc: data.hero_desc || "",
+            feature_1: data.feature_1 || "",
+            feature_2: data.feature_2 || "",
+            feature_3: data.feature_3 || "",
+            booking_title: data.booking_title || "",
+            booking_subtitle: data.booking_subtitle || "",
+            app_title: data.app_title || "",
+            app_desc: data.app_desc || "",
+            app_store_link: data.app_store_link || "",
+            play_store_link: data.play_store_link || "",
+            contact_title: data.contact_title || "",
+            contact_desc: data.contact_desc || "",
+            homepage_offers: data.homepage_offers || "[]",
           });
           if (data.website_logo) setLogoPreview(data.website_logo);
           if (data.favicon) setFaviconPreview(data.favicon);
+          
+          try {
+            setOffersList(JSON.parse(data.homepage_offers || "[]"));
+          } catch (e) {
+            setOffersList([]);
+          }
         }
       } catch (err) {
         setErrorMessage("Failed to load website settings.");
@@ -86,7 +121,11 @@ export default function WebsiteSettingsPage() {
     try {
       const formData = new FormData();
       Object.keys(settings).forEach((key) => {
-        formData.append(key, settings[key]);
+        if (key === "homepage_offers") {
+          formData.append("homepage_offers", JSON.stringify(offersList));
+        } else {
+          formData.append(key, settings[key]);
+        }
       });
 
       if (logoFile) {
@@ -114,9 +153,28 @@ export default function WebsiteSettingsPage() {
             instagram_link: refreshed.instagram_link || "",
             twitter_link: refreshed.twitter_link || "",
             ride_notification_enabled: refreshed.ride_notification_enabled !== undefined ? String(refreshed.ride_notification_enabled) : "1",
+            hero_title: refreshed.hero_title || "",
+            hero_desc: refreshed.hero_desc || "",
+            feature_1: refreshed.feature_1 || "",
+            feature_2: refreshed.feature_2 || "",
+            feature_3: refreshed.feature_3 || "",
+            booking_title: refreshed.booking_title || "",
+            booking_subtitle: refreshed.booking_subtitle || "",
+            app_title: refreshed.app_title || "",
+            app_desc: refreshed.app_desc || "",
+            app_store_link: refreshed.app_store_link || "",
+            play_store_link: refreshed.play_store_link || "",
+            contact_title: refreshed.contact_title || "",
+            contact_desc: refreshed.contact_desc || "",
+            homepage_offers: refreshed.homepage_offers || "[]",
           });
           if (refreshed.website_logo) setLogoPreview(refreshed.website_logo);
           if (refreshed.favicon) setFaviconPreview(refreshed.favicon);
+          try {
+            setOffersList(JSON.parse(refreshed.homepage_offers || "[]"));
+          } catch (e) {
+            setOffersList([]);
+          }
         }
         // Auto dismiss success msg after 5s
         setTimeout(() => setSuccessMessage(""), 5000);
@@ -489,7 +547,7 @@ export default function WebsiteSettingsPage() {
         {/* Right Column: Configuration Options */}
         <div className="card-panel" style={{ display: "flex", flexDirection: "column" }}>
           {/* Navigation Tabs */}
-          <div className="settings-tabs">
+          <div className="settings-tabs" style={{ flexWrap: "wrap" }}>
             <button 
               type="button" 
               className={`tab-btn ${activeTab === "general" ? "active" : ""}`}
@@ -521,6 +579,22 @@ export default function WebsiteSettingsPage() {
             >
               <i className="fas fa-bell" style={{ marginRight: "6px" }}></i>
               Notifications
+            </button>
+            <button 
+              type="button" 
+              className={`tab-btn ${activeTab === "homepage" ? "active" : ""}`}
+              onClick={() => setActiveTab("homepage")}
+            >
+              <i className="fas fa-house" style={{ marginRight: "6px" }}></i>
+              Homepage Content
+            </button>
+            <button 
+              type="button" 
+              className={`tab-btn ${activeTab === "offers" ? "active" : ""}`}
+              onClick={() => setActiveTab("offers")}
+            >
+              <i className="fas fa-tags" style={{ marginRight: "6px" }}></i>
+              Offers & Pricing
             </button>
           </div>
 
@@ -658,10 +732,10 @@ export default function WebsiteSettingsPage() {
               <div className="form-group" style={{ background: "#f8fafc", padding: "20px", borderRadius: "10px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "20px" }}>
                   <div style={{ flex: 1 }}>
-                    <label className="form-label" style={{ margin: 0, fontSize: "14px", fontWeight: 800 }}>Ride Notification Alerts (24 Hours Before)</label>
-                    <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b" }}>
-                      Enable/disable the dashboard ride notification alerts and real-time popups that warn when a ride starts in less than 24 hours without any driver assigned.
-                    </p>
+                     <label className="form-label" style={{ margin: 0, fontSize: "14px", fontWeight: 800 }}>Ride Notification Alerts (24 Hours Before)</label>
+                     <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b" }}>
+                       Enable/disable the dashboard ride notification alerts and real-time popups that warn when a ride starts in less than 24 hours without any driver assigned.
+                     </p>
                   </div>
                   <div>
                     <select
@@ -676,6 +750,308 @@ export default function WebsiteSettingsPage() {
                     </select>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab 5: Homepage Content */}
+          {activeTab === "homepage" && (
+            <div style={{ flexGrow: 1 }}>
+              <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "8px", marginBottom: "16px", fontSize: "14px", fontWeight: "bold", color: "#334155" }}>Hero & Features Section</h3>
+              <div className="form-group">
+                <label className="form-label">Hero Title</label>
+                <input 
+                  type="text" 
+                  name="hero_title" 
+                  value={settings.hero_title} 
+                  onChange={handleChange} 
+                  className="form-input" 
+                  placeholder="e.g. Book now & Pay at Destination"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Hero Description</label>
+                <textarea 
+                  name="hero_desc" 
+                  value={settings.hero_desc} 
+                  onChange={handleChange} 
+                  className="form-textarea" 
+                  placeholder="e.g. Experience smooth and affordable transportation services..."
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Key Feature 1</label>
+                  <input 
+                    type="text" 
+                    name="feature_1" 
+                    value={settings.feature_1} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="e.g. Experienced, multi-lingual local drivers"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Key Feature 2</label>
+                  <input 
+                    type="text" 
+                    name="feature_2" 
+                    value={settings.feature_2} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="e.g. 24/7 client dispatch support"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Key Feature 3</label>
+                <input 
+                  type="text" 
+                  name="feature_3" 
+                  value={settings.feature_3} 
+                  onChange={handleChange} 
+                  className="form-input" 
+                  placeholder="e.g. 100% sanitized, air-conditioned clean vehicles"
+                />
+              </div>
+
+              <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "8px", marginTop: "24px", marginBottom: "16px", fontSize: "14px", fontWeight: "bold", color: "#334155" }}>Booking Form Header</h3>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Booking Section Title</label>
+                  <input 
+                    type="text" 
+                    name="booking_title" 
+                    value={settings.booking_title} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="e.g. Schedule Your Vehicle Online"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Booking Section Subtitle</label>
+                  <input 
+                    type="text" 
+                    name="booking_subtitle" 
+                    value={settings.booking_subtitle} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="e.g. Fill in the dynamic form below..."
+                  />
+                </div>
+              </div>
+
+              <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "8px", marginTop: "24px", marginBottom: "16px", fontSize: "14px", fontWeight: "bold", color: "#334155" }}>App Store Downloads Section</h3>
+              <div className="form-group">
+                <label className="form-label">App Section Title</label>
+                <input 
+                  type="text" 
+                  name="app_title" 
+                  value={settings.app_title} 
+                  onChange={handleChange} 
+                  className="form-input" 
+                  placeholder="e.g. Download the UMRAH-CAB App Free Today"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">App Section Description</label>
+                <textarea 
+                  name="app_desc" 
+                  value={settings.app_desc} 
+                  onChange={handleChange} 
+                  className="form-textarea" 
+                  placeholder="e.g. Access rides, confirm drivers, and download vouchers..."
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Apple App Store URL</label>
+                  <input 
+                    type="text" 
+                    name="app_store_link" 
+                    value={settings.app_store_link} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="https://apps.apple.com/..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Google Play Store URL</label>
+                  <input 
+                    type="text" 
+                    name="play_store_link" 
+                    value={settings.play_store_link} 
+                    onChange={handleChange} 
+                    className="form-input" 
+                    placeholder="https://play.google.com/..."
+                  />
+                </div>
+              </div>
+
+              <h3 style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "8px", marginTop: "24px", marginBottom: "16px", fontSize: "14px", fontWeight: "bold", color: "#334155" }}>Contact Section Banner</h3>
+              <div className="form-group">
+                <label className="form-label">Contact Section Title</label>
+                <input 
+                  type="text" 
+                  name="contact_title" 
+                  value={settings.contact_title} 
+                  onChange={handleChange} 
+                  className="form-input" 
+                  placeholder="e.g. We would really love to hear from you"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Contact Section Description</label>
+                <textarea 
+                  name="contact_desc" 
+                  value={settings.contact_desc} 
+                  onChange={handleChange} 
+                  className="form-textarea" 
+                  placeholder="e.g. Our support team is online 24/7..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tab 6: Offers & Pricing List Builder */}
+          {activeTab === "offers" && (
+            <div style={{ flexGrow: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "10px", flexWrap: "wrap" }}>
+                <div>
+                  <h3 style={{ fontSize: "14px", fontWeight: "bold", color: "#334155", margin: 0 }}>Mega Offers & Fleet Rates</h3>
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>Configure the promo routes and vehicle pricing displayed on the homepage slider and fleet section.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOffersList((prev) => [
+                      ...prev,
+                      { vehicle: "New Sedan", route: "Pickup to Dropoff", price: 300, icon: "fa-car" }
+                    ]);
+                  }}
+                  style={{
+                    background: "#10b981",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px 14px",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <i className="fas fa-plus"></i> Add Promo Route
+                </button>
+              </div>
+
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left", minWidth: "600px" }}>
+                  <thead>
+                    <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Vehicle Class</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Route / Destination</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "110px" }}>Price (SAR)</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "170px" }}>Icon Type</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "80px", textAlign: "center" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {offersList.map((offer, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <td style={{ padding: "8px" }}>
+                          <input
+                            type="text"
+                            value={offer.vehicle || ""}
+                            onChange={(e) => {
+                              const newList = [...offersList];
+                              newList[idx].vehicle = e.target.value;
+                              setOffersList(newList);
+                            }}
+                            className="form-input"
+                            style={{ padding: "6px 8px" }}
+                            required
+                          />
+                        </td>
+                        <td style={{ padding: "8px" }}>
+                          <input
+                            type="text"
+                            value={offer.route || ""}
+                            onChange={(e) => {
+                              const newList = [...offersList];
+                              newList[idx].route = e.target.value;
+                              setOffersList(newList);
+                            }}
+                            className="form-input"
+                            style={{ padding: "6px 8px" }}
+                            required
+                          />
+                        </td>
+                        <td style={{ padding: "8px" }}>
+                          <input
+                            type="number"
+                            value={offer.price || 0}
+                            onChange={(e) => {
+                              const newList = [...offersList];
+                              newList[idx].price = Number(e.target.value);
+                              setOffersList(newList);
+                            }}
+                            className="form-input"
+                            style={{ padding: "6px 8px" }}
+                            required
+                          />
+                        </td>
+                        <td style={{ padding: "8px" }}>
+                          <select
+                            value={offer.icon || "fa-car"}
+                            onChange={(e) => {
+                              const newList = [...offersList];
+                              newList[idx].icon = e.target.value;
+                              setOffersList(newList);
+                            }}
+                            className="form-input"
+                            style={{ padding: "6px 8px", height: "36px" }}
+                          >
+                            <option value="fa-car">Sedan (fa-car)</option>
+                            <option value="fa-car-side">Premium (fa-car-side)</option>
+                            <option value="fa-van-shuttle">Family Van (fa-van-shuttle)</option>
+                            <option value="fa-suv">Luxury SUV (fa-suv)</option>
+                            <option value="fa-bus">Large Minivan (fa-bus)</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: "8px", textAlign: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOffersList((prev) => prev.filter((_, i) => i !== idx));
+                            }}
+                            style={{
+                              background: "#fef2f2",
+                              color: "#ef4444",
+                              border: "1px solid #fee2e2",
+                              borderRadius: "6px",
+                              padding: "6px 10px",
+                              cursor: "pointer",
+                              transition: "all 0.2s"
+                            }}
+                            title="Remove Offer"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {offersList.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#94a3b8" }}>
+                          No custom promos configured. The site will display default route fares.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

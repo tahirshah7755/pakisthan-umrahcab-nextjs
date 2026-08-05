@@ -17,6 +17,20 @@ export interface WebsiteSettings {
   website_logo?: string;
   favicon?: string;
   ride_notification_enabled?: string;
+  hero_title?: string;
+  hero_desc?: string;
+  feature_1?: string;
+  feature_2?: string;
+  feature_3?: string;
+  booking_title?: string;
+  booking_subtitle?: string;
+  app_title?: string;
+  app_desc?: string;
+  app_store_link?: string;
+  play_store_link?: string;
+  contact_title?: string;
+  contact_desc?: string;
+  homepage_offers?: string;
 }
 
 interface WebsiteSettingsContextType {

@@ -26,14 +26,29 @@ export default function PublicHomePage() {
   const whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
 
 
-  // Mega Offers Carousel
-  const offers = [
+  // Default offers array for fallback
+  const defaultOffers = [
     { vehicle: "Sedan", route: "Madinah Hotel to Jeddah Airport", price: 300, icon: "fa-car" },
     { vehicle: "Ford Taurus", route: "Madinah Hotel to Jeddah Airport", price: 400, icon: "fa-car-side" },
     { vehicle: "Hyundai H-1", route: "Madinah Hotel to Makkah Hotel", price: 500, icon: "fa-van-shuttle" },
     { vehicle: "GMC Yukon XL", route: "Makkah Hotel to Madinah Hotel", price: 550, icon: "fa-suv" },
     { vehicle: "Toyota HI ACE", route: "Madinah Hotel to Makkah Hotel", price: 550, icon: "fa-bus" }
   ];
+
+  // Parse offers from website settings or use default
+  const offers = React.useMemo(() => {
+    if (websiteSettings?.homepage_offers) {
+      try {
+        const parsed = JSON.parse(websiteSettings.homepage_offers);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.warn("Failed to parse websiteSettings.homepage_offers:", e);
+      }
+    }
+    return defaultOffers;
+  }, [websiteSettings?.homepage_offers]);
 
   const [activeOffer, setActiveOffer] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -228,22 +243,30 @@ export default function PublicHomePage() {
 
           {/* Intro Box */}
           <div style={{ background: "rgba(22,27,34,0.7)", border: "1px solid #30363d", borderRadius: "20px", padding: "32px", backdropFilter: "blur(8px)" }}>
-            <h2 style={{ color: "#fff", fontSize: "24px", fontWeight: 700, marginBottom: "16px" }}>Book now & Pay at Destination</h2>
+            <h2 style={{ color: "#fff", fontSize: "24px", fontWeight: 700, marginBottom: "16px" }}>
+              {websiteSettings?.hero_title || "Book now & Pay at Destination"}
+            </h2>
             <p style={{ color: "#8b949e", fontSize: "14px", lineHeight: 1.6, marginBottom: "24px" }}>
-              Experience smooth and affordable transportation services across Makkah, Madinah, and Jeddah. No credit card required. Cash payment accepted upon arrival.
+              {websiteSettings?.hero_desc || "Experience smooth and affordable transportation services across Makkah, Madinah, and Jeddah. No credit card required. Cash payment accepted upon arrival."}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <i className="fas fa-check-circle" style={{ color: "var(--uc-primary)", fontSize: "18px" }}></i>
-                <span style={{ color: "#d0d7de", fontSize: "14px" }}>Experienced, multi-lingual local drivers</span>
+                <span style={{ color: "#d0d7de", fontSize: "14px" }}>
+                  {websiteSettings?.feature_1 || "Experienced, multi-lingual local drivers"}
+                </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <i className="fas fa-check-circle" style={{ color: "var(--uc-primary)", fontSize: "18px" }}></i>
-                <span style={{ color: "#d0d7de", fontSize: "14px" }}>24/7 client dispatch support</span>
+                <span style={{ color: "#d0d7de", fontSize: "14px" }}>
+                  {websiteSettings?.feature_2 || "24/7 client dispatch support"}
+                </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <i className="fas fa-check-circle" style={{ color: "var(--uc-primary)", fontSize: "18px" }}></i>
-                <span style={{ color: "#d0d7de", fontSize: "14px" }}>100% sanitized, air-conditioned clean vehicles</span>
+                <span style={{ color: "#d0d7de", fontSize: "14px" }}>
+                  {websiteSettings?.feature_3 || "100% sanitized, air-conditioned clean vehicles"}
+                </span>
               </div>
             </div>
           </div>
@@ -254,8 +277,12 @@ export default function PublicHomePage() {
       <section id="booking-wizard" className="uc-section" style={{ borderBottom: "1px solid #e1e4e8" }}>
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <span className="uc-section-label">Ride Booking</span>
-          <h2 className="uc-section-title">Schedule Your Vehicle Online</h2>
-          <p className="uc-section-subtitle" style={{ margin: "0 auto" }}>Fill in the dynamic form below to configure routes, select private cars, and generate a reservation receipt.</p>
+          <h2 className="uc-section-title">
+            {websiteSettings?.booking_title || "Schedule Your Vehicle Online"}
+          </h2>
+          <p className="uc-section-subtitle" style={{ margin: "0 auto" }}>
+            {websiteSettings?.booking_subtitle || "Fill in the dynamic form below to configure routes, select private cars, and generate a reservation receipt."}
+          </p>
         </div>
 
         <div className="uc-wizard-wrap">
@@ -610,20 +637,22 @@ export default function PublicHomePage() {
       <section className="uc-app-section">
         <div style={{ maxWidth: "800px", margin: "0 auto", color: "#fff" }}>
           <span className="uc-section-label" style={{ color: "var(--uc-primary)" }}>Mobile Apps</span>
-          <h2 style={{ fontSize: "32px", fontWeight: 800, marginTop: "12px", marginBottom: "16px" }}>Download the UMRAH-CAB App Free Today</h2>
+          <h2 style={{ fontSize: "32px", fontWeight: 800, marginTop: "12px", marginBottom: "16px" }}>
+            {websiteSettings?.app_title || "Download the UMRAH-CAB App Free Today"}
+          </h2>
           <p style={{ color: "#8b949e", fontSize: "15px", lineHeight: 1.6 }}>
-            Access rides, confirm drivers, and download vouchers directly on your mobile device. Compatible with all Android and iOS smartphones.
+            {websiteSettings?.app_desc || "Access rides, confirm drivers, and download vouchers directly on your mobile device. Compatible with all Android and iOS smartphones."}
           </p>
 
           <div className="uc-app-btns">
-            <a href="https://itunes.apple.com/us/app/umrah-cab/id1382524932?ls=1&mt=8" target="_blank" rel="noopener noreferrer" className="uc-app-btn">
+            <a href={websiteSettings?.app_store_link || "https://itunes.apple.com/us/app/umrah-cab/id1382524932?ls=1&mt=8"} target="_blank" rel="noopener noreferrer" className="uc-app-btn">
               <i className="fab fa-apple uc-app-btn-icon" style={{ color: "#000" }}></i>
               <div style={{ textAlign: "left" }}>
                 <span className="uc-app-btn-label">Download on the</span>
                 <span className="uc-app-btn-store">App Store</span>
               </div>
             </a>
-            <a href="https://play.google.com/store/apps/details?id=com.UmrahCab.UmrahCab" target="_blank" rel="noopener noreferrer" className="uc-app-btn">
+            <a href={websiteSettings?.play_store_link || "https://play.google.com/store/apps/details?id=com.UmrahCab.UmrahCab"} target="_blank" rel="noopener noreferrer" className="uc-app-btn">
               <i className="fab fa-google-play uc-app-btn-icon" style={{ color: "#34A853" }}></i>
               <div style={{ textAlign: "left" }}>
                 <span className="uc-app-btn-label">Get it on</span>
@@ -639,9 +668,11 @@ export default function PublicHomePage() {
         <div className="uc-contact-grid">
           <div>
             <span className="uc-section-label">Get In Touch</span>
-            <h2 className="uc-section-title">We would really love to hear from you</h2>
+            <h2 className="uc-section-title">
+              {websiteSettings?.contact_title || "We would really love to hear from you"}
+            </h2>
             <p className="uc-section-subtitle" style={{ marginBottom: "32px" }}>
-              Our support team is online 24/7 to solve transport route issues, customize group packages, or provide special VIP executive fleet rates.
+              {websiteSettings?.contact_desc || "Our support team is online 24/7 to solve transport route issues, customize group packages, or provide special VIP executive fleet rates."}
             </p>
 
             <div className="uc-contact-item">

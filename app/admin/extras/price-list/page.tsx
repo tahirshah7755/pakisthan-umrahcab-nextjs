@@ -52,7 +52,9 @@ function getVehiclePriceInfo(b: any, key: string) {
   // Parse category as fallback
   const modelLower = key.toLowerCase();
   let category = "sedan";
-  if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
+  if (modelLower.includes("taurus")) {
+    category = "taurus";
+  } else if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
     category = "van";
   } else if (modelLower.includes("yukon") || modelLower.includes("suv") || modelLower.includes("gmc")) {
     category = "suv";
@@ -60,7 +62,10 @@ function getVehiclePriceInfo(b: any, key: string) {
     category = "coach";
   }
 
-  if (category === "sedan") {
+  if (category === "taurus") {
+    price = b.custom_prices?.taurus_price ?? b.custom_prices?.["Ford Taurus"]?.price ?? (b.sedan_price ? b.sedan_price + 100 : 400);
+    dates = b.sedan_dates || "2026-06-01 to 2026-08-31";
+  } else if (category === "sedan") {
     price = b.sedan_price ?? 300;
     dates = b.sedan_dates || "2026-06-01 to 2026-08-31";
   } else if (category === "van") {
@@ -99,11 +104,14 @@ export default function PriceListMatrix() {
         : []);
 
   const activeVehicles = React.useMemo(() => {
+    let list: any[] = [];
     if (fleetList.length > 0) {
-      return fleetList.map((f: any) => {
+      list = fleetList.map((f: any) => {
         const modelLower = f.model.toLowerCase();
         let dbField = "sedan";
-        if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
+        if (modelLower.includes("taurus")) {
+          dbField = "taurus";
+        } else if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
           dbField = "van";
         } else if (modelLower.includes("yukon") || modelLower.includes("suv") || modelLower.includes("gmc")) {
           dbField = "suv";
@@ -120,18 +128,32 @@ export default function PriceListMatrix() {
           isCore: true
         };
       });
+    } else {
+      list = [
+        { id: "sedan", key: "sedan", name: "Sedan (Core)", isCore: true },
+        { id: "taurus", key: "taurus", name: "Ford Taurus (Core)", isCore: true },
+        { id: "staria", key: "van", name: "Hyundai Staria (Core)", isCore: true },
+        { id: "starex", key: "van", name: "Hyundai Starex (Core)", isCore: true },
+        { id: "yukon", key: "suv", name: "GMC XL Yukon (Core)", isCore: true },
+        { id: "hiace", key: "van", name: "Hiace Grand Cabin (Core)", isCore: true },
+        { id: "coaster", key: "coach", name: "Coaster (Core)", isCore: true },
+        { id: "bus", key: "coach", name: "Bus (Core)", isCore: true },
+        { id: "luxury_bus", key: "coach", name: "Luxury Bus (Core)", isCore: true },
+      ];
     }
-    
-    return [
-      { id: "sedan", key: "sedan", name: "Sedan (Core)", isCore: true },
-      { id: "staria", key: "van", name: "Hyundai Staria (Core)", isCore: true },
-      { id: "starex", key: "van", name: "Hyundai Starex (Core)", isCore: true },
-      { id: "yukon", key: "suv", name: "GMC XL Yukon (Core)", isCore: true },
-      { id: "hiace", key: "van", name: "Hiace Grand Cabin (Core)", isCore: true },
-      { id: "coaster", key: "coach", name: "Coaster (Core)", isCore: true },
-      { id: "bus", key: "coach", name: "Bus (Core)", isCore: true },
-      { id: "luxury_bus", key: "coach", name: "Luxury Bus (Core)", isCore: true },
-    ];
+
+    const hasTaurus = list.some((v: any) => v.name.toLowerCase().includes("taurus") || v.id === "taurus" || v.key === "taurus");
+    if (!hasTaurus) {
+      const sedanIdx = list.findIndex((v: any) => v.key === "sedan" || v.id === "sedan");
+      const taurusItem = { id: "taurus", key: "taurus", name: "Ford Taurus (Core)", isCore: true };
+      if (sedanIdx !== -1) {
+        list.splice(sedanIdx + 1, 0, taurusItem);
+      } else {
+        list.unshift(taurusItem);
+      }
+    }
+
+    return list;
   }, [fleetList]);
 
   // Redirect if extras not unlocked
@@ -532,7 +554,9 @@ export default function PriceListMatrix() {
             // Maintain fallback categories for backward compatibility
             const modelLower = vehicle.name.toLowerCase();
             let category = "sedan";
-            if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
+            if (modelLower.includes("taurus")) {
+              category = "taurus";
+            } else if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
               category = "van";
             } else if (modelLower.includes("yukon") || modelLower.includes("suv") || modelLower.includes("gmc")) {
               category = "suv";
@@ -540,7 +564,14 @@ export default function PriceListMatrix() {
               category = "coach";
             }
 
-            if (category === "sedan") {
+            if (category === "taurus") {
+              customPrices["taurus_price"] = parseFloat(priceCell.price || "400");
+              customPrices["Ford Taurus"] = {
+                price: parseFloat(priceCell.price) || 0,
+                from: priceCell.from || "2026-06-01",
+                to: priceCell.to || "2026-08-31"
+              };
+            } else if (category === "sedan") {
               updatePayload.sedan_price = parseFloat(priceCell.price || "300");
               updatePayload.sedan_dates = `${priceCell.from} to ${priceCell.to}`;
             } else if (category === "van") {

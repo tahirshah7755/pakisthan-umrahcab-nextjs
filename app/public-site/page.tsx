@@ -195,11 +195,11 @@ export default function PublicHomePage() {
       } catch (e) {}
     }
 
-    const sedanPrice = Number(custom.sedan_price || match.sedan_price) || 300;
-    const taurusPrice = Number(custom.taurus_price || custom.ford_taurus_price) || (sedanPrice + 100);
-    const vanPrice = Number(custom.van_price || match.van_price) || 500;
-    const suvPrice = Number(custom.suv_price || match.suv_price) || 550;
-    const coachPrice = Number(custom.coach_price || match.coach_price) || (vanPrice + 50);
+    const sedanPrice = Number(custom["Sedan (Core)"]?.price || custom.sedan_price || match.sedan_price) || 300;
+    const taurusPrice = Number(custom["Ford Taurus (Core)"]?.price || custom["Ford Taurus"]?.price || custom.taurus_price || custom.ford_taurus_price) || (sedanPrice + 100);
+    const vanPrice = Number(custom["Hyundai Staria (Core)"]?.price || custom["Family Van"]?.price || custom.van_price || match.van_price) || 500;
+    const suvPrice = Number(custom["GMC XL Yukon (Core)"]?.price || custom["Luxury SUV"]?.price || custom.suv_price || match.suv_price) || 550;
+    const coachPrice = Number(custom["Hiace Grand Cabin (Core)"]?.price || custom.coach_price || match.coach_price) || (vanPrice + 50);
 
     return [
       { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: sedanPrice, icon: "fa-car" },

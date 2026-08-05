@@ -19,7 +19,31 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { settings: websiteSettings } = useWebsiteSettings();
+  const { settings: websiteSettings, loading } = useWebsiteSettings();
+  const [displayTitle, setDisplayTitle] = useState("Loading...");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      if (hostname) {
+        const cleanHost = hostname.replace(/^www\./i, "");
+        const parts = cleanHost.split(".");
+        let domain = parts[0];
+        
+        if (parts.length > 2) {
+          const tlds = ["com", "org", "net", "gov", "co", "ac", "edu"];
+          if (tlds.includes(parts[parts.length - 2])) {
+            domain = parts[parts.length - 3] || parts[0];
+          } else {
+            domain = parts[parts.length - 2];
+          }
+        }
+        
+        const formatted = domain.charAt(0).toUpperCase() + domain.slice(1);
+        setDisplayTitle(formatted);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -66,6 +90,78 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
     { label: "Booking Status", href: "/public-site/booking-status" },
     { label: "Contact Us", href: "/public-site#contact" },
   ];
+
+  if (loading) {
+    return (
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "#0d1117",
+        color: "#fff",
+        fontFamily: "'Poppins', sans-serif"
+      }}>
+        <div style={{
+          position: "relative",
+          width: "80px",
+          height: "80px",
+          marginBottom: "24px"
+        }}>
+          <div style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            border: "4px solid rgba(200, 168, 75, 0.1)",
+            borderRadius: "50%"
+          }}></div>
+          <div style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            border: "4px solid transparent",
+            borderTopColor: "#c8a84b",
+            borderRadius: "50%",
+            animation: "spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite"
+          }}></div>
+          <div style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "40px",
+            height: "40px",
+            background: "radial-gradient(circle, rgba(200, 168, 75, 0.3) 0%, transparent 70%)",
+            borderRadius: "50%"
+          }}></div>
+        </div>
+        <h2 style={{
+          fontSize: "22px",
+          fontWeight: 800,
+          color: "#c8a84b",
+          letterSpacing: "1px",
+          marginBottom: "8px",
+          textTransform: "uppercase"
+        }}>
+          {displayTitle}
+        </h2>
+        <p style={{
+          fontSize: "13px",
+          color: "#8b949e",
+          letterSpacing: "0.5px"
+        }}>
+          Loading secure environment...
+        </p>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   // Fallbacks
   const siteLogo = websiteSettings?.website_logo || "/logo2.png";

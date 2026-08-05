@@ -36,6 +36,7 @@ export default function DriverDashboardPage() {
   // UI Helper States for Custom Inputs
   const [customTripActive, setCustomTripActive] = useState(false);
   const [customAgentActive, setCustomAgentActive] = useState(false);
+  const [customVehicleActive, setCustomVehicleActive] = useState(false);
 
   // Entry Form State
   const [formData, setFormData] = useState({
@@ -54,6 +55,7 @@ export default function DriverDashboardPage() {
     waqas_received: 0,
     mic: 0,
     vehicle_id: "",
+    manual_vehicle: "",
   });
 
   // Helpers to hold the select dropdown state separately
@@ -66,6 +68,7 @@ export default function DriverDashboardPage() {
   const [editLoading, setEditLoading] = useState(false);
   const [editCustomTripActive, setEditCustomTripActive] = useState(false);
   const [editCustomAgentActive, setEditCustomAgentActive] = useState(false);
+  const [editCustomVehicleActive, setEditCustomVehicleActive] = useState(false);
   const [editSelectedTripOpt, setEditSelectedTripOpt] = useState("");
   const [editSelectedAgentOpt, setEditSelectedAgentOpt] = useState("");
 
@@ -82,7 +85,7 @@ export default function DriverDashboardPage() {
 
   useEffect(() => {
     if (driverUser?.vehicle_id) {
-      setFormData(prev => ({ ...prev, vehicle_id: String(driverUser.vehicle_id) }));
+      setFormData(prev => ({ ...prev, vehicle_id: String(driverUser.vehicle_id), manual_vehicle: "" }));
     }
   }, [driverUser]);
 
@@ -192,6 +195,30 @@ export default function DriverDashboardPage() {
     }
   };
 
+  // Vehicle Dropdown Change Handler
+  const handleVehicleDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "CUSTOM") {
+      setCustomVehicleActive(true);
+      setFormData(prev => ({ ...prev, vehicle_id: "", manual_vehicle: "" }));
+    } else {
+      setCustomVehicleActive(false);
+      setFormData(prev => ({ ...prev, vehicle_id: val, manual_vehicle: "" }));
+    }
+  };
+
+  // Edit Modal Vehicle Dropdown Change Handler
+  const handleEditVehicleDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "CUSTOM") {
+      setEditCustomVehicleActive(true);
+      setEditFormData((prev: any) => ({ ...prev, vehicle_id: "", manual_vehicle: "" }));
+    } else {
+      setEditCustomVehicleActive(false);
+      setEditFormData((prev: any) => ({ ...prev, vehicle_id: val, manual_vehicle: "" }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitLoading(true);
@@ -226,11 +253,13 @@ export default function DriverDashboardPage() {
           waqas_received: 0,
           mic: 0,
           vehicle_id: driverUser?.vehicle_id ? String(driverUser.vehicle_id) : "",
+          manual_vehicle: "",
         });
         setSelectedTripOpt("");
         setSelectedAgentOpt("");
         setCustomTripActive(false);
         setCustomAgentActive(false);
+        setCustomVehicleActive(false);
         // Reload history
         loadEntries();
       } else {
@@ -249,12 +278,15 @@ export default function DriverDashboardPage() {
     // Set matching options for dropdowns
     const isStandardTrip = STANDARD_TRIPS.includes(entry.trip);
     const isStandardAgent = companies.some(c => c.name === entry.agent) || entry.agent === "Individual / Cash";
+    const isCustomVehicle = !entry.vehicle_id && entry.manual_vehicle;
 
     setEditSelectedTripOpt(entry.trip ? (isStandardTrip ? entry.trip : "CUSTOM") : "");
     setEditCustomTripActive(entry.trip ? !isStandardTrip : false);
 
     setEditSelectedAgentOpt(entry.agent ? (isStandardAgent ? entry.agent : "CUSTOM") : "");
     setEditCustomAgentActive(entry.agent ? !isStandardAgent : false);
+    
+    setEditCustomVehicleActive(!!isCustomVehicle);
 
     setEditFormData({
       date: entry.date.split("T")[0],
@@ -272,12 +304,14 @@ export default function DriverDashboardPage() {
       waqas_received: entry.waqas_received || 0,
       mic: entry.mic || 0,
       vehicle_id: entry.vehicle_id ? String(entry.vehicle_id) : "",
+      manual_vehicle: entry.manual_vehicle || "",
     });
   };
 
   const closeEditModal = () => {
     setEditingEntry(null);
     setEditFormData(null);
+    setEditCustomVehicleActive(false);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -329,23 +363,39 @@ export default function DriverDashboardPage() {
       return;
     }
     const headers = [
-      "Date", "Trip Description", "Hotel Drop Off", "Agent / Company", 
-      "Rate", "Voucher", "Cash Collected", "Fuel / Petrol", "Total Expenses", "Net Total", "Status"
+      "Date", "Vehicle", "Trip Description", "Hotel Drop Off", "Agent / Company", 
+      "Rate", "Voucher", "Cash", "Waqas Received", 
+      "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Miscellaneous",
+      "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
-      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
-      const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
-                       Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+      const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+      const cash = Number(item.cash || 0);
+      const waqas = Number(item.waqas_received || 0);
+      const fuel = Number(item.fuel || 0);
+      const parking = Number(item.parking || 0);
+      const wash = Number(item.wash || 0);
+      const oil = Number(item.oil_change || 0);
+      const maint = Number(item.car_maintenance || 0);
+      const mic = Number(item.mic || 0);
+      const expenses = fuel + parking + wash + oil + maint + mic;
       const isLocked = item.is_locked && !driverUser?.edit_rights;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        vehicleName,
         item.trip || "—",
         item.hotel_drop_off || "—",
         item.agent || "—",
         item.rate || 0,
         item.voucher || 0,
-        totalCash,
-        item.fuel || 0,
+        cash,
+        waqas,
+        fuel,
+        parking,
+        wash,
+        oil,
+        maint,
+        mic,
         expenses,
         item.total || 0,
         isLocked ? "Locked" : "Editable"
@@ -363,25 +413,41 @@ export default function DriverDashboardPage() {
       return;
     }
     const headers = [
-      "Date", "Trip Description", "Hotel Drop Off", "Agent / Company", 
-      "Rate", "Voucher", "Cash Collected", "Fuel / Petrol", "Total Expenses", "Net Total", "Status"
+      "Date", "Vehicle", "Trip Description", "Hotel Drop Off", "Agent / Company", 
+      "Rate", "Voucher", "Cash", "Waqas Received", 
+      "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Miscellaneous",
+      "Total Expenses", "Net Total", "Status"
     ];
     const csvContent = [
       headers.join(","),
       ...entries.map((item: any) => {
-        const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
-        const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
-                         Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+        const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+        const cash = Number(item.cash || 0);
+        const waqas = Number(item.waqas_received || 0);
+        const fuel = Number(item.fuel || 0);
+        const parking = Number(item.parking || 0);
+        const wash = Number(item.wash || 0);
+        const oil = Number(item.oil_change || 0);
+        const maint = Number(item.car_maintenance || 0);
+        const mic = Number(item.mic || 0);
+        const expenses = fuel + parking + wash + oil + maint + mic;
         const isLocked = item.is_locked && !driverUser?.edit_rights;
         return [
           `"${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}"`,
+          `"${vehicleName.replace(/"/g, '""')}"`,
           `"${(item.trip || "—").replace(/"/g, '""')}"`,
           `"${(item.hotel_drop_off || "—").replace(/"/g, '""')}"`,
           `"${(item.agent || "—").replace(/"/g, '""')}"`,
           item.rate || 0,
           item.voucher || 0,
-          totalCash,
-          item.fuel || 0,
+          cash,
+          waqas,
+          fuel,
+          parking,
+          wash,
+          oil,
+          maint,
+          mic,
           expenses,
           item.total || 0,
           isLocked ? "Locked" : "Editable"
@@ -406,23 +472,39 @@ export default function DriverDashboardPage() {
       return;
     }
     const headers = [
-      "Date", "Trip Description", "Hotel Drop Off", "Agent / Company", 
-      "Rate", "Voucher", "Cash Collected", "Fuel / Petrol", "Total Expenses", "Net Total", "Status"
+      "Date", "Vehicle", "Trip Description", "Hotel Drop Off", "Agent / Company", 
+      "Rate", "Voucher", "Cash", "Waqas Received", 
+      "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Miscellaneous",
+      "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
-      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
-      const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
-                       Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+      const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+      const cash = Number(item.cash || 0);
+      const waqas = Number(item.waqas_received || 0);
+      const fuel = Number(item.fuel || 0);
+      const parking = Number(item.parking || 0);
+      const wash = Number(item.wash || 0);
+      const oil = Number(item.oil_change || 0);
+      const maint = Number(item.car_maintenance || 0);
+      const mic = Number(item.mic || 0);
+      const expenses = fuel + parking + wash + oil + maint + mic;
       const isLocked = item.is_locked && !driverUser?.edit_rights;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        vehicleName,
         item.trip || "—",
         item.hotel_drop_off || "—",
         item.agent || "—",
         item.rate || 0,
         item.voucher || 0,
-        totalCash,
-        item.fuel || 0,
+        cash,
+        waqas,
+        fuel,
+        parking,
+        wash,
+        oil,
+        maint,
+        mic,
         expenses,
         item.total || 0,
         isLocked ? "Locked" : "Editable"
@@ -460,29 +542,43 @@ export default function DriverDashboardPage() {
     const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     
     const rowsHtml = entries.map((item: any) => {
-      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
-      const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
-                       Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+      const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+      const cash = Number(item.cash || 0);
+      const waqas = Number(item.waqas_received || 0);
+      const fuel = Number(item.fuel || 0);
+      const parking = Number(item.parking || 0);
+      const wash = Number(item.wash || 0);
+      const oil = Number(item.oil_change || 0);
+      const maint = Number(item.car_maintenance || 0);
+      const mic = Number(item.mic || 0);
+      const expenses = fuel + parking + wash + oil + maint + mic;
       const isLocked = item.is_locked && !driverUser?.edit_rights;
       return `
         <tr>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">
             ${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #15803d;">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-weight: 500;">${vehicleName}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #15803d; max-width: 140px; word-wrap: break-word;">
             ${item.trip || "—"}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.hotel_drop_off || "—"}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.agent || "—"}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${totalCash.toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${Number(item.fuel || 0).toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${expenses.toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; max-width: 100px; word-wrap: break-word;">${item.hotel_drop_off || "—"}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; max-width: 100px; word-wrap: break-word;">${item.agent || "—"}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${cash.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #0d9488;">${waqas.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${fuel.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${parking.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${wash.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${oil.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${maint.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${mic.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #ef4444;">${expenses.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
             ${Number(item.total || 0).toFixed(0)}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: center;">
             ${isLocked ? "Locked" : "Editable"}
           </td>
         </tr>
@@ -492,49 +588,57 @@ export default function DriverDashboardPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>\${title}</title>
+          <title>${title}</title>
           <style>
-            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #b48a1d; padding-bottom: 20px; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: #b48a1d; font-size: 24px; }
-            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th { background-color: #f8fafc; padding: 10px 8px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            body { font-family: sans-serif; margin: 20px; color: #1e293b; font-size: 11px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #b48a1d; padding-bottom: 15px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #b48a1d; font-size: 20px; }
+            .header p { margin: 3px 0 0 0; color: #64748b; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: auto; }
+            th { background-color: #f8fafc; padding: 8px 4px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
             @media print {
-              body { margin: 20px; }
+              body { margin: 10px; }
+              @page { size: landscape; margin: 0.5cm; }
             }
           </style>
         </head>
         <body>
           <div class="header">
             <div>
-              <h1>\${title}</h1>
-              <p>Driver Personal Daily Logs & Expenses Report</p>
+              <h1>${title}</h1>
+              <p>Driver Personal Daily Logs & Expenses Report (Landscape)</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Driver:</strong> ${driverUser?.name} (@${driverUser?.username})</p>
-              <p><strong>Generated Date:</strong> \${today}</p>
-              <p><strong>Total Logs:</strong> \${entries.length}</p>
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Logs:</strong> ${entries.length}</p>
             </div>
           </div>
           <table>
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Vehicle</th>
                 <th>Trip Route</th>
-                <th>Hotel Drop Off</th>
+                <th>Hotel Drop</th>
                 <th>Agent/B2B</th>
                 <th style="text-align: right;">Rate</th>
-                <th style="text-align: right;">Voucher</th>
+                <th style="text-align: right;">Vouch</th>
                 <th style="text-align: right;">Cash</th>
+                <th style="text-align: right;">Waqas</th>
                 <th style="text-align: right;">Fuel</th>
-                <th style="text-align: right;">Total Expenses</th>
-                <th style="text-align: right;">Net Total</th>
+                <th style="text-align: right;">Park</th>
+                <th style="text-align: right;">Wash</th>
+                <th style="text-align: right;">Oil</th>
+                <th style="text-align: right;">Maint</th>
+                <th style="text-align: right;">Misc</th>
+                <th style="text-align: right;">Exp</th>
+                <th style="text-align: right;">Net</th>
                 <th style="text-align: center;">Status</th>
               </tr>
             </thead>
             <tbody>
-              \${rowsHtml}
+              ${rowsHtml}
             </tbody>
           </table>
           <script>
@@ -1291,8 +1395,8 @@ export default function DriverDashboardPage() {
                   </span>
                   <select
                     name="vehicle_id"
-                    value={formData.vehicle_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, vehicle_id: e.target.value }))}
+                    value={customVehicleActive ? "CUSTOM" : formData.vehicle_id}
+                    onChange={handleVehicleDropdownChange}
                     className="form-input has-icon"
                     required
                   >
@@ -1302,8 +1406,21 @@ export default function DriverDashboardPage() {
                         {v.model} ({v.type})
                       </option>
                     ))}
+                    <option value="CUSTOM">Other (Type manually...)</option>
                   </select>
                 </div>
+                {customVehicleActive && (
+                  <input
+                    type="text"
+                    required
+                    name="manual_vehicle"
+                    value={formData.manual_vehicle}
+                    onChange={handleInputChange}
+                    placeholder="Type vehicle details (e.g. Camry 1234)..."
+                    className="form-input"
+                    style={{ marginTop: "8px" }}
+                  />
+                )}
               </div>
 
               {/* Agent Dropdown */}
@@ -1754,13 +1871,13 @@ export default function DriverDashboardPage() {
                     />
                   </div>
 
-                  {/* Vehicle Select Dropdown */}
+                   {/* Vehicle Select Dropdown */}
                   <div className="form-group">
                     <label className="form-label">Vehicle Assignment</label>
                     <select
                       name="vehicle_id"
-                      value={editFormData.vehicle_id}
-                      onChange={(e) => setEditFormData((prev: any) => ({ ...prev, vehicle_id: e.target.value }))}
+                      value={editCustomVehicleActive ? "CUSTOM" : editFormData.vehicle_id}
+                      onChange={handleEditVehicleDropdownChange}
                       className="form-input"
                       required
                     >
@@ -1770,7 +1887,20 @@ export default function DriverDashboardPage() {
                           {v.model} ({v.type})
                         </option>
                       ))}
+                      <option value="CUSTOM">Other (Type manually...)</option>
                     </select>
+                    {editCustomVehicleActive && (
+                      <input
+                        type="text"
+                        required
+                        name="manual_vehicle"
+                        value={editFormData.manual_vehicle}
+                        onChange={handleEditInputChange}
+                        placeholder="Type vehicle details (e.g. Camry 1234)..."
+                        className="form-input"
+                        style={{ marginTop: "8px" }}
+                      />
+                    )}
                   </div>
 
                   {/* Edit Agent Dropdown */}

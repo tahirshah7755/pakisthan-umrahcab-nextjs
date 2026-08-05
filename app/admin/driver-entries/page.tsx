@@ -61,6 +61,7 @@ export default function AdminDriverEntriesPage() {
   const [formData, setFormData] = useState({
     driver_id: "",
     vehicle_id: "",
+    manual_vehicle: "",
     date: new Date().toISOString().split("T")[0],
     trip: "",
     hotel_drop_off: "",
@@ -156,6 +157,7 @@ export default function AdminDriverEntriesPage() {
     setFormData({
       driver_id: "",
       vehicle_id: "",
+      manual_vehicle: "",
       date: new Date().toISOString().split("T")[0],
       trip: "",
       hotel_drop_off: "",
@@ -178,7 +180,8 @@ export default function AdminDriverEntriesPage() {
     setEditingEntry(entry);
     setFormData({
       driver_id: entry.driver_id ? String(entry.driver_id) : "",
-      vehicle_id: entry.vehicle_id ? String(entry.vehicle_id) : "",
+      vehicle_id: entry.vehicle_id ? String(entry.vehicle_id) : (entry.manual_vehicle ? "other" : ""),
+      manual_vehicle: entry.manual_vehicle || "",
       date: entry.date ? entry.date.split("T")[0] : "",
       trip: entry.trip || "",
       hotel_drop_off: entry.hotel_drop_off || "",
@@ -204,7 +207,8 @@ export default function AdminDriverEntriesPage() {
       const payload = {
         ...formData,
         driver_id: Number(formData.driver_id),
-        vehicle_id: formData.vehicle_id ? Number(formData.vehicle_id) : null,
+        vehicle_id: (formData.vehicle_id && formData.vehicle_id !== "other") ? Number(formData.vehicle_id) : null,
+        manual_vehicle: formData.vehicle_id === "other" ? formData.manual_vehicle : null,
         total
       };
       const res = await api.createDriverEntry(payload);
@@ -231,7 +235,8 @@ export default function AdminDriverEntriesPage() {
       const payload = {
         ...formData,
         driver_id: Number(formData.driver_id),
-        vehicle_id: formData.vehicle_id ? Number(formData.vehicle_id) : null,
+        vehicle_id: (formData.vehicle_id && formData.vehicle_id !== "other") ? Number(formData.vehicle_id) : null,
+        manual_vehicle: formData.vehicle_id === "other" ? formData.manual_vehicle : null,
         total
       };
       const res = await api.updateDriverEntry(editingEntry.id, payload);
@@ -294,29 +299,40 @@ export default function AdminDriverEntriesPage() {
     }
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
-      "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Waqas Received", "Misc", "Net Total", "Status"
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash", 
+      "Waqas Received", "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Misc", "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
-      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
+      const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
+      const vehicleType = item.vehicle ? item.vehicle.type : (item.manual_vehicle ? "Manual Entry" : "—");
+      const cash = Number(item.cash || 0);
+      const waqas = Number(item.waqas_received || 0);
+      const fuel = Number(item.fuel || 0);
+      const parking = Number(item.parking || 0);
+      const wash = Number(item.wash || 0);
+      const oil = Number(item.oil_change || 0);
+      const maint = Number(item.car_maintenance || 0);
+      const mic = Number(item.mic || 0);
+      const expenses = fuel + parking + wash + oil + maint + mic;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         item.driver?.name || `Driver ID #${item.driver_id}`,
-        item.vehicle?.model || "—",
-        item.vehicle?.type || "—",
+        vehicleName,
+        vehicleType,
         item.trip || "—",
         item.hotel_drop_off || "—",
         item.agent || "—",
         item.rate || 0,
         item.voucher || 0,
-        totalCash,
-        item.fuel || 0,
-        item.parking || 0,
-        item.wash || 0,
-        item.oil_change || 0,
-        item.car_maintenance || 0,
-        item.waqas_received || 0,
-        item.mic || 0,
+        cash,
+        waqas,
+        fuel,
+        parking,
+        wash,
+        oil,
+        maint,
+        mic,
+        expenses,
         item.total || 0,
         item.is_locked ? "Locked" : "Open"
       ];
@@ -334,32 +350,46 @@ export default function AdminDriverEntriesPage() {
     }
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
-      "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Waqas Received", "Misc", "Net Total", "Status"
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash", 
+      "Waqas Received", "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Misc", "Total Expenses", "Net Total", "Status"
     ];
     const csvContent = [
       headers.join(","),
-      ...entries.map((item: any) => [
-        `"${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}"`,
-        `"${(item.driver?.name || `Driver ID #${item.driver_id}`).replace(/"/g, '""')}"`,
-        `"${(item.vehicle?.model || "—").replace(/"/g, '""')}"`,
-        `"${(item.vehicle?.type || "—").replace(/"/g, '""')}"`,
-        `"${(item.trip || "—").replace(/"/g, '""')}"`,
-        `"${(item.hotel_drop_off || "—").replace(/"/g, '""')}"`,
-        `"${(item.agent || "—").replace(/"/g, '""')}"`,
-        item.rate || 0,
-        item.voucher || 0,
-        Number(item.cash || 0) + Number(item.waqas_received || 0),
-        item.fuel || 0,
-        item.parking || 0,
-        item.wash || 0,
-        item.oil_change || 0,
-        item.car_maintenance || 0,
-        item.waqas_received || 0,
-        item.mic || 0,
-        item.total || 0,
-        item.is_locked ? "Locked" : "Open"
-      ].join(","))
+      ...entries.map((item: any) => {
+        const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
+        const vehicleType = item.vehicle ? item.vehicle.type : (item.manual_vehicle ? "Manual Entry" : "—");
+        const cash = Number(item.cash || 0);
+        const waqas = Number(item.waqas_received || 0);
+        const fuel = Number(item.fuel || 0);
+        const parking = Number(item.parking || 0);
+        const wash = Number(item.wash || 0);
+        const oil = Number(item.oil_change || 0);
+        const maint = Number(item.car_maintenance || 0);
+        const mic = Number(item.mic || 0);
+        const expenses = fuel + parking + wash + oil + maint + mic;
+        return [
+          `"${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}"`,
+          `"${(item.driver?.name || `Driver ID #${item.driver_id}`).replace(/"/g, '""')}"`,
+          `"${vehicleName.replace(/"/g, '""')}"`,
+          `"${vehicleType.replace(/"/g, '""')}"`,
+          `"${(item.trip || "—").replace(/"/g, '""')}"`,
+          `"${(item.hotel_drop_off || "—").replace(/"/g, '""')}"`,
+          `"${(item.agent || "—").replace(/"/g, '""')}"`,
+          item.rate || 0,
+          item.voucher || 0,
+          cash,
+          waqas,
+          fuel,
+          parking,
+          wash,
+          oil,
+          maint,
+          mic,
+          expenses,
+          item.total || 0,
+          item.is_locked ? "Locked" : "Open"
+        ].join(",");
+      })
     ].join("\n");
 
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -380,38 +410,52 @@ export default function AdminDriverEntriesPage() {
     }
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
-      "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Waqas Received", "Misc", "Net Total", "Status"
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash", 
+      "Waqas Received", "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Misc", "Total Expenses", "Net Total", "Status"
     ];
-    const textRows = entries.map((item: any) => [
-      new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      item.driver?.name || `Driver ID #${item.driver_id}`,
-      item.vehicle?.model || "—",
-      item.vehicle?.type || "—",
-      item.trip || "—",
-      item.hotel_drop_off || "—",
-      item.agent || "—",
-      item.rate || 0,
-      item.voucher || 0,
-      Number(item.cash || 0) + Number(item.waqas_received || 0),
-      item.fuel || 0,
-      item.parking || 0,
-      item.wash || 0,
-      item.oil_change || 0,
-      item.car_maintenance || 0,
-      item.waqas_received || 0,
-      item.mic || 0,
-      item.total || 0,
-      item.is_locked ? "Locked" : "Open"
-    ]);
+    const textRows = entries.map((item: any) => {
+      const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
+      const vehicleType = item.vehicle ? item.vehicle.type : (item.manual_vehicle ? "Manual Entry" : "—");
+      const cash = Number(item.cash || 0);
+      const waqas = Number(item.waqas_received || 0);
+      const fuel = Number(item.fuel || 0);
+      const parking = Number(item.parking || 0);
+      const wash = Number(item.wash || 0);
+      const oil = Number(item.oil_change || 0);
+      const maint = Number(item.car_maintenance || 0);
+      const mic = Number(item.mic || 0);
+      const expenses = fuel + parking + wash + oil + maint + mic;
+      return [
+        new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        item.driver?.name || `Driver ID #${item.driver_id}`,
+        vehicleName,
+        vehicleType,
+        item.trip || "—",
+        item.hotel_drop_off || "—",
+        item.agent || "—",
+        item.rate || 0,
+        item.voucher || 0,
+        cash,
+        waqas,
+        fuel,
+        parking,
+        wash,
+        oil,
+        maint,
+        mic,
+        expenses,
+        item.total || 0,
+        item.is_locked ? "Locked" : "Open"
+      ];
+    });
     
     exportToExcel({
       title: "Driver Sheets & Logs Report",
       headers,
       rows: textRows,
       filename: `driver_logs_${new Date().toISOString().split("T")[0]}.xls`,
-      totalsIndices: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
-      statusIndex: 18
+      totalsIndices: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+      statusIndex: 19
     });
   };
 
@@ -430,30 +474,45 @@ export default function AdminDriverEntriesPage() {
     const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     
     const rowsHtml = entries.map((item: any) => {
-      const totalCash = Number(item.cash || 0) + Number(item.waqas_received || 0);
-      const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
-                       Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+      const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+      const cash = Number(item.cash || 0);
+      const waqas = Number(item.waqas_received || 0);
+      const fuel = Number(item.fuel || 0);
+      const parking = Number(item.parking || 0);
+      const wash = Number(item.wash || 0);
+      const oil = Number(item.oil_change || 0);
+      const maint = Number(item.car_maintenance || 0);
+      const mic = Number(item.mic || 0);
+      const expenses = fuel + parking + wash + oil + maint + mic;
       return `
         <tr>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">
             ${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e5cff;">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e5cff;">
             ${item.driver?.name || `Driver ID #${item.driver_id}`}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">
-            ${item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : "—"}
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0;">${vehicleName}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #15803d; max-width: 140px; word-wrap: break-word;">
+            ${item.trip || "—"}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.trip || "—"}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.agent || "—"}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${totalCash.toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${expenses.toFixed(0)}</td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; max-width: 100px; word-wrap: break-word;">${item.hotel_drop_off || "—"}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; max-width: 100px; word-wrap: break-word;">${item.agent || "—"}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${cash.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #0d9488;">${waqas.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${fuel.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${parking.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${wash.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${oil.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${maint.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${mic.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #ef4444;">${expenses.toFixed(0)}</td>
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
             ${Number(item.total || 0).toFixed(0)}
           </td>
-          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: center;">
             ${item.is_locked ? "Locked" : "Open"}
           </td>
         </tr>
@@ -463,28 +522,29 @@ export default function AdminDriverEntriesPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>\${title}</title>
+          <title>${title}</title>
           <style>
-            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #312e81; padding-bottom: 20px; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: #312e81; font-size: 24px; }
-            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th { background-color: #f8fafc; padding: 10px 8px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
+            body { font-family: sans-serif; margin: 20px; color: #1e293b; font-size: 11px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #312e81; padding-bottom: 15px; margin-bottom: 20px; }
+            .header h1 { margin: 0; color: #312e81; font-size: 20px; }
+            .header p { margin: 3px 0 0 0; color: #64748b; font-size: 11px; }
+            table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: auto; }
+            th { background-color: #f8fafc; padding: 8px 4px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
             @media print {
-              body { margin: 20px; }
+              body { margin: 10px; }
+              @page { size: landscape; margin: 0.5cm; }
             }
           </style>
         </head>
         <body>
           <div class="header">
             <div>
-              <h1>\${title}</h1>
-              <p>Umrah Cab Driver Sheets & Logs Registry</p>
+              <h1>${title}</h1>
+              <p>Umrah Cab Driver Sheets & Logs Registry (Landscape)</p>
             </div>
             <div style="text-align: right;">
-              <p><strong>Generated Date:</strong> \${today}</p>
-              <p><strong>Total Logs:</strong> \${entries.length}</p>
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Logs:</strong> ${entries.length}</p>
             </div>
           </div>
           <table>
@@ -494,17 +554,25 @@ export default function AdminDriverEntriesPage() {
                 <th>Driver</th>
                 <th>Vehicle</th>
                 <th>Trip Route</th>
+                <th>Hotel Drop</th>
                 <th>Agent/B2B</th>
                 <th style="text-align: right;">Rate</th>
-                <th style="text-align: right;">Voucher</th>
+                <th style="text-align: right;">Vouch</th>
                 <th style="text-align: right;">Cash</th>
-                <th style="text-align: right;">Expenses</th>
-                <th style="text-align: right;">Net Total</th>
+                <th style="text-align: right;">Waqas</th>
+                <th style="text-align: right;">Fuel</th>
+                <th style="text-align: right;">Park</th>
+                <th style="text-align: right;">Wash</th>
+                <th style="text-align: right;">Oil</th>
+                <th style="text-align: right;">Maint</th>
+                <th style="text-align: right;">Misc</th>
+                <th style="text-align: right;">Exp</th>
+                <th style="text-align: right;">Net</th>
                 <th style="text-align: center;">Status</th>
               </tr>
             </thead>
             <tbody>
-              \${rowsHtml}
+              ${rowsHtml}
             </tbody>
           </table>
           <script>
@@ -1305,6 +1373,11 @@ export default function AdminDriverEntriesPage() {
                             <span className="log-vehicle-model">{item.vehicle.model}</span>
                             <span className="log-vehicle-type">{item.vehicle.type}</span>
                           </div>
+                        ) : item.manual_vehicle ? (
+                          <div className="log-vehicle-stack">
+                            <span className="log-vehicle-model" style={{ color: "#4f46e5", fontWeight: "600" }}>{item.manual_vehicle}</span>
+                            <span className="log-vehicle-type" style={{ color: "#818cf8", fontSize: "11px" }}>Manual Entry</span>
+                          </div>
                         ) : (
                           <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: "13px" }}>No vehicle mapped</span>
                         )}
@@ -1419,7 +1492,14 @@ export default function AdminDriverEntriesPage() {
                     <select
                       name="vehicle_id"
                       value={formData.vehicle_id}
-                      onChange={handleInputChange}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          vehicle_id: val,
+                          manual_vehicle: val === "other" ? prev.manual_vehicle : ""
+                        }));
+                      }}
                       className="input-control"
                       style={{ height: "38px" }}
                     >
@@ -1427,6 +1507,7 @@ export default function AdminDriverEntriesPage() {
                       {vehicles.map(v => (
                         <option key={v.id} value={v.id}>{v.model} ({v.type})</option>
                       ))}
+                      <option value="other">Other / Manual Entry</option>
                     </select>
                   </div>
 
@@ -1442,6 +1523,24 @@ export default function AdminDriverEntriesPage() {
                     />
                   </div>
                 </div>
+
+                {formData.vehicle_id === "other" && (
+                  <div className="form-row-3" style={{ marginTop: "-12px", marginBottom: "12px" }}>
+                    <div className="form-group" style={{ gridColumn: "span 3" }}>
+                      <label style={{ color: "#4f46e5", fontWeight: "600" }}>Manual Vehicle (Write custom name/details)</label>
+                      <input
+                        type="text"
+                        name="manual_vehicle"
+                        required
+                        placeholder="Enter vehicle model / plate number (e.g. Camry 2024 - ABC 123)"
+                        value={formData.manual_vehicle}
+                        onChange={handleInputChange}
+                        className="input-control"
+                        style={{ borderColor: "#818cf8" }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Trip and Agent details */}
                 <div className="form-row-3">

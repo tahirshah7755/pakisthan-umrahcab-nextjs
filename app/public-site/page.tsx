@@ -201,18 +201,18 @@ export default function PublicHomePage() {
     const resolveMeta = (name: string) => {
       const lower = name.toLowerCase();
       if (lower.includes("taurus")) {
-        return { type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", icon: "fa-car-side" };
+        return { type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", maxPassengers: 4, icon: "fa-car-side" };
       }
       if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("van")) {
-        return { type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", icon: "fa-van-shuttle" };
+        return { type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", maxPassengers: 7, icon: "fa-van-shuttle" };
       }
       if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc")) {
-        return { type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", icon: "fa-suv" };
+        return { type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", maxPassengers: 7, icon: "fa-suv" };
       }
       if (lower.includes("hiace") || lower.includes("coaster") || lower.includes("bus") || lower.includes("coach")) {
-        return { type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", icon: "fa-bus" };
+        return { type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", maxPassengers: 10, icon: "fa-bus" };
       }
-      return { type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", icon: "fa-car" };
+      return { type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", maxPassengers: 4, icon: "fa-car" };
     };
 
     const resolvePrice = (name: string) => {
@@ -238,8 +238,16 @@ export default function PublicHomePage() {
       return Number(custom.sedan_price || match?.sedan_price) || 300;
     };
 
+    const reqPassengers = (() => {
+      if (bookingData.passengers === "5-7") return 5;
+      if (bookingData.passengers === "8-10") return 8;
+      if (bookingData.passengers === "10+") return 11;
+      return 1; // "1-4" or default
+    })();
+
+    let vehicles = [];
     if (publicFleet.length > 0) {
-      return publicFleet.map((f: any) => {
+      vehicles = publicFleet.map((f: any) => {
         const meta = resolveMeta(f.model);
         const price = resolvePrice(f.model);
         return {
@@ -247,28 +255,93 @@ export default function PublicHomePage() {
           type: meta.type,
           capacity: meta.capacity,
           luggage: meta.luggage,
+          maxPassengers: meta.maxPassengers,
           price: price,
           icon: meta.icon
         };
       });
+    } else {
+      vehicles = defaultVehicles.map(v => {
+        const meta = resolveMeta(v.name);
+        const sedanPrice = Number(custom.sedan_price || match?.sedan_price) || 300;
+        const taurusPrice = Number(custom.taurus_price || custom.ford_taurus_price) || (sedanPrice + 100);
+        const vanPrice = Number(custom.van_price || match?.van_price) || 500;
+        const suvPrice = Number(custom.suv_price || match?.suv_price) || 550;
+        const coachPrice = Number(custom.coach_price || match?.coach_price) || (vanPrice + 50);
+
+        let price = sedanPrice;
+        if (v.name.includes("Taurus")) price = taurusPrice;
+        else if (v.name.includes("H-1")) price = vanPrice;
+        else if (v.name.includes("Yukon")) price = suvPrice;
+        else if (v.name.includes("HI ACE")) price = coachPrice;
+
+        return { ...v, price, maxPassengers: meta.maxPassengers };
+      });
     }
 
-    if (!match) return defaultVehicles;
+    const filtered = vehicles.filter(v => v.maxPassengers >= reqPassengers);
+    return filtered.length > 0 ? filtered : vehicles;
+  }, [bookingData.pickup, bookingData.destination, bookingData.passengers, allRates, publicFleet]);
 
-    const sedanPrice = Number(custom.sedan_price || match.sedan_price) || 300;
-    const taurusPrice = Number(custom.taurus_price || custom.ford_taurus_price) || (sedanPrice + 100);
-    const vanPrice = Number(custom.van_price || match.van_price) || 500;
-    const suvPrice = Number(custom.suv_price || match.suv_price) || 550;
-    const coachPrice = Number(custom.coach_price || match.coach_price) || (vanPrice + 50);
+  // Step validation rules for strict tab progression
+  const isStep1Complete = Boolean(
+    bookingData.pickup &&
+    bookingData.destination &&
+    bookingData.pickup !== bookingData.destination &&
+    bookingData.date &&
+    bookingData.time
+  );
 
-    return [
-      { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: sedanPrice, icon: "fa-car" },
-      { name: "Ford Taurus", type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", price: taurusPrice, icon: "fa-car-side" },
-      { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: 500, icon: "fa-van-shuttle" },
-      { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: suvPrice, icon: "fa-suv" },
-      { name: "Toyota HI ACE", type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", price: coachPrice, icon: "fa-bus" }
-    ];
-  }, [bookingData.pickup, bookingData.destination, allRates, publicFleet]);
+  const isStep2Complete = isStep1Complete && Boolean(bookingData.carType && bookingData.carPrice);
+
+  const isStep3Complete = isStep2Complete && Boolean(bookingData.fullName?.trim() && bookingData.whatsapp?.trim());
+
+  const handleStepTabClick = (targetStep: number) => {
+    if (targetStep === 1) {
+      setStep(1);
+      return;
+    }
+    if (targetStep === 2) {
+      if (!isStep1Complete) {
+        if (!bookingData.pickup || !bookingData.destination || !bookingData.date || !bookingData.time) {
+          alert("Please fill in all location and timing details in Step 1 first.");
+        } else if (bookingData.pickup === bookingData.destination) {
+          alert("Pickup and Drop-off locations cannot be the same.");
+        }
+        return;
+      }
+      setStep(2);
+      return;
+    }
+    if (targetStep === 3) {
+      if (!isStep1Complete) {
+        alert("Please complete Step 1 (Route details) first.");
+        return;
+      }
+      if (!isStep2Complete) {
+        alert("Please select a vehicle in Step 2 first.");
+        return;
+      }
+      setStep(3);
+      return;
+    }
+    if (targetStep === 4) {
+      if (!isStep1Complete) {
+        alert("Please complete Step 1 (Route details) first.");
+        return;
+      }
+      if (!isStep2Complete) {
+        alert("Please select a vehicle in Step 2 first.");
+        return;
+      }
+      if (!isStep3Complete) {
+        alert("Please fill in your Name & WhatsApp number in Step 3 first.");
+        return;
+      }
+      setStep(4);
+      return;
+    }
+  };
 
   const handleCarSelect = (name: string, price: number) => {
     setBookingData((prev) => ({ ...prev, carType: name, carPrice: price }));
@@ -498,19 +571,47 @@ export default function PublicHomePage() {
         <div className="uc-wizard-wrap">
           {/* Progress Header */}
           <div className="uc-wizard-steps">
-            <div className={`uc-wizard-step ${step >= 1 ? "active" : ""}`} onClick={() => setStep(1)}>
+            <div
+              className={`uc-wizard-step ${step >= 1 ? "active" : ""}`}
+              onClick={() => handleStepTabClick(1)}
+              style={{ cursor: "pointer" }}
+            >
               <span className="step-num">1</span>
               <span>Route</span>
             </div>
-            <div className={`uc-wizard-step ${step >= 2 ? "active" : ""}`} onClick={() => setStep(2)}>
+            <div
+              className={`uc-wizard-step ${step >= 2 ? "active" : ""}`}
+              onClick={() => handleStepTabClick(2)}
+              style={{
+                cursor: isStep1Complete ? "pointer" : "not-allowed",
+                opacity: isStep1Complete ? 1 : 0.5,
+              }}
+              title={!isStep1Complete ? "Please complete Step 1 (Route details) first" : ""}
+            >
               <span className="step-num">2</span>
               <span>Vehicle</span>
             </div>
-            <div className={`uc-wizard-step ${step >= 3 ? "active" : ""}`} onClick={() => setStep(3)}>
+            <div
+              className={`uc-wizard-step ${step >= 3 ? "active" : ""}`}
+              onClick={() => handleStepTabClick(3)}
+              style={{
+                cursor: isStep2Complete ? "pointer" : "not-allowed",
+                opacity: isStep2Complete ? 1 : 0.5,
+              }}
+              title={!isStep2Complete ? "Please complete Step 1 & Step 2 first" : ""}
+            >
               <span className="step-num">3</span>
               <span>Contact</span>
             </div>
-            <div className={`uc-wizard-step ${step >= 4 ? "active" : ""}`} onClick={() => setStep(4)}>
+            <div
+              className={`uc-wizard-step ${step >= 4 ? "active" : ""}`}
+              onClick={() => handleStepTabClick(4)}
+              style={{
+                cursor: isStep3Complete ? "pointer" : "not-allowed",
+                opacity: isStep3Complete ? 1 : 0.5,
+              }}
+              title={!isStep3Complete ? "Please complete Step 1, 2 & 3 first" : ""}
+            >
               <span className="step-num">4</span>
               <span>Summary</span>
             </div>

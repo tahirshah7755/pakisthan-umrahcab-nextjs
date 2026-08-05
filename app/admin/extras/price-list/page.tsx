@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/utils/api";
 import {
   useGetPriceListQuery,
   useGetPriceGroupsQuery,
@@ -278,6 +279,64 @@ export default function PriceListMatrix() {
     }
   };
   const [newRoute, setNewRoute] = useState("");
+  const [locationsList, setLocationsList] = useState<string[]>([]);
+  const [pickupLoc, setPickupLoc] = useState("");
+  const [dropoffLoc, setDropoffLoc] = useState("");
+
+  // Inline location creator states
+  const [showInlineAddLoc, setShowInlineAddLoc] = useState(false);
+  const [quickLocName, setQuickLocName] = useState("");
+  const [quickLocTarget, setQuickLocTarget] = useState<"pickup" | "dropoff">("pickup");
+  const [isAddingLoc, setIsAddingLoc] = useState(false);
+
+  useEffect(() => {
+    async function loadLocs() {
+      try {
+        const data = await api.getLocations();
+        setLocationsList(data || []);
+      } catch (e) {
+        console.error("Failed to load locations for modal:", e);
+      }
+    }
+    loadLocs();
+  }, []);
+
+  const handleQuickAddLocation = async () => {
+    const trimmed = quickLocName.trim();
+    if (!trimmed) {
+      showToast("Location name cannot be empty", "error");
+      return;
+    }
+    setIsAddingLoc(true);
+    try {
+      const res = await api.createLocation({ name: trimmed, type: "both" });
+      if (res.success) {
+        showToast(`Location "${trimmed}" added successfully!`, "success");
+        const fresh = await api.getLocations();
+        setLocationsList(fresh || []);
+        
+        if (quickLocTarget === "pickup") {
+          setPickupLoc(trimmed);
+          if (dropoffLoc) setNewRoute(`${trimmed} To ${dropoffLoc}`);
+          else setNewRoute(`${trimmed} To ...`);
+        } else {
+          setDropoffLoc(trimmed);
+          if (pickupLoc) setNewRoute(`${pickupLoc} To ${trimmed}`);
+          else setNewRoute(`... To ${trimmed}`);
+        }
+        
+        setQuickLocName("");
+        setShowInlineAddLoc(false);
+      } else {
+        showToast(res.error || "Failed to add location", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to add location", "error");
+    } finally {
+      setIsAddingLoc(false);
+    }
+  };
 
   const handleCreateRouteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,6 +359,8 @@ export default function PriceListMatrix() {
       
       showToast("New route package added successfully!", "success");
       setNewRoute("");
+      setPickupLoc("");
+      setDropoffLoc("");
       setShowAddModal(false);
     } catch (err: any) {
       console.error(err);
@@ -957,22 +1018,172 @@ export default function PriceListMatrix() {
             </div>
             
             <form onSubmit={handleCreateRouteSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Pickup & Destination Selectors */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                      <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#475569", textTransform: "uppercase", margin: 0 }}>
+                        1. Pickup Location
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickLocTarget("pickup");
+                          setShowInlineAddLoc(true);
+                        }}
+                        style={{
+                          background: "#eff6ff",
+                          color: "#2563eb",
+                          border: "1px solid #bfdbfe",
+                          borderRadius: "14px",
+                          padding: "3px 10px",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          boxShadow: "0 1px 2px rgba(37, 99, 235, 0.08)"
+                        }}
+                        title="Add a new location to database"
+                      >
+                        <i className="fas fa-plus-circle" style={{ color: "#2563eb" }}></i>
+                        <span>+ Add Location</span>
+                      </button>
+                    </div>
+                    <select
+                      className="form-input"
+                      value={pickupLoc}
+                      onChange={(e) => {
+                        const p = e.target.value;
+                        setPickupLoc(p);
+                        if (p && dropoffLoc) {
+                          setNewRoute(`${p} To ${dropoffLoc}`);
+                        } else if (p) {
+                          setNewRoute(`${p} To ...`);
+                        }
+                      }}
+                      style={{ fontSize: "12px", padding: "8px" }}
+                    >
+                      <option value="">-- Select Pickup --</option>
+                      {locationsList.map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                      <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#475569", textTransform: "uppercase", margin: 0 }}>
+                        2. Drop-off Destination
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickLocTarget("dropoff");
+                          setShowInlineAddLoc(true);
+                        }}
+                        style={{
+                          background: "#eff6ff",
+                          color: "#2563eb",
+                          border: "1px solid #bfdbfe",
+                          borderRadius: "14px",
+                          padding: "3px 10px",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          boxShadow: "0 1px 2px rgba(37, 99, 235, 0.08)"
+                        }}
+                        title="Add a new location to database"
+                      >
+                        <i className="fas fa-plus-circle" style={{ color: "#2563eb" }}></i>
+                        <span>+ Add Location</span>
+                      </button>
+                    </div>
+                    <select
+                      className="form-input"
+                      value={dropoffLoc}
+                      onChange={(e) => {
+                        const d = e.target.value;
+                        setDropoffLoc(d);
+                        if (pickupLoc && d) {
+                          setNewRoute(`${pickupLoc} To ${d}`);
+                        } else if (d) {
+                          setNewRoute(`... To ${d}`);
+                        }
+                      }}
+                      style={{ fontSize: "12px", padding: "8px" }}
+                    >
+                      <option value="">-- Select Drop-off --</option>
+                      {locationsList.map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Inline Quick Add Location Form */}
+                {showInlineAddLoc && (
+                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "10px 12px", borderRadius: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#1e40af" }}>
+                        <i className="fas fa-location-dot" style={{ marginRight: "4px" }}></i>
+                        Add New Location ({quickLocTarget === "pickup" ? "For Pickup" : "For Drop-off"})
+                      </span>
+                      <button type="button" onClick={() => setShowInlineAddLoc(false)} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "14px" }}>&times;</button>
+                    </div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Type new location name (e.g. Al Taif Hotel)..."
+                        value={quickLocName}
+                        onChange={(e) => setQuickLocName(e.target.value)}
+                        style={{ fontSize: "12px", background: "#ffffff", padding: "6px 10px" }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleQuickAddLocation}
+                        disabled={isAddingLoc}
+                        style={{
+                          background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px",
+                          padding: "6px 14px", fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {isAddingLoc ? "Saving..." : "Save Location"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
-                <label className="form-label">Route Name *</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <label className="form-label" style={{ margin: 0 }}>Route Name (Auto-Generated)</label>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600", background: "#e2e8f0", padding: "2px 8px", borderRadius: "4px" }}>
+                    <i className="fas fa-lock" style={{ marginRight: "4px", color: "#64748b" }}></i> Read Only
+                  </span>
+                </div>
                 <div className="form-input-wrapper">
                   <i className="fas fa-map-pin form-icon" style={{ color: "#2563eb" }}></i>
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. Jeddah Airport To Makkah Hotel"
+                    placeholder="Select Pickup & Drop-off locations above..."
                     value={newRoute}
-                    onChange={(e) => setNewRoute(e.target.value)}
+                    readOnly
+                    style={{ background: "#f1f5f9", cursor: "not-allowed", fontWeight: "600", color: "#334155" }}
                     required
-                    autoFocus
                   />
                 </div>
                 <small style={{ color: "#64748b", display: "block", marginTop: "5px" }}>
-                  Example format: <strong>From City To To City</strong> (e.g. Makkah Hotel To Madinah Hotel)
+                  🔒 Auto-generated from selected locations above to prevent typing errors.
                 </small>
               </div>
 

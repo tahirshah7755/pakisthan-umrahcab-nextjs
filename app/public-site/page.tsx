@@ -104,6 +104,7 @@ export default function PublicHomePage() {
   // Dynamic Data & Checkout States
   const [locationsList, setLocationsList] = useState<string[]>([]);
   const [allRates, setAllRates] = useState<any[]>([]);
+  const [publicFleet, setPublicFleet] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const defaultLocationsList = [
@@ -121,7 +122,7 @@ export default function PublicHomePage() {
     "Yanbu"
   ];
 
-  // Fetch locations and public rates on mount
+  // Fetch locations, public rates, and public fleet on mount
   useEffect(() => {
     async function loadPublicData() {
       try {
@@ -130,6 +131,9 @@ export default function PublicHomePage() {
         
         const rates = await api.getPublicRates();
         setAllRates(rates || []);
+
+        const fleet = await api.getPublicFleet();
+        setPublicFleet(fleet || []);
       } catch (err) {
         console.error("Failed to fetch public booking data:", err);
       }
@@ -179,36 +183,92 @@ export default function PublicHomePage() {
     { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: 300, icon: "fa-car" },
     { name: "Ford Taurus", type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", price: 400, icon: "fa-car-side" },
     { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: 500, icon: "fa-van-shuttle" },
-    { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: 550, icon: "fa-truck-pickup" },
+    { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: 550, icon: "fa-suv" },
     { name: "Toyota HI ACE", type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", price: 550, icon: "fa-bus" }
   ];
 
-  // Dynamically calculate vehicles and prices based on route selection
+  // Dynamically calculate vehicles and prices based on fleet database & route selection
   const currentVehicles = React.useMemo(() => {
     const match = findRouteMatch(bookingData.pickup, bookingData.destination);
-    if (!match) return defaultVehicles;
 
     let custom: any = {};
-    if (match.custom_prices) {
+    if (match && match.custom_prices) {
       try {
         custom = typeof match.custom_prices === 'string' ? JSON.parse(match.custom_prices) : match.custom_prices;
       } catch (e) {}
     }
 
-    const sedanPrice = Number(custom["Sedan (Core)"]?.price || custom.sedan_price || match.sedan_price) || 300;
-    const taurusPrice = Number(custom["Ford Taurus (Core)"]?.price || custom["Ford Taurus"]?.price || custom.taurus_price || custom.ford_taurus_price) || (sedanPrice + 100);
-    const vanPrice = Number(custom["Hyundai Staria (Core)"]?.price || custom["Family Van"]?.price || custom.van_price || match.van_price) || 500;
-    const suvPrice = Number(custom["GMC XL Yukon (Core)"]?.price || custom["Luxury SUV"]?.price || custom.suv_price || match.suv_price) || 550;
-    const coachPrice = Number(custom["Hiace Grand Cabin (Core)"]?.price || custom.coach_price || match.coach_price) || (vanPrice + 50);
+    const resolveMeta = (name: string) => {
+      const lower = name.toLowerCase();
+      if (lower.includes("taurus")) {
+        return { type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", icon: "fa-car-side" };
+      }
+      if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("van")) {
+        return { type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", icon: "fa-van-shuttle" };
+      }
+      if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc")) {
+        return { type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", icon: "fa-suv" };
+      }
+      if (lower.includes("hiace") || lower.includes("coaster") || lower.includes("bus") || lower.includes("coach")) {
+        return { type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", icon: "fa-bus" };
+      }
+      return { type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", icon: "fa-car" };
+    };
+
+    const resolvePrice = (name: string) => {
+      const lower = name.toLowerCase();
+      
+      if (custom[name]?.price) return Number(custom[name].price);
+      if (typeof custom[name] === "number") return custom[name];
+
+      if (lower.includes("taurus")) {
+        if (custom.taurus_price) return Number(custom.taurus_price);
+        const sedanP = Number(custom.sedan_price || match?.sedan_price) || 300;
+        return sedanP + 100;
+      }
+      if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("van")) {
+        return Number(custom.van_price || match?.van_price) || 500;
+      }
+      if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc")) {
+        return Number(custom.suv_price || match?.suv_price) || 550;
+      }
+      if (lower.includes("hiace") || lower.includes("coaster") || lower.includes("bus") || lower.includes("coach")) {
+        return Number(custom.coach_price || match?.coach_price) || 550;
+      }
+      return Number(custom.sedan_price || match?.sedan_price) || 300;
+    };
+
+    if (publicFleet.length > 0) {
+      return publicFleet.map((f: any) => {
+        const meta = resolveMeta(f.model);
+        const price = resolvePrice(f.model);
+        return {
+          name: f.model,
+          type: meta.type,
+          capacity: meta.capacity,
+          luggage: meta.luggage,
+          price: price,
+          icon: meta.icon
+        };
+      });
+    }
+
+    if (!match) return defaultVehicles;
+
+    const sedanPrice = Number(custom.sedan_price || match.sedan_price) || 300;
+    const taurusPrice = Number(custom.taurus_price || custom.ford_taurus_price) || (sedanPrice + 100);
+    const vanPrice = Number(custom.van_price || match.van_price) || 500;
+    const suvPrice = Number(custom.suv_price || match.suv_price) || 550;
+    const coachPrice = Number(custom.coach_price || match.coach_price) || (vanPrice + 50);
 
     return [
       { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: sedanPrice, icon: "fa-car" },
       { name: "Ford Taurus", type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", price: taurusPrice, icon: "fa-car-side" },
-      { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: vanPrice, icon: "fa-van-shuttle" },
+      { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: 500, icon: "fa-van-shuttle" },
       { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: suvPrice, icon: "fa-suv" },
       { name: "Toyota HI ACE", type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", price: coachPrice, icon: "fa-bus" }
     ];
-  }, [bookingData.pickup, bookingData.destination, allRates]);
+  }, [bookingData.pickup, bookingData.destination, allRates, publicFleet]);
 
   const handleCarSelect = (name: string, price: number) => {
     setBookingData((prev) => ({ ...prev, carType: name, carPrice: price }));

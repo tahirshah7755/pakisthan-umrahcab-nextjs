@@ -529,6 +529,11 @@ export const api = {
     return data || [];
   },
 
+  async getPublicFleet() {
+    const data = await request(`/public-fleet`);
+    return data || [];
+  },
+
   async updatePriceList(id: number, prices: any) {
     const data = await request(`/price-list/${id}`, {
       method: "PUT",

@@ -25,11 +25,13 @@ export default function PublicInvoicePage() {
       setLoading(true);
       const res = await api.getPublicInvoiceDetails(code);
       if (res) {
-        setInvoice(res.invoice);
-        setOrder(res.order);
+        const invObj = res.invoice || (res.invoice_code ? res : null);
+        const ordObj = res.order || res.individual_order || invObj?.individual_order || null;
+        setInvoice(invObj);
+        setOrder(ordObj);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch invoice:", err);
     } finally {
       setLoading(false);
     }
@@ -107,14 +109,51 @@ export default function PublicInvoicePage() {
   const isPaid = invoice.status?.toLowerCase() === "paid";
 
   return (
-    <div style={{
-      minHeight: "100vh", background: "#0b0f19", color: "#f8fafc", padding: "40px 20px",
+    <div className="public-invoice-wrapper" style={{
+      minHeight: "100vh", background: "#0b0f19", color: "#f8fafc", padding: "110px 20px 60px 20px",
       fontFamily: "system-ui, sans-serif"
     }}>
-      <div style={{ maxWidth: "1000px", margin: "0 auto", display: "grid", gridTemplateColumns: isPaid ? "1fr" : "1.2fr 0.8fr", gap: "30px" }}>
+      <style>{`
+        @media print {
+          header, footer, nav, .uc-header, .uc-footer, .uc-whatsapp-float, .uc-floating-wa, .uc-mobile-bottom-nav, button, .no-print {
+            display: none !important;
+          }
+          body, html {
+            background: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .public-invoice-wrapper {
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            min-height: auto !important;
+          }
+          .invoice-card-box {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: none !important;
+            padding: 20px !important;
+          }
+          .invoice-card-box h2, 
+          .invoice-card-box h3, 
+          .invoice-card-box h4, 
+          .invoice-card-box p, 
+          .invoice-card-box span {
+            color: #000000 !important;
+          }
+          .invoice-card-box div {
+            border-color: #e2e8f0 !important;
+          }
+        }
+      `}</style>
+
+      <div style={{ maxWidth: "800px", margin: "0 auto" }}>
         
         {/* Invoice Summary Details Card */}
-        <div style={{
+        <div className="invoice-card-box" style={{
           background: "#161b22", border: "1px solid #30363d", borderRadius: "16px", padding: "30px",
           boxShadow: "0 10px 25px rgba(0,0,0,0.3)"
         }}>
@@ -134,7 +173,7 @@ export default function PublicInvoicePage() {
                 <i className={isPaid ? "fas fa-check-circle" : "fas fa-clock"} style={{ marginRight: "6px" }}></i>
                 {invoice.status}
               </span>
-              <button onClick={() => window.print()} style={{
+              <button onClick={() => window.print()} className="no-print" style={{
                 background: "rgba(255,255,255,0.05)", border: "1px solid #30363d", color: "#c9d1d9",
                 width: "36px", height: "36px", borderRadius: "8px", cursor: "pointer", display: "flex",
                 alignItems: "center", justifyContent: "center"
@@ -222,114 +261,6 @@ export default function PublicInvoicePage() {
             </div>
           </div>
         </div>
-
-        {/* Payment Simulation Form Column */}
-        {!isPaid && (
-          <div style={{
-            background: "#161b22", border: "1px solid #30363d", borderRadius: "16px", padding: "30px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)", display: "flex", flexDirection: "column", gap: "20px",
-            height: "fit-content"
-          }}>
-            <div>
-              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: "0 0 6px 0" }}>Simulated Checkout</h3>
-              <p style={{ color: "#8b949e", fontSize: "13px", margin: 0 }}>Simulate credit card transaction to instantly transition booking status.</p>
-            </div>
-
-            <form onSubmit={handleSimulatePayment} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "12px", fontWeight: "600", color: "#c9d1d9" }}>Cardholder Name</label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="text"
-                    required
-                    placeholder="John Doe"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    style={{
-                      width: "100%", padding: "10px 10px 10px 35px", background: "#0b0f19", border: "1px solid #30363d",
-                      borderRadius: "8px", color: "#fff", fontSize: "14px"
-                    }}
-                  />
-                  <i className="fas fa-user" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#8b949e" }}></i>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "12px", fontWeight: "600", color: "#c9d1d9" }}>Card Number</label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="text"
-                    required
-                    maxLength={19}
-                    placeholder="4111 2222 3333 4444"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value.replace(/[^0-9]/g, "").replace(/(\d{4})(?=\d)/g, "$1 "))}
-                    style={{
-                      width: "100%", padding: "10px 10px 10px 35px", background: "#0b0f19", border: "1px solid #30363d",
-                      borderRadius: "8px", color: "#fff", fontSize: "14px"
-                    }}
-                  />
-                  <i className="fas fa-credit-card" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#8b949e" }}></i>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#c9d1d9" }}>Expiry Date</label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={5}
-                    placeholder="MM/YY"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value)}
-                    style={{
-                      width: "100%", padding: "10px", background: "#0b0f19", border: "1px solid #30363d",
-                      borderRadius: "8px", color: "#fff", fontSize: "14px"
-                    }}
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#c9d1d9" }}>CVV Code</label>
-                  <input
-                    type="password"
-                    required
-                    maxLength={3}
-                    placeholder="***"
-                    value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, ""))}
-                    style={{
-                      width: "100%", padding: "10px", background: "#0b0f19", border: "1px solid #30363d",
-                      borderRadius: "8px", color: "#fff", fontSize: "14px"
-                    }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={paying}
-                style={{
-                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                  border: "none", color: "#fff", padding: "12px", borderRadius: "8px",
-                  fontWeight: "700", fontSize: "14px", cursor: "pointer", display: "flex",
-                  alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "10px",
-                  boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)"
-                }}
-              >
-                {paying ? (
-                  <>
-                    <i className="fas fa-circle-notch fa-spin"></i> Authorizing...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-lock"></i> Pay {invoice.balance} SAR Now
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        )}
       </div>
     </div>
   );

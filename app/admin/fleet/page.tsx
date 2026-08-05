@@ -17,10 +17,6 @@ export default function FleetManagementPage() {
         ? (fleetResponse as any).data
         : []);
 
-  // Summary Metrics
-  const totalFleetUnits = fleetList.reduce((sum: number, f: any) => sum + (Number(f.count) || 0), 0);
-  const activeDispatchedUnits = fleetList.reduce((sum: number, f: any) => sum + (Number(f.active) || 0), 0);
-
   // Toast state
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -31,15 +27,11 @@ export default function FleetManagementPage() {
   // Add Modal state
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newModel, setNewModel] = useState("");
-  const [newCount, setNewCount] = useState<number>(10);
-  const [newActive, setNewActive] = useState<number>(5);
   const [newCapacity, setNewCapacity] = useState<number>(4);
   const [newLuggage, setNewLuggage] = useState<number>(2);
 
   // Edit Modal state
   const [editingVehicle, setEditingVehicle] = useState<any | null>(null);
-  const [editCount, setEditCount] = useState<number>(0);
-  const [editActive, setEditActive] = useState<number>(0);
   const [editCapacity, setEditCapacity] = useState<number>(4);
   const [editLuggage, setEditLuggage] = useState<number>(2);
 
@@ -53,8 +45,6 @@ export default function FleetManagementPage() {
 
   const handleEditClick = (vehicle: any) => {
     setEditingVehicle(vehicle);
-    setEditCount(vehicle.count || 0);
-    setEditActive(vehicle.active || 0);
     setEditCapacity(vehicle.capacity || 4);
     setEditLuggage(vehicle.luggage || 2);
   };
@@ -65,24 +55,18 @@ export default function FleetManagementPage() {
       showToast("Vehicle Model is required!", "error");
       return;
     }
-    if (newActive > newCount) {
-      showToast("Currently Dispatched units cannot exceed Total Inventory Size!", "error");
-      return;
-    }
 
     try {
       await addFleet({
         model: newModel,
-        count: newCount,
-        active: newActive,
+        count: 10,
+        active: 5,
         capacity: newCapacity,
         luggage: newLuggage,
       }).unwrap();
       showToast(`${newModel} added to fleet successfully!`, "success");
       setIsAddOpen(false);
       setNewModel("");
-      setNewCount(10);
-      setNewActive(5);
       setNewCapacity(4);
       setNewLuggage(2);
     } catch (err: any) {
@@ -95,24 +79,19 @@ export default function FleetManagementPage() {
     e.preventDefault();
     if (!editingVehicle) return;
 
-    if (editActive > editCount) {
-      showToast("Currently Dispatched units cannot exceed Total Inventory Size!", "error");
-      return;
-    }
-
     try {
       await updateFleet({
         id: editingVehicle.id,
-        count: editCount,
-        active: editActive,
+        count: editingVehicle.count || 10,
+        active: editingVehicle.active || 5,
         capacity: editCapacity,
         luggage: editLuggage,
       }).unwrap();
-      showToast(`${editingVehicle.model} allocation updated successfully!`, "success");
+      showToast(`${editingVehicle.model} specs updated successfully!`, "success");
       setEditingVehicle(null);
     } catch (err: any) {
       console.error(err);
-      showToast(err?.data?.message || "Failed to update fleet allocation.", "error");
+      showToast(err?.data?.message || "Failed to update vehicle specs.", "error");
     }
   };
 
@@ -161,7 +140,7 @@ export default function FleetManagementPage() {
             </h1>
           </div>
           <p style={{ color: "#c7d2fe", margin: "8px 0 0 0", fontSize: "14px" }}>
-            Control transport models, seating capacities, luggage specs, and operational route dispatch status.
+            Control transport models, passenger seating capacities, and luggage bag limits for public booking.
           </p>
         </div>
 
@@ -196,37 +175,26 @@ export default function FleetManagementPage() {
       </div>
 
       {/* Summary Metric Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-        {/* Card 1: Total Fleet Models */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+        {/* Card 1: Active Fleet Models */}
         <div style={{ background: "#ffffff", padding: "20px 24px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 2px 4px rgba(0,0,0,0.03)", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "#e0e7ff", color: "#4338ca", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
             <i className="fas fa-car-side"></i>
           </div>
           <div>
-            <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Vehicle Models</div>
+            <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Active Fleet Models</div>
             <div style={{ fontSize: "24px", fontWeight: "800", color: "#0f172a", marginTop: "2px" }}>{fleetList.length} Models</div>
           </div>
         </div>
 
-        {/* Card 2: Total Units */}
-        <div style={{ background: "#ffffff", padding: "20px 24px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 2px 4px rgba(0,0,0,0.03)", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
-            <i className="fas fa-warehouse"></i>
-          </div>
-          <div>
-            <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Inventory</div>
-            <div style={{ fontSize: "24px", fontWeight: "800", color: "#0f172a", marginTop: "2px" }}>{totalFleetUnits} Units</div>
-          </div>
-        </div>
-
-        {/* Card 3: Active Dispatched */}
+        {/* Card 2: Seating & Luggage Sync */}
         <div style={{ background: "#ffffff", padding: "20px 24px", borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 2px 4px rgba(0,0,0,0.03)", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ width: "48px", height: "48px", borderRadius: "12px", background: "#dcfce7", color: "#15803d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px" }}>
-            <i className="fas fa-route"></i>
+            <i className="fas fa-sliders-h"></i>
           </div>
           <div>
-            <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Active Dispatched</div>
-            <div style={{ fontSize: "24px", fontWeight: "800", color: "#15803d", marginTop: "2px" }}>{activeDispatchedUnits} Units</div>
+            <div style={{ fontSize: "12px", fontWeight: "600", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>Booking Filter Sync</div>
+            <div style={{ fontSize: "24px", fontWeight: "800", color: "#15803d", marginTop: "2px" }}>100% Dynamic</div>
           </div>
         </div>
       </div>
@@ -236,10 +204,10 @@ export default function FleetManagementPage() {
         <div style={{ padding: "18px 24px", borderBottom: "1px solid #e2e8f0", background: "#fafafa", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ fontSize: "16px", fontWeight: "700", color: "#1e293b", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
             <i className="fas fa-layer-group" style={{ color: "#312e81" }}></i>
-            Fleet Inventory & Seating Matrix
+            Fleet Models & Capacity Matrix
           </h2>
           <span style={{ fontSize: "12px", fontWeight: "600", background: "#e2e8f0", color: "#475569", padding: "4px 10px", borderRadius: "9999px" }}>
-            {fleetList.length} Active Records
+            {fleetList.length} Active Models
           </span>
         </div>
 
@@ -256,8 +224,6 @@ export default function FleetManagementPage() {
                   <th style={{ padding: "14px 20px" }}>Vehicle Model</th>
                   <th style={{ padding: "14px 20px" }}>Max Passengers</th>
                   <th style={{ padding: "14px 20px" }}>Luggage Capacity</th>
-                  <th style={{ padding: "14px 20px" }}>Total Inventory</th>
-                  <th style={{ padding: "14px 20px" }}>Currently Dispatched</th>
                   <th style={{ padding: "14px 20px" }}>Status</th>
                   <th style={{ padding: "14px 20px", textAlign: "right" }}>Actions</th>
                 </tr>
@@ -265,7 +231,7 @@ export default function FleetManagementPage() {
               <tbody>
                 {fleetList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "45px", color: "#94a3b8" }}>
+                    <td colSpan={5} style={{ textAlign: "center", padding: "45px", color: "#94a3b8" }}>
                       No fleet records found. Click <strong>Add New Vehicle</strong> to add one.
                     </td>
                   </tr>
@@ -292,12 +258,6 @@ export default function FleetManagementPage() {
                           {f.luggage || 2} Bags
                         </span>
                       </td>
-                      <td style={{ padding: "16px 20px", fontWeight: "700", color: "#0f172a" }}>
-                        {f.count} Units
-                      </td>
-                      <td style={{ padding: "16px 20px", fontWeight: "700", color: "#166534" }}>
-                        {f.active} Units
-                      </td>
                       <td style={{ padding: "16px 20px" }}>
                         <span style={{ background: "#dcfce7", color: "#166534", padding: "4px 10px", borderRadius: "9999px", fontSize: "12px", fontWeight: "700", display: "inline-flex", alignItems: "center", gap: "5px" }}>
                           <i className="fas fa-check-circle"></i>
@@ -316,7 +276,7 @@ export default function FleetManagementPage() {
                               display: "inline-flex", alignItems: "center", justifyContent: "center",
                               boxShadow: "0 2px 6px rgba(59, 130, 246, 0.25)"
                             }}
-                            title="Edit Fleet Specs & Capacity"
+                            title="Edit Seating & Luggage Specs"
                           >
                             <i className="fas fa-pen-to-square"></i>
                           </button>
@@ -351,7 +311,7 @@ export default function FleetManagementPage() {
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px"
         }}>
           <div style={{
-            background: "#ffffff", borderRadius: "16px", width: "100%", maxWidth: "520px",
+            background: "#ffffff", borderRadius: "16px", width: "100%", maxWidth: "480px",
             borderTop: "6px solid #d4af37", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden"
           }}>
             <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
@@ -411,38 +371,6 @@ export default function FleetManagementPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Total Inventory Units *</label>
-                  <div style={{ position: "relative" }}>
-                    <i className="fas fa-warehouse" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }}></i>
-                    <input
-                      type="number"
-                      style={{ width: "100%", padding: "10px 14px 10px 40px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px" }}
-                      value={newCount}
-                      onChange={(e) => setNewCount(Number(e.target.value))}
-                      min={0}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Active Dispatched Units *</label>
-                  <div style={{ position: "relative" }}>
-                    <i className="fas fa-route" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }}></i>
-                    <input
-                      type="number"
-                      style={{ width: "100%", padding: "10px 14px 10px 40px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px" }}
-                      value={newActive}
-                      onChange={(e) => setNewActive(Number(e.target.value))}
-                      min={0}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
                 <button
                   type="button"
@@ -471,12 +399,12 @@ export default function FleetManagementPage() {
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "20px"
         }}>
           <div style={{
-            background: "#ffffff", borderRadius: "16px", width: "100%", maxWidth: "520px",
+            background: "#ffffff", borderRadius: "16px", width: "100%", maxWidth: "480px",
             borderTop: "6px solid #312e81", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", overflow: "hidden"
           }}>
             <div style={{ padding: "20px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa" }}>
               <h3 style={{ fontSize: "17px", fontWeight: "800", color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                <i className="fas fa-pen-to-square" style={{ color: "#312e81" }}></i> Edit Fleet Specs: {editingVehicle.model}
+                <i className="fas fa-pen-to-square" style={{ color: "#312e81" }}></i> Edit Specs: {editingVehicle.model}
               </h3>
               <button onClick={() => setEditingVehicle(null)} style={{ background: "transparent", border: "none", fontSize: "20px", cursor: "pointer", color: "#94a3b8" }}>
                 &times;
@@ -516,38 +444,6 @@ export default function FleetManagementPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Total Inventory Units</label>
-                  <div style={{ position: "relative" }}>
-                    <i className="fas fa-warehouse" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }}></i>
-                    <input
-                      type="number"
-                      style={{ width: "100%", padding: "10px 14px 10px 40px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px" }}
-                      value={editCount}
-                      onChange={(e) => setEditCount(Number(e.target.value))}
-                      min={0}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Currently Dispatched Units</label>
-                  <div style={{ position: "relative" }}>
-                    <i className="fas fa-route" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }}></i>
-                    <input
-                      type="number"
-                      style={{ width: "100%", padding: "10px 14px 10px 40px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px" }}
-                      value={editActive}
-                      onChange={(e) => setEditActive(Number(e.target.value))}
-                      min={0}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
                 <button
                   type="button"
@@ -560,7 +456,7 @@ export default function FleetManagementPage() {
                   type="submit" 
                   style={{ background: "linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)", color: "#ffffff", border: "none", borderRadius: "8px", fontWeight: "700", cursor: "pointer", padding: "10px 22px", fontSize: "14px" }}
                 >
-                  Update Vehicle
+                  Update Vehicle Specs
                 </button>
               </div>
             </form>

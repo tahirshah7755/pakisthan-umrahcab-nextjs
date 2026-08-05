@@ -239,10 +239,19 @@ export default function PublicHomePage() {
     };
 
     const reqPassengers = (() => {
-      if (bookingData.passengers === "5-7") return 5;
-      if (bookingData.passengers === "8-10") return 8;
-      if (bookingData.passengers === "10+") return 11;
-      return 1; // "1-4" or default
+      const p = String(bookingData.passengers || "1");
+      if (p === "1-4") return 1;
+      if (p === "5-7") return 5;
+      if (p === "8-10") return 8;
+      if (p === "10+") return 10;
+      const num = parseInt(p.replace(/[^0-9]/g, ""), 10);
+      return isNaN(num) ? 1 : num;
+    })();
+
+    const reqLuggage = (() => {
+      const l = String(bookingData.luggage || "0");
+      const num = parseInt(l.replace(/[^0-9]/g, ""), 10);
+      return isNaN(num) ? 0 : num;
     })();
 
     let vehicles = [];
@@ -250,12 +259,17 @@ export default function PublicHomePage() {
       vehicles = publicFleet.map((f: any) => {
         const meta = resolveMeta(f.model);
         const price = resolvePrice(f.model);
+        const maxPassengers = Number(f.capacity) || meta.maxPassengers;
+        const maxLuggage = f.luggage !== undefined && f.luggage !== null ? Number(f.luggage) : (meta.luggage ? parseInt(meta.luggage.replace(/[^0-9]/g, ""), 10) : 2);
+        const capacityText = `${maxPassengers} Passengers`;
+        const luggageText = `${maxLuggage} Bags`;
         return {
           name: f.model,
           type: meta.type,
-          capacity: meta.capacity,
-          luggage: meta.luggage,
-          maxPassengers: meta.maxPassengers,
+          capacity: capacityText,
+          luggage: luggageText,
+          maxPassengers: maxPassengers,
+          maxLuggage: maxLuggage,
           price: price,
           icon: meta.icon
         };
@@ -275,13 +289,18 @@ export default function PublicHomePage() {
         else if (v.name.includes("Yukon")) price = suvPrice;
         else if (v.name.includes("HI ACE")) price = coachPrice;
 
-        return { ...v, price, maxPassengers: meta.maxPassengers };
+        return {
+          ...v,
+          price,
+          maxPassengers: meta.maxPassengers,
+          maxLuggage: meta.luggage ? parseInt(meta.luggage.replace(/[^0-9]/g, ""), 10) : 2
+        };
       });
     }
 
-    const filtered = vehicles.filter(v => v.maxPassengers >= reqPassengers);
+    const filtered = vehicles.filter(v => v.maxPassengers >= reqPassengers && v.maxLuggage >= reqLuggage);
     return filtered.length > 0 ? filtered : vehicles;
-  }, [bookingData.pickup, bookingData.destination, bookingData.passengers, allRates, publicFleet]);
+  }, [bookingData.pickup, bookingData.destination, bookingData.passengers, bookingData.luggage, allRates, publicFleet]);
 
   // Step validation rules for strict tab progression
   const isStep1Complete = Boolean(
@@ -724,18 +743,44 @@ export default function PublicHomePage() {
                   </div>
                 </div>
 
-                <div className="uc-form-group">
-                  <label className="uc-form-label">Number of Passengers</label>
-                  <select
-                    className="uc-form-input"
-                    value={bookingData.passengers}
-                    onChange={(e) => setBookingData({ ...bookingData, passengers: e.target.value })}
-                  >
-                    <option value="1-4">1-4 Passengers</option>
-                    <option value="5-7">5-7 Passengers</option>
-                    <option value="8-10">8-10 Passengers</option>
-                    <option value="10+">More than 10</option>
-                  </select>
+                <div className="uc-form-row">
+                  <div className="uc-form-group">
+                    <label className="uc-form-label">Number of Passengers *</label>
+                    <select
+                      className="uc-form-input"
+                      value={bookingData.passengers}
+                      onChange={(e) => setBookingData({ ...bookingData, passengers: e.target.value })}
+                    >
+                      <option value="1">1 Passenger</option>
+                      <option value="2">2 Passengers</option>
+                      <option value="3">3 Passengers</option>
+                      <option value="4">4 Passengers</option>
+                      <option value="5">5 Passengers</option>
+                      <option value="6">6 Passengers</option>
+                      <option value="7">7 Passengers</option>
+                      <option value="8">8 Passengers</option>
+                      <option value="9">9 Passengers</option>
+                      <option value="10">10+ Passengers</option>
+                    </select>
+                  </div>
+                  <div className="uc-form-group">
+                    <label className="uc-form-label">Number of Luggage / Bags *</label>
+                    <select
+                      className="uc-form-input"
+                      value={bookingData.luggage}
+                      onChange={(e) => setBookingData({ ...bookingData, luggage: e.target.value })}
+                    >
+                      <option value="0">0 Bags</option>
+                      <option value="1">1 Bag</option>
+                      <option value="2">2 Bags</option>
+                      <option value="3">3 Bags</option>
+                      <option value="4">4 Bags</option>
+                      <option value="5">5 Bags</option>
+                      <option value="6">6 Bags</option>
+                      <option value="7">7 Bags</option>
+                      <option value="8">8+ Bags</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px" }}>

@@ -15,10 +15,10 @@ export const fleetApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Fleet"],
     }),
     updateFleet: builder.mutation({
-      query: ({ id, count, active }) => ({
+      query: ({ id, count, active, capacity, luggage }) => ({
         url: `/fleet/${id}`,
         method: "PUT",
-        body: { count, active },
+        body: { count, active, capacity, luggage },
       }),
       invalidatesTags: ["Fleet"],
     }),

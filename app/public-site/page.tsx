@@ -86,12 +86,27 @@ export default function PublicHomePage() {
 
   // Booking Wizard State
   const [step, setStep] = useState(1);
-  const [bookingData, setBookingData] = useState({
+  const [bookingData, setBookingData] = useState<{
+    pickup: string;
+    destination: string;
+    date: string;
+    time: string;
+    passengers: string;
+    luggage: string;
+    carType: string;
+    carPrice: number;
+    fullName: string;
+    email: string;
+    whatsapp: string;
+    flightNo: string;
+    notes: string;
+  }>({
     pickup: "",
     destination: "",
     date: "",
     time: "",
-    passengers: "1-4",
+    passengers: "1",
+    luggage: "2",
     carType: "Sedan",
     carPrice: 300,
     fullName: "",

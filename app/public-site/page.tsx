@@ -161,12 +161,25 @@ export default function PublicHomePage() {
     const match = findRouteMatch(bookingData.pickup, bookingData.destination);
     if (!match) return defaultVehicles;
 
+    let custom: any = {};
+    if (match.custom_prices) {
+      try {
+        custom = typeof match.custom_prices === 'string' ? JSON.parse(match.custom_prices) : match.custom_prices;
+      } catch (e) {}
+    }
+
+    const sedanPrice = Number(custom.sedan_price || match.sedan_price) || 300;
+    const taurusPrice = Number(custom.taurus_price || custom.ford_taurus_price) || (sedanPrice + 100);
+    const vanPrice = Number(custom.van_price || match.van_price) || 500;
+    const suvPrice = Number(custom.suv_price || match.suv_price) || 550;
+    const coachPrice = Number(custom.coach_price || match.coach_price) || (vanPrice + 50);
+
     return [
-      { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: Number(match.sedan_price) || 300, icon: "fa-car" },
-      { name: "Ford Taurus", type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", price: (Number(match.sedan_price) || 300) + 100, icon: "fa-car-side" },
-      { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: Number(match.van_price) || 500, icon: "fa-van-shuttle" },
-      { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: Number(match.suv_price) || 550, icon: "fa-truck-pickup" },
-      { name: "Toyota HI ACE", type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", price: (Number(match.van_price) || 500) + 50, icon: "fa-bus" }
+      { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: sedanPrice, icon: "fa-car" },
+      { name: "Ford Taurus", type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", price: taurusPrice, icon: "fa-car-side" },
+      { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: vanPrice, icon: "fa-van-shuttle" },
+      { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: suvPrice, icon: "fa-suv" },
+      { name: "Toyota HI ACE", type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", price: coachPrice, icon: "fa-bus" }
     ];
   }, [bookingData.pickup, bookingData.destination, allRates]);
 
@@ -685,45 +698,38 @@ export default function PublicHomePage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "32px" }}>
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <button onClick={handlePrevStep} className="uc-btn-outline" style={{ flex: 1 }}>
-                      <i className="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button onClick={handleFinalSubmit} disabled={isSubmitting} className="uc-btn-primary" style={{ background: "#25D366", color: "#fff", flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                      <i className="fab fa-whatsapp"></i> Confirm & Book on WhatsApp
-                    </button>
-                  </div>
-                  
-                  <div style={{ textAlign: "center", margin: "8px 0", color: "#8b949e", fontSize: "14px", fontWeight: "600" }}>— OR —</div>
+                <div style={{ display: "flex", gap: "16px", marginTop: "32px" }}>
+                  <button onClick={handlePrevStep} className="uc-btn-outline" style={{ padding: "14px 24px" }}>
+                    <i className="fas fa-arrow-left"></i> Back
+                  </button>
                   
                   <button 
                     onClick={handleOnlineOrderSubmit} 
                     disabled={isSubmitting}
                     className="uc-btn-primary" 
                     style={{ 
-                      background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", 
+                      background: "linear-gradient(135deg, #059669 0%, #047857 100%)", 
                       color: "#fff", 
-                      width: "100%", 
+                      flex: 1, 
                       display: "flex", 
                       alignItems: "center", 
                       justifyContent: "center", 
-                      gap: "8px", 
-                      padding: "14px",
-                      fontSize: "15px",
+                      gap: "10px", 
+                      padding: "14px 24px",
+                      fontSize: "16px",
                       fontWeight: "700",
                       borderRadius: "10px",
-                      boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                      boxShadow: "0 4px 14px rgba(5, 150, 105, 0.35)",
                       cursor: "pointer"
                     }}
                   >
                     {isSubmitting ? (
                       <>
-                        <i className="fas fa-circle-notch fa-spin"></i> Processing Order...
+                        <i className="fas fa-circle-notch fa-spin"></i> Generating Invoice & Saving Order...
                       </>
                     ) : (
                       <>
-                        <i className="fas fa-file-invoice-dollar"></i> Book & Pay Online (Generate Invoice)
+                        <i className="fas fa-file-invoice-dollar"></i> Confirm Order & Generate Invoice
                       </>
                     )}
                   </button>

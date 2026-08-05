@@ -132,6 +132,7 @@ export default function Sidebar() {
     { name: "Ledgers", icon: "fa-book", color: "#d946ef", href: "/admin/ledgers", permissionKey: "ledgers" },
     { name: "General Payments", icon: "fa-money-bill-transfer", color: "#22c55e", href: "/admin/payments", permissionKey: "payments" },
     { name: "Price List", icon: "fa-tags", color: "#fb923c", href: "/admin/extras/price-list", permissionKey: "services" },
+    { name: "Routes & Locations", icon: "fa-route", color: "#059669", href: "/admin/package-management" },
     { name: "Company Performance", icon: "fa-chart-pie", color: "#0ea5e9", href: "/admin/performance", permissionKey: "companies" },
     { name: "Upload Documents", icon: "fa-cloud-arrow-up", color: "#ec4899", href: "/admin/documents/upload" },
     { name: "Shortcuts", icon: "fa-keyboard", color: "#475569", href: "/admin/shortcuts" },

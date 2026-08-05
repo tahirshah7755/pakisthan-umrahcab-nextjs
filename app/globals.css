@@ -870,6 +870,10 @@ a {
 }
 
 @media (max-width: 768px) {
+  .admin-layout {
+    overflow-x: hidden;
+  }
+
   .admin-sidebar {
     position: fixed;
     left: -260px;
@@ -2581,7 +2585,8 @@ input[type="checkbox"]:checked + .switch-slider::before {
     box-shadow: none !important;
   }
 
-  .table-responsive {
+  .table-responsive,
+  .security-table-responsive {
     overflow-x: visible !important;
     background: transparent !important;
     padding: 0 !important;
@@ -2590,7 +2595,9 @@ input[type="checkbox"]:checked + .switch-slider::before {
   /* Force table element hierarchy to render as block containers */
   table.db-table,
   table.matrix-table,
+  table.security-table,
   .table-responsive table,
+  .security-table-responsive table,
   table.db-table thead,
   table.db-table tbody,
   table.db-table tr,
@@ -2599,10 +2606,18 @@ input[type="checkbox"]:checked + .switch-slider::before {
   table.matrix-table tbody,
   table.matrix-table tr,
   table.matrix-table td,
+  table.security-table thead,
+  table.security-table tbody,
+  table.security-table tr,
+  table.security-table td,
   .table-responsive table thead,
   .table-responsive table tbody,
   .table-responsive table tr,
-  .table-responsive table td {
+  .table-responsive table td,
+  .security-table-responsive table thead,
+  .security-table-responsive table tbody,
+  .security-table-responsive table tr,
+  .security-table-responsive table td {
     display: block !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -2611,14 +2626,18 @@ input[type="checkbox"]:checked + .switch-slider::before {
   /* Hide the native table headers visually */
   table.db-table thead,
   table.matrix-table thead,
-  .table-responsive table thead {
+  table.security-table thead,
+  .table-responsive table thead,
+  .security-table-responsive table thead {
     display: none !important;
   }
 
   /* Style each table row as an independent, sleek card */
   table.db-table tbody tr,
   table.matrix-table tbody tr,
-  .table-responsive table tbody tr {
+  table.security-table tbody tr,
+  .table-responsive table tbody tr,
+  .security-table-responsive table tbody tr {
     background: #ffffff !important;
     border: 1px solid #edf2f9 !important;
     border-radius: 14px !important;
@@ -2631,7 +2650,9 @@ input[type="checkbox"]:checked + .switch-slider::before {
 
   table.db-table tbody tr:hover,
   table.matrix-table tbody tr:hover,
-  .table-responsive table tbody tr:hover {
+  table.security-table tbody tr:hover,
+  .table-responsive table tbody tr:hover,
+  .security-table-responsive table tbody tr:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02) !important;
     border-color: var(--primary-color, #b48a1d) !important;
@@ -2640,7 +2661,9 @@ input[type="checkbox"]:checked + .switch-slider::before {
   /* Style table cells as key-value lines within the card */
   table.db-table tbody td,
   table.matrix-table tbody td,
-  .table-responsive table tbody td {
+  table.security-table tbody td,
+  .table-responsive table tbody td,
+  .security-table-responsive table tbody td {
     border: none !important;
     border-bottom: 1px dashed #f1f5f9 !important;
     padding: 12px 0 !important;
@@ -2658,7 +2681,9 @@ input[type="checkbox"]:checked + .switch-slider::before {
   /* Remove border from the last cell in the card */
   table.db-table tbody tr td:last-child,
   table.matrix-table tbody tr td:last-child,
-  .table-responsive table tbody tr td:last-child {
+  table.security-table tbody tr td:last-child,
+  .table-responsive table tbody tr td:last-child,
+  .security-table-responsive table tbody tr td:last-child {
     border-bottom: none !important;
     padding-bottom: 0 !important;
   }
@@ -2666,7 +2691,9 @@ input[type="checkbox"]:checked + .switch-slider::before {
   /* Position data labels dynamically on the left of each cell */
   table.db-table tbody td[data-label]::before,
   table.matrix-table tbody td[data-label]::before,
-  .table-responsive table tbody td[data-label]::before {
+  table.security-table tbody td[data-label]::before,
+  .table-responsive table tbody td[data-label]::before,
+  .security-table-responsive table tbody td[data-label]::before {
     content: attr(data-label) !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
@@ -2683,8 +2710,12 @@ input[type="checkbox"]:checked + .switch-slider::before {
   table.db-table tbody td[data-label=""]::before,
   table.matrix-table tbody td:not([data-label])::before,
   table.matrix-table tbody td[data-label=""]::before,
+  table.security-table tbody td:not([data-label])::before,
+  table.security-table tbody td[data-label=""]::before,
   .table-responsive table tbody td:not([data-label])::before,
-  .table-responsive table tbody td[data-label=""]::before {
+  .table-responsive table tbody td[data-label=""]::before,
+  .security-table-responsive table tbody td:not([data-label])::before,
+  .security-table-responsive table tbody td[data-label=""]::before {
     content: none !important;
     display: none !important;
     margin-right: 0 !important;
@@ -2694,7 +2725,9 @@ input[type="checkbox"]:checked + .switch-slider::before {
   /* Special formatting for actions cell */
   table.db-table tbody td:last-child,
   table.matrix-table tbody td:last-child,
-  .table-responsive table tbody td:last-child {
+  table.security-table tbody td:last-child,
+  .table-responsive table tbody td:last-child,
+  .security-table-responsive table tbody td:last-child {
     margin-top: 6px !important;
     border-top: 1px solid #edf2f9 !important;
     padding-top: 14px !important;
@@ -2703,7 +2736,9 @@ input[type="checkbox"]:checked + .switch-slider::before {
   /* Keep inner action layout flex and aligned correctly */
   table.db-table tbody td div,
   table.matrix-table tbody td div,
-  .table-responsive table tbody td div {
+  table.security-table tbody td div,
+  .table-responsive table tbody td div,
+  .security-table-responsive table tbody td div {
     justify-content: flex-end !important;
   }
 }

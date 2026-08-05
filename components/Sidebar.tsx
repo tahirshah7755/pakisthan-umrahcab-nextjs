@@ -70,6 +70,7 @@ export default function Sidebar() {
         { name: "Add New", href: "/admin/bookings/add" },
       ],
     },
+    { name: "Individual Orders", icon: "fa-cart-shopping", color: "#38bdf8", href: "/admin/individual-orders" },
     {
       name: "Services",
       icon: "fa-hand-holding-heart",

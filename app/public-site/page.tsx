@@ -101,13 +101,74 @@ export default function PublicHomePage() {
     notes: ""
   });
 
-  const vehicles: VehicleOption[] = [
+  // Dynamic Data & Checkout States
+  const [locationsList, setLocationsList] = useState<string[]>([]);
+  const [allRates, setAllRates] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const defaultLocationsList = [
+    "Jeddah Airport (JED) - Terminal 1",
+    "Jeddah Airport (JED) - North Terminal",
+    "Makkah Hotel",
+    "Madinah Hotel",
+    "Jeddah Hotel",
+    "Makkah Haram",
+    "Madinah Haram",
+    "Makkah Station (Haramain)",
+    "Madinah Station (Haramain)",
+    "Jeddah Station (Haramain)",
+    "Taif",
+    "Yanbu"
+  ];
+
+  // Fetch locations and public rates on mount
+  useEffect(() => {
+    async function loadPublicData() {
+      try {
+        const locs = await api.getLocations();
+        setLocationsList(locs || []);
+        
+        const rates = await api.getPublicRates();
+        setAllRates(rates || []);
+      } catch (err) {
+        console.error("Failed to fetch public booking data:", err);
+      }
+    }
+    loadPublicData();
+  }, []);
+
+  // Helper to find pricing route match
+  const findRouteMatch = (pickup: string, destination: string) => {
+    if (!pickup || !destination || allRates.length === 0) return null;
+    const normalizedInput1 = `${pickup.trim().toLowerCase()} to ${destination.trim().toLowerCase()}`;
+    const normalizedInput2 = `${destination.trim().toLowerCase()} to ${pickup.trim().toLowerCase()}`;
+    return allRates.find(r => {
+      const routeStr = r.route.trim().toLowerCase();
+      return routeStr === normalizedInput1 || routeStr === normalizedInput2;
+    });
+  };
+
+  const defaultVehicles = [
     { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: 300, icon: "fa-car" },
     { name: "Ford Taurus", type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", price: 400, icon: "fa-car-side" },
     { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: 500, icon: "fa-van-shuttle" },
     { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: 550, icon: "fa-truck-pickup" },
     { name: "Toyota HI ACE", type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", price: 550, icon: "fa-bus" }
   ];
+
+  // Dynamically calculate vehicles and prices based on route selection
+  const currentVehicles = React.useMemo(() => {
+    const match = findRouteMatch(bookingData.pickup, bookingData.destination);
+    if (!match) return defaultVehicles;
+
+    return [
+      { name: "Sedan", type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", price: Number(match.sedan_price) || 300, icon: "fa-car" },
+      { name: "Ford Taurus", type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", price: (Number(match.sedan_price) || 300) + 100, icon: "fa-car-side" },
+      { name: "Hyundai H-1 / Staria", type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", price: Number(match.van_price) || 500, icon: "fa-van-shuttle" },
+      { name: "GMC Yukon XL", type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", price: Number(match.suv_price) || 550, icon: "fa-truck-pickup" },
+      { name: "Toyota HI ACE", type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", price: (Number(match.van_price) || 500) + 50, icon: "fa-bus" }
+    ];
+  }, [bookingData.pickup, bookingData.destination, allRates]);
 
   const handleCarSelect = (name: string, price: number) => {
     setBookingData((prev) => ({ ...prev, carType: name, carPrice: price }));
@@ -120,6 +181,14 @@ export default function PublicHomePage() {
         alert("Please fill in all location and timing details.");
         return;
       }
+      if (bookingData.pickup === bookingData.destination) {
+        alert("Pickup and Drop-off locations cannot be the same.");
+        return;
+      }
+      
+      // Auto-set the price of the first vehicle in the selected route list so the state is consistent
+      const firstVehicle = currentVehicles[0];
+      setBookingData((prev) => ({ ...prev, carType: firstVehicle.name, carPrice: firstVehicle.price }));
     }
     if (step === 3) {
       if (!bookingData.fullName || !bookingData.whatsapp) {
@@ -136,32 +205,73 @@ export default function PublicHomePage() {
 
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Save to Laravel backend via API wrapper
-    const res = await api.createBooking({
-      pickup: bookingData.pickup,
-      destination: bookingData.destination,
-      date: bookingData.date,
-      time: bookingData.time,
-      passengers: bookingData.passengers,
-      car_type: bookingData.carType,
-      car_price: bookingData.carPrice,
-      full_name: bookingData.fullName,
-      email: bookingData.email,
-      whatsapp: bookingData.whatsapp,
-      flight_no: bookingData.flightNo,
-      notes: bookingData.notes
-    });
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      // Save to Laravel backend via API wrapper
+      const res = await api.createBooking({
+        pickup: bookingData.pickup,
+        destination: bookingData.destination,
+        date: bookingData.date,
+        time: bookingData.time,
+        passengers: bookingData.passengers,
+        car_type: bookingData.carType,
+        car_price: bookingData.carPrice,
+        full_name: bookingData.fullName,
+        email: bookingData.email || `${bookingData.fullName.toLowerCase().replace(/\s+/g, "")}@example.com`,
+        whatsapp: bookingData.whatsapp,
+        flight_no: bookingData.flightNo,
+        notes: bookingData.notes
+      });
 
-    const bookingCode = res?.data?.booking_code || res?.data?.id || "UCB-" + Math.floor(100000 + Math.random() * 900000);
-    
-    const whatsappMsg = `Assalamu Alaikum, I would like to book a cab.\n\n*Booking Summary*:\n• Code: ${bookingCode}\n• From: ${bookingData.pickup}\n• To: ${bookingData.destination}\n• Date: ${bookingData.date} @ ${bookingData.time}\n• Vehicle: ${bookingData.carType} (${bookingData.carPrice} SAR)\n• Client: ${bookingData.fullName}\n• WhatsApp: ${bookingData.whatsapp}\n\nPlease confirm my booking.`;
-    const encoded = encodeURIComponent(whatsappMsg);
+      const bookingCode = res?.data?.booking_code || res?.data?.id || "UCB-" + Math.floor(100000 + Math.random() * 900000);
+      
+      const whatsappMsg = `Assalamu Alaikum, I would like to book a cab.\n\n*Booking Summary*:\n• Code: ${bookingCode}\n• From: ${bookingData.pickup}\n• To: ${bookingData.destination}\n• Date: ${bookingData.date} @ ${bookingData.time}\n• Vehicle: ${bookingData.carType} (${bookingData.carPrice} SAR)\n• Client: ${bookingData.fullName}\n• WhatsApp: ${bookingData.whatsapp}\n\nPlease confirm my booking.`;
+      const encoded = encodeURIComponent(whatsappMsg);
 
-    const targetWa = websiteSettings?.whatsapp_link ? websiteSettings.whatsapp_link.split('?')[0] : baseWa;
-    window.open(`${targetWa}?text=${encoded}`, "_blank");
-    alert(`Your booking has been compiled successfully! Booking Reference: ${bookingCode}. Redirecting you to WhatsApp for immediate dispatcher assignment.`);
-    router.push("/public-site/booking-status");
+      const targetWa = websiteSettings?.whatsapp_link ? websiteSettings.whatsapp_link.split('?')[0] : baseWa;
+      window.open(`${targetWa}?text=${encoded}`, "_blank");
+      alert(`Your booking has been compiled successfully! Booking Reference: ${bookingCode}. Redirecting you to WhatsApp for immediate dispatcher assignment.`);
+      router.push("/public-site/booking-status");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit WhatsApp booking.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOnlineOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const res = await api.createIndividualOrder({
+        pickup: bookingData.pickup,
+        destination: bookingData.destination,
+        date: bookingData.date,
+        time: bookingData.time,
+        passengers: bookingData.passengers,
+        car_type: bookingData.carType,
+        car_price: bookingData.carPrice,
+        full_name: bookingData.fullName,
+        email: bookingData.email || `${bookingData.fullName.toLowerCase().replace(/\s+/g, "")}@example.com`,
+        whatsapp: bookingData.whatsapp,
+        flight_no: bookingData.flightNo,
+        notes: bookingData.notes
+      });
+      if (res && res.invoice) {
+        alert("Your independent booking order has been created! Redirecting to secure invoice page.");
+        router.push(`/public-site/invoice/${res.invoice.invoice_code}`);
+      } else {
+        alert("Failed to create order. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting independent booking. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -320,10 +430,9 @@ export default function PublicHomePage() {
                       onChange={(e) => setBookingData({ ...bookingData, pickup: e.target.value })}
                     >
                       <option value="">Select location...</option>
-                      <option value="Jeddah Airport">Jeddah Airport (JED)</option>
-                      <option value="Makkah Hotel">Makkah Hotel</option>
-                      <option value="Madinah Hotel">Madinah Hotel</option>
-                      <option value="Yanbu Hotel">Yanbu Hotel</option>
+                      {(locationsList.length > 0 ? locationsList : defaultLocationsList).map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="uc-form-group">
@@ -334,10 +443,9 @@ export default function PublicHomePage() {
                       onChange={(e) => setBookingData({ ...bookingData, destination: e.target.value })}
                     >
                       <option value="">Select location...</option>
-                      <option value="Jeddah Airport">Jeddah Airport (JED)</option>
-                      <option value="Makkah Hotel">Makkah Hotel</option>
-                      <option value="Madinah Hotel">Madinah Hotel</option>
-                      <option value="Yanbu Hotel">Yanbu Hotel</option>
+                      {(locationsList.length > 0 ? locationsList : defaultLocationsList).map((loc) => (
+                        <option key={loc} value={loc}>{loc}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -442,7 +550,7 @@ export default function PublicHomePage() {
               <div>
                 <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "20px" }}>Select Your Private Ride</h3>
                 <div className="uc-vehicles-grid">
-                  {vehicles.map((v) => (
+                  {currentVehicles.map((v) => (
                     <div
                       key={v.name}
                       onClick={() => handleCarSelect(v.name, v.price)}
@@ -577,12 +685,47 @@ export default function PublicHomePage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "32px" }}>
-                  <button onClick={handlePrevStep} className="uc-btn-outline">
-                    <i className="fas fa-arrow-left"></i> Back
-                  </button>
-                  <button onClick={handleFinalSubmit} className="uc-btn-primary" style={{ background: "#25D366", color: "#fff" }}>
-                    <i className="fab fa-whatsapp"></i> Confirm & Book on WhatsApp
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "32px" }}>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <button onClick={handlePrevStep} className="uc-btn-outline" style={{ flex: 1 }}>
+                      <i className="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button onClick={handleFinalSubmit} disabled={isSubmitting} className="uc-btn-primary" style={{ background: "#25D366", color: "#fff", flex: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                      <i className="fab fa-whatsapp"></i> Confirm & Book on WhatsApp
+                    </button>
+                  </div>
+                  
+                  <div style={{ textAlign: "center", margin: "8px 0", color: "#8b949e", fontSize: "14px", fontWeight: "600" }}>— OR —</div>
+                  
+                  <button 
+                    onClick={handleOnlineOrderSubmit} 
+                    disabled={isSubmitting}
+                    className="uc-btn-primary" 
+                    style={{ 
+                      background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", 
+                      color: "#fff", 
+                      width: "100%", 
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center", 
+                      gap: "8px", 
+                      padding: "14px",
+                      fontSize: "15px",
+                      fontWeight: "700",
+                      borderRadius: "10px",
+                      boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <i className="fas fa-circle-notch fa-spin"></i> Processing Order...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-file-invoice-dollar"></i> Book & Pay Online (Generate Invoice)
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

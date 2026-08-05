@@ -72,6 +72,11 @@ export default function CentralHub() {
       ],
     },
     {
+      title: "Individual Orders",
+      icon: "fa-cart-shopping",
+      buttons: [{ label: "Manage", href: "/admin/individual-orders", type: "list" as const }],
+    },
+    {
       title: "Services",
       icon: "fa-hand-holding-heart",
       permissionKey: "services",

@@ -524,6 +524,11 @@ export const api = {
     return data || [];
   },
 
+  async getPublicRates() {
+    const data = await request(`/public-rates`);
+    return data || [];
+  },
+
   async updatePriceList(id: number, prices: any) {
     const data = await request(`/price-list/${id}`, {
       method: "PUT",
@@ -909,6 +914,74 @@ export const api = {
       method: "DELETE",
     });
     return data;
+  },
+
+  // === GLOBAL LOCATIONS (ADMIN SIDE) ===
+  async getAdminLocationsList() {
+    const data = await request(`/admin/locations-list`);
+    return data || [];
+  },
+
+  async createLocation(locationData: { name: string; type?: string }) {
+    const data = await request(`/admin/locations-list`, {
+      method: "POST",
+      body: JSON.stringify(locationData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async deleteLocation(id: number | string) {
+    const data = await request(`/admin/locations-list/${id}`, {
+      method: "DELETE",
+    });
+    if (data) return { success: true };
+    return { success: false, error: "API connection failed" };
+  },
+
+  // === INDIVIDUAL ORDERS ===
+  async getIndividualOrders(params?: { page?: number; per_page?: number; search?: string }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.append("page", String(params.page));
+    if (params?.per_page) q.append("per_page", String(params.per_page));
+    if (params?.search) q.append("search", params.search);
+    const data = await request(`/admin/individual-orders?${q.toString()}`);
+    return data;
+  },
+
+  async getIndividualOrder(id: string | number) {
+    const data = await request(`/admin/individual-orders/${id}`);
+    return data;
+  },
+
+  async updateIndividualOrderStatus(id: string | number, statusData: { status?: string; payment_status?: string }) {
+    const data = await request(`/admin/individual-orders/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify(statusData),
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
+  },
+
+  async createIndividualOrder(orderData: any) {
+    const data = await request(`/individual-orders`, {
+      method: "POST",
+      body: JSON.stringify(orderData),
+    });
+    return data;
+  },
+
+  async getPublicInvoiceDetails(code: string) {
+    const data = await request(`/individual-orders/invoice/${code}`);
+    return data;
+  },
+
+  async payIndividualOrderInvoice(code: string) {
+    const data = await request(`/individual-orders/pay/${code}`, {
+      method: "POST",
+    });
+    if (data) return { success: true, data };
+    return { success: false, error: "API connection failed" };
   }
 };
 

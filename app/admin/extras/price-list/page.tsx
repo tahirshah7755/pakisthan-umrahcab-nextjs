@@ -278,6 +278,15 @@ export default function PriceListMatrix() {
   const [locationsList, setLocationsList] = useState<string[]>([]);
   const [pickupLoc, setPickupLoc] = useState("");
   const [dropoffLoc, setDropoffLoc] = useState("");
+  const [newDateFrom, setNewDateFrom] = useState("2026-06-01");
+  const [newDateTo, setNewDateTo] = useState("2026-12-31");
+  const [newRoutePrices, setNewRoutePrices] = useState<Record<string, string>>({
+    sedan: "300",
+    taurus: "400",
+    van: "500",
+    suv: "600",
+    coach: "800",
+  });
 
   // Inline location creator states
   const [showInlineAddLoc, setShowInlineAddLoc] = useState(false);
@@ -337,23 +346,34 @@ export default function PriceListMatrix() {
   const handleCreateRouteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRoute.trim()) {
-      showToast("Please enter a route name.", "error");
+      showToast("Please select pickup and drop-off locations.", "error");
       return;
     }
+
+    const formattedDates = `${newDateFrom} to ${newDateTo}`;
+    const customPricesObj: Record<string, number> = {};
+    activeVehicles.forEach((v: any) => {
+      const fieldKey = v.id || v.key || v.name;
+      const priceVal = Number(newRoutePrices[fieldKey] || newRoutePrices[v.name] || newRoutePrices[v.key] || 300);
+      customPricesObj[v.name] = priceVal;
+    });
+
     try {
       await createPriceList({
         route: newRoute.trim(),
-        sedan_price: 300,
-        sedan_dates: "2026-06-01 to 2026-08-31",
-        suv_price: 700,
-        suv_dates: "2026-06-01 to 2026-08-31",
-        van_price: 500,
-        van_dates: "2026-06-01 to 2026-08-31",
-        coach_price: 1200,
-        coach_dates: "2026-06-01 to 2026-08-31",
+        sedan_price: Number(newRoutePrices["sedan"] || newRoutePrices["1"] || 300),
+        sedan_dates: formattedDates,
+        suv_price: Number(newRoutePrices["suv"] || newRoutePrices["3"] || 600),
+        suv_dates: formattedDates,
+        van_price: Number(newRoutePrices["van"] || newRoutePrices["2"] || 500),
+        van_dates: formattedDates,
+        coach_price: Number(newRoutePrices["coach"] || newRoutePrices["4"] || 800),
+        coach_dates: formattedDates,
+        custom_prices: customPricesObj,
+        group_name: selectedGroup
       }).unwrap();
-      
-      showToast("New route package added successfully!", "success");
+
+      showToast("New route package & vehicle fares added successfully!", "success");
       setNewRoute("");
       setPickupLoc("");
       setDropoffLoc("");
@@ -1012,7 +1032,7 @@ export default function PriceListMatrix() {
           background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
         }}>
-          <div className="form-card" style={{ width: "100%", maxWidth: "500px", margin: "20px", borderTop: "6px solid #2563eb", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)" }}>
+          <div className="form-card" style={{ width: "100%", maxWidth: "760px", maxHeight: "90vh", overflowY: "auto", margin: "20px", borderTop: "6px solid #2563eb", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", padding: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1e293b", margin: 0 }}>
                 <i className="fas fa-route" style={{ marginRight: "8px", color: "#2563eb" }}></i> Add New Route Package
@@ -1190,6 +1210,73 @@ export default function PriceListMatrix() {
                 <small style={{ color: "#64748b", display: "block", marginTop: "5px" }}>
                   🔒 Auto-generated from selected locations above to prevent typing errors.
                 </small>
+              </div>
+
+              {/* Validity Date Range */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#475569", textTransform: "uppercase", marginBottom: "4px" }}>
+                    <i className="fas fa-calendar-day" style={{ color: "#2563eb", marginRight: "4px" }}></i> Valid From (Start Date) *
+                  </label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={newDateFrom}
+                    onChange={(e) => setNewDateFrom(e.target.value)}
+                    style={{ fontSize: "13px", fontWeight: "600" }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: "11px", fontWeight: "700", color: "#475569", textTransform: "uppercase", marginBottom: "4px" }}>
+                    <i className="fas fa-calendar-check" style={{ color: "#2563eb", marginRight: "4px" }}></i> Valid To (End Date) *
+                  </label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={newDateTo}
+                    onChange={(e) => setNewDateTo(e.target.value)}
+                    style={{ fontSize: "13px", fontWeight: "600" }}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Fleet Vehicle Fares Input Grid */}
+              <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <label className="form-label" style={{ fontSize: "12px", fontWeight: "700", color: "#1e293b", marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <i className="fas fa-coins" style={{ color: "#d4af37" }}></i>
+                  Set Vehicle Fares for this Route Package (SAR)
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "12px" }}>
+                  {(activeVehicles.length > 0 ? activeVehicles : [
+                    { id: "sedan", key: "sedan", name: "Sedan" },
+                    { id: "taurus", key: "taurus", name: "Ford Taurus" },
+                    { id: "van", key: "van", name: "Hyundai Staria" },
+                    { id: "suv", key: "suv", name: "GMC XL Yukon" },
+                    { id: "coach", key: "coach", name: "Coaster" },
+                  ]).map((v: any) => {
+                    const fieldKey = v.id || v.key || v.name;
+                    return (
+                      <div key={v.id || v.name} style={{ background: "#ffffff", padding: "8px 12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}>
+                        <div style={{ fontSize: "11px", fontWeight: "700", color: "#334155", marginBottom: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <i className="fas fa-car-side" style={{ color: "#2563eb" }}></i>
+                          {v.name}
+                        </div>
+                        <input
+                          type="number"
+                          className="form-input"
+                          value={newRoutePrices[fieldKey] !== undefined ? newRoutePrices[fieldKey] : (newRoutePrices[v.key] || "300")}
+                          onChange={(e) => setNewRoutePrices({ ...newRoutePrices, [fieldKey]: e.target.value })}
+                          placeholder="Price (SAR)..."
+                          min={0}
+                          style={{ fontSize: "13px", fontWeight: "700", padding: "6px 8px" }}
+                          required
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px" }}>

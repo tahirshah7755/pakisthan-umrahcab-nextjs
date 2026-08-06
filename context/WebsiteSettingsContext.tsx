@@ -66,6 +66,42 @@ export const WebsiteSettingsProvider: React.FC<{ children: React.ReactNode }> = 
     fetchSettings();
   }, []);
 
+  // Dynamically update document title, favicon, and SEO meta tags globally across all pages
+  useEffect(() => {
+    if (typeof window !== "undefined" && settings) {
+      if (settings.site_title) {
+        document.title = settings.site_title;
+      }
+      if (settings.favicon) {
+        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        link.href = settings.favicon;
+      }
+      if (settings.meta_description) {
+        let metaDesc = document.querySelector("meta[name='description']") as HTMLMetaElement;
+        if (!metaDesc) {
+          metaDesc = document.createElement('meta');
+          metaDesc.name = 'description';
+          document.getElementsByTagName('head')[0].appendChild(metaDesc);
+        }
+        metaDesc.content = settings.meta_description;
+      }
+      if (settings.meta_keywords) {
+        let metaKw = document.querySelector("meta[name='keywords']") as HTMLMetaElement;
+        if (!metaKw) {
+          metaKw = document.createElement('meta');
+          metaKw.name = 'keywords';
+          document.getElementsByTagName('head')[0].appendChild(metaKw);
+        }
+        metaKw.content = settings.meta_keywords;
+      }
+    }
+  }, [settings]);
+
   return (
     <WebsiteSettingsContext.Provider value={{ settings, loading, refetchSettings: fetchSettings }}>
       {children}

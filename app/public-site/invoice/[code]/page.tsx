@@ -3,11 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 export default function PublicInvoicePage() {
   const params = useParams();
   const router = useRouter();
   const code = params?.code as string;
+  const { settings } = useWebsiteSettings();
+
+  const siteTitle = settings?.site_title || "UmrahCab";
 
   const [invoice, setInvoice] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);
@@ -160,7 +164,7 @@ export default function PublicInvoicePage() {
           {/* Top Bar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #30363d", paddingBottom: "20px", marginBottom: "25px", flexWrap: "wrap", gap: "15px" }}>
             <div>
-              <span style={{ fontSize: "14px", fontWeight: "700", color: "#3b82f6", textTransform: "uppercase", letterSpacing: "1px" }}>UmrahCab Invoice</span>
+              <span style={{ fontSize: "14px", fontWeight: "700", color: "#3b82f6", textTransform: "uppercase", letterSpacing: "1px" }}>{siteTitle} Invoice</span>
               <h2 style={{ fontSize: "22px", fontWeight: "800", color: "#fff", margin: "4px 0 0 0" }}>#{invoice.invoice_code}</h2>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

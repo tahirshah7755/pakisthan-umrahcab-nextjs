@@ -863,7 +863,8 @@ export const api = {
 
   // === WEBSITE SETTINGS ===
   async getWebsiteSettings() {
-    const data = await request(`/public/website-settings`);
+    const raw = await request(`/public/website-settings`);
+    const data = (raw && raw.data && typeof raw.data === "object") ? raw.data : raw;
     if (data && typeof data === "object") {
       const backendOrigin = API_BASE.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
       if (typeof data.website_logo === "string" && data.website_logo.startsWith("/")) {
@@ -877,10 +878,11 @@ export const api = {
   },
 
   async updateWebsiteSettings(formData: FormData) {
-    const data = await request(`/admin/website-settings`, {
+    const raw = await request(`/admin/website-settings`, {
       method: "POST",
       body: formData,
     });
+    const data = (raw && raw.data && typeof raw.data === "object") ? raw.data : raw;
     if (data) {
       const backendOrigin = API_BASE.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
       if (typeof data.website_logo === "string" && data.website_logo.startsWith("/")) {

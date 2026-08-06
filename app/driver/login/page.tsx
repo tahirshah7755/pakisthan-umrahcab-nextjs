@@ -3,10 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 export default function DriverLoginPage() {
   const { driverLogin, driverUser } = useAuth();
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+
+  const siteLogo = settings?.website_logo;
+  const siteTitle = settings?.site_title || "UmrahCab";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -274,12 +279,22 @@ export default function DriverLoginPage() {
       <div className="login-wrapper">
         {/* Brand/Logo Header */}
         <div className="brand-header">
-          <div className="logo-box">
-            <i className="fas fa-steering-wheel" style={{ display: "none" }}></i>
-            <i className="fas fa-taxi"></i>
-          </div>
-          <h1 className="brand-title">
-            Umrah<span>Cab</span>
+          {siteLogo ? (
+            <img
+              src={siteLogo}
+              alt={siteTitle}
+              style={{ maxHeight: "64px", maxWidth: "180px", objectFit: "contain", marginBottom: "16px" }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <div className="logo-box">
+              <i className="fas fa-taxi"></i>
+            </div>
+          )}
+          <h1 className="brand-title" style={{ color: "#ffffff", fontWeight: "800" }}>
+            {siteTitle}
           </h1>
           <p className="brand-subtitle">Driver Portal Administration</p>
         </div>

@@ -15,9 +15,12 @@ interface MenuItem {
   submenu?: { name: string; href: string }[];
 }
 
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout, sidebarOpen, user } = useAuth();
+  const { settings } = useWebsiteSettings();
   
   // Track open submenu states (Accordion behavior - only one open at a time)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
@@ -27,6 +30,12 @@ export default function Sidebar() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (settings?.website_logo) {
+      setLogoUrl(settings.website_logo);
+    }
+  }, [settings]);
 
   useEffect(() => {
     async function fetchLogo() {

@@ -3,10 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 export default function CompanyLoginPage() {
   const { companyLogin, companyUser } = useAuth();
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+
+  const siteLogo = settings?.website_logo || "/logo2.png";
+  const siteTitle = settings?.site_title || "Umrah Cab";
 
   // Form states
   const [username, setUsername] = useState("");
@@ -93,7 +98,7 @@ export default function CompanyLoginPage() {
         {/* Left Side: Background Image */}
         <div className="login-bg-image" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "40px", color: "#ffffff" }}>
           <div style={{ maxWidth: "400px", textAlign: "center" }}>
-            <h1 style={{ fontSize: "36px", fontWeight: "800", color: "#d4af37", marginBottom: "15px" }}>Umrah Cab B2B</h1>
+            <h1 style={{ fontSize: "36px", fontWeight: "800", color: "#d4af37", marginBottom: "15px" }}>{siteTitle} B2B</h1>
             <p style={{ fontSize: "16px", color: "#94a3b8", lineHeight: "1.6" }}>
               Exclusive agent gateway for managing bookings, checking vouchers, following up on statements, and managing corporate account ledgers.
             </p>
@@ -102,7 +107,7 @@ export default function CompanyLoginPage() {
 
         {/* Right Side: Form */}
         <div className="login-form-side">
-          <img src="/logo2.png" className="login-logo" alt="Logo" />
+          <img src={siteLogo} className="login-logo" alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
           
           <h2 className="login-title">Agent Portal</h2>
           <p className="login-subtitle">Enter your agent credentials to access your B2B account</p>

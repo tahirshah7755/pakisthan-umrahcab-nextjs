@@ -3,6 +3,7 @@ import { Inter, Poppins, Public_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ReduxProvider } from "@/store/ReduxProvider";
+import { WebsiteSettingsProvider } from "@/context/WebsiteSettingsContext";
 import TableResponsiveHelper from "@/components/TableResponsiveHelper";
 
 const poppins = Poppins({
@@ -49,8 +50,10 @@ export default function RootLayout({
       <body>
         <ReduxProvider>
           <AuthProvider>
-            <TableResponsiveHelper />
-            {children}
+            <WebsiteSettingsProvider>
+              <TableResponsiveHelper />
+              {children}
+            </WebsiteSettingsProvider>
           </AuthProvider>
         </ReduxProvider>
       </body>

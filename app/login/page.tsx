@@ -3,10 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 export default function LoginPage() {
   const { login, register, user } = useAuth();
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+
+  const siteLogo = settings?.website_logo || "/logo2.png";
+  const siteTitle = settings?.site_title || "Logo";
 
   // Tab State
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -133,7 +138,7 @@ export default function LoginPage() {
 
         {/* Right Side: Form */}
         <div className="login-form-side">
-          <img src="/logo2.png" className="login-logo" alt="Logo" />
+          <img src={siteLogo} className="login-logo" alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
           
           <h2 className="login-title">Sign in to your account</h2>
           <p className="login-subtitle">Enter your credentials to access your dashboard</p>

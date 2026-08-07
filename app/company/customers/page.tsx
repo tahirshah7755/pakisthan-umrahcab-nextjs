@@ -313,6 +313,7 @@ export default function CompanyCustomersPage() {
         rows: textRows,
         companyName: "HEBA CAB",
         orientation: "landscape",
+        mode: fmtType as any,
         summary: [
           { label: "Total Customers", value: customers.length }
         ]

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, Suspense } from "react";
 import { api } from "@/utils/api";
 import Link from "next/link";
@@ -28,6 +30,19 @@ interface BookingRecord {
   pending_amount?: number | string | null;
 }
 
+export default function CompanyBookingsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
+        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    }>
+      <CompanyBookingsContent />
+    </Suspense>
+  );
+}
+
 function CompanyBookingsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -55,13 +70,6 @@ function CompanyBookingsContent() {
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
-  };
-
-  const handleExportExcel = () => {
-    if (bookings.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
   const [exportingFmt, setExportingFmt] = useState<string | null>(null);
 
   const fetchAllMatchingCompanyBookings = async () => {
@@ -215,6 +223,7 @@ function CompanyBookingsContent() {
         rows: textRows,
         companyName: "HEBA CAB",
         orientation: "landscape",
+        mode: fmtType as any,
         summary: [
           { label: "Total Bookings", value: exportList.length },
           { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }
@@ -770,6 +779,7 @@ function CompanyBookingsContent() {
           }
         }
       `}</style>
+      <ShareTemplateModal booking={selectedShareBooking} isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
     </div>
   );
 }
@@ -931,18 +941,5 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
         </div>
       </div>
     </div>
-  );
-}
-
-export default function CompanyBookingsPage() {
-  return (
-    <Suspense fallback={
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
-        <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite" }}></div>
-        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-      </div>
-    }>
-      <CompanyBookingsContent />
-    </Suspense>
   );
 }

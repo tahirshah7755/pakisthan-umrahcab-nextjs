@@ -451,7 +451,6 @@ export default function DriverDashboardPage() {
     return { headers, rows };
   };
 
-  const handleExportCSV = () => {
   const [exportingFmt, setExportingFmt] = useState<string | null>(null);
 
   const handleExportCSV = async () => {
@@ -514,6 +513,7 @@ export default function DriverDashboardPage() {
         rows,
         companyName: "HEBA CAB",
         orientation: "landscape",
+        mode: fmtType as any,
         summary: [
           { label: "Driver", value: driverUser?.name || "—" },
           { label: "Total Logs", value: entries.length }

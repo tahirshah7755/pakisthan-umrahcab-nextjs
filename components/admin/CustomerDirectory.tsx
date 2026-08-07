@@ -349,6 +349,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
         rows,
         companyName: "HEBA CAB",
         orientation: "landscape",
+        mode: fmtType as any,
         summary: [
           { label: "Total Matching Customers", value: exportList.length }
         ]

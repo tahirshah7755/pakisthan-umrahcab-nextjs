@@ -185,6 +185,7 @@ export default function InvoicesPage() {
         rows,
         companyName: "HEBA CAB",
         orientation: "landscape",
+        mode: fmtType as any,
         summary: [
           { label: "Total Invoices", value: exportList.length },
           { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }

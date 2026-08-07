@@ -154,6 +154,7 @@ export default function CompaniesPage() {
         rows,
         companyName: "HEBA CAB",
         orientation: "landscape",
+        mode: fmtType as any,
         summary: [
           { label: "Total Companies", value: filteredCompanies.length }
         ]
@@ -268,7 +269,7 @@ export default function CompaniesPage() {
               {exportingFmt === "CSV" && <i className="fas fa-spinner fa-spin"></i>}
               <span>CSV</span>
             </button>
-            <button disabled={!!exportingFmt} onClick={handleExportExcel} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <button disabled={!!exportingFmt} onClick={handleExportExcel} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
               {exportingFmt === "Excel" && <i className="fas fa-spinner fa-spin"></i>}
               <span>Excel</span>
             </button>

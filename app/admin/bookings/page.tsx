@@ -249,6 +249,7 @@ export default function BookingsList() {
         rows,
         companyName: "HEBA CAB",
         orientation: "landscape",
+        mode: fmtType as any,
         summary: [
           { label: "Total Bookings", value: exportList.length },
           { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }

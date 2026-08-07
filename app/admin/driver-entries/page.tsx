@@ -1231,7 +1231,7 @@ export default function AdminDriverEntriesPage() {
                 {entries.map((item) => {
                   const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                                    Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + 
-                                   Number(item.waqas_received || 0) + Number(item.mic || 0);
+                                   Number(item.pay_to_waqas || 0) + Number(item.mic || 0);
                   return (
                     <tr key={item.id}>
                       <td>
@@ -1272,10 +1272,20 @@ export default function AdminDriverEntriesPage() {
                         </div>
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "700", color: "#0f172a" }}>
-                        <div>{Number(item.cash || 0).toLocaleString()} SAR</div>
+                        <div>{(Number(item.cash || 0) + Number(item.waqas_received || 0)).toLocaleString()} SAR</div>
+                        {Number(item.waqas_received || 0) > 0 && (
+                          <div style={{ fontSize: "10px", color: "#10b981", fontWeight: "600" }}>
+                            (+{Number(item.waqas_received || 0)} Waqas Rec.)
+                          </div>
+                        )}
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "500", color: "#64748b" }}>
-                        {expenses.toLocaleString()} SAR
+                        <div>{expenses.toLocaleString()} SAR</div>
+                        {Number(item.pay_to_waqas || 0) > 0 && (
+                          <div style={{ fontSize: "10px", color: "#ef4444", fontWeight: "600" }}>
+                            ({Number(item.pay_to_waqas || 0)} Pay Waqas)
+                          </div>
+                        )}
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "800", color: Number(item.total || 0) >= 0 ? "#059669" : "#ef4444" }}>
                         {Number(item.total || 0).toLocaleString()} SAR

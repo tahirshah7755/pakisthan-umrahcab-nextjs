@@ -231,7 +231,7 @@ export async function exportToPDF(options: ExportOptions) {
     }
 
     const headerCells = headers
-      .map((h) => `<th style="background-color: #0f172a; color: #d4af37; padding: 8px 6px; font-weight: 700; font-size: 10px; border-bottom: 2px solid #1e293b; text-align: left; text-transform: uppercase;">${h}</th>`)
+      .map((h) => `<th style="background-color: #0f172a; color: #d4af37; padding: 5px 3px; font-weight: 700; font-size: 8px; border-bottom: 2px solid #1e293b; text-align: left; text-transform: uppercase; white-space: nowrap;">${h}</th>`)
       .join("");
 
     const bodyRows = rows
@@ -248,7 +248,7 @@ export async function exportToPDF(options: ExportOptions) {
             } else if (cellStr.toLowerCase() === "cancelled" || cellStr.toLowerCase() === "locked") {
               colorStyle = "color: #dc2626; font-weight: bold;";
             }
-            return `<td style="padding: 7px 6px; border-bottom: 1px solid #e2e8f0; font-size: 10px; color: #334155; ${colorStyle}">${cellStr}</td>`;
+            return `<td style="padding: 4px 3px; border-bottom: 1px solid #e2e8f0; font-size: 8px; color: #334155; ${colorStyle}">${cellStr}</td>`;
           })
           .join("");
         return `<tr style="background-color: ${bg};">${cells}</tr>`;
@@ -380,30 +380,39 @@ export async function exportToPDF(options: ExportOptions) {
   // Table starts directly below Gold Line
   const startY = 25;
 
+  const numCols = headers.length;
+  const dynamicFontSize = numCols > 16 ? 5.5 : numCols > 12 ? 6.5 : 7.5;
+  const dynamicPadding = numCols > 16 ? 1 : 1.5;
+
   // AutoTable render
   autoTable(doc, {
     startY,
     head: [headers],
     body: rows.map((r) => r.map((cell) => String(cell ?? "—"))),
     theme: "striped",
+    styles: {
+      fontSize: dynamicFontSize,
+      cellPadding: dynamicPadding,
+      overflow: "linebreak",
+    },
     headStyles: {
-      fillColor: [255, 255, 255],
-      textColor: [15, 23, 42],
+      fillColor: [15, 23, 42],
+      textColor: [212, 175, 55],
       fontStyle: "bold",
-      fontSize: 8,
-      cellPadding: 2.5,
+      fontSize: dynamicFontSize,
+      cellPadding: dynamicPadding,
       lineWidth: { bottom: 0.6 },
       lineColor: [212, 175, 55],
     },
     bodyStyles: {
-      fontSize: 7.5,
+      fontSize: dynamicFontSize,
       textColor: [51, 65, 85],
-      cellPadding: 2,
+      cellPadding: dynamicPadding,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
-    margin: { left: 14, right: 14, bottom: 12 },
+    margin: { left: 8, right: 8, bottom: 10 },
     didDrawPage: (data) => {
       // Footer
       const totalPages = doc.getNumberOfPages();

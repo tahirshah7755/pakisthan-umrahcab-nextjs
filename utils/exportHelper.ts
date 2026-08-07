@@ -145,33 +145,28 @@ export function exportToCSV(options: ExportOptions) {
 
 async function loadLogoBase64(url: string): Promise<string | null> {
   if (!url) return null;
-  const fullUrl = typeof window !== "undefined" && url.startsWith("/") ? window.location.origin + url : url;
-  
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const dataUrl = canvas.toDataURL("image/png");
-          resolve(dataUrl);
-          return;
+  try {
+    const fullUrl = typeof window !== "undefined" && url.startsWith("/")
+      ? window.location.origin + url
+      : url;
+    const res = await fetch(fullUrl);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string" && reader.result.startsWith("data:image")) {
+          resolve(reader.result);
+        } else {
+          resolve(null);
         }
-      } catch (e) {
-        console.warn("Canvas export failed for logo", e);
-      }
-      resolve(null);
-    };
-    img.onerror = () => {
-      resolve(null);
-    };
-    img.src = fullUrl;
-  });
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function exportToPDF(options: ExportOptions) {
@@ -211,10 +206,6 @@ export async function exportToPDF(options: ExportOptions) {
     } catch (e) {
       // fallback
     }
-  }
-
-  if (!logoUrl) {
-    logoUrl = "/logo2.png";
   }
 
   const today = new Date().toLocaleDateString("en-GB", {
@@ -398,11 +389,13 @@ export async function exportToPDF(options: ExportOptions) {
     body: rows.map((r) => r.map((cell) => String(cell ?? "—"))),
     theme: "striped",
     headStyles: {
-      fillColor: [15, 23, 42],
-      textColor: [212, 175, 55],
+      fillColor: [255, 255, 255],
+      textColor: [15, 23, 42],
       fontStyle: "bold",
       fontSize: 8,
       cellPadding: 2.5,
+      lineWidth: { bottom: 0.6 },
+      lineColor: [212, 175, 55],
     },
     bodyStyles: {
       fontSize: 7.5,

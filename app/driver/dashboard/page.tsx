@@ -1430,7 +1430,7 @@ export default function DriverDashboardPage() {
 
               <div className="inputs-row-3" style={{ marginTop: "16px" }}>
                 <div className="form-group">
-                  <label className="sub-input-label">Received From Waqas</label>
+                  <label className="sub-input-label">Pay to Waqas / Received From Waqas</label>
                   <input
                     type="number"
                     name="waqas_received"
@@ -1513,7 +1513,7 @@ export default function DriverDashboardPage() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="sub-input-label">Miscellaneous</label>
+                  <label className="sub-input-label">Pay to Waqas / Miscellaneous</label>
                   <input
                     type="number"
                     name="mic"
@@ -1604,6 +1604,7 @@ export default function DriverDashboardPage() {
                 <thead>
                   <tr>
                     <th>Date</th>
+                    <th>Vehicle Assignment</th>
                     <th>Trip</th>
                     <th>Hotel Drop Off</th>
                     <th>Agent / Company</th>
@@ -1622,6 +1623,7 @@ export default function DriverDashboardPage() {
                     const isLocked = item.is_locked && !driverUser?.edit_rights;
                     const totalExpenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                                           Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+                    const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
                     return (
                       <tr key={item.id}>
                         <td style={{ fontWeight: 600, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
@@ -1630,6 +1632,9 @@ export default function DriverDashboardPage() {
                             day: "numeric",
                             year: "numeric",
                           })}
+                        </td>
+                        <td style={{ color: "var(--dark-color)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                          {vehicleName}
                         </td>
                         <td style={{ color: "var(--dark-color)", whiteSpace: "nowrap" }}>
                           {item.trip || "-"}
@@ -1890,7 +1895,7 @@ export default function DriverDashboardPage() {
 
                   <div className="inputs-row-3" style={{ marginTop: "16px" }}>
                     <div className="form-group">
-                      <label className="sub-input-label">Received From Waqas</label>
+                      <label className="sub-input-label">Pay to Waqas / Received From Waqas</label>
                       <input
                         type="number"
                         name="waqas_received"
@@ -1965,7 +1970,7 @@ export default function DriverDashboardPage() {
                       />
                     </div>
                     <div className="form-group">
-                      <label className="sub-input-label">Miscellaneous</label>
+                      <label className="sub-input-label">Pay to Waqas / Miscellaneous</label>
                       <input
                         type="number"
                         name="mic"

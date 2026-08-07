@@ -1492,7 +1492,7 @@ export default function AdminDriverEntriesPage() {
 
                 <div className="form-row-3" style={{ marginTop: "12px" }}>
                   <div className="form-group">
-                    <label>Received From Waqas</label>
+                    <label>Pay to Waqas / Received From Waqas</label>
                     <input
                       type="number"
                       name="waqas_received"
@@ -1567,7 +1567,7 @@ export default function AdminDriverEntriesPage() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Miscellaneous</label>
+                    <label>Pay to Waqas / Miscellaneous</label>
                     <input
                       type="number"
                       name="mic"

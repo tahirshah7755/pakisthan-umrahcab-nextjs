@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
-import { exportToExcel } from "@/utils/excelHelper";
+import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 import { formatDateToCustom } from "@/utils/formatters";
 
 interface BookingItem {
@@ -104,45 +104,9 @@ export default function BookingsList() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
-  const handleExportCSV = () => {
-    if (filteredBookings.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
+  const buildAdminBookingsExportData = () => {
     const headers = ["Booking ID", "Customer", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle", "Price (SR)", "Status"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredBookings.map((b: any) => [
-        `"${(b.id || "").replace(/"/g, '""')}"`,
-        `"${(b.customerName || "Guest").replace(/"/g, '""')}"`,
-        `"${(b.pickupDate || "").replace(/"/g, '""')}"`,
-        `"${(b.pickupTime || "").replace(/"/g, '""')}"`,
-        `"${(b.pickupLocation || "").replace(/"/g, '""')}"`,
-        `"${(b.dropoffLocation || "").replace(/"/g, '""')}"`,
-        `"${(b.vehicle || "").replace(/"/g, '""')}"`,
-        b.finalPrice || 0,
-        `"${(b.status || "").replace(/"/g, '""')}"`
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `bookings_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("CSV file downloaded successfully!", "success");
-  };
-
-  const handleExportExcel = () => {
-    if (filteredBookings.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
-    const headers = ["Booking ID", "Customer", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle", "Price (SR)", "Status"];
-    const textRows = filteredBookings.map((b: any) => [
+    const rows = filteredBookings.map((b: any) => [
       b.id,
       b.customerName || "Guest",
       b.pickupDate || "",
@@ -153,15 +117,43 @@ export default function BookingsList() {
       b.finalPrice || 0,
       b.status || ""
     ]);
-    
+    return { headers, rows };
+  };
+
+  const handleExportCSV = () => {
+    if (filteredBookings.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const { headers, rows } = buildAdminBookingsExportData();
+    exportToCSV({
+      title: "Transportation Bookings Registry",
+      filename: "bookings_report",
+      headers,
+      rows
+    });
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (filteredBookings.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const { headers, rows } = buildAdminBookingsExportData();
+    const totalPrice = filteredBookings.reduce((sum: number, b: any) => sum + Number(b.finalPrice || 0), 0);
     exportToExcel({
       title: "Transportation Bookings Registry",
+      filename: "bookings_report",
       headers,
-      rows: textRows,
-      filename: `bookings_${new Date().toISOString().split("T")[0]}.xls`,
-      totalsIndices: [7],
-      statusIndex: 8
+      rows,
+      companyName: "HEBA CAB",
+      summary: [
+        { label: "Total Bookings", value: filteredBookings.length },
+        { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }
+      ]
     });
+    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
   };
 
   const handlePrint = (title: string = "Transportation Bookings Registry") => {
@@ -169,83 +161,20 @@ export default function BookingsList() {
       showToast("No data to print!", "error");
       return;
     }
-    
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
-      return;
-    }
-
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    
-    const rowsHtml = filteredBookings.map((b: any) => `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1f6f8b;">${b.id}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600;">${b.customerName || "Guest"}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
-          <div>${formatDateToCustom(b.pickupDate)}</div>
-          <div style="font-size: 10px; color: #64748b;">${b.pickupTime || ""}</div>
-        </td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.pickupLocation} &rarr; ${b.dropoffLocation}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.vehicle || ""}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right; color: #10b981;">SR ${b.finalPrice.toFixed(2)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${b.status}</td>
-      </tr>
-    `).join("");
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f6f8b; padding-bottom: 20px; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: #1f6f8b; font-size: 24px; }
-            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
-            @media print {
-              body { margin: 20px; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1>${title}</h1>
-              <p>Umrah Cab Transportation Bookings Registrar</p>
-            </div>
-            <div style="text-align: right;">
-              <p><strong>Generated Date:</strong> ${today}</p>
-              <p><strong>Total Bookings:</strong> ${filteredBookings.length}</p>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Booking ID</th>
-                <th>Customer</th>
-                <th>Pickup Date/Time</th>
-                <th>Route (From &rarr; To)</th>
-                <th>Vehicle</th>
-                <th style="text-align: right;">Final Price</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const { headers, rows } = buildAdminBookingsExportData();
+    const totalPrice = filteredBookings.reduce((sum: number, b: any) => sum + Number(b.finalPrice || 0), 0);
+    exportToPDF({
+      title,
+      filename: "bookings_report",
+      headers,
+      rows,
+      companyName: "HEBA CAB",
+      orientation: "landscape",
+      summary: [
+        { label: "Total Bookings", value: filteredBookings.length },
+        { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }
+      ]
+    });
   };
 
   const [currentPage, setCurrentPage] = useState(1);

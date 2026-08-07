@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetInvoicesQuery, useUpdateInvoiceMutation, useDeleteInvoiceMutation } from "@/store/api/invoicesApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
-import { exportToExcel } from "@/utils/excelHelper";
+import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -65,45 +65,9 @@ export default function InvoicesPage() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
-  const handleExportCSV = () => {
-    if (invoices.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
-    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount", "Remarks", "Entered By"];
-    const csvContent = [
-      headers.join(","),
-      ...invoices.map((inv: any) => [
-        inv.id,
-        `"${(inv.invoice_code || "").replace(/"/g, '""')}"`,
-        `"${(inv.customer_relation?.company || inv.customer || "Individual / Direct").replace(/"/g, '""')}"`,
-        `"${inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : ""}"`,
-        `"${(inv.period || "").replace(/"/g, '""')}"`,
-        `"${(inv.type || "").replace(/"/g, '""')}"`,
-        inv.amount || 0,
-        `"${(inv.remarks || "").replace(/"/g, '""')}"`,
-        `"${(inv.entered_by || "System Admin").replace(/"/g, '""')}"`
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `invoices_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("CSV file downloaded successfully!", "success");
-  };
-
-  const handleExportExcel = () => {
-    if (invoices.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
-    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount", "Remarks", "Entered By"];
-    const textRows = invoices.map((inv: any) => [
+  const buildAdminInvoicesExportData = () => {
+    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
+    const rows = invoices.map((inv: any) => [
       inv.id,
       inv.invoice_code || "",
       inv.customer_relation?.company || inv.customer || "Individual / Direct",
@@ -114,14 +78,43 @@ export default function InvoicesPage() {
       inv.remarks || "",
       inv.entered_by || "System Admin"
     ]);
-    
-    exportToExcel({
-      title: "Corporate Invoices Report",
+    return { headers, rows };
+  };
+
+  const handleExportCSV = () => {
+    if (invoices.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const { headers, rows } = buildAdminInvoicesExportData();
+    exportToCSV({
+      title: "Corporate Invoices Ledger Registry",
+      filename: "invoices_report",
       headers,
-      rows: textRows,
-      filename: `invoices_${new Date().toISOString().split("T")[0]}.xls`,
-      totalsIndices: [6]
+      rows
     });
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (invoices.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const { headers, rows } = buildAdminInvoicesExportData();
+    const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+    exportToExcel({
+      title: "Corporate Invoices Ledger Registry",
+      filename: "invoices_report",
+      headers,
+      rows,
+      companyName: "HEBA CAB",
+      summary: [
+        { label: "Total Invoices", value: invoices.length },
+        { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
+      ]
+    });
+    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
   };
 
   const handlePrint = (title: string = "Corporate Invoices Registry") => {
@@ -129,84 +122,20 @@ export default function InvoicesPage() {
       showToast("No data to print!", "error");
       return;
     }
-    
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
-      return;
-    }
-
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    
-    const rowsHtml = invoices.map((inv: any) => `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b;">#${inv.id}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e5cff;">${inv.invoice_code || ""}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #334155;">${inv.customer_relation?.company || inv.customer || "Individual / Direct"}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.period || "—"}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.type || "VW"}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: right;">${fmt(inv.amount)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #64748b;">${inv.remarks || "—"}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${inv.entered_by || "System Admin"}</td>
-      </tr>
-    `).join("");
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #dc2626; padding-bottom: 20px; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: #dc2626; font-size: 24px; }
-            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th { background-color: #f8fafc; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
-            @media print {
-              body { margin: 20px; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1>${title}</h1>
-              <p>Umrah Cab Invoices Ledger Registry</p>
-            </div>
-            <div style="text-align: right;">
-              <p><strong>Generated Date:</strong> ${today}</p>
-              <p><strong>Total Invoices:</strong> ${invoices.length}</p>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Invoice #</th>
-                <th>Company</th>
-                <th>Date</th>
-                <th>Period</th>
-                <th>Type</th>
-                <th style="text-align: right;">Amount</th>
-                <th>Remarks</th>
-                <th>Entered By</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const { headers, rows } = buildAdminInvoicesExportData();
+    const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+    exportToPDF({
+      title,
+      filename: "invoices_report",
+      headers,
+      rows,
+      companyName: "HEBA CAB",
+      orientation: "landscape",
+      summary: [
+        { label: "Total Invoices", value: invoices.length },
+        { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
+      ]
+    });
   };
 
   // Queries & Mutations

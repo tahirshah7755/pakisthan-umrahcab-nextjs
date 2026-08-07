@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
 import { useAuth } from "@/context/AuthContext";
-import { exportToExcel } from "@/utils/excelHelper";
+import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 
 export default function AdminDriverEntriesPage() {
   const router = useRouter();
@@ -343,77 +343,13 @@ export default function AdminDriverEntriesPage() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
-  const handleExportCSV = () => {
-    if (entries.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
+  const buildAdminDriverEntriesExportData = () => {
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
       "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash", 
       "Waqas Received", "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Misc", "Total Expenses", "Net Total", "Status"
     ];
-    const csvContent = [
-      headers.join(","),
-      ...entries.map((item: any) => {
-        const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
-        const vehicleType = item.vehicle ? item.vehicle.type : (item.manual_vehicle ? "Manual Entry" : "—");
-        const cash = Number(item.cash || 0);
-        const waqas = Number(item.waqas_received || 0);
-        const fuel = Number(item.fuel || 0);
-        const parking = Number(item.parking || 0);
-        const wash = Number(item.wash || 0);
-        const oil = Number(item.oil_change || 0);
-        const maint = Number(item.car_maintenance || 0);
-        const mic = Number(item.mic || 0);
-        const expenses = fuel + parking + wash + oil + maint + mic;
-        return [
-          `"${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}"`,
-          `"${(item.driver?.name || `Driver ID #${item.driver_id}`).replace(/"/g, '""')}"`,
-          `"${vehicleName.replace(/"/g, '""')}"`,
-          `"${vehicleType.replace(/"/g, '""')}"`,
-          `"${(item.trip || "—").replace(/"/g, '""')}"`,
-          `"${(item.hotel_drop_off || "—").replace(/"/g, '""')}"`,
-          `"${(item.agent || "—").replace(/"/g, '""')}"`,
-          item.rate || 0,
-          item.voucher || 0,
-          cash,
-          waqas,
-          fuel,
-          parking,
-          wash,
-          oil,
-          maint,
-          mic,
-          expenses,
-          item.total || 0,
-          item.is_locked ? "Locked" : "Open"
-        ].join(",");
-      })
-    ].join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `driver_logs_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("CSV file downloaded successfully!", "success");
-  };
-
-  const handleExportExcel = () => {
-    if (entries.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
-    const headers = [
-      "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash", 
-      "Waqas Received", "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Misc", "Total Expenses", "Net Total", "Status"
-    ];
-    const textRows = entries.map((item: any) => {
+    const rows = entries.map((item: any) => {
       const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
       const vehicleType = item.vehicle ? item.vehicle.type : (item.manual_vehicle ? "Manual Entry" : "—");
       const cash = Number(item.cash || 0);
@@ -448,15 +384,41 @@ export default function AdminDriverEntriesPage() {
         item.is_locked ? "Locked" : "Open"
       ];
     });
-    
-    exportToExcel({
-      title: "Driver Sheets & Logs Report",
+    return { headers, rows };
+  };
+
+  const handleExportCSV = () => {
+    if (entries.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const { headers, rows } = buildAdminDriverEntriesExportData();
+    exportToCSV({
+      title: "Driver Sheets & Logs Registry",
+      filename: "driver_logs_report",
       headers,
-      rows: textRows,
-      filename: `driver_logs_${new Date().toISOString().split("T")[0]}.xls`,
-      totalsIndices: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-      statusIndex: 19
+      rows
     });
+    showToast("CSV file downloaded successfully!", "success");
+  };
+
+  const handleExportExcel = () => {
+    if (entries.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
+    const { headers, rows } = buildAdminDriverEntriesExportData();
+    exportToExcel({
+      title: "Driver Sheets & Logs Registry",
+      filename: "driver_logs_report",
+      headers,
+      rows,
+      companyName: "HEBA CAB",
+      summary: [
+        { label: "Total Driver Entries", value: entries.length }
+      ]
+    });
+    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
   };
 
   const handlePrint = (title: string = "Driver Sheets & Logs Report") => {
@@ -464,127 +426,18 @@ export default function AdminDriverEntriesPage() {
       showToast("No data to print!", "error");
       return;
     }
-    
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
-      return;
-    }
-
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    
-    const rowsHtml = entries.map((item: any) => {
-      const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
-      const cash = Number(item.cash || 0);
-      const waqas = Number(item.waqas_received || 0);
-      const fuel = Number(item.fuel || 0);
-      const parking = Number(item.parking || 0);
-      const wash = Number(item.wash || 0);
-      const oil = Number(item.oil_change || 0);
-      const maint = Number(item.car_maintenance || 0);
-      const mic = Number(item.mic || 0);
-      const expenses = fuel + parking + wash + oil + maint + mic;
-      return `
-        <tr>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">
-            ${new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          </td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #1e5cff;">
-            ${item.driver?.name || `Driver ID #${item.driver_id}`}
-          </td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0;">${vehicleName}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #15803d; max-width: 140px; word-wrap: break-word;">
-            ${item.trip || "—"}
-          </td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; max-width: 100px; word-wrap: break-word;">${item.hotel_drop_off || "—"}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; max-width: 100px; word-wrap: break-word;">${item.agent || "—"}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.rate || 0).toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right;">${Number(item.voucher || 0).toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${cash.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #0d9488;">${waqas.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${fuel.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${parking.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${wash.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${oil.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${maint.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #ef4444;">${mic.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #ef4444;">${expenses.toFixed(0)}</td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${Number(item.total || 0) >= 0 ? "#10b981" : "#ef4444"};">
-            ${Number(item.total || 0).toFixed(0)}
-          </td>
-          <td style="padding: 6px 4px; border-bottom: 1px solid #e2e8f0; text-align: center;">
-            ${item.is_locked ? "Locked" : "Open"}
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: sans-serif; margin: 20px; color: #1e293b; font-size: 11px; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #312e81; padding-bottom: 15px; margin-bottom: 20px; }
-            .header h1 { margin: 0; color: #312e81; font-size: 20px; }
-            .header p { margin: 3px 0 0 0; color: #64748b; font-size: 11px; }
-            table { width: 100%; border-collapse: collapse; font-size: 10px; table-layout: auto; }
-            th { background-color: #f8fafc; padding: 8px 4px; border-bottom: 2px solid #e2e8f0; text-align: left; text-transform: uppercase; color: #475569; font-weight: 700; }
-            @media print {
-              body { margin: 10px; }
-              @page { size: landscape; margin: 0.5cm; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1>${title}</h1>
-              <p>Umrah Cab Driver Sheets & Logs Registry (Landscape)</p>
-            </div>
-            <div style="text-align: right;">
-              <p><strong>Generated Date:</strong> ${today}</p>
-              <p><strong>Total Logs:</strong> ${entries.length}</p>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Driver</th>
-                <th>Vehicle</th>
-                <th>Trip Route</th>
-                <th>Hotel Drop</th>
-                <th>Agent/B2B</th>
-                <th style="text-align: right;">Rate</th>
-                <th style="text-align: right;">Vouch</th>
-                <th style="text-align: right;">Cash</th>
-                <th style="text-align: right;">Waqas</th>
-                <th style="text-align: right;">Fuel</th>
-                <th style="text-align: right;">Park</th>
-                <th style="text-align: right;">Wash</th>
-                <th style="text-align: right;">Oil</th>
-                <th style="text-align: right;">Maint</th>
-                <th style="text-align: right;">Misc</th>
-                <th style="text-align: right;">Exp</th>
-                <th style="text-align: right;">Net</th>
-                <th style="text-align: center;">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const { headers, rows } = buildAdminDriverEntriesExportData();
+    exportToPDF({
+      title,
+      filename: "driver_logs_report",
+      headers,
+      rows,
+      companyName: "HEBA CAB",
+      orientation: "landscape",
+      summary: [
+        { label: "Total Driver Logs", value: entries.length }
+      ]
+    });
   };
 
   // Stats summaries

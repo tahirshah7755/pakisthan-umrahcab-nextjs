@@ -24,32 +24,15 @@ export default function Sidebar() {
   
   // Track open submenu states (Accordion behavior - only one open at a time)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-  const [logoUrl, setLogoUrl] = useState<string>("/logo2.png");
+  const [logoUrl, setLogoUrl] = useState<string>(settings?.website_logo || "");
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
     if (settings?.website_logo) {
       setLogoUrl(settings.website_logo);
     }
   }, [settings]);
-
-  useEffect(() => {
-    async function fetchLogo() {
-      try {
-        const data = await api.getWebsiteSettings();
-        if (data && data.website_logo) {
-          setLogoUrl(data.website_logo);
-        }
-      } catch (err) {
-        console.error("Failed to load sidebar logo:", err);
-      }
-    }
-    fetchLogo();
-  }, []);
 
   const toggleSubmenu = (name: string) => {
     setOpenSubmenu((prev) => (prev === name ? null : name));
@@ -198,7 +181,18 @@ export default function Sidebar() {
     <div className={`admin-sidebar ${!sidebarOpen ? "collapsed" : "mobile-open"}`}>
       {/* Sidebar Top: Logo Block */}
       <div className="sidebar-logo-container">
-        <img src={logoUrl} alt="Logo" className="sidebar-logo" onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={settings?.site_title || "Logo"}
+            className="sidebar-logo"
+            onError={() => setLogoUrl("")}
+          />
+        ) : (
+          <span style={{ color: "#d4af37", fontWeight: 800, fontSize: "18px", letterSpacing: "0.5px" }}>
+            {settings?.site_title || "Heba Cab"}
+          </span>
+        )}
       </div>
 
       {/* Profile Card */}

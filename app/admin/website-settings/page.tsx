@@ -486,10 +486,7 @@ export default function WebsiteSettingsPage() {
                   <img
                     src={logoPreview}
                     alt="Site Logo"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).onerror = null;
-                      (e.target as HTMLImageElement).src = "/logo2.png";
-                    }}
+                    onError={() => setLogoPreview("")}
                   />
                 ) : (
                   <div style={{ color: "#94a3b8", fontSize: "12px" }}>

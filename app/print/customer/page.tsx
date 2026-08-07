@@ -21,7 +21,7 @@ function CustomerPrintContent() {
   const [trains, setTrains] = useState<any[]>([]);
   const [hotels, setHotels] = useState<any[]>([]);
   const [websiteSettings, setWebsiteSettings] = useState<any>(null);
-  const [logoUrl, setLogoUrl] = useState<string>("/logo2.png");
+  const [logoUrl, setLogoUrl] = useState<string>("");
 
   useEffect(() => {
     async function loadData() {

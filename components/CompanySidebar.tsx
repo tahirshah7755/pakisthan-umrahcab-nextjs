@@ -26,7 +26,7 @@ export default function CompanySidebar() {
   
   // Track open submenu states (Accordion behavior - only one open at a time)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
-  const [logoUrl, setLogoUrl] = useState<string>("/logo2.png");
+  const [logoUrl, setLogoUrl] = useState<string>(settings?.website_logo || "");
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -35,20 +35,6 @@ export default function CompanySidebar() {
       setLogoUrl(settings.website_logo);
     }
   }, [settings]);
-
-  useEffect(() => {
-    async function fetchLogo() {
-      try {
-        const data = await api.getWebsiteSettings();
-        if (data && data.website_logo) {
-          setLogoUrl(data.website_logo);
-        }
-      } catch (err) {
-        console.error("Failed to load sidebar logo:", err);
-      }
-    }
-    fetchLogo();
-  }, []);
 
   const toggleSubmenu = (name: string) => {
     setOpenSubmenu((prev) => (prev === name ? null : name));
@@ -130,9 +116,20 @@ export default function CompanySidebar() {
   return (
     <div className={`admin-sidebar ${!sidebarOpen ? "collapsed" : "mobile-open"}`} style={{ background: "#0f172a" }}>
       {/* Sidebar Top: Logo Block */}
-      <div className="sidebar-logo-container" style={{ borderBottom: "1px solid #1e293b" }}>
-        <img src={logoUrl} alt="Logo" className="sidebar-logo" onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
-        <span style={{ color: "#d4af37", fontWeight: "700", fontSize: "14px", marginLeft: "10px" }}>B2B Agent</span>
+      <div className="sidebar-logo-container" style={{ borderBottom: "1px solid #1e293b", display: "flex", alignItems: "center" }}>
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={settings?.site_title || "Logo"}
+            className="sidebar-logo"
+            onError={() => setLogoUrl("")}
+          />
+        ) : (
+          <span style={{ color: "#d4af37", fontWeight: 800, fontSize: "16px", letterSpacing: "0.5px" }}>
+            {settings?.site_title || "Heba Cab"}
+          </span>
+        )}
+        <span style={{ color: "#d4af37", fontWeight: "700", fontSize: "12px", marginLeft: "auto" }}>B2B Agent</span>
       </div>
 
       {/* Profile Card */}

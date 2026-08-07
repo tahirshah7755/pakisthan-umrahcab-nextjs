@@ -10,7 +10,7 @@ export default function CompanyLoginPage() {
   const router = useRouter();
   const { settings } = useWebsiteSettings();
 
-  const siteLogo = settings?.website_logo || "/logo2.png";
+  const siteLogo = settings?.website_logo || "";
   const siteTitle = settings?.site_title || "Heba Cab";
 
   // Form states

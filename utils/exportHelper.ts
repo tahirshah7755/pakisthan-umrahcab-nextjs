@@ -1,4 +1,6 @@
 import { api } from "@/utils/api";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface ExportOptions {
   title: string;
@@ -141,6 +143,37 @@ export function exportToCSV(options: ExportOptions) {
   document.body.removeChild(link);
 }
 
+async function loadLogoBase64(url: string): Promise<string | null> {
+  if (!url) return null;
+  const fullUrl = typeof window !== "undefined" && url.startsWith("/") ? window.location.origin + url : url;
+  
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const dataUrl = canvas.toDataURL("image/png");
+          resolve(dataUrl);
+          return;
+        }
+      } catch (e) {
+        console.warn("Canvas export failed for logo", e);
+      }
+      resolve(null);
+    };
+    img.onerror = () => {
+      resolve(null);
+    };
+    img.src = fullUrl;
+  });
+}
+
 export async function exportToPDF(options: ExportOptions) {
   let {
     title,
@@ -190,187 +223,207 @@ export async function exportToPDF(options: ExportOptions) {
     year: "numeric",
   });
 
-  const headerCells = headers
-    .map((h) => `<th style="background-color: #0f172a; color: #d4af37; padding: 8px 6px; font-weight: 700; font-size: 10px; border-bottom: 2px solid #1e293b; text-align: left; text-transform: uppercase;">${h}</th>`)
-    .join("");
-
-  const bodyRows = rows
-    .map((row, idx) => {
-      const bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
-      const cells = row
-        .map((c) => {
-          let cellStr = String(c ?? "—");
-          let colorStyle = "";
-          if (cellStr.toLowerCase() === "active" || cellStr.toLowerCase() === "paid" || cellStr.toLowerCase() === "completed") {
-            colorStyle = "color: #059669; font-weight: bold;";
-          } else if (cellStr.toLowerCase() === "pending" || cellStr.toLowerCase() === "unpaid") {
-            colorStyle = "color: #d97706; font-weight: bold;";
-          } else if (cellStr.toLowerCase() === "cancelled" || cellStr.toLowerCase() === "locked") {
-            colorStyle = "color: #dc2626; font-weight: bold;";
-          }
-          return `<td style="padding: 7px 6px; border-bottom: 1px solid #e2e8f0; font-size: 10px; color: #334155; ${colorStyle}">${cellStr}</td>`;
-        })
-        .join("");
-      return `<tr style="background-color: ${bg};">${cells}</tr>`;
-    })
-    .join("");
-
-  const summaryRowsHtml = summary.length
-    ? `<div style="margin-top: 15px; padding: 10px 14px; background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 11px; display: flex; gap: 20px;">
-        ${summary.map((s) => `<span><strong>${s.label}:</strong> ${s.value}</span>`).join("")}
-       </div>`
-    : "";
-
-  if (mode === "PDF") {
-    const container = document.createElement("div");
-    container.style.position = "absolute";
-    container.style.left = "0px";
-    container.style.top = "0px";
-    container.style.zIndex = "-99999";
-    container.style.width = orientation === "landscape" ? "280mm" : "195mm";
-    container.style.background = "#ffffff";
-    container.style.padding = "20px";
-    container.style.color = "#0f172a";
-    container.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-
-    container.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #d4af37; padding-bottom: 12px; margin-bottom: 16px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          ${logoUrl ? `<img src="${logoUrl}" style="height: 42px; width: auto; object-fit: contain;" alt="${companyName}" />` : ""}
-          <div>
-            <h1 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px;">${companyName}</h1>
-            <p style="font-size: 13px; color: #64748b; margin: 2px 0 0 0; font-weight: 600;">${title}</p>
-          </div>
-        </div>
-        <div style="text-align: right; font-size: 11px; color: #475569;">
-          <p style="margin: 2px 0;"><strong>Generated Date:</strong> ${today}</p>
-          <p style="margin: 2px 0;"><strong>Total Records:</strong> ${rows.length}</p>
-        </div>
-      </div>
-
-      <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; table-layout: auto;">
-        <thead>
-          <tr>${headerCells}</tr>
-        </thead>
-        <tbody>
-          ${bodyRows}
-        </tbody>
-      </table>
-
-      ${summaryRowsHtml}
-
-      <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8;">
-        <span>Official Report — Generated by ${companyName} Portal</span>
-        <span>Page 1 of 1</span>
-      </div>
-    `;
-
-    document.body.appendChild(container);
-
-    const runDownload = () => {
-      const opt = {
-        margin: [6, 6, 6, 6],
-        filename: `${filename.replace(/\.[^/.]+$/, "")}_${new Date().toISOString().split("T")[0]}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
-        jsPDF: { unit: "mm", format: "a4", orientation }
-      };
-
-      if (typeof (window as any).html2pdf !== "undefined") {
-        (window as any).html2pdf().set(opt).from(container).save().then(() => {
-          if (container.parentNode) container.parentNode.removeChild(container);
-        }).catch((err: any) => {
-          console.error("PDF generation error:", err);
-          if (container.parentNode) container.parentNode.removeChild(container);
-        });
-      } else {
-        alert("PDF generator engine failed to load.");
-        if (container.parentNode) container.parentNode.removeChild(container);
-      }
-    };
-
-    if ((window as any).html2pdf) {
-      setTimeout(runDownload, 350);
-    } else {
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-      script.onload = () => setTimeout(runDownload, 350);
-      script.onerror = () => {
-        alert("Failed to load PDF script.");
-        if (container.parentNode) container.parentNode.removeChild(container);
-      };
-      document.body.appendChild(script);
+  if (mode === "Print") {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Pop-up blocked! Please allow pop-ups to print.");
+      return;
     }
-    return;
-  }
 
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    alert("Pop-up blocked! Please allow pop-ups to print.");
-    return;
-  }
+    const headerCells = headers
+      .map((h) => `<th style="background-color: #0f172a; color: #d4af37; padding: 8px 6px; font-weight: 700; font-size: 10px; border-bottom: 2px solid #1e293b; text-align: left; text-transform: uppercase;">${h}</th>`)
+      .join("");
 
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${companyName} - ${title}</title>
-        <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; color: #0f172a; background: #ffffff; }
-          .banner { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #d4af37; padding-bottom: 12px; margin-bottom: 16px; }
-          .logo-box { display: flex; align-items: center; gap: 12px; }
-          .logo-img { height: 42px; width: auto; object-fit: contain; }
-          .company-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
-          .report-title { font-size: 13px; color: #64748b; margin: 2px 0 0 0; font-weight: 600; }
-          .meta-info { text-align: right; font-size: 11px; color: #475569; }
-          .meta-info p { margin: 2px 0; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; table-layout: auto; }
-          .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
-          @media print {
-            body { margin: 0; }
-            @page { size: ${orientation}; margin: 8mm; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="banner">
-          <div class="logo-box">
-            ${logoUrl ? `<img src="${logoUrl}" class="logo-img" alt="${companyName}" />` : ""}
-            <div>
-              <h1 class="company-title">${companyName}</h1>
-              <p class="report-title">${title}</p>
+    const bodyRows = rows
+      .map((row, idx) => {
+        const bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
+        const cells = row
+          .map((c) => {
+            let cellStr = String(c ?? "—");
+            let colorStyle = "";
+            if (cellStr.toLowerCase() === "active" || cellStr.toLowerCase() === "paid" || cellStr.toLowerCase() === "completed") {
+              colorStyle = "color: #059669; font-weight: bold;";
+            } else if (cellStr.toLowerCase() === "pending" || cellStr.toLowerCase() === "unpaid") {
+              colorStyle = "color: #d97706; font-weight: bold;";
+            } else if (cellStr.toLowerCase() === "cancelled" || cellStr.toLowerCase() === "locked") {
+              colorStyle = "color: #dc2626; font-weight: bold;";
+            }
+            return `<td style="padding: 7px 6px; border-bottom: 1px solid #e2e8f0; font-size: 10px; color: #334155; ${colorStyle}">${cellStr}</td>`;
+          })
+          .join("");
+        return `<tr style="background-color: ${bg};">${cells}</tr>`;
+      })
+      .join("");
+
+    const summaryRowsHtml = summary.length
+      ? `<div style="margin-top: 15px; padding: 10px 14px; background: #f1f5f9; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 11px; display: flex; gap: 20px;">
+          ${summary.map((s) => `<span><strong>${s.label}:</strong> ${s.value}</span>`).join("")}
+         </div>`
+      : "";
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${companyName} - ${title}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; color: #0f172a; background: #ffffff; }
+            .banner { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #d4af37; padding-bottom: 12px; margin-bottom: 16px; }
+            .logo-box { display: flex; align-items: center; gap: 12px; }
+            .logo-img { height: 42px; width: auto; object-fit: contain; }
+            .company-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
+            .report-title { font-size: 13px; color: #64748b; margin: 2px 0 0 0; font-weight: 600; }
+            .meta-info { text-align: right; font-size: 11px; color: #475569; }
+            .meta-info p { margin: 2px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; table-layout: auto; }
+            .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
+            @media print {
+              body { margin: 0; }
+              @page { size: ${orientation}; margin: 8mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="banner">
+            <div class="logo-box">
+              ${logoUrl ? `<img src="${logoUrl}" class="logo-img" alt="${companyName}" />` : ""}
+              <div>
+                <h1 class="company-title">${companyName}</h1>
+                <p class="report-title">${title}</p>
+              </div>
+            </div>
+            <div class="meta-info">
+              <p><strong>Generated Date:</strong> ${today}</p>
+              <p><strong>Total Records:</strong> ${rows.length}</p>
             </div>
           </div>
-          <div class="meta-info">
-            <p><strong>Generated Date:</strong> ${today}</p>
-            <p><strong>Total Records:</strong> ${rows.length}</p>
+
+          <table>
+            <thead>
+              <tr>${headerCells}</tr>
+            </thead>
+            <tbody>
+              ${bodyRows}
+            </tbody>
+          </table>
+
+          ${summaryRowsHtml}
+
+          <div class="footer">
+            <span>Official Report — Generated by ${companyName} Portal</span>
+            <span>Page 1 of 1</span>
           </div>
-        </div>
 
-        <table>
-          <thead>
-            <tr>${headerCells}</tr>
-          </thead>
-          <tbody>
-            ${bodyRows}
-          </tbody>
-        </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    return;
+  }
 
-        ${summaryRowsHtml}
+  // mode === "PDF": Native jsPDF + autoTable package matching Print Header Design!
+  const doc = new jsPDF({
+    orientation: orientation === "landscape" ? "l" : "p",
+    unit: "mm",
+    format: "a4",
+  });
 
-        <div class="footer">
-          <span>Official Report — Generated by ${companyName} Portal</span>
-          <span>Page 1 of 1</span>
-        </div>
+  const pageWidth = doc.internal.pageSize.width;
 
-        <script>
-          window.onload = function() {
-            window.print();
-            setTimeout(function() { window.close(); }, 500);
-          };
-        </script>
-      </body>
-    </html>
-  `);
-  printWindow.document.close();
+  // Load logo as Base64 if available
+  let logoBase64: string | null = null;
+  if (logoUrl) {
+    logoBase64 = await loadLogoBase64(logoUrl);
+  }
+
+  // Header Layout (Clean White Background)
+  let textStartX = 14;
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, "PNG", 14, 5.5, 12, 12);
+      textStartX = 29;
+    } catch (e) {
+      console.warn("Error drawing logo in jsPDF", e);
+      textStartX = 14;
+    }
+  }
+
+  // Company Name
+  doc.setTextColor(15, 23, 42); // #0f172a
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(companyName, textStartX, 11);
+
+  // Subtitle
+  doc.setFontSize(9.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(100, 116, 139); // #64748b
+  doc.text(title, textStartX, 17);
+
+  // Meta Info Right
+  doc.setTextColor(71, 85, 105); // #475569
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Generated Date: ${today}`, pageWidth - 14, 11, { align: "right" });
+  doc.text(`Total Records: ${rows.length}`, pageWidth - 14, 16, { align: "right" });
+
+  // Gold Accent Line under Header
+  doc.setFillColor(212, 175, 55); // #d4af37
+  doc.rect(14, 21, pageWidth - 28, 1.2, "F");
+
+  // Summary box if present
+  let startY = 27;
+  if (summary && summary.length > 0) {
+    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(14, 25, pageWidth - 28, 8, 1, 1, "FD");
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    const summaryText = summary.map((s) => `${s.label}: ${s.value}`).join("   |   ");
+    doc.text(summaryText, 18, 30.5);
+    startY = 37;
+  }
+
+  // AutoTable render
+  autoTable(doc, {
+    startY,
+    head: [headers],
+    body: rows.map((r) => r.map((cell) => String(cell ?? "—"))),
+    theme: "striped",
+    headStyles: {
+      fillColor: [15, 23, 42],
+      textColor: [212, 175, 55],
+      fontStyle: "bold",
+      fontSize: 8,
+      cellPadding: 2.5,
+    },
+    bodyStyles: {
+      fontSize: 7.5,
+      textColor: [51, 65, 85],
+      cellPadding: 2,
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { left: 14, right: 14, bottom: 12 },
+    didDrawPage: (data) => {
+      // Footer
+      const totalPages = doc.getNumberOfPages();
+      const str = `Official Report — Generated by ${companyName} Portal  |  Page ${data.pageNumber} of ${totalPages}`;
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(148, 163, 184);
+      doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 5);
+    },
+  });
+
+  const outFilename = filename.endsWith(".pdf") ? filename : `${filename}_${new Date().toISOString().split("T")[0]}.pdf`;
+  doc.save(outFilename);
 }

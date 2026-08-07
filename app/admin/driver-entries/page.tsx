@@ -75,6 +75,7 @@ export default function AdminDriverEntriesPage() {
     oil_change: 0,
     car_maintenance: 0,
     waqas_received: 0,
+    pay_to_waqas: 0,
     mic: 0,
   });
 
@@ -128,12 +129,12 @@ export default function AdminDriverEntriesPage() {
     }
   };
 
-  // Formula: Cash Collected - (Fuel + Parking + Wash + Oil + Maint + Waqas + Mic)
+  // Formula: (Cash + Received from Waqas) - (Fuel + Parking + Wash + Oil + Maint + Pay to Waqas + Mic)
   const calculateTotal = (data: typeof formData) => {
-    const earnings = Number(data.cash || 0);
+    const earnings = Number(data.cash || 0) + Number(data.waqas_received || 0);
     const expenses = Number(data.fuel || 0) + Number(data.parking || 0) + Number(data.wash || 0) + 
                      Number(data.oil_change || 0) + Number(data.car_maintenance || 0) + 
-                     Number(data.waqas_received || 0) + Number(data.mic || 0);
+                     Number(data.pay_to_waqas || 0) + Number(data.mic || 0);
     return earnings - expenses;
   };
 
@@ -172,6 +173,7 @@ export default function AdminDriverEntriesPage() {
       oil_change: 0,
       car_maintenance: 0,
       waqas_received: 0,
+      pay_to_waqas: 0,
       mic: 0,
     });
     setIsAddOpen(true);
@@ -196,6 +198,7 @@ export default function AdminDriverEntriesPage() {
       oil_change: entry.oil_change || 0,
       car_maintenance: entry.car_maintenance || 0,
       waqas_received: entry.waqas_received || 0,
+      pay_to_waqas: entry.pay_to_waqas || 0,
       mic: entry.mic || 0,
     });
   };
@@ -300,21 +303,22 @@ export default function AdminDriverEntriesPage() {
     }
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", "Received From Waqas",
       "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Pay to Waqas", "Miscellaneous", "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
       const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
-      const vehicleType = item.vehicle ? item.vehicle.type : (item.manual_vehicle ? "Manual Entry" : "—");
+      const vehicleType = item.vehicle ? (item.vehicle.type || "Standard") : (item.manual_vehicle ? "Manual Entry" : "—");
       const cash = Number(item.cash || 0);
-      const waqas = Number(item.waqas_received || 0);
+      const waqasRec = Number(item.waqas_received || 0);
+      const waqasPay = Number(item.pay_to_waqas || 0);
       const fuel = Number(item.fuel || 0);
       const parking = Number(item.parking || 0);
       const wash = Number(item.wash || 0);
       const oil = Number(item.oil_change || 0);
       const maint = Number(item.car_maintenance || 0);
       const mic = Number(item.mic || 0);
-      const expenses = fuel + parking + wash + oil + maint + waqas + mic;
+      const expenses = fuel + parking + wash + oil + maint + waqasPay + mic;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         item.driver?.name || `Driver ID #${item.driver_id}`,
@@ -326,12 +330,13 @@ export default function AdminDriverEntriesPage() {
         item.rate || 0,
         item.voucher || 0,
         cash,
+        waqasRec,
         fuel,
         parking,
         wash,
         oil,
         maint,
-        waqas,
+        waqasPay,
         mic,
         expenses,
         item.total || 0,
@@ -347,21 +352,22 @@ export default function AdminDriverEntriesPage() {
   const buildAdminDriverEntriesExportData = () => {
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", "Received From Waqas",
       "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Pay to Waqas", "Miscellaneous", "Total Expenses", "Net Total", "Status"
     ];
     const rows = entries.map((item: any) => {
       const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
-      const vehicleType = item.vehicle ? item.vehicle.type : (item.manual_vehicle ? "Manual Entry" : "—");
+      const vehicleType = item.vehicle ? (item.vehicle.type || "Standard") : (item.manual_vehicle ? "Manual Entry" : "—");
       const cash = Number(item.cash || 0);
-      const waqas = Number(item.waqas_received || 0);
+      const waqasRec = Number(item.waqas_received || 0);
+      const waqasPay = Number(item.pay_to_waqas || 0);
       const fuel = Number(item.fuel || 0);
       const parking = Number(item.parking || 0);
       const wash = Number(item.wash || 0);
       const oil = Number(item.oil_change || 0);
       const maint = Number(item.car_maintenance || 0);
       const mic = Number(item.mic || 0);
-      const expenses = fuel + parking + wash + oil + maint + waqas + mic;
+      const expenses = fuel + parking + wash + oil + maint + waqasPay + mic;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         item.driver?.name || `Driver ID #${item.driver_id}`,
@@ -373,12 +379,13 @@ export default function AdminDriverEntriesPage() {
         item.rate || 0,
         item.voucher || 0,
         cash,
+        waqasRec,
         fuel,
         parking,
         wash,
         oil,
         maint,
-        waqas,
+        waqasPay,
         mic,
         expenses,
         item.total || 0,
@@ -460,11 +467,11 @@ export default function AdminDriverEntriesPage() {
   };
 
   // Stats summaries
-  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0), 0);
+  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0) + Number(item.waqas_received || 0), 0);
   const totalExpenses = entries.reduce((sum, item) => 
     sum + Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
           Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + 
-          Number(item.waqas_received || 0) + Number(item.mic || 0)
+          Number(item.pay_to_waqas || 0) + Number(item.mic || 0)
   , 0);
   const totalNetBalance = entries.reduce((sum, item) => sum + Number(item.total || 0), 0);
 
@@ -1245,7 +1252,7 @@ export default function AdminDriverEntriesPage() {
                         {item.vehicle ? (
                           <div className="log-vehicle-stack">
                             <span className="log-vehicle-model">{item.vehicle.model}</span>
-                            <span className="log-vehicle-type">{item.vehicle.type}</span>
+                            {item.vehicle.type && <span className="log-vehicle-type">{item.vehicle.type}</span>}
                           </div>
                         ) : item.manual_vehicle ? (
                           <div className="log-vehicle-stack">
@@ -1488,6 +1495,59 @@ export default function AdminDriverEntriesPage() {
                   </div>
                 </div>
 
+                {/* Earnings */}
+                <div className="form-section-title">Earnings & Collection (SAR)</div>
+                <div className="form-row-3">
+                  <div className="form-group">
+                    <label>Rate</label>
+                    <input
+                      type="number"
+                      name="rate"
+                      min="0"
+                      value={formData.rate || ""}
+                      onChange={handleInputChange}
+                      className="input-control"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Voucher Amount</label>
+                    <input
+                      type="number"
+                      name="voucher"
+                      min="0"
+                      value={formData.voucher || ""}
+                      onChange={handleInputChange}
+                      className="input-control"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Cash Collected</label>
+                    <input
+                      type="number"
+                      name="cash"
+                      min="0"
+                      value={formData.cash || ""}
+                      onChange={handleInputChange}
+                      className="input-control"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-3" style={{ marginTop: "12px" }}>
+                  <div className="form-group">
+                    <label style={{ color: "#10b981", fontWeight: "700" }}>Received From Waqas</label>
+                    <input
+                      type="number"
+                      name="waqas_received"
+                      min="0"
+                      value={formData.waqas_received || ""}
+                      onChange={handleInputChange}
+                      placeholder="0"
+                      className="input-control"
+                    />
+                  </div>
+                </div>
+
                 {/* Expenses */}
                 <div className="form-section-title">Petrol & Route Expenses (SAR)</div>
                 <div className="form-row-3">
@@ -1550,12 +1610,12 @@ export default function AdminDriverEntriesPage() {
                     />
                   </div>
                   <div className="form-group">
-                    <label style={{ color: "#d97706", fontWeight: "700" }}>Pay to Waqas</label>
+                    <label style={{ color: "#ef4444", fontWeight: "700" }}>Pay to Waqas</label>
                     <input
                       type="number"
-                      name="waqas_received"
+                      name="pay_to_waqas"
                       min="0"
-                      value={formData.waqas_received || ""}
+                      value={formData.pay_to_waqas || ""}
                       onChange={handleInputChange}
                       placeholder="0"
                       className="input-control"

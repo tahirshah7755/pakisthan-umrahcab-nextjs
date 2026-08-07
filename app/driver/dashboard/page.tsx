@@ -54,6 +54,7 @@ export default function DriverDashboardPage() {
     oil_change: 0,
     car_maintenance: 0,
     waqas_received: 0,
+    pay_to_waqas: 0,
     mic: 0,
     vehicle_id: "",
     manual_vehicle: "",
@@ -121,12 +122,12 @@ export default function DriverDashboardPage() {
   };
 
   // Formula: (Cash + Waqas Received) - (Fuel + Parking + Wash + Oil + Maint + Mic)
-  // Formula: Cash Collected - (Fuel + Parking + Wash + Oil + Maint + Waqas + Mic)
+  // Formula: (Cash + Received from Waqas) - (Fuel + Parking + Wash + Oil + Maint + Pay to Waqas + Mic)
   const calculateTotal = (data: typeof formData) => {
-    const earnings = Number(data.cash || 0);
+    const earnings = Number(data.cash || 0) + Number(data.waqas_received || 0);
     const expenses = Number(data.fuel || 0) + Number(data.parking || 0) + Number(data.wash || 0) + 
                      Number(data.oil_change || 0) + Number(data.car_maintenance || 0) + 
-                     Number(data.waqas_received || 0) + Number(data.mic || 0);
+                     Number(data.pay_to_waqas || 0) + Number(data.mic || 0);
     return earnings - expenses;
   };
 
@@ -254,6 +255,7 @@ export default function DriverDashboardPage() {
           oil_change: 0,
           car_maintenance: 0,
           waqas_received: 0,
+          pay_to_waqas: 0,
           mic: 0,
           vehicle_id: driverUser?.vehicle_id ? String(driverUser.vehicle_id) : "",
           manual_vehicle: "",
@@ -305,6 +307,7 @@ export default function DriverDashboardPage() {
       oil_change: entry.oil_change || 0,
       car_maintenance: entry.car_maintenance || 0,
       waqas_received: entry.waqas_received || 0,
+      pay_to_waqas: entry.pay_to_waqas || 0,
       mic: entry.mic || 0,
       vehicle_id: entry.vehicle_id ? String(entry.vehicle_id) : "",
       manual_vehicle: entry.manual_vehicle || "",
@@ -367,21 +370,22 @@ export default function DriverDashboardPage() {
     }
     const headers = [
       "Date", "Vehicle Assignment", "Trip Description", "Hotel Drop Off", "Agent / Company", 
-      "Rate", "Voucher", "Cash Collected", 
+      "Rate", "Voucher", "Cash Collected", "Received From Waqas",
       "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Pay to Waqas", "Miscellaneous",
       "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
-      const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+      const vehicleName = item.vehicle ? `${item.vehicle.model}${item.vehicle.type ? ` (${item.vehicle.type})` : ''}` : (item.manual_vehicle || "—");
       const cash = Number(item.cash || 0);
-      const waqas = Number(item.waqas_received || 0);
+      const waqasRec = Number(item.waqas_received || 0);
+      const waqasPay = Number(item.pay_to_waqas || 0);
       const fuel = Number(item.fuel || 0);
       const parking = Number(item.parking || 0);
       const wash = Number(item.wash || 0);
       const oil = Number(item.oil_change || 0);
       const maint = Number(item.car_maintenance || 0);
       const mic = Number(item.mic || 0);
-      const expenses = fuel + parking + wash + oil + maint + waqas + mic;
+      const expenses = fuel + parking + wash + oil + maint + waqasPay + mic;
       const isLocked = item.is_locked && !driverUser?.edit_rights;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -392,12 +396,13 @@ export default function DriverDashboardPage() {
         item.rate || 0,
         item.voucher || 0,
         cash,
+        waqasRec,
         fuel,
         parking,
         wash,
         oil,
         maint,
-        waqas,
+        waqasPay,
         mic,
         expenses,
         item.total || 0,
@@ -413,21 +418,22 @@ export default function DriverDashboardPage() {
   const buildDriverExportData = () => {
     const headers = [
       "Date", "Vehicle Assignment", "Trip Description", "Hotel Drop Off", "Agent / Company", 
-      "Rate", "Voucher", "Cash Collected", 
+      "Rate", "Voucher", "Cash Collected", "Received From Waqas",
       "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Pay to Waqas", "Miscellaneous",
       "Total Expenses", "Net Total", "Status"
     ];
     const rows = entries.map((item: any) => {
-      const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+      const vehicleName = item.vehicle ? `${item.vehicle.model}${item.vehicle.type ? ` (${item.vehicle.type})` : ''}` : (item.manual_vehicle || "—");
       const cash = Number(item.cash || 0);
-      const waqas = Number(item.waqas_received || 0);
+      const waqasRec = Number(item.waqas_received || 0);
+      const waqasPay = Number(item.pay_to_waqas || 0);
       const fuel = Number(item.fuel || 0);
       const parking = Number(item.parking || 0);
       const wash = Number(item.wash || 0);
       const oil = Number(item.oil_change || 0);
       const maint = Number(item.car_maintenance || 0);
       const mic = Number(item.mic || 0);
-      const expenses = fuel + parking + wash + oil + maint + waqas + mic;
+      const expenses = fuel + parking + wash + oil + maint + waqasPay + mic;
       const isLocked = item.is_locked && !driverUser?.edit_rights;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -438,12 +444,13 @@ export default function DriverDashboardPage() {
         item.rate || 0,
         item.voucher || 0,
         cash,
+        waqasRec,
         fuel,
         parking,
         wash,
         oil,
         maint,
-        waqas,
+        waqasPay,
         mic,
         expenses,
         item.total || 0,
@@ -528,7 +535,7 @@ export default function DriverDashboardPage() {
 
   // Stats
   const totalSubmissions = entries.length;
-  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0), 0);
+  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0) + Number(item.waqas_received || 0), 0);
 
   return (
     <div className="driver-dashboard-page">
@@ -1391,7 +1398,7 @@ export default function DriverDashboardPage() {
             {/* Row 2: Earnings (SAR) */}
             <div className="section-divider">
               <h3 className="section-title">Earnings (SAR)</h3>
-              <div className="inputs-row-3">
+              <div className="inputs-row-4">
                 <div className="form-group">
                   <label className="sub-input-label">Rate</label>
                   <input
@@ -1423,6 +1430,18 @@ export default function DriverDashboardPage() {
                     name="cash"
                     min="0"
                     value={formData.cash || ""}
+                    onChange={handleInputChange}
+                    placeholder="0"
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="sub-input-label" style={{ color: "#10b981", fontWeight: "700" }}>Received From Waqas</label>
+                  <input
+                    type="number"
+                    name="waqas_received"
+                    min="0"
+                    value={formData.waqas_received || ""}
                     onChange={handleInputChange}
                     placeholder="0"
                     className="form-input"
@@ -1500,12 +1519,12 @@ export default function DriverDashboardPage() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="sub-input-label" style={{ color: "#d97706", fontWeight: "700" }}>Pay to Waqas</label>
+                  <label className="sub-input-label" style={{ color: "#ef4444", fontWeight: "700" }}>Pay to Waqas</label>
                   <input
                     type="number"
-                    name="waqas_received"
+                    name="pay_to_waqas"
                     min="0"
-                    value={formData.waqas_received || ""}
+                    value={formData.pay_to_waqas || ""}
                     onChange={handleInputChange}
                     placeholder="0"
                     className="form-input"
@@ -1610,6 +1629,7 @@ export default function DriverDashboardPage() {
                     <th style={{ textAlign: "right" }}>Rate</th>
                     <th style={{ textAlign: "right" }}>Voucher</th>
                     <th style={{ textAlign: "right" }}>Cash Collected</th>
+                    <th style={{ textAlign: "right" }}>Received From Waqas</th>
                     <th style={{ textAlign: "right" }}>Fuel / Petrol</th>
                     <th style={{ textAlign: "right" }}>Pay to Waqas</th>
                     <th style={{ textAlign: "right" }}>Total Expenses</th>
@@ -1623,8 +1643,8 @@ export default function DriverDashboardPage() {
                     const isLocked = item.is_locked && !driverUser?.edit_rights;
                     const totalExpenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
                                           Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + 
-                                          Number(item.waqas_received || 0) + Number(item.mic || 0);
-                    const vehicleName = item.vehicle ? `${item.vehicle.model} (${item.vehicle.type})` : (item.manual_vehicle || "—");
+                                          Number(item.pay_to_waqas || 0) + Number(item.mic || 0);
+                    const vehicleName = item.vehicle ? `${item.vehicle.model}${item.vehicle.type ? ` (${item.vehicle.type})` : ''}` : (item.manual_vehicle || "—");
                     return (
                       <tr key={item.id}>
                         <td style={{ fontWeight: 600, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
@@ -1655,11 +1675,14 @@ export default function DriverDashboardPage() {
                         <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
                           {Number(item.cash || 0).toFixed(0)} SAR
                         </td>
+                        <td style={{ textAlign: "right", fontWeight: 600, color: "#10b981", whiteSpace: "nowrap" }}>
+                          {Number(item.waqas_received || 0).toFixed(0)} SAR
+                        </td>
                         <td style={{ textAlign: "right", color: "var(--danger-color)", whiteSpace: "nowrap" }}>
                           {Number(item.fuel || 0).toFixed(0)} SAR
                         </td>
                         <td style={{ textAlign: "right", color: "var(--danger-color)", fontWeight: 600, whiteSpace: "nowrap" }}>
-                          {Number(item.waqas_received || 0).toFixed(0)} SAR
+                          {Number(item.pay_to_waqas || 0).toFixed(0)} SAR
                         </td>
                         <td style={{ textAlign: "right", color: "var(--danger-color)", whiteSpace: "nowrap" }}>
                           {totalExpenses.toFixed(0)} SAR

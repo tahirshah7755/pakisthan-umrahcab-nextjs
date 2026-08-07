@@ -54,6 +54,9 @@ export const WebsiteSettingsProvider: React.FC<{ children: React.ReactNode }> = 
       const data = await api.getWebsiteSettings();
       if (data) {
         setSettings(data);
+        if (typeof window !== "undefined") {
+          (window as any).__WEBSITE_SETTINGS__ = data;
+        }
       }
     } catch (err) {
       console.warn("Could not fetch website settings:", err);

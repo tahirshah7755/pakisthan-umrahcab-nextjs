@@ -1,7 +1,4 @@
-/**
- * Centralized Formatted Export Utility (Excel, CSV, PDF / Print)
- * Generates styled Excel spreadsheets, CSVs, and PDF print documents for Heba Cab.
- */
+import { api } from "@/utils/api";
 
 interface ExportOptions {
   title: string;
@@ -143,19 +140,46 @@ export function exportToCSV(options: ExportOptions) {
   document.body.removeChild(link);
 }
 
-/**
- * Generates a beautifully formatted PDF print document window.
- */
-export function exportToPDF(options: ExportOptions) {
-  const {
+export async function exportToPDF(options: ExportOptions) {
+  let {
     title,
     headers,
     rows,
     summary = [],
     companyName = "HEBA CAB",
-    logoUrl = "/logo2.png",
+    logoUrl,
     orientation = "landscape",
   } = options;
+
+  // Resolve dynamic website settings logo and title
+  if (typeof window !== "undefined") {
+    const cachedSettings = (window as any).__WEBSITE_SETTINGS__;
+    if (cachedSettings?.website_logo) {
+      logoUrl = cachedSettings.website_logo;
+    }
+    if (cachedSettings?.site_title) {
+      companyName = cachedSettings.site_title;
+    }
+  }
+
+  if (!logoUrl && typeof window !== "undefined") {
+    try {
+      const dynamicSettings = await api.getWebsiteSettings();
+      if (dynamicSettings?.website_logo) {
+        logoUrl = dynamicSettings.website_logo;
+        (window as any).__WEBSITE_SETTINGS__ = dynamicSettings;
+      }
+      if (dynamicSettings?.site_title) {
+        companyName = dynamicSettings.site_title;
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  if (!logoUrl) {
+    logoUrl = "/logo2.png";
+  }
 
   const printWindow = window.open("", "_blank");
   if (!printWindow) {

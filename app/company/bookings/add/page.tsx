@@ -427,6 +427,10 @@ function AddNewBookingContent() {
       showToast("Please enter pickup date and time.", "error");
       return;
     }
+    if (pickupDate < new Date().toISOString().split("T")[0]) {
+      showToast("Pickup Date cannot be in the past.", "error");
+      return;
+    }
     if (!pickupLocation || !dropoffLocation) {
       showToast("Please enter pickup and drop off locations.", "error");
       return;
@@ -686,9 +690,17 @@ function AddNewBookingContent() {
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
+                style={{
+                  borderColor: pickupDate && pickupDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                }}
                 required
               />
             </div>
+            {pickupDate && pickupDate < new Date().toISOString().split("T")[0] && (
+              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                ⚠️ Past dates are not allowed. Please select a current or future date.
+              </span>
+            )}
           </div>
 
           <div>

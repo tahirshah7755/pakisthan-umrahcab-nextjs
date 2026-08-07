@@ -143,6 +143,23 @@ function EditTrainContent() {
       return;
     }
 
+    const todayStr = new Date().toISOString().split("T")[0];
+    const originalDate = trnSelected?.date || "";
+    const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
+
+    if (trnLeg === "Arrival" || trnLeg === "Both Legs") {
+      if (trnArrDate && trnArrDate < minEditDate) {
+        showToast("Arrival date cannot be in the past.", "error");
+        return;
+      }
+    }
+    if (trnLeg === "Departure" || trnLeg === "Both Legs") {
+      if (trnDepDate && trnDepDate < minEditDate) {
+        showToast("Departure date cannot be in the past.", "error");
+        return;
+      }
+    }
+
     try {
       if (trnLeg === "Arrival") {
         if (!trnArrTrainNo || !trnArrDate || !trnArrTime || !trnArrStation) {
@@ -409,8 +426,23 @@ function EditTrainContent() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} min={trnArrDate && trnArrDate < new Date().toISOString().split("T")[0] ? trnArrDate : new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px" }} />
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={trnArrDate}
+                        onChange={(e) => setTrnArrDate(e.target.value)}
+                        min={trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]}
+                        style={{
+                          paddingLeft: "15px",
+                          borderColor: trnArrDate && trnArrDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                        }}
+                      />
                     </div>
+                    {trnArrDate && trnArrDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                        ⚠️ Past dates are not allowed. Please select a current or future date.
+                      </span>
+                    )}
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Time <span style={{ color: "#ef4444" }}>*</span></label>
@@ -465,8 +497,23 @@ function EditTrainContent() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} min={trnDepDate && trnDepDate < new Date().toISOString().split("T")[0] ? trnDepDate : new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px" }} />
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={trnDepDate}
+                        onChange={(e) => setTrnDepDate(e.target.value)}
+                        min={trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]}
+                        style={{
+                          paddingLeft: "15px",
+                          borderColor: trnDepDate && trnDepDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                        }}
+                      />
                     </div>
+                    {trnDepDate && trnDepDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                        ⚠️ Past dates are not allowed. Please select a current or future date.
+                      </span>
+                    )}
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Time <span style={{ color: "#ef4444" }}>*</span></label>

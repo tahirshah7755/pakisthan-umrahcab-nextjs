@@ -127,6 +127,16 @@ function AddHotelAssignmentContent() {
       return;
     }
 
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (checkIn && checkIn < todayStr) {
+      showToast("Check-in date cannot be in the past.", "error");
+      return;
+    }
+    if (checkOut && checkOut < todayStr) {
+      showToast("Check-out date cannot be in the past.", "error");
+      return;
+    }
+
     const finalHotelName = isCustomHotel ? customHotelName : hotelName;
     if (!finalHotelName.trim()) {
       showToast("Hotel property selection or name is required.", "error");
@@ -298,8 +308,17 @@ function AddHotelAssignmentContent() {
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
-                  style={{ width: "100%", paddingLeft: "12px" }}
+                  style={{
+                    width: "100%",
+                    paddingLeft: "12px",
+                    borderColor: checkIn && checkIn < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                  }}
                 />
+                {checkIn && checkIn < new Date().toISOString().split("T")[0] && (
+                  <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                    ⚠️ Past dates are not allowed.
+                  </span>
+                )}
               </div>
               <div>
                 <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-Out Date</label>
@@ -309,8 +328,17 @@ function AddHotelAssignmentContent() {
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
                   min={checkIn || new Date().toISOString().split("T")[0]}
-                  style={{ width: "100%", paddingLeft: "12px" }}
+                  style={{
+                    width: "100%",
+                    paddingLeft: "12px",
+                    borderColor: checkOut && checkOut < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                  }}
                 />
+                {checkOut && checkOut < new Date().toISOString().split("T")[0] && (
+                  <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                    ⚠️ Past dates are not allowed.
+                  </span>
+                )}
               </div>
             </div>
 

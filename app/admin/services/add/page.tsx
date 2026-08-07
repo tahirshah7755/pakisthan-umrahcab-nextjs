@@ -75,6 +75,10 @@ function AddServicePageContent() {
     if (!selectedCustomer) { showToast("Please select a customer.", "error"); return; }
     if (!srvName) { showToast("Service Description is required.", "error"); return; }
     if (!srvDate) { showToast("Service Date is required.", "error"); return; }
+    if (srvDate < new Date().toISOString().split("T")[0]) {
+      showToast("Service Date cannot be in the past.", "error");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -300,8 +304,23 @@ function AddServicePageContent() {
             <label className="form-label">Service Date *</label>
             <div className="form-input-wrapper">
               <i className="fas fa-calendar-alt form-icon"></i>
-              <input type="date" className="form-input" value={srvDate} onChange={(e) => setSrvDate(e.target.value)} min={new Date().toISOString().split("T")[0]} required />
+              <input
+                type="date"
+                className="form-input"
+                value={srvDate}
+                onChange={(e) => setSrvDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                style={{
+                  borderColor: srvDate && srvDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                }}
+                required
+              />
             </div>
+            {srvDate && srvDate < new Date().toISOString().split("T")[0] && (
+              <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                ⚠️ Past dates are not allowed. Please select a current or future date.
+              </span>
+            )}
           </div>
 
           <div>

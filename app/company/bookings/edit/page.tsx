@@ -120,6 +120,7 @@ function BookingEditContent() {
   // Form State
   const [customer, setCustomer] = useState("");
   const [pickupDate, setPickupDate] = useState("");
+  const [originalDate, setOriginalDate] = useState("");
   const [pickupTime, setPickupTime] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
@@ -386,6 +387,7 @@ function BookingEditContent() {
         const b = await api.getBooking(targetId);
         if (b) {
           setPickupDate(b.date || "");
+          setOriginalDate(b.date || "");
           setPickupTime(b.time ? b.time.substring(0, 5) : "");
           setPickupLocation(b.pickup || "");
           setDropoffLocation(b.destination || "");
@@ -527,6 +529,12 @@ function BookingEditContent() {
     }
     if (!pickupDate || !pickupTime) {
       showToast("Please enter pickup date and time.", "error");
+      return;
+    }
+    const todayStr = new Date().toISOString().split("T")[0];
+    const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
+    if (pickupDate < minEditDate) {
+      showToast("Pickup date cannot be in the past.", "error");
       return;
     }
     if (!pickupLocation || !dropoffLocation) {
@@ -790,12 +798,25 @@ function BookingEditContent() {
               <input
                 type="date"
                 className="form-input"
-                style={{ width: "100%", padding: "10px 12px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none" }}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px 10px 45px",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  outline: "none",
+                  borderColor: pickupDate && pickupDate < (originalDate && originalDate < new Date().toISOString().split("T")[0] ? originalDate : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                }}
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
-                min={pickupDate && pickupDate < new Date().toISOString().split("T")[0] ? pickupDate : new Date().toISOString().split("T")[0]}
+                min={originalDate && originalDate < new Date().toISOString().split("T")[0] ? originalDate : new Date().toISOString().split("T")[0]}
                 required
               />
+              {pickupDate && pickupDate < (originalDate && originalDate < new Date().toISOString().split("T")[0] ? originalDate : new Date().toISOString().split("T")[0]) && (
+                <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                  ⚠️ Past dates are not allowed. Please select a current or future date.
+                </span>
+              )}
             </div>
           </div>
 

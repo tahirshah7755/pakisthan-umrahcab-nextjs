@@ -144,6 +144,23 @@ function EditFlightContent() {
       return;
     }
 
+    const todayStr = new Date().toISOString().split("T")[0];
+    const originalDate = fltSelected?.date || "";
+    const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
+
+    if (editFltLeg === "Arrival" || editFltLeg === "Both Legs") {
+      if (fltArrDate && fltArrDate < minEditDate) {
+        showToast("Arrival date cannot be in the past.", "error");
+        return;
+      }
+    }
+    if (editFltLeg === "Departure" || editFltLeg === "Both Legs") {
+      if (fltDepDate && fltDepDate < minEditDate) {
+        showToast("Departure date cannot be in the past.", "error");
+        return;
+      }
+    }
+
     try {
       if (editFltLeg === "Arrival") {
         if (!fltArrFlightNo || !fltArrDate || !fltArrTime || !fltArrPlace) {
@@ -412,8 +429,23 @@ function EditFlightContent() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={fltArrDate} onChange={(e) => setFltArrDate(e.target.value)} min={fltArrDate && fltArrDate < new Date().toISOString().split("T")[0] ? fltArrDate : new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px" }} />
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={fltArrDate}
+                        onChange={(e) => setFltArrDate(e.target.value)}
+                        min={fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]}
+                        style={{
+                          paddingLeft: "15px",
+                          borderColor: fltArrDate && fltArrDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                        }}
+                      />
                     </div>
+                    {fltArrDate && fltArrDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                        ⚠️ Past dates are not allowed. Please select a current or future date.
+                      </span>
+                    )}
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Time <span style={{ color: "#ef4444" }}>*</span></label>
@@ -470,8 +502,23 @@ function EditFlightContent() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={fltDepDate} onChange={(e) => setFltDepDate(e.target.value)} min={fltDepDate && fltDepDate < new Date().toISOString().split("T")[0] ? fltDepDate : new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px" }} />
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={fltDepDate}
+                        onChange={(e) => setFltDepDate(e.target.value)}
+                        min={fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]}
+                        style={{
+                          paddingLeft: "15px",
+                          borderColor: fltDepDate && fltDepDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                        }}
+                      />
                     </div>
+                    {fltDepDate && fltDepDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                        ⚠️ Past dates are not allowed. Please select a current or future date.
+                      </span>
+                    )}
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Time <span style={{ color: "#ef4444" }}>*</span></label>

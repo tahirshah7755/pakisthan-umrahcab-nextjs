@@ -41,6 +41,8 @@ function EditHotelAssignmentContent() {
   const [customHotelName, setCustomHotelName] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [originalCheckIn, setOriginalCheckIn] = useState("");
+  const [originalCheckOut, setOriginalCheckOut] = useState("");
   const [customId, setCustomId] = useState("");
 
   const dynamicCities = useMemo(() => {
@@ -128,6 +130,8 @@ function EditHotelAssignmentContent() {
           setHotelActive(h.active);
           setCheckIn(h.check_in || "");
           setCheckOut(h.check_out || "");
+          setOriginalCheckIn(h.check_in || "");
+          setOriginalCheckOut(h.check_out || "");
           setCustomId(h.custom_id || "");
 
           // Load customer details
@@ -184,6 +188,19 @@ function EditHotelAssignmentContent() {
       return;
     }
     if (!queryId) return;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const minCheckIn = originalCheckIn && originalCheckIn < todayStr ? originalCheckIn : todayStr;
+    const minCheckOut = originalCheckOut && originalCheckOut < todayStr ? originalCheckOut : todayStr;
+
+    if (checkIn && checkIn < minCheckIn) {
+      showToast("Check-in date cannot be in the past.", "error");
+      return;
+    }
+    if (checkOut && checkOut < minCheckOut) {
+      showToast("Check-out date cannot be in the past.", "error");
+      return;
+    }
 
     const finalHotelName = isCustomHotel ? customHotelName : hotelName;
     if (!finalHotelName.trim()) {
@@ -401,9 +418,18 @@ function EditHotelAssignmentContent() {
                   className="form-input"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
-                  min={checkIn && checkIn < new Date().toISOString().split("T")[0] ? checkIn : new Date().toISOString().split("T")[0]}
-                  style={{ width: "100%", paddingLeft: "12px" }}
+                  min={originalCheckIn && originalCheckIn < new Date().toISOString().split("T")[0] ? originalCheckIn : new Date().toISOString().split("T")[0]}
+                  style={{
+                    width: "100%",
+                    paddingLeft: "12px",
+                    borderColor: checkIn && checkIn < (originalCheckIn && originalCheckIn < new Date().toISOString().split("T")[0] ? originalCheckIn : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                  }}
                 />
+                {checkIn && checkIn < (originalCheckIn && originalCheckIn < new Date().toISOString().split("T")[0] ? originalCheckIn : new Date().toISOString().split("T")[0]) && (
+                  <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                    ⚠️ Past dates are not allowed.
+                  </span>
+                )}
               </div>
               <div>
                 <label className="form-label" style={{ color: "#475569", fontWeight: "600", fontSize: "13px" }}>Check-Out Date</label>
@@ -412,9 +438,18 @@ function EditHotelAssignmentContent() {
                   className="form-input"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  min={checkOut && checkOut < new Date().toISOString().split("T")[0] ? checkOut : (checkIn || new Date().toISOString().split("T")[0])}
-                  style={{ width: "100%", paddingLeft: "12px" }}
+                  min={checkIn || (originalCheckOut && originalCheckOut < new Date().toISOString().split("T")[0] ? originalCheckOut : new Date().toISOString().split("T")[0])}
+                  style={{
+                    width: "100%",
+                    paddingLeft: "12px",
+                    borderColor: checkOut && checkOut < (checkIn || (originalCheckOut && originalCheckOut < new Date().toISOString().split("T")[0] ? originalCheckOut : new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                  }}
                 />
+                {checkOut && checkOut < (checkIn || (originalCheckOut && originalCheckOut < new Date().toISOString().split("T")[0] ? originalCheckOut : new Date().toISOString().split("T")[0])) && (
+                  <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                    ⚠️ Past dates are not allowed.
+                  </span>
+                )}
               </div>
             </div>
 

@@ -229,6 +229,13 @@ export default function DriverDashboardPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (formData.date < todayStr) {
+      setErrorMessage("Date cannot be in the past.");
+      setSubmitLoading(false);
+      return;
+    }
+
     const total = calculateTotal(formData);
     const payload = {
       ...formData,
@@ -327,6 +334,15 @@ export default function DriverDashboardPage() {
     setEditLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const originalDate = editingEntry.date;
+    const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
+    if (editFormData.date < minEditDate) {
+      setErrorMessage("Date cannot be in the past.");
+      setEditLoading(false);
+      return;
+    }
 
     const total = calculateTotal(editFormData);
     const payload = {
@@ -1310,7 +1326,15 @@ export default function DriverDashboardPage() {
                   onChange={handleInputChange}
                   min={new Date().toISOString().split("T")[0]}
                   className="form-input"
+                  style={{
+                    borderColor: formData.date && formData.date < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                  }}
                 />
+                {formData.date && formData.date < new Date().toISOString().split("T")[0] && (
+                  <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                    ⚠️ Past dates are not allowed. Please select a current or future date.
+                  </span>
+                )}
               </div>
 
               {/* Vehicle Select Dropdown */}
@@ -1814,7 +1838,15 @@ export default function DriverDashboardPage() {
                       onChange={handleEditInputChange}
                       min={editFormData.date && editFormData.date < new Date().toISOString().split("T")[0] ? editFormData.date : new Date().toISOString().split("T")[0]}
                       className="form-input"
+                      style={{
+                        borderColor: (editFormData.date && editFormData.date < (editingEntry?.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                      }}
                     />
+                    {editFormData.date && editFormData.date < (editingEntry?.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0]) && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                        ⚠️ Past dates are not allowed. Please select a current or future date.
+                      </span>
+                    )}
                   </div>
 
                    {/* Vehicle Select Dropdown */}

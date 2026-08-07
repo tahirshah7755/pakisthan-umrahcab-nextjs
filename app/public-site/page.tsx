@@ -388,6 +388,10 @@ export default function PublicHomePage() {
         alert("Please fill in all location and timing details.");
         return;
       }
+      if (bookingData.date < new Date().toISOString().split("T")[0]) {
+        alert("Pickup Date cannot be in the past.");
+        return;
+      }
       if (bookingData.pickup === bookingData.destination) {
         alert("Pickup and Drop-off locations cannot be the same.");
         return;
@@ -694,7 +698,15 @@ export default function PublicHomePage() {
                       value={bookingData.date}
                       onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
                       min={new Date().toISOString().split("T")[0]}
+                      style={{
+                        borderColor: bookingData.date && bookingData.date < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                      }}
                     />
+                    {bookingData.date && bookingData.date < new Date().toISOString().split("T")[0] && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                        ⚠️ Past dates are not allowed. Please select a current or future date.
+                      </span>
+                    )}
                   </div>
                   <div className="uc-form-group">
                     <label className="uc-form-label">Pickup Time *</label>

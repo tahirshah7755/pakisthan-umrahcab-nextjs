@@ -205,6 +205,11 @@ export default function AdminDriverEntriesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (formData.date < todayStr) {
+      showToast("Date cannot be in the past.", "error");
+      return;
+    }
     setActionLoading(true);
     try {
       const total = calculateTotal(formData);
@@ -233,6 +238,13 @@ export default function AdminDriverEntriesPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEntry) return;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const originalDate = editingEntry.date;
+    const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
+    if (formData.date < minEditDate) {
+      showToast("Date cannot be in the past.", "error");
+      return;
+    }
     setActionLoading(true);
     try {
       const total = calculateTotal(formData);
@@ -1459,8 +1471,17 @@ export default function AdminDriverEntriesPage() {
                       name="date"
                       value={formData.date}
                       onChange={handleInputChange}
+                      min={editingEntry && editingEntry.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0]}
                       className="input-control"
+                      style={{
+                        borderColor: (formData.date && formData.date < (editingEntry && editingEntry.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                      }}
                     />
+                    {formData.date && formData.date < (editingEntry && editingEntry.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0]) && (
+                      <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
+                        ⚠️ Past dates are not allowed. Please select a current or future date.
+                      </span>
+                    )}
                   </div>
                 </div>
 

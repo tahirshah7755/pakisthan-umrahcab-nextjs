@@ -70,6 +70,7 @@ function CompanyBookingsContent() {
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
   const [exportingFmt, setExportingFmt] = useState<string | null>(null);
 
   const fetchAllMatchingCompanyBookings = async () => {
@@ -779,7 +780,6 @@ function CompanyBookingsContent() {
           }
         }
       `}</style>
-      <ShareTemplateModal booking={selectedShareBooking} isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
     </div>
   );
 }

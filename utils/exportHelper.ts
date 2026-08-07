@@ -143,12 +143,21 @@ export function exportToCSV(options: ExportOptions) {
   document.body.removeChild(link);
 }
 
-async function loadLogoBase64(url: string): Promise<string | null> {
+async function loadLogoBase64(url?: string): Promise<string | null> {
   if (!url) return null;
   try {
-    const fullUrl = typeof window !== "undefined" && url.startsWith("/")
-      ? window.location.origin + url
-      : url;
+    let fullUrl = url;
+    if (typeof window !== "undefined") {
+      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+        fullUrl = url;
+      } else if (url.startsWith("/")) {
+        fullUrl = window.location.origin + url;
+      } else {
+        const apiEnv = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+        const backendOrigin = apiEnv.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
+        fullUrl = `${backendOrigin}/${url}`;
+      }
+    }
     const res = await fetch(fullUrl);
     if (!res.ok) return null;
     const blob = await res.blob();
@@ -368,19 +377,8 @@ export async function exportToPDF(options: ExportOptions) {
   doc.setFillColor(212, 175, 55); // #d4af37
   doc.rect(14, 21, pageWidth - 28, 1.2, "F");
 
-  // Summary box if present
-  let startY = 27;
-  if (summary && summary.length > 0) {
-    doc.setFillColor(241, 245, 249);
-    doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(14, 25, pageWidth - 28, 8, 1, 1, "FD");
-    doc.setTextColor(15, 23, 42);
-    doc.setFontSize(8.5);
-    doc.setFont("helvetica", "bold");
-    const summaryText = summary.map((s) => `${s.label}: ${s.value}`).join("   |   ");
-    doc.text(summaryText, 18, 30.5);
-    startY = 37;
-  }
+  // Table starts directly below Gold Line
+  const startY = 25;
 
   // AutoTable render
   autoTable(doc, {

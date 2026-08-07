@@ -128,11 +128,12 @@ export default function AdminDriverEntriesPage() {
     }
   };
 
-  // Formula: (Cash + Waqas Received) - (Fuel + Parking + Wash + Oil + Maint + Mic)
+  // Formula: Cash Collected - (Fuel + Parking + Wash + Oil + Maint + Waqas + Mic)
   const calculateTotal = (data: typeof formData) => {
-    const earnings = Number(data.cash || 0) + Number(data.waqas_received || 0);
+    const earnings = Number(data.cash || 0);
     const expenses = Number(data.fuel || 0) + Number(data.parking || 0) + Number(data.wash || 0) + 
-                     Number(data.oil_change || 0) + Number(data.car_maintenance || 0) + Number(data.mic || 0);
+                     Number(data.oil_change || 0) + Number(data.car_maintenance || 0) + 
+                     Number(data.waqas_received || 0) + Number(data.mic || 0);
     return earnings - expenses;
   };
 
@@ -299,8 +300,8 @@ export default function AdminDriverEntriesPage() {
     }
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash", 
-      "Waqas Received", "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Misc", "Total Expenses", "Net Total", "Status"
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
+      "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Pay to Waqas", "Miscellaneous", "Total Expenses", "Net Total", "Status"
     ];
     const textRows = entries.map((item: any) => {
       const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
@@ -313,7 +314,7 @@ export default function AdminDriverEntriesPage() {
       const oil = Number(item.oil_change || 0);
       const maint = Number(item.car_maintenance || 0);
       const mic = Number(item.mic || 0);
-      const expenses = fuel + parking + wash + oil + maint + mic;
+      const expenses = fuel + parking + wash + oil + maint + waqas + mic;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         item.driver?.name || `Driver ID #${item.driver_id}`,
@@ -325,12 +326,12 @@ export default function AdminDriverEntriesPage() {
         item.rate || 0,
         item.voucher || 0,
         cash,
-        waqas,
         fuel,
         parking,
         wash,
         oil,
         maint,
+        waqas,
         mic,
         expenses,
         item.total || 0,
@@ -346,8 +347,8 @@ export default function AdminDriverEntriesPage() {
   const buildAdminDriverEntriesExportData = () => {
     const headers = [
       "Date", "Driver", "Vehicle Model", "Vehicle Type", "Trip Description", 
-      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash", 
-      "Waqas Received", "Fuel", "Parking", "Wash", "Oil Change", "Maintenance", "Misc", "Total Expenses", "Net Total", "Status"
+      "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", 
+      "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Pay to Waqas", "Miscellaneous", "Total Expenses", "Net Total", "Status"
     ];
     const rows = entries.map((item: any) => {
       const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
@@ -360,7 +361,7 @@ export default function AdminDriverEntriesPage() {
       const oil = Number(item.oil_change || 0);
       const maint = Number(item.car_maintenance || 0);
       const mic = Number(item.mic || 0);
-      const expenses = fuel + parking + wash + oil + maint + mic;
+      const expenses = fuel + parking + wash + oil + maint + waqas + mic;
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         item.driver?.name || `Driver ID #${item.driver_id}`,
@@ -372,12 +373,12 @@ export default function AdminDriverEntriesPage() {
         item.rate || 0,
         item.voucher || 0,
         cash,
-        waqas,
         fuel,
         parking,
         wash,
         oil,
         maint,
+        waqas,
         mic,
         expenses,
         item.total || 0,
@@ -459,10 +460,11 @@ export default function AdminDriverEntriesPage() {
   };
 
   // Stats summaries
-  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0) + Number(item.waqas_received || 0), 0);
+  const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0), 0);
   const totalExpenses = entries.reduce((sum, item) => 
     sum + Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
-          Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0)
+          Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + 
+          Number(item.waqas_received || 0) + Number(item.mic || 0)
   , 0);
   const totalNetBalance = entries.reduce((sum, item) => sum + Number(item.total || 0), 0);
 
@@ -1221,7 +1223,8 @@ export default function AdminDriverEntriesPage() {
               <tbody>
                 {entries.map((item) => {
                   const expenses = Number(item.fuel || 0) + Number(item.parking || 0) + Number(item.wash || 0) + 
-                                   Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + Number(item.mic || 0);
+                                   Number(item.oil_change || 0) + Number(item.car_maintenance || 0) + 
+                                   Number(item.waqas_received || 0) + Number(item.mic || 0);
                   return (
                     <tr key={item.id}>
                       <td>
@@ -1262,12 +1265,7 @@ export default function AdminDriverEntriesPage() {
                         </div>
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "700", color: "#0f172a" }}>
-                        <div>{(Number(item.cash || 0) + Number(item.waqas_received || 0)).toLocaleString()} SAR</div>
-                        {Number(item.waqas_received || 0) > 0 && (
-                          <div style={{ fontSize: "10px", color: "#059669", fontWeight: "600" }}>
-                            ({Number(item.cash || 0)} + {Number(item.waqas_received || 0)} Waqas)
-                          </div>
-                        )}
+                        <div>{Number(item.cash || 0).toLocaleString()} SAR</div>
                       </td>
                       <td style={{ textAlign: "right", fontWeight: "500", color: "#64748b" }}>
                         {expenses.toLocaleString()} SAR
@@ -1490,21 +1488,6 @@ export default function AdminDriverEntriesPage() {
                   </div>
                 </div>
 
-                <div className="form-row-3" style={{ marginTop: "12px" }}>
-                  <div className="form-group">
-                    <label>Pay to Waqas / Received From Waqas</label>
-                    <input
-                      type="number"
-                      name="waqas_received"
-                      min="0"
-                      value={formData.waqas_received || ""}
-                      onChange={handleInputChange}
-                      placeholder="0"
-                      className="input-control"
-                    />
-                  </div>
-                </div>
-
                 {/* Expenses */}
                 <div className="form-section-title">Petrol & Route Expenses (SAR)</div>
                 <div className="form-row-3">
@@ -1567,7 +1550,22 @@ export default function AdminDriverEntriesPage() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Pay to Waqas / Miscellaneous</label>
+                    <label style={{ color: "#d97706", fontWeight: "700" }}>Pay to Waqas</label>
+                    <input
+                      type="number"
+                      name="waqas_received"
+                      min="0"
+                      value={formData.waqas_received || ""}
+                      onChange={handleInputChange}
+                      placeholder="0"
+                      className="input-control"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row-3">
+                  <div className="form-group" style={{ gridColumn: "span 3" }}>
+                    <label>Miscellaneous</label>
                     <input
                       type="number"
                       name="mic"

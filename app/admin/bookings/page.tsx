@@ -120,61 +120,143 @@ export default function BookingsList() {
     return { headers, rows };
   };
 
-  const handleExportCSV = () => {
-    if (filteredBookings.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+  const [exportingFmt, setExportingFmt] = useState<string | null>(null);
+
+  const fetchAllMatchingBookings = async () => {
+    try {
+      showToast("Fetching all matching bookings for export...", "success");
+      const res = await api.getBookings(searchTerm, 1, 10000);
+      let rawList: any[] = [];
+      if (res && res.data && Array.isArray(res.data)) {
+        rawList = res.data;
+      } else if (Array.isArray(res)) {
+        rawList = res;
+      } else {
+        rawList = bookings;
+      }
+      return rawList.map((b: any) => ({
+        id: b.custom_id || `UCB-${b.id}`,
+        customerName: b.full_name || b.customer_relation?.name || "Guest",
+        pickupDate: b.date || "",
+        pickupTime: b.time || "",
+        pickupLocation: b.pickup || "",
+        dropoffLocation: b.destination || "",
+        vehicle: b.car_type || "",
+        finalPrice: Number(b.car_price || 0),
+        status: b.status || "Pending"
+      }));
+    } catch (err) {
+      console.error("Error fetching all bookings for export:", err);
+      return filteredBookings;
     }
-    const { headers, rows } = buildAdminBookingsExportData();
-    exportToCSV({
-      title: "Transportation Bookings Registry",
-      filename: "bookings_report",
-      headers,
-      rows
-    });
-    showToast("CSV file downloaded successfully!", "success");
   };
 
-  const handleExportExcel = () => {
-    if (filteredBookings.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+  const handleExportCSV = async () => {
+    setExportingFmt("CSV");
+    try {
+      const exportList = await fetchAllMatchingBookings();
+      if (exportList.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["Booking ID", "Customer Name", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle Type", "Final Price (SAR)", "Status"];
+      const rows = exportList.map((b: any) => [
+        b.id,
+        b.customerName || "Guest",
+        b.pickupDate || "",
+        b.pickupTime || "",
+        b.pickupLocation || "",
+        b.dropoffLocation || "",
+        b.vehicle || "",
+        b.finalPrice || 0,
+        b.status || ""
+      ]);
+      exportToCSV({
+        title: "Transportation Bookings Registry",
+        filename: "bookings_report",
+        headers,
+        rows
+      });
+      showToast(`Exported all ${exportList.length} bookings to CSV!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildAdminBookingsExportData();
-    const totalPrice = filteredBookings.reduce((sum: number, b: any) => sum + Number(b.finalPrice || 0), 0);
-    exportToExcel({
-      title: "Transportation Bookings Registry",
-      filename: "bookings_report",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      summary: [
-        { label: "Total Bookings", value: filteredBookings.length },
-        { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }
-      ]
-    });
-    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
   };
 
-  const handlePrint = (title: string = "Transportation Bookings Registry") => {
-    if (filteredBookings.length === 0) {
-      showToast("No data to print!", "error");
-      return;
+  const handleExportExcel = async () => {
+    setExportingFmt("Excel");
+    try {
+      const exportList = await fetchAllMatchingBookings();
+      if (exportList.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["Booking ID", "Customer Name", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle Type", "Final Price (SAR)", "Status"];
+      const rows = exportList.map((b: any) => [
+        b.id,
+        b.customerName || "Guest",
+        b.pickupDate || "",
+        b.pickupTime || "",
+        b.pickupLocation || "",
+        b.dropoffLocation || "",
+        b.vehicle || "",
+        b.finalPrice || 0,
+        b.status || ""
+      ]);
+      const totalPrice = exportList.reduce((sum: number, b: any) => sum + Number(b.finalPrice || 0), 0);
+      exportToExcel({
+        title: "Transportation Bookings Registry",
+        filename: "bookings_report",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        summary: [
+          { label: "Total Bookings", value: exportList.length },
+          { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }
+        ]
+      });
+      showToast(`Exported all ${exportList.length} bookings to Excel!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildAdminBookingsExportData();
-    const totalPrice = filteredBookings.reduce((sum: number, b: any) => sum + Number(b.finalPrice || 0), 0);
-    exportToPDF({
-      title,
-      filename: "bookings_report",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      orientation: "landscape",
-      summary: [
-        { label: "Total Bookings", value: filteredBookings.length },
-        { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }
-      ]
-    });
+  };
+
+  const handlePrint = async (title: string = "Transportation Bookings Registry", fmtType: string = "Print") => {
+    setExportingFmt(fmtType);
+    try {
+      const exportList = await fetchAllMatchingBookings();
+      if (exportList.length === 0) {
+        showToast("No data to print!", "error");
+        return;
+      }
+      const headers = ["Booking ID", "Customer Name", "Pickup Date", "Pickup Time", "Pickup Location", "Dropoff Location", "Vehicle Type", "Final Price (SAR)", "Status"];
+      const rows = exportList.map((b: any) => [
+        b.id,
+        b.customerName || "Guest",
+        b.pickupDate || "",
+        b.pickupTime || "",
+        b.pickupLocation || "",
+        b.dropoffLocation || "",
+        b.vehicle || "",
+        b.finalPrice || 0,
+        b.status || ""
+      ]);
+      const totalPrice = exportList.reduce((sum: number, b: any) => sum + Number(b.finalPrice || 0), 0);
+      exportToPDF({
+        title,
+        filename: "bookings_report",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        orientation: "landscape",
+        summary: [
+          { label: "Total Bookings", value: exportList.length },
+          { label: "Total Value", value: `SR ${totalPrice.toFixed(2)}` }
+        ]
+      });
+    } finally {
+      setExportingFmt(null);
+    }
   };
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -347,20 +429,24 @@ export default function BookingsList() {
         </div>
 
         <div style={{ display: "flex", gap: "8px" }}>
-          <button onClick={handleCopy} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+          <button disabled={!!exportingFmt} onClick={handleCopy} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
             Copy
           </button>
-          <button onClick={handleExportCSV} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
-            CSV
+          <button disabled={!!exportingFmt} onClick={handleExportCSV} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            {exportingFmt === "CSV" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>CSV</span>
           </button>
-          <button onClick={handleExportExcel} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
-            Excel
+          <button disabled={!!exportingFmt} onClick={handleExportExcel} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            {exportingFmt === "Excel" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>Excel</span>
           </button>
-          <button onClick={() => handlePrint("Transportation Bookings Registry - PDF Report")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
-            PDF
+          <button disabled={!!exportingFmt} onClick={() => handlePrint("Transportation Bookings Registry - PDF Report", "PDF")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            {exportingFmt === "PDF" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>PDF</span>
           </button>
-          <button onClick={() => handlePrint("Transportation Bookings Registry")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
-            Print
+          <button disabled={!!exportingFmt} onClick={() => handlePrint("Transportation Bookings Registry", "Print")} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>
+            {exportingFmt === "Print" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>Print</span>
           </button>
         </div>
       </div>

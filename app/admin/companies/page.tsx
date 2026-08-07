@@ -81,6 +81,8 @@ export default function CompaniesPage() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
+  const [exportingFmt, setExportingFmt] = useState<string | null>(null);
+
   const buildAdminCompaniesExportData = () => {
     const headers = ["ID", "Company Name", "Contact Email", "Phone", "Address"];
     const rows = filteredCompanies.map((c: any) => [
@@ -93,57 +95,72 @@ export default function CompaniesPage() {
     return { headers, rows };
   };
 
-  const handleExportCSV = () => {
-    if (filteredCompanies.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+  const handleExportCSV = async () => {
+    setExportingFmt("CSV");
+    try {
+      if (filteredCompanies.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const { headers, rows } = buildAdminCompaniesExportData();
+      exportToCSV({
+        title: "Corporate Directory Registry",
+        filename: "companies_report",
+        headers,
+        rows
+      });
+      showToast(`Exported all ${filteredCompanies.length} companies to CSV!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildAdminCompaniesExportData();
-    exportToCSV({
-      title: "Corporate Directory Registry",
-      filename: "companies_report",
-      headers,
-      rows
-    });
-    showToast("CSV file downloaded successfully!", "success");
   };
 
-  const handleExportExcel = () => {
-    if (filteredCompanies.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+  const handleExportExcel = async () => {
+    setExportingFmt("Excel");
+    try {
+      if (filteredCompanies.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const { headers, rows } = buildAdminCompaniesExportData();
+      exportToExcel({
+        title: "Corporate Directory Registry",
+        filename: "companies_report",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        summary: [
+          { label: "Total Companies", value: filteredCompanies.length }
+        ]
+      });
+      showToast(`Exported all ${filteredCompanies.length} companies to Excel!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildAdminCompaniesExportData();
-    exportToExcel({
-      title: "Corporate Directory Registry",
-      filename: "companies_report",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      summary: [
-        { label: "Total Companies", value: filteredCompanies.length }
-      ]
-    });
-    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
   };
 
-  const handlePrint = (title: string = "Corporate Account Statement") => {
-    if (filteredCompanies.length === 0) {
-      showToast("No data to print!", "error");
-      return;
+  const handlePrint = async (title: string = "Corporate Account Statement", fmtType: string = "Print") => {
+    setExportingFmt(fmtType);
+    try {
+      if (filteredCompanies.length === 0) {
+        showToast("No data to print!", "error");
+        return;
+      }
+      const { headers, rows } = buildAdminCompaniesExportData();
+      await exportToPDF({
+        title,
+        filename: "companies_report",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        orientation: "landscape",
+        summary: [
+          { label: "Total Companies", value: filteredCompanies.length }
+        ]
+      });
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildAdminCompaniesExportData();
-    exportToPDF({
-      title,
-      filename: "companies_report",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      orientation: "landscape",
-      summary: [
-        { label: "Total Companies", value: filteredCompanies.length }
-      ]
-    });
   };
 
   useEffect(() => {
@@ -244,20 +261,24 @@ export default function CompaniesPage() {
         {/* Toolbar Row */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
           <div style={{ display: "flex", gap: "6px" }}>
-            <button onClick={handleCopy} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+            <button disabled={!!exportingFmt} onClick={handleCopy} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer" }}>
               Copy
             </button>
-            <button onClick={handleExportCSV} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
-              CSV
+            <button disabled={!!exportingFmt} onClick={handleExportCSV} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "CSV" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>CSV</span>
             </button>
-            <button onClick={handleExportExcel} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
-              Excel
+            <button disabled={!!exportingFmt} onClick={handleExportExcel} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "Excel" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>Excel</span>
             </button>
-            <button onClick={() => handlePrint("Corporate Registry - PDF Statement")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
-              PDF
+            <button disabled={!!exportingFmt} onClick={() => handlePrint("Corporate Registry - PDF Statement", "PDF")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "PDF" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>PDF</span>
             </button>
-            <button onClick={() => handlePrint("Corporate Registry Statement")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
-              Print
+            <button disabled={!!exportingFmt} onClick={() => handlePrint("Corporate Registry Statement", "Print")} style={{ background: "#2563eb", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "Print" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>Print</span>
             </button>
           </div>
           

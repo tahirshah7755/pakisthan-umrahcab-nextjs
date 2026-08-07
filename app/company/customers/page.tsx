@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api, getDefaultPhoneCode } from "@/utils/api";
-import { exportToExcel } from "@/utils/excelHelper";
+import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/exportHelper";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 import { useAuth } from "@/context/AuthContext";
 
@@ -214,26 +214,35 @@ export default function CompanyCustomersPage() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  const handleExportExcel = () => {
-    if (customers.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+  const [exportingFmt, setExportingFmt] = useState<string | null>(null);
+
+  const handleExportExcel = async () => {
+    setExportingFmt("Excel");
+    try {
+      if (customers.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["Customer ID", "Name", "Contact Details", "Registered By", "Last Update"];
+      const textRows = customers.map((c: any) => [
+        c.custom_id || "",
+        c.name || "",
+        c.contact || "",
+        c.registered_by || "",
+        c.last_update || ""
+      ]);
+      
+      exportToExcel({
+        title: "Agent Corporate Customers Directory",
+        headers,
+        rows: textRows,
+        filename: "company_customers_report",
+        companyName: "HEBA CAB"
+      });
+      showToast(`Exported all ${customers.length} customers to Excel!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["Customer ID", "Name", "Contact Details", "Registered By", "Last Update"];
-    const textRows = customers.map((c: any) => [
-      c.custom_id || "",
-      c.name || "",
-      c.contact || "",
-      c.registered_by || "",
-      c.last_update || ""
-    ]);
-    
-    exportToExcel({
-      title: "Agent Corporate Customers Directory",
-      headers,
-      rows: textRows,
-      filename: `customers_${new Date().toISOString().split("T")[0]}.xls`
-    });
   };
 
   const handleCopy = () => {
@@ -255,123 +264,69 @@ export default function CompanyCustomersPage() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
-  const handleExportCSV = () => {
-    if (customers.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+  const handleExportCSV = async () => {
+    setExportingFmt("CSV");
+    try {
+      if (customers.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["Customer ID", "Name", "Contact Details", "Registered By", "Last Update"];
+      const textRows = customers.map((c: any) => [
+        c.custom_id || "",
+        c.name || "",
+        c.contact || "",
+        c.registered_by || "",
+        c.last_update || ""
+      ]);
+      exportToCSV({
+        title: "Agent Corporate Customers Directory",
+        filename: "company_customers_report",
+        headers,
+        rows: textRows
+      });
+      showToast(`Exported all ${customers.length} customers to CSV!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["Customer ID", "Name", "Contact Details", "Registered By", "Last Update"];
-    const csvContent = [
-      headers.join(","),
-      ...customers.map((c: any) => [
-        `"${(c.custom_id || "").replace(/"/g, '""')}"`,
-        `"${(c.name || "").replace(/"/g, '""')}"`,
-        `"${(c.contact || "").replace(/"/g, '""')}"`,
-        `"${(c.registered_by || "").replace(/"/g, '""')}"`,
-        `"${(c.last_update || "").replace(/"/g, '""')}"`
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `customers_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("CSV file downloaded successfully!", "success");
   };
 
-  const handlePrint = (title: string = "Agent Corporate Customers Directory") => {
-    if (customers.length === 0) {
-      showToast("No data to print!", "error");
-      return;
+  const handlePrint = async (title: string = "Agent Corporate Customers Directory", fmtType: string = "Print") => {
+    setExportingFmt(fmtType);
+    try {
+      if (customers.length === 0) {
+        showToast("No data to print!", "error");
+        return;
+      }
+      const headers = ["Customer ID", "Name", "Contact Details", "Registered By", "Last Update"];
+      const textRows = customers.map((c: any) => [
+        c.custom_id || "",
+        c.name || "",
+        c.contact || "",
+        c.registered_by || "",
+        c.last_update || ""
+      ]);
+      await exportToPDF({
+        title,
+        filename: "company_customers_report",
+        headers,
+        rows: textRows,
+        companyName: "HEBA CAB",
+        orientation: "landscape",
+        summary: [
+          { label: "Total Customers", value: customers.length }
+        ]
+      });
+    } finally {
+      setExportingFmt(null);
     }
-    
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
-      return;
-    }
-
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
-    
-    const rowsHtml = customers.map((c: any) => `
-      <tr>
-        <td style="font-weight: bold; color: #b48a1d;">${c.custom_id}</td>
-        <td style="font-weight: 600;">${c.name}</td>
-        <td>${formatContactForPrint(c.contact)}</td>
-        <td>${formatRoutesForPrint(c)}</td>
-        <td>${c.registered_by}</td>
-        <td style="color: #64748b;">${c.last_update}</td>
-      </tr>
-    `).join("");
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1e293b; background-color: #ffffff; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #b48a1d; padding-bottom: 15px; margin-bottom: 25px; }
-            .header h1 { margin: 0; color: #b48a1d; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-            .header p { margin: 6px 0 0 0; color: #475569; font-size: 13px; font-weight: 500; }
-            .meta-info { text-align: right; font-size: 13px; color: #334155; line-height: 1.5; }
-            .meta-info strong { color: #b48a1d; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; table-layout: fixed; }
-            th { background-color: #fdfbf7; padding: 10px 8px; border-bottom: 2px solid #e7dbb4; text-align: left; text-transform: uppercase; color: #5c4815; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; }
-            td { padding: 10px 8px; border-bottom: 1px solid #f3ebd4; vertical-align: top; line-height: 1.4; color: #334155; word-break: break-word; white-space: normal; }
-            tr:nth-child(even) td { background-color: #fdfdfb; }
-            @media print {
-              body { margin: 15px; }
-              .header { border-bottom-width: 2px; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1>${title}</h1>
-              <p>Umrah Cab B2B Agent Corporate Customers Directory</p>
-            </div>
-            <div class="meta-info">
-              <p><strong>Generated Date:</strong> ${today}</p>
-              <p><strong>Total Customers:</strong> ${customers.length}</p>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 10%;">Customer ID</th>
-                <th style="width: 16%;">Name</th>
-                <th style="width: 26%;">Contact Details</th>
-                <th style="width: 26%;">Route Details</th>
-                <th style="width: 12%;">Registered By</th>
-                <th style="width: 10%;">Last Update</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
   };
 
   const handleButtonClick = (fmt: string) => {
     if (fmt === "Copy") handleCopy();
     else if (fmt === "CSV") handleExportCSV();
     else if (fmt === "Excel") handleExportExcel();
-    else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Customers Directory - PDF Report" : "Customers Directory");
+    else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Customers Directory - PDF Report" : "Customers Directory", fmt);
   };
 
   const handleAddCustomerSubmit = async (e: React.FormEvent) => {
@@ -491,11 +446,13 @@ export default function CompanyCustomersPage() {
             {["Copy", "CSV", "Excel", "PDF", "Print"].map((fmt) => (
               <button
                 key={fmt}
+                disabled={!!exportingFmt}
                 onClick={() => handleButtonClick(fmt)}
                 className="hub-btn hub-btn-list"
-                style={{ padding: "6px 12px", fontSize: "12px", margin: 0 }}
+                style={{ padding: "6px 12px", fontSize: "12px", margin: 0, cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}
               >
-                {fmt}
+                {exportingFmt === fmt && <i className="fas fa-spinner fa-spin"></i>}
+                <span>{fmt}</span>
               </button>
             ))}
           </div>

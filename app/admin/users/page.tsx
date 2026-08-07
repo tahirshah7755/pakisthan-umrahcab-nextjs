@@ -9,7 +9,7 @@ import {
   useDeleteUserMutation,
 } from "@/store/api/usersApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
-import { exportToExcel } from "@/utils/excelHelper";
+import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/exportHelper";
 
 export default function UsersManagementPage() {
   const router = useRouter();
@@ -73,66 +73,96 @@ export default function UsersManagementPage() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
-  const handleExportCSV = () => {
-    if (filteredUsers.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
-    const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredUsers.map((u: any) => [
-        `"#${u.id}"`,
-        `"${(u.username || "").replace(/"/g, '""')}"`,
-        `"${(u.user_type || "").replace(/"/g, '""')}"`,
-        `"${(u.company ? u.company.name : "System Operator (No Company)").replace(/"/g, '""')}"`,
-        `"${u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"}"`
-      ].join(","))
-    ].join("\n");
+  const [exportingFmt, setExportingFmt] = useState<string | null>(null);
 
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `users_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("CSV file downloaded successfully!", "success");
+  const handleExportCSV = async () => {
+    setExportingFmt("CSV");
+    try {
+      if (filteredUsers.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
+      const textRows = filteredUsers.map((u: any) => [
+        `#${u.id}`,
+        u.username || "",
+        u.user_type || "",
+        u.company ? u.company.name : "System Operator (No Company)",
+        u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"
+      ]);
+      exportToCSV({
+        title: "User Registry Report",
+        filename: "users_report",
+        headers,
+        rows: textRows
+      });
+      showToast(`Exported all ${filteredUsers.length} users to CSV!`, "success");
+    } finally {
+      setExportingFmt(null);
+    }
   };
 
-  const handleExportExcel = () => {
-    if (filteredUsers.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+  const handleExportExcel = async () => {
+    setExportingFmt("Excel");
+    try {
+      if (filteredUsers.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
+      const textRows = filteredUsers.map((u: any) => [
+        `#${u.id}`,
+        u.username || "",
+        u.user_type || "",
+        u.company ? u.company.name : "System Operator (No Company)",
+        u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"
+      ]);
+      exportToExcel({
+        title: "User Registry Report",
+        headers,
+        rows: textRows,
+        filename: "users_report",
+        companyName: "HEBA CAB",
+        summary: [
+          { label: "Total Users", value: filteredUsers.length }
+        ]
+      });
+      showToast(`Exported all ${filteredUsers.length} users to Excel!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
-    const textRows = filteredUsers.map((u: any) => [
-      `#${u.id}`,
-      u.username || "",
-      u.user_type || "",
-      u.company ? u.company.name : "System Operator (No Company)",
-      u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"
-    ]);
-    
-    exportToExcel({
-      title: "User Registry Report",
-      headers,
-      rows: textRows,
-      filename: `users_${new Date().toISOString().split("T")[0]}.xls`,
-      statusIndex: 2
-    });
   };
 
-  const handlePrint = (title: string = "User Accounts Directory") => {
-    if (filteredUsers.length === 0) {
-      showToast("No data to print!", "error");
-      return;
+  const handlePrint = async (title: string = "User Accounts Directory", fmtType: string = "Print") => {
+    setExportingFmt(fmtType);
+    try {
+      if (filteredUsers.length === 0) {
+        showToast("No data to print!", "error");
+        return;
+      }
+      const headers = ["User ID", "Username", "User Role Badge", "Associated Company", "Registered On"];
+      const textRows = filteredUsers.map((u: any) => [
+        `#${u.id}`,
+        u.username || "",
+        u.user_type || "",
+        u.company ? u.company.name : "System Operator (No Company)",
+        u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--"
+      ]);
+      await exportToPDF({
+        title,
+        filename: "users_report",
+        headers,
+        rows: textRows,
+        companyName: "HEBA CAB",
+        orientation: "landscape",
+        summary: [
+          { label: "Total Users", value: filteredUsers.length }
+        ]
+      });
+    } finally {
+      setExportingFmt(null);
     }
-    
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+  };
       return;
     }
 
@@ -334,20 +364,24 @@ export default function UsersManagementPage() {
         </div>
         
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <button onClick={handleCopy} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+          <button disabled={!!exportingFmt} onClick={handleCopy} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
             Copy
           </button>
-          <button onClick={handleExportCSV} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
-            CSV
+          <button disabled={!!exportingFmt} onClick={handleExportCSV} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            {exportingFmt === "CSV" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>CSV</span>
           </button>
-          <button onClick={handleExportExcel} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
-            Excel
+          <button disabled={!!exportingFmt} onClick={handleExportExcel} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            {exportingFmt === "Excel" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>Excel</span>
           </button>
-          <button onClick={() => handlePrint("User Accounts Registry - PDF Report")} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
-            PDF
+          <button disabled={!!exportingFmt} onClick={() => handlePrint("User Accounts Registry - PDF Report", "PDF")} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            {exportingFmt === "PDF" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>PDF</span>
           </button>
-          <button onClick={() => handlePrint("User Accounts Directory")} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
-            Print
+          <button disabled={!!exportingFmt} onClick={() => handlePrint("User Accounts Directory", "Print")} style={{ background: "#475569", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#334155"} onMouseLeave={(e) => e.currentTarget.style.background = "#475569"}>
+            {exportingFmt === "Print" && <i className="fas fa-spinner fa-spin"></i>}
+            <span>Print</span>
           </button>
           {isFetching && (
             <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" }}>

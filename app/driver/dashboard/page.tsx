@@ -452,58 +452,76 @@ export default function DriverDashboardPage() {
   };
 
   const handleExportCSV = () => {
-    if (entries.length === 0) {
-      showNotification("No data to export!", "error");
-      return;
+  const [exportingFmt, setExportingFmt] = useState<string | null>(null);
+
+  const handleExportCSV = async () => {
+    setExportingFmt("CSV");
+    try {
+      if (entries.length === 0) {
+        showNotification("No data to export!", "error");
+        return;
+      }
+      const { headers, rows } = buildDriverExportData();
+      exportToCSV({
+        title: "Driver Daily Sheets & Logs Report",
+        filename: "my_driver_logs",
+        headers,
+        rows
+      });
+      showNotification(`Exported all ${entries.length} driver logs to CSV!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildDriverExportData();
-    exportToCSV({
-      title: "Driver Daily Sheets & Logs Report",
-      filename: "my_driver_logs",
-      headers,
-      rows
-    });
-    showNotification("CSV file downloaded successfully!", "success");
   };
 
-  const handleExportExcel = () => {
-    if (entries.length === 0) {
-      showNotification("No data to export!", "error");
-      return;
+  const handleExportExcel = async () => {
+    setExportingFmt("Excel");
+    try {
+      if (entries.length === 0) {
+        showNotification("No data to export!", "error");
+        return;
+      }
+      const { headers, rows } = buildDriverExportData();
+      exportToExcel({
+        title: `Driver Logs (${driverUser?.name || "Driver"})`,
+        filename: "my_driver_logs",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        summary: [
+          { label: "Driver Name", value: driverUser?.name || "—" },
+          { label: "Total Logs", value: entries.length }
+        ]
+      });
+      showNotification(`Exported all ${entries.length} driver logs to Excel!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildDriverExportData();
-    exportToExcel({
-      title: `Driver Logs (${driverUser?.name || "Driver"})`,
-      filename: "my_driver_logs",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      summary: [
-        { label: "Driver Name", value: driverUser?.name || "—" },
-        { label: "Total Logs", value: entries.length }
-      ]
-    });
-    showNotification("Formatted Excel spreadsheet downloaded successfully!", "success");
   };
 
-  const handlePrint = (title: string = "My Daily Sheets & Logs Report") => {
-    if (entries.length === 0) {
-      showNotification("No data to print!", "error");
-      return;
+  const handlePrint = async (title: string = "My Daily Sheets & Logs Report", fmtType: string = "Print") => {
+    setExportingFmt(fmtType);
+    try {
+      if (entries.length === 0) {
+        showNotification("No data to print!", "error");
+        return;
+      }
+      const { headers, rows } = buildDriverExportData();
+      await exportToPDF({
+        title,
+        filename: "my_driver_logs",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        orientation: "landscape",
+        summary: [
+          { label: "Driver", value: driverUser?.name || "—" },
+          { label: "Total Logs", value: entries.length }
+        ]
+      });
+    } finally {
+      setExportingFmt(null);
     }
-    const { headers, rows } = buildDriverExportData();
-    exportToPDF({
-      title,
-      filename: "my_driver_logs",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      orientation: "landscape",
-      summary: [
-        { label: "Driver", value: driverUser?.name || "—" },
-        { label: "Total Logs", value: entries.length }
-      ]
-    });
   };
 
   // Stats
@@ -1549,20 +1567,20 @@ export default function DriverDashboardPage() {
           {/* Export Toolbar */}
           {!loading && entries.length > 0 && (
             <div style={{ display: "flex", gap: "10px", paddingBottom: "16px", marginBottom: "16px", borderBottom: "1px solid var(--border-color, #edf2f9)", flexWrap: "wrap" }}>
-              <button type="button" onClick={handleCopy} style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
+              <button type="button" disabled={!!exportingFmt} onClick={handleCopy} style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
                 <i className="fas fa-copy"></i> Copy
               </button>
-              <button type="button" onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
-                <i className="fas fa-file-csv"></i> CSV
+              <button type="button" disabled={!!exportingFmt} onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
+                <i className={exportingFmt === "CSV" ? "fas fa-spinner fa-spin" : "fas fa-file-csv"}></i> CSV
               </button>
-              <button type="button" onClick={handleExportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
-                <i className="fas fa-file-excel"></i> Excel
+              <button type="button" disabled={!!exportingFmt} onClick={handleExportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
+                <i className={exportingFmt === "Excel" ? "fas fa-spinner fa-spin" : "fas fa-file-excel"}></i> Excel
               </button>
-              <button type="button" onClick={() => handlePrint("My Driver Logs PDF Report")} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
-                <i className="fas fa-file-pdf"></i> PDF
+              <button type="button" disabled={!!exportingFmt} onClick={() => handlePrint("My Driver Logs PDF Report", "PDF")} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
+                <i className={exportingFmt === "PDF" ? "fas fa-spinner fa-spin" : "fas fa-file-pdf"}></i> PDF
               </button>
-              <button type="button" onClick={() => handlePrint("My Driver Sheets & Logs Report")} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
-                <i className="fas fa-print"></i> Print
+              <button type="button" disabled={!!exportingFmt} onClick={() => handlePrint("My Driver Sheets & Logs Report", "Print")} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: "6px", transition: "all 0.2s" }}>
+                <i className={exportingFmt === "Print" ? "fas fa-spinner fa-spin" : "fas fa-print"}></i> Print
               </button>
             </div>
           )}

@@ -223,9 +223,10 @@ export async function exportToPDF(options: ExportOptions) {
 
   if (mode === "PDF") {
     const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
-    container.style.top = "-9999px";
+    container.style.position = "absolute";
+    container.style.left = "0px";
+    container.style.top = "0px";
+    container.style.zIndex = "-99999";
     container.style.width = orientation === "landscape" ? "280mm" : "195mm";
     container.style.background = "#ffffff";
     container.style.padding = "20px";
@@ -271,7 +272,7 @@ export async function exportToPDF(options: ExportOptions) {
         margin: [6, 6, 6, 6],
         filename: `${filename.replace(/\.[^/.]+$/, "")}_${new Date().toISOString().split("T")[0]}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
         jsPDF: { unit: "mm", format: "a4", orientation }
       };
 

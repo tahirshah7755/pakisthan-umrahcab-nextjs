@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/utils/api";
 import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 
 export interface CustomerItem {
@@ -234,40 +235,71 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
-  const buildCustomerExportData = () => {
-    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
-    const rows = customers.map((c: any) => [
-      c.id,
-      c.name || "",
-      c.company || "",
-      c.contact || "",
-      c.registeredBy || "",
-      c.lastUpdate || ""
-    ]);
-    return { headers, rows };
+  const fetchAllMatchingCustomers = async () => {
+    try {
+      showToast("Fetching all matching customer records...", "success");
+      const res = await api.getCustomers(searchTerm, companyFilter, 1, 10000);
+      let rawList: any[] = [];
+      if (res && res.data && Array.isArray(res.data)) {
+        rawList = res.data;
+      } else if (Array.isArray(res)) {
+        rawList = res;
+      } else {
+        rawList = customers;
+      }
+      return rawList.map((c: any) => ({
+        id: c.custom_id || `#CST-${c.id}`,
+        name: c.name || "",
+        company: c.company || "",
+        contact: c.contact || "",
+        registeredBy: c.registered_by || "umrahcab",
+        lastUpdate: c.last_update || "No edits"
+      }));
+    } catch (err) {
+      console.error("Error fetching all customers for export:", err);
+      return customers;
+    }
   };
 
-  const handleExportCSV = () => {
-    if (customers.length === 0) {
+  const handleExportCSV = async () => {
+    const exportList = await fetchAllMatchingCustomers();
+    if (exportList.length === 0) {
       showToast("No data to export!", "error");
       return;
     }
-    const { headers, rows } = buildCustomerExportData();
+    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
+    const rows = exportList.map((c: any) => [
+      c.id,
+      c.name,
+      c.company,
+      c.contact,
+      c.registeredBy,
+      c.lastUpdate
+    ]);
     exportToCSV({
       title: "Customer Directory Statement",
       filename: "customer_directory",
       headers,
       rows
     });
-    showToast("CSV file downloaded successfully!", "success");
+    showToast(`Exported all ${exportList.length} customer records to CSV!`, "success");
   };
 
-  const handleExportExcel = () => {
-    if (customers.length === 0) {
+  const handleExportExcel = async () => {
+    const exportList = await fetchAllMatchingCustomers();
+    if (exportList.length === 0) {
       showToast("No data to export!", "error");
       return;
     }
-    const { headers, rows } = buildCustomerExportData();
+    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
+    const rows = exportList.map((c: any) => [
+      c.id,
+      c.name,
+      c.company,
+      c.contact,
+      c.registeredBy,
+      c.lastUpdate
+    ]);
     exportToExcel({
       title: "Customer Directory Statement",
       filename: "customer_directory",
@@ -275,18 +307,27 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       rows,
       companyName: "HEBA CAB",
       summary: [
-        { label: "Total Customers", value: customers.length }
+        { label: "Total Matching Customers", value: exportList.length }
       ]
     });
-    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
+    showToast(`Exported all ${exportList.length} customer records to Excel!`, "success");
   };
 
-  const handlePrint = (title: string = "Customer Directory Statement") => {
-    if (customers.length === 0) {
+  const handlePrint = async (title: string = "Customer Directory Statement") => {
+    const exportList = await fetchAllMatchingCustomers();
+    if (exportList.length === 0) {
       showToast("No data to print!", "error");
       return;
     }
-    const { headers, rows } = buildCustomerExportData();
+    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
+    const rows = exportList.map((c: any) => [
+      c.id,
+      c.name,
+      c.company,
+      c.contact,
+      c.registeredBy,
+      c.lastUpdate
+    ]);
     exportToPDF({
       title,
       filename: "customer_directory",
@@ -295,7 +336,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       companyName: "HEBA CAB",
       orientation: "landscape",
       summary: [
-        { label: "Total Customers", value: customers.length }
+        { label: "Total Matching Customers", value: exportList.length }
       ]
     });
   };

@@ -59,6 +59,7 @@ export const invoicesApi = apiSlice.injectEndpoints({
 
 export const {
   useGetInvoicesQuery,
+  useLazyGetInvoicesQuery,
   useGetInvoiceQuery,
   useCreateInvoiceMutation,
   useUpdateInvoiceMutation,

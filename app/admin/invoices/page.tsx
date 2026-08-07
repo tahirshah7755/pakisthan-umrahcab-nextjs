@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGetInvoicesQuery, useUpdateInvoiceMutation, useDeleteInvoiceMutation } from "@/store/api/invoicesApi";
+import { useGetInvoicesQuery, useLazyGetInvoicesQuery, useUpdateInvoiceMutation, useDeleteInvoiceMutation } from "@/store/api/invoicesApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 
@@ -65,9 +65,35 @@ export default function InvoicesPage() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
-  const buildAdminInvoicesExportData = () => {
+  const [triggerGetInvoices] = useLazyGetInvoicesQuery();
+
+  const fetchAllMatchingInvoices = async () => {
+    try {
+      showToast("Fetching all matching invoice records...", "success");
+      const res = await triggerGetInvoices({
+        search:     search     || undefined,
+        company:    appliedFilters.company || undefined,
+        type:       appliedFilters.type    || undefined,
+        start_date: appliedFilters.start_date || undefined,
+        end_date:   appliedFilters.end_date   || undefined,
+        per_page:   10000,
+      }).unwrap();
+      const paginator = res?.data ?? res;
+      return Array.isArray(paginator?.data) ? paginator.data : (Array.isArray(paginator) ? paginator : invoices);
+    } catch (err) {
+      console.error("Failed to fetch all invoices for export:", err);
+      return invoices;
+    }
+  };
+
+  const handleExportCSV = async () => {
+    const exportList = await fetchAllMatchingInvoices();
+    if (exportList.length === 0) {
+      showToast("No data to export!", "error");
+      return;
+    }
     const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
-    const rows = invoices.map((inv: any) => [
+    const rows = exportList.map((inv: any) => [
       inv.id,
       inv.invoice_code || "",
       inv.customer_relation?.company || inv.customer || "Individual / Direct",
@@ -78,31 +104,34 @@ export default function InvoicesPage() {
       inv.remarks || "",
       inv.entered_by || "System Admin"
     ]);
-    return { headers, rows };
-  };
-
-  const handleExportCSV = () => {
-    if (invoices.length === 0) {
-      showToast("No data to export!", "error");
-      return;
-    }
-    const { headers, rows } = buildAdminInvoicesExportData();
     exportToCSV({
       title: "Corporate Invoices Ledger Registry",
       filename: "invoices_report",
       headers,
       rows
     });
-    showToast("CSV file downloaded successfully!", "success");
+    showToast(`Exported all ${exportList.length} invoice records to CSV!`, "success");
   };
 
-  const handleExportExcel = () => {
-    if (invoices.length === 0) {
+  const handleExportExcel = async () => {
+    const exportList = await fetchAllMatchingInvoices();
+    if (exportList.length === 0) {
       showToast("No data to export!", "error");
       return;
     }
-    const { headers, rows } = buildAdminInvoicesExportData();
-    const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
+    const rows = exportList.map((inv: any) => [
+      inv.id,
+      inv.invoice_code || "",
+      inv.customer_relation?.company || inv.customer || "Individual / Direct",
+      inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+      inv.period || "",
+      inv.type || "",
+      inv.amount || 0,
+      inv.remarks || "",
+      inv.entered_by || "System Admin"
+    ]);
+    const totalAmount = exportList.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
     exportToExcel({
       title: "Corporate Invoices Ledger Registry",
       filename: "invoices_report",
@@ -110,20 +139,32 @@ export default function InvoicesPage() {
       rows,
       companyName: "HEBA CAB",
       summary: [
-        { label: "Total Invoices", value: invoices.length },
+        { label: "Total Invoices", value: exportList.length },
         { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
       ]
     });
-    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
+    showToast(`Exported all ${exportList.length} invoice records to Excel!`, "success");
   };
 
-  const handlePrint = (title: string = "Corporate Invoices Registry") => {
-    if (invoices.length === 0) {
+  const handlePrint = async (title: string = "Corporate Invoices Registry") => {
+    const exportList = await fetchAllMatchingInvoices();
+    if (exportList.length === 0) {
       showToast("No data to print!", "error");
       return;
     }
-    const { headers, rows } = buildAdminInvoicesExportData();
-    const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
+    const rows = exportList.map((inv: any) => [
+      inv.id,
+      inv.invoice_code || "",
+      inv.customer_relation?.company || inv.customer || "Individual / Direct",
+      inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+      inv.period || "",
+      inv.type || "",
+      inv.amount || 0,
+      inv.remarks || "",
+      inv.entered_by || "System Admin"
+    ]);
+    const totalAmount = exportList.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
     exportToPDF({
       title,
       filename: "invoices_report",
@@ -132,7 +173,7 @@ export default function InvoicesPage() {
       companyName: "HEBA CAB",
       orientation: "landscape",
       summary: [
-        { label: "Total Invoices", value: invoices.length },
+        { label: "Total Invoices", value: exportList.length },
         { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
       ]
     });

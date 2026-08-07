@@ -355,19 +355,42 @@ export default function AdminDriverEntriesPage() {
       "Hotel Drop Off", "Agent / Company", "Rate", "Voucher", "Cash Collected", "Received From Waqas",
       "Fuel / Petrol", "Parking", "Wash", "Oil Change", "Maintenance", "Pay to Waqas", "Miscellaneous", "Total Expenses", "Net Total", "Status"
     ];
+
+    let sumRate = 0, sumVoucher = 0, sumCash = 0, sumWaqasRec = 0;
+    let sumFuel = 0, sumParking = 0, sumWash = 0, sumOil = 0, sumMaint = 0, sumWaqasPay = 0, sumMic = 0;
+    let sumTotalExpenses = 0, sumNetTotal = 0;
+
     const rows = entries.map((item: any) => {
       const vehicleName = item.vehicle ? item.vehicle.model : (item.manual_vehicle || "—");
       const vehicleType = item.vehicle ? (item.vehicle.type || "Standard") : (item.manual_vehicle ? "Manual Entry" : "—");
+      const rate = Number(item.rate || 0);
+      const voucher = Number(item.voucher || 0);
       const cash = Number(item.cash || 0);
       const waqasRec = Number(item.waqas_received || 0);
-      const waqasPay = Number(item.pay_to_waqas || 0);
       const fuel = Number(item.fuel || 0);
       const parking = Number(item.parking || 0);
       const wash = Number(item.wash || 0);
       const oil = Number(item.oil_change || 0);
       const maint = Number(item.car_maintenance || 0);
+      const waqasPay = Number(item.pay_to_waqas || 0);
       const mic = Number(item.mic || 0);
       const expenses = fuel + parking + wash + oil + maint + waqasPay + mic;
+      const netTotal = Number(item.total || 0);
+
+      sumRate += rate;
+      sumVoucher += voucher;
+      sumCash += cash;
+      sumWaqasRec += waqasRec;
+      sumFuel += fuel;
+      sumParking += parking;
+      sumWash += wash;
+      sumOil += oil;
+      sumMaint += maint;
+      sumWaqasPay += waqasPay;
+      sumMic += mic;
+      sumTotalExpenses += expenses;
+      sumNetTotal += netTotal;
+
       return [
         new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         item.driver?.name || `Driver ID #${item.driver_id}`,
@@ -376,8 +399,8 @@ export default function AdminDriverEntriesPage() {
         item.trip || "—",
         item.hotel_drop_off || "—",
         item.agent || "—",
-        item.rate || 0,
-        item.voucher || 0,
+        rate,
+        voucher,
         cash,
         waqasRec,
         fuel,
@@ -388,11 +411,36 @@ export default function AdminDriverEntriesPage() {
         waqasPay,
         mic,
         expenses,
-        item.total || 0,
+        netTotal,
         item.is_locked ? "Locked" : "Open"
       ];
     });
-    return { headers, rows };
+
+    const grandTotalRow = [
+      "GRAND TOTAL",
+      `(${entries.length} Logs)`,
+      "—",
+      "—",
+      "—",
+      "—",
+      "—",
+      sumRate,
+      sumVoucher,
+      sumCash,
+      sumWaqasRec,
+      sumFuel,
+      sumParking,
+      sumWash,
+      sumOil,
+      sumMaint,
+      sumWaqasPay,
+      sumMic,
+      sumTotalExpenses,
+      sumNetTotal,
+      "—"
+    ];
+
+    return { headers, rows: [...rows, grandTotalRow] };
   };
 
   const [exportingFmt, setExportingFmt] = useState<string | null>(null);
@@ -432,7 +480,10 @@ export default function AdminDriverEntriesPage() {
         rows,
         companyName: "HEBA CAB",
         summary: [
-          { label: "Total Driver Entries", value: entries.length }
+          { label: "Total Driver Entries", value: entries.length },
+          { label: "Accumulated Cash Received", value: `${totalCashCollected.toLocaleString()} SAR` },
+          { label: "Total Route Expenses", value: `${totalExpenses.toLocaleString()} SAR` },
+          { label: "Net Accountable Balance", value: `${totalNetBalance.toLocaleString()} SAR` }
         ]
       });
       showToast(`Exported all ${entries.length} driver entries to Excel!`, "success");
@@ -458,7 +509,10 @@ export default function AdminDriverEntriesPage() {
         orientation: "landscape",
         mode: fmtType as any,
         summary: [
-          { label: "Total Driver Logs", value: entries.length }
+          { label: "Total Driver Logs", value: entries.length },
+          { label: "Accumulated Cash Received", value: `${totalCashCollected.toLocaleString()} SAR` },
+          { label: "Total Route Expenses", value: `${totalExpenses.toLocaleString()} SAR` },
+          { label: "Net Accountable Balance", value: `${totalNetBalance.toLocaleString()} SAR` }
         ]
       });
     } finally {

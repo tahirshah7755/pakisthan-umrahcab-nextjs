@@ -413,6 +413,13 @@ export async function exportToPDF(options: ExportOptions) {
       fillColor: [248, 250, 252],
     },
     margin: { left: 8, right: 8, bottom: 10 },
+    didParseCell: (data) => {
+      if (data.row.raw && String((data.row.raw as any)[0]).toUpperCase().includes("GRAND TOTAL")) {
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fillColor = [226, 232, 240];
+        data.cell.styles.textColor = [15, 23, 42];
+      }
+    },
     didDrawPage: (data) => {
       // Footer
       const totalPages = doc.getNumberOfPages();
@@ -423,6 +430,22 @@ export async function exportToPDF(options: ExportOptions) {
       doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 5);
     },
   });
+
+  // Render Summary Banner at the end if space permits
+  if (summary && summary.length > 0) {
+    const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 4 : startY + 20;
+    if (finalY + 12 < doc.internal.pageSize.height - 8) {
+      doc.setFillColor(241, 245, 249);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(8, finalY, pageWidth - 16, 9, 1.5, 1.5, "FD");
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      
+      const summaryText = summary.map((s) => `${s.label}: ${s.value}`).join("   |   ");
+      doc.text(summaryText, pageWidth / 2, finalY + 5.5, { align: "center" });
+    }
+  }
 
   const outFilename = filename.endsWith(".pdf") ? filename : `${filename}_${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(outFilename);

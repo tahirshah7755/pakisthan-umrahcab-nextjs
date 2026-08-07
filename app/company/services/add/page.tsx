@@ -252,7 +252,7 @@ function AddServicePageContent() {
               <div style={{ flex: 1 }}>
                 <label className="form-label">Service Date *</label>
                 <div className="form-input-wrapper">
-                  <input type="date" className="form-input" value={srvDate} onChange={(e) => setSrvDate(e.target.value)} style={{ paddingLeft: "15px" }} required />
+                  <input type="date" className="form-input" value={srvDate} onChange={(e) => setSrvDate(e.target.value)} min={new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px" }} required />
                 </div>
               </div>
 

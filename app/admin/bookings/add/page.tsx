@@ -769,6 +769,7 @@ function AddNewBookingContent() {
                 className="form-input"
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
                 required
               />
             </div>

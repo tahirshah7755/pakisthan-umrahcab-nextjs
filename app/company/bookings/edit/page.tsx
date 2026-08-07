@@ -793,6 +793,7 @@ function BookingEditContent() {
                 style={{ width: "100%", padding: "10px 12px 10px 45px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none" }}
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
+                min={pickupDate && pickupDate < new Date().toISOString().split("T")[0] ? pickupDate : new Date().toISOString().split("T")[0]}
                 required
               />
             </div>

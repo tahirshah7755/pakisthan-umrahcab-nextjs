@@ -693,6 +693,7 @@ export default function PublicHomePage() {
                       className="uc-form-input"
                       value={bookingData.date}
                       onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
+                      min={new Date().toISOString().split("T")[0]}
                     />
                   </div>
                   <div className="uc-form-group">

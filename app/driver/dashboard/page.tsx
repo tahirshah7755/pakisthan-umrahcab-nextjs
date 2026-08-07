@@ -1308,6 +1308,7 @@ export default function DriverDashboardPage() {
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
+                  min={new Date().toISOString().split("T")[0]}
                   className="form-input"
                 />
               </div>
@@ -1811,6 +1812,7 @@ export default function DriverDashboardPage() {
                       name="date"
                       value={editFormData.date}
                       onChange={handleEditInputChange}
+                      min={editFormData.date && editFormData.date < new Date().toISOString().split("T")[0] ? editFormData.date : new Date().toISOString().split("T")[0]}
                       className="form-input"
                     />
                   </div>

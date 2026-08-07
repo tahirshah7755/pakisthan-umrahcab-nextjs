@@ -306,6 +306,7 @@ function AddHotelAssignmentContent() {
                     className="form-input"
                     value={checkIn}
                     onChange={(e) => setCheckIn(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
                     style={{ paddingLeft: "15px" }}
                   />
                 </div>
@@ -319,6 +320,7 @@ function AddHotelAssignmentContent() {
                     className="form-input"
                     value={checkOut}
                     onChange={(e) => setCheckOut(e.target.value)}
+                    min={checkIn || new Date().toISOString().split("T")[0]}
                     style={{ paddingLeft: "15px" }}
                   />
                 </div>

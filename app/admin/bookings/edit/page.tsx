@@ -893,6 +893,7 @@ function BookingEditContent() {
                 className="form-input"
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
+                min={pickupDate && pickupDate < new Date().toISOString().split("T")[0] ? pickupDate : new Date().toISOString().split("T")[0]}
                 required
               />
             </div>

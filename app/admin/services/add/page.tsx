@@ -300,7 +300,7 @@ function AddServicePageContent() {
             <label className="form-label">Service Date *</label>
             <div className="form-input-wrapper">
               <i className="fas fa-calendar-alt form-icon"></i>
-              <input type="date" className="form-input" value={srvDate} onChange={(e) => setSrvDate(e.target.value)} required />
+              <input type="date" className="form-input" value={srvDate} onChange={(e) => setSrvDate(e.target.value)} min={new Date().toISOString().split("T")[0]} required />
             </div>
           </div>
 

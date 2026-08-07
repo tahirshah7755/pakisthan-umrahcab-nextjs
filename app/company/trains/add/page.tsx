@@ -259,7 +259,7 @@ function AddTrainContent() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Arrival Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} min={new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -295,7 +295,7 @@ function AddTrainContent() {
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label className="form-label" style={{ marginBottom: 0, fontWeight: "600", fontSize: "13px", color: "#475569" }}>Departure Date <span style={{ color: "#ef4444" }}>*</span></label>
                     <div className="form-input-wrapper">
-                      <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} style={{ paddingLeft: "15px" }} />
+                      <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} min={new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px" }} />
                     </div>
                   </div>
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>

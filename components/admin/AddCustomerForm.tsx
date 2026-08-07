@@ -1377,6 +1377,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               className="form-input"
                               value={route.pickupDate}
                               onChange={(e) => updateRouteField(index, "pickupDate", e.target.value)}
+                              min={new Date().toISOString().split("T")[0]}
                               required
                               style={{ paddingLeft: "42px", width: "100%", borderColor: errors[`route_${index}_pickupDate`] ? "#ef4444" : undefined }}
                             />
@@ -1998,7 +1999,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Date *</label>
-                            <input type="date" className="form-input" value={fltArrDate} onChange={(e) => setFltArrDate(e.target.value)} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltArrDate ? "#ef4444" : undefined }} />
+                            <input type="date" className="form-input" value={fltArrDate} onChange={(e) => setFltArrDate(e.target.value)} min={new Date().toISOString().split("T")[0]} required={fltLeg === "Arrival" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltArrDate ? "#ef4444" : undefined }} />
                             {errors.fltArrDate && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltArrDate}</span>
                             )}
@@ -2049,7 +2050,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Date *</label>
-                            <input type="date" className="form-input" value={fltDepDate} onChange={(e) => setFltDepDate(e.target.value)} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltDepDate ? "#ef4444" : undefined }} />
+                            <input type="date" className="form-input" value={fltDepDate} onChange={(e) => setFltDepDate(e.target.value)} min={new Date().toISOString().split("T")[0]} required={fltLeg === "Departure" || fltLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.fltDepDate ? "#ef4444" : undefined }} />
                             {errors.fltDepDate && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.fltDepDate}</span>
                             )}
@@ -2173,7 +2174,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Arrival Date *</label>
-                            <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnArrDate ? "#ef4444" : undefined }} />
+                            <input type="date" className="form-input" value={trnArrDate} onChange={(e) => setTrnArrDate(e.target.value)} min={new Date().toISOString().split("T")[0]} required={trnLeg === "Arrival" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnArrDate ? "#ef4444" : undefined }} />
                             {errors.trnArrDate && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnArrDate}</span>
                             )}
@@ -2224,7 +2225,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           </div>
                           <div>
                             <label className="form-label" style={{ color: "#475569" }}>Departure Date *</label>
-                            <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnDepDate ? "#ef4444" : undefined }} />
+                            <input type="date" className="form-input" value={trnDepDate} onChange={(e) => setTrnDepDate(e.target.value)} min={new Date().toISOString().split("T")[0]} required={trnLeg === "Departure" || trnLeg === "Both Legs"} style={{ paddingLeft: "15px", borderColor: errors.trnDepDate ? "#ef4444" : undefined }} />
                             {errors.trnDepDate && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.trnDepDate}</span>
                             )}
@@ -2313,7 +2314,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
                     <div>
                       <label className="form-label">Check-In Date *</label>
-                      <input type="date" className="form-input" value={hotelCheckin} onChange={(e) => setHotelCheckin(e.target.value)} style={{ paddingLeft: "15px", borderColor: errors.hotelCheckin ? "#ef4444" : undefined }} />
+                      <input type="date" className="form-input" value={hotelCheckin} onChange={(e) => setHotelCheckin(e.target.value)} min={new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px", borderColor: errors.hotelCheckin ? "#ef4444" : undefined }} />
                       {errors.hotelCheckin && (
                         <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.hotelCheckin}</span>
                       )}
@@ -2321,7 +2322,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 
                     <div>
                       <label className="form-label">Check-Out Date *</label>
-                      <input type="date" className="form-input" value={hotelCheckout} onChange={(e) => setHotelCheckout(e.target.value)} style={{ paddingLeft: "15px", borderColor: errors.hotelCheckout ? "#ef4444" : undefined }} />
+                      <input type="date" className="form-input" value={hotelCheckout} onChange={(e) => setHotelCheckout(e.target.value)} min={hotelCheckin || new Date().toISOString().split("T")[0]} style={{ paddingLeft: "15px", borderColor: errors.hotelCheckout ? "#ef4444" : undefined }} />
                       {errors.hotelCheckout && (
                         <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>{errors.hotelCheckout}</span>
                       )}

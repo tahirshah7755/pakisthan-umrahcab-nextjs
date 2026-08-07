@@ -543,7 +543,7 @@ _Thank you for choosing UmrahCab!_`;
 
               <div>
                 <label className="form-label">Service Date *</label>
-                <input type="date" className="form-input" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
+                <input type="date" className="form-input" value={editDate} onChange={(e) => setEditDate(e.target.value)} min={editDate && editDate < new Date().toISOString().split("T")[0] ? editDate : new Date().toISOString().split("T")[0]} required />
               </div>
 
               <div>

@@ -401,6 +401,7 @@ function EditHotelAssignmentContent() {
                   className="form-input"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
+                  min={checkIn && checkIn < new Date().toISOString().split("T")[0] ? checkIn : new Date().toISOString().split("T")[0]}
                   style={{ width: "100%", paddingLeft: "12px" }}
                 />
               </div>
@@ -411,6 +412,7 @@ function EditHotelAssignmentContent() {
                   className="form-input"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
+                  min={checkOut && checkOut < new Date().toISOString().split("T")[0] ? checkOut : (checkIn || new Date().toISOString().split("T")[0])}
                   style={{ width: "100%", paddingLeft: "12px" }}
                 />
               </div>

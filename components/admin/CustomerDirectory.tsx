@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
+import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 
 export interface CustomerItem {
   id: string;
@@ -233,32 +234,31 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
+  const buildCustomerExportData = () => {
+    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
+    const rows = customers.map((c: any) => [
+      c.id,
+      c.name || "",
+      c.company || "",
+      c.contact || "",
+      c.registeredBy || "",
+      c.lastUpdate || ""
+    ]);
+    return { headers, rows };
+  };
+
   const handleExportCSV = () => {
     if (customers.length === 0) {
       showToast("No data to export!", "error");
       return;
     }
-    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact", "Registered By", "Last Update"];
-    const csvContent = [
-      headers.join(","),
-      ...customers.map((c: any) => [
-        `"${(c.id || "").replace(/"/g, '""')}"`,
-        `"${(c.name || "").replace(/"/g, '""')}"`,
-        `"${(c.company || "").replace(/"/g, '""')}"`,
-        `"${(c.contact || "").replace(/"/g, '""')}"`,
-        `"${(c.registeredBy || "").replace(/"/g, '""')}"`,
-        `"${(c.lastUpdate || "").replace(/"/g, '""')}"`
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `customers_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const { headers, rows } = buildCustomerExportData();
+    exportToCSV({
+      title: "Customer Directory Statement",
+      filename: "customer_directory",
+      headers,
+      rows
+    });
     showToast("CSV file downloaded successfully!", "success");
   };
 
@@ -267,30 +267,18 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       showToast("No data to export!", "error");
       return;
     }
-    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact", "Registered By", "Last Update"];
-    const textRows = customers.map((c: any) => [
-      c.id,
-      c.name || "",
-      c.company || "",
-      c.contact || "",
-      c.registeredBy || "",
-      c.lastUpdate || ""
-    ]);
-    
-    const excelContent = [
-      headers.join("\t"),
-      ...textRows.map(r => r.join("\t"))
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + excelContent], { type: "application/vnd.ms-excel;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `customers_${new Date().toISOString().split("T")[0]}.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Excel spreadsheet downloaded successfully!", "success");
+    const { headers, rows } = buildCustomerExportData();
+    exportToExcel({
+      title: "Customer Directory Statement",
+      filename: "customer_directory",
+      headers,
+      rows,
+      companyName: "HEBA CAB",
+      summary: [
+        { label: "Total Customers", value: customers.length }
+      ]
+    });
+    showToast("Formatted Excel spreadsheet downloaded successfully!", "success");
   };
 
   const handlePrint = (title: string = "Customer Directory Statement") => {
@@ -298,85 +286,18 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       showToast("No data to print!", "error");
       return;
     }
-    
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
-      return;
-    }
-
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
-    
-    const rowsHtml = customers.map((c: any) => `
-      <tr>
-        <td style="font-weight: bold; color: #1e3a8a;">${c.id}</td>
-        <td style="font-weight: 600;">${c.name || ""}</td>
-        <td>${c.company || ""}</td>
-        <td>${formatContactForPrint(c.contact)}</td>
-        <td>${formatRoutesForPrint(c)}</td>
-        <td>${c.registeredBy || ""}</td>
-        <td style="color: #64748b;">${c.lastUpdate || ""}</td>
-      </tr>
-    `).join("");
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1e293b; background-color: #ffffff; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 25px; }
-            .header h1 { margin: 0; color: #1e3a8a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-            .header p { margin: 6px 0 0 0; color: #475569; font-size: 13px; font-weight: 500; }
-            .meta-info { text-align: right; font-size: 13px; color: #334155; line-height: 1.5; }
-            .meta-info strong { color: #1e3a8a; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; table-layout: fixed; }
-            th { background-color: #f1f5f9; padding: 10px 8px; border-bottom: 2px solid #cbd5e1; text-align: left; text-transform: uppercase; color: #334155; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; }
-            td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; vertical-align: top; line-height: 1.4; color: #334155; word-break: break-word; white-space: normal; }
-            tr:nth-child(even) td { background-color: #f8fafc; }
-            @media print {
-              body { margin: 15px; }
-              .header { border-bottom-width: 2px; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1>${title}</h1>
-              <p>Umrah Cab Customer Registry</p>
-            </div>
-            <div class="meta-info">
-              <p><strong>Generated Date:</strong> ${today}</p>
-              <p><strong>Total Customers:</strong> ${customers.length}</p>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 10%;">Customer ID</th>
-                <th style="width: 14%;">Customer Name</th>
-                <th style="width: 13%;">Associated Company</th>
-                <th style="width: 23%;">Contact</th>
-                <th style="width: 23%;">Route Details</th>
-                <th style="width: 11%;">Registered By</th>
-                <th style="width: 6%;">Last Update</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rowsHtml}
-            </tbody>
-          </table>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const { headers, rows } = buildCustomerExportData();
+    exportToPDF({
+      title,
+      filename: "customer_directory",
+      headers,
+      rows,
+      companyName: "HEBA CAB",
+      orientation: "landscape",
+      summary: [
+        { label: "Total Customers", value: customers.length }
+      ]
+    });
   };
 
   return (

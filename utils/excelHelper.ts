@@ -151,12 +151,12 @@ export function exportToExcel({
     </xml>
     <![endif]-->
     <style>
-      table { border-collapse: collapse; font-family: 'Segoe UI', 'Arial', sans-serif; font-size: 10pt; }
+      table { border-collapse: collapse; font-family: 'Segoe UI', 'Arial', sans-serif; font-size: 10pt; width: 100%; }
       th { 
         background-color: #0f172a; 
-        color: #ffffff; 
+        color: #d4af37; 
         font-weight: bold; 
-        border: 1px solid #94a3b8; 
+        border: 1px solid #1e293b; 
         padding: 10px 8px; 
         text-align: center;
         vertical-align: middle;
@@ -187,8 +187,18 @@ export function exportToExcel({
     </style>
     </head>
     <body>
-      <h2 style="font-family: 'Segoe UI', Arial, sans-serif; color: #0f172a; margin: 0 0 4px 0;">${title}</h2>
-      <p style="font-family: 'Segoe UI', Arial, sans-serif; color: #64748b; font-size: 9pt; margin: 0 0 16px 0;">Exported on: ${todayStr}</p>
+      <table style="border-collapse: collapse; width: 100%; margin-bottom: 12px;">
+        <tr>
+          <td colspan="${headerConfigs.length}" style="background-color: #0284c7; color: #ffffff; font-size: 16pt; font-weight: bold; padding: 12px; text-align: center; border: 1px solid #0284c7;">
+            HEBA CAB — ${title}
+          </td>
+        </tr>
+        <tr>
+          <td colspan="${headerConfigs.length}" style="background-color: #f1f5f9; color: #64748b; font-size: 9pt; padding: 6px 10px; border: 1px solid #cbd5e1;">
+            <strong>Generated Date:</strong> ${todayStr} &nbsp;|&nbsp; <strong>Total Records:</strong> ${rows.length}
+          </td>
+        </tr>
+      </table>
       
       <table>
         <thead>

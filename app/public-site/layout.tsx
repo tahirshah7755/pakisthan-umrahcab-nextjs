@@ -165,7 +165,7 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Fallbacks
   const siteLogo = websiteSettings?.website_logo || "/logo2.png";
-  const siteTitle = websiteSettings?.site_title || "UmrahCab";
+  const siteTitle = websiteSettings?.site_title || "Heba Cab";
   const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
   const siteEmail = websiteSettings?.contact_email || "Info@umrahcab.com";
   const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";

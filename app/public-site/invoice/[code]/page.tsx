@@ -11,7 +11,7 @@ export default function PublicInvoicePage() {
   const code = params?.code as string;
   const { settings } = useWebsiteSettings();
 
-  const siteTitle = settings?.site_title || "UmrahCab";
+  const siteTitle = settings?.site_title || "Heba Cab";
 
   const [invoice, setInvoice] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);

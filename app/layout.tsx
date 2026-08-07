@@ -27,7 +27,7 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Umrah Cab - Portal",
+  title: "Heba Cab - Portal",
   description: "High-Performance Transport Management Hub",
 };
 

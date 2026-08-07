@@ -11,7 +11,7 @@ export default function CompanyLoginPage() {
   const { settings } = useWebsiteSettings();
 
   const siteLogo = settings?.website_logo || "/logo2.png";
-  const siteTitle = settings?.site_title || "Umrah Cab";
+  const siteTitle = settings?.site_title || "Heba Cab";
 
   // Form states
   const [username, setUsername] = useState("");

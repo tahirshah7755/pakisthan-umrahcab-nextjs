@@ -126,7 +126,30 @@ export const api = {
 
   async getBookingStatus(code: string) {
     const data = await request(`/bookings/status/${encodeURIComponent(code)}`);
-    return data || [];
+    if (data && Array.isArray(data)) return data;
+    if (data && data.data && Array.isArray(data.data)) return data.data;
+
+    // Fallback: try individual invoice endpoint
+    const invRes = await request(`/individual-orders/invoice/${encodeURIComponent(code)}`);
+    if (invRes) {
+      const invObj = invRes.invoice || (invRes.invoice_code ? invRes : null);
+      const ordObj = invRes.order || invRes.individual_order || invObj?.individual_order || null;
+      if (ordObj || invObj) {
+        return [{
+          id: invObj?.invoice_code || ordObj?.order_code || code,
+          booking_code: invObj?.invoice_code || ordObj?.order_code || code,
+          pickup: ordObj?.pickup || "—",
+          destination: ordObj?.destination || "—",
+          date: ordObj?.date || invObj?.date || "—",
+          time: ordObj?.time || "—",
+          car_type: ordObj?.car_type || "Standard",
+          car_price: invObj?.amount || ordObj?.car_price || 0,
+          full_name: ordObj?.full_name || invObj?.customer || "—",
+          status: invObj?.status || ordObj?.status || "Pending"
+        }];
+      }
+    }
+    return [];
   },
 
   async getDashboardSummary() {

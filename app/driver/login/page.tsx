@@ -11,7 +11,7 @@ export default function DriverLoginPage() {
   const { settings } = useWebsiteSettings();
 
   const siteLogo = settings?.website_logo;
-  const siteTitle = settings?.site_title || "UmrahCab";
+  const siteTitle = settings?.site_title || "Heba Cab";
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

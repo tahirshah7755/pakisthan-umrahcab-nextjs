@@ -11,7 +11,7 @@ export default function LoginPage() {
   const { settings } = useWebsiteSettings();
 
   const siteLogo = settings?.website_logo || "/logo2.png";
-  const siteTitle = settings?.site_title || "Logo";
+  const siteTitle = settings?.site_title || "Heba Cab";
 
   // Tab State
   const [mode, setMode] = useState<"login" | "register">("login");

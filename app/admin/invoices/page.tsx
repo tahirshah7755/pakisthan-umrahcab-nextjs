@@ -65,6 +65,7 @@ export default function InvoicesPage() {
       .catch(() => showToast("Failed to copy!", "error"));
   };
 
+  const [exportingFmt, setExportingFmt] = useState<string | null>(null);
   const [triggerGetInvoices] = useLazyGetInvoicesQuery();
 
   const fetchAllMatchingInvoices = async () => {
@@ -87,96 +88,111 @@ export default function InvoicesPage() {
   };
 
   const handleExportCSV = async () => {
-    const exportList = await fetchAllMatchingInvoices();
-    if (exportList.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+    setExportingFmt("CSV");
+    try {
+      const exportList = await fetchAllMatchingInvoices();
+      if (exportList.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
+      const rows = exportList.map((inv: any) => [
+        inv.id,
+        inv.invoice_code || "",
+        inv.customer_relation?.company || inv.customer || "Individual / Direct",
+        inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+        inv.period || "",
+        inv.type || "",
+        inv.amount || 0,
+        inv.remarks || "",
+        inv.entered_by || "System Admin"
+      ]);
+      exportToCSV({
+        title: "Corporate Invoices Ledger Registry",
+        filename: "invoices_report",
+        headers,
+        rows
+      });
+      showToast(`Exported all ${exportList.length} invoice records to CSV!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
-    const rows = exportList.map((inv: any) => [
-      inv.id,
-      inv.invoice_code || "",
-      inv.customer_relation?.company || inv.customer || "Individual / Direct",
-      inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
-      inv.period || "",
-      inv.type || "",
-      inv.amount || 0,
-      inv.remarks || "",
-      inv.entered_by || "System Admin"
-    ]);
-    exportToCSV({
-      title: "Corporate Invoices Ledger Registry",
-      filename: "invoices_report",
-      headers,
-      rows
-    });
-    showToast(`Exported all ${exportList.length} invoice records to CSV!`, "success");
   };
 
   const handleExportExcel = async () => {
-    const exportList = await fetchAllMatchingInvoices();
-    if (exportList.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+    setExportingFmt("Excel");
+    try {
+      const exportList = await fetchAllMatchingInvoices();
+      if (exportList.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
+      const rows = exportList.map((inv: any) => [
+        inv.id,
+        inv.invoice_code || "",
+        inv.customer_relation?.company || inv.customer || "Individual / Direct",
+        inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+        inv.period || "",
+        inv.type || "",
+        inv.amount || 0,
+        inv.remarks || "",
+        inv.entered_by || "System Admin"
+      ]);
+      const totalAmount = exportList.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+      exportToExcel({
+        title: "Corporate Invoices Ledger Registry",
+        filename: "invoices_report",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        summary: [
+          { label: "Total Invoices", value: exportList.length },
+          { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
+        ]
+      });
+      showToast(`Exported all ${exportList.length} invoice records to Excel!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
-    const rows = exportList.map((inv: any) => [
-      inv.id,
-      inv.invoice_code || "",
-      inv.customer_relation?.company || inv.customer || "Individual / Direct",
-      inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
-      inv.period || "",
-      inv.type || "",
-      inv.amount || 0,
-      inv.remarks || "",
-      inv.entered_by || "System Admin"
-    ]);
-    const totalAmount = exportList.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
-    exportToExcel({
-      title: "Corporate Invoices Ledger Registry",
-      filename: "invoices_report",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      summary: [
-        { label: "Total Invoices", value: exportList.length },
-        { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
-      ]
-    });
-    showToast(`Exported all ${exportList.length} invoice records to Excel!`, "success");
   };
 
-  const handlePrint = async (title: string = "Corporate Invoices Registry") => {
-    const exportList = await fetchAllMatchingInvoices();
-    if (exportList.length === 0) {
-      showToast("No data to print!", "error");
-      return;
+  const handlePrint = async (title: string = "Corporate Invoices Registry", fmtType: string = "Print") => {
+    setExportingFmt(fmtType);
+    try {
+      const exportList = await fetchAllMatchingInvoices();
+      if (exportList.length === 0) {
+        showToast("No data to print!", "error");
+        return;
+      }
+      const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
+      const rows = exportList.map((inv: any) => [
+        inv.id,
+        inv.invoice_code || "",
+        inv.customer_relation?.company || inv.customer || "Individual / Direct",
+        inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
+        inv.period || "",
+        inv.type || "",
+        inv.amount || 0,
+        inv.remarks || "",
+        inv.entered_by || "System Admin"
+      ]);
+      const totalAmount = exportList.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
+      exportToPDF({
+        title,
+        filename: "invoices_report",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        orientation: "landscape",
+        summary: [
+          { label: "Total Invoices", value: exportList.length },
+          { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
+        ]
+      });
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["ID", "Invoice #", "Company", "Date", "Period", "Type", "Amount (SAR)", "Remarks", "Entered By"];
-    const rows = exportList.map((inv: any) => [
-      inv.id,
-      inv.invoice_code || "",
-      inv.customer_relation?.company || inv.customer || "Individual / Direct",
-      inv.date ? new Date(inv.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "",
-      inv.period || "",
-      inv.type || "",
-      inv.amount || 0,
-      inv.remarks || "",
-      inv.entered_by || "System Admin"
-    ]);
-    const totalAmount = exportList.reduce((sum: number, inv: any) => sum + Number(inv.amount || 0), 0);
-    exportToPDF({
-      title,
-      filename: "invoices_report",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      orientation: "landscape",
-      summary: [
-        { label: "Total Invoices", value: exportList.length },
-        { label: "Total Amount", value: `SAR ${totalAmount.toFixed(2)}` }
-      ]
-    });
   };
 
   // Queries & Mutations
@@ -481,20 +497,24 @@ export default function InvoicesPage() {
         {/* Toolbar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap", gap: "10px" }}>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button onClick={handleCopy} style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
+            <button disabled={!!exportingFmt} onClick={handleCopy} style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer" }}>
               Copy
             </button>
-            <button onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-              CSV
+            <button disabled={!!exportingFmt} onClick={handleExportCSV} style={{ background: "#64748b", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "CSV" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>CSV</span>
             </button>
-            <button onClick={handleExportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-              Excel
+            <button disabled={!!exportingFmt} onClick={handleExportExcel} style={{ background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "Excel" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>Excel</span>
             </button>
-            <button onClick={() => handlePrint("Invoices Registry - PDF Report")} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-              PDF
+            <button disabled={!!exportingFmt} onClick={() => handlePrint("Invoices Registry - PDF Report", "PDF")} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "PDF" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>PDF</span>
             </button>
-            <button onClick={() => handlePrint("Corporate Invoices Registry")} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: "pointer" }}>
-              Print
+            <button disabled={!!exportingFmt} onClick={() => handlePrint("Corporate Invoices Registry", "Print")} style={{ background: "#6366f1", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", fontSize: "12px", fontWeight: "700", cursor: exportingFmt ? "not-allowed" : "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "Print" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>Print</span>
             </button>
             {isFetching && (
               <span style={{ fontSize: "12px", color: "#94a3b8", display: "flex", alignItems: "center", gap: "6px" }}>

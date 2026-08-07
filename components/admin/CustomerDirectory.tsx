@@ -215,6 +215,8 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const [exportingFmt, setExportingFmt] = React.useState<string | null>(null);
+
   const handleCopy = () => {
     if (customers.length === 0) {
       showToast("No data to copy!", "error");
@@ -262,83 +264,98 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
   };
 
   const handleExportCSV = async () => {
-    const exportList = await fetchAllMatchingCustomers();
-    if (exportList.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+    setExportingFmt("CSV");
+    try {
+      const exportList = await fetchAllMatchingCustomers();
+      if (exportList.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
+      const rows = exportList.map((c: any) => [
+        c.id,
+        c.name,
+        c.company,
+        c.contact,
+        c.registeredBy,
+        c.lastUpdate
+      ]);
+      exportToCSV({
+        title: "Customer Directory Statement",
+        filename: "customer_directory",
+        headers,
+        rows
+      });
+      showToast(`Exported all ${exportList.length} customer records to CSV!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
-    const rows = exportList.map((c: any) => [
-      c.id,
-      c.name,
-      c.company,
-      c.contact,
-      c.registeredBy,
-      c.lastUpdate
-    ]);
-    exportToCSV({
-      title: "Customer Directory Statement",
-      filename: "customer_directory",
-      headers,
-      rows
-    });
-    showToast(`Exported all ${exportList.length} customer records to CSV!`, "success");
   };
 
   const handleExportExcel = async () => {
-    const exportList = await fetchAllMatchingCustomers();
-    if (exportList.length === 0) {
-      showToast("No data to export!", "error");
-      return;
+    setExportingFmt("Excel");
+    try {
+      const exportList = await fetchAllMatchingCustomers();
+      if (exportList.length === 0) {
+        showToast("No data to export!", "error");
+        return;
+      }
+      const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
+      const rows = exportList.map((c: any) => [
+        c.id,
+        c.name,
+        c.company,
+        c.contact,
+        c.registeredBy,
+        c.lastUpdate
+      ]);
+      exportToExcel({
+        title: "Customer Directory Statement",
+        filename: "customer_directory",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        summary: [
+          { label: "Total Matching Customers", value: exportList.length }
+        ]
+      });
+      showToast(`Exported all ${exportList.length} customer records to Excel!`, "success");
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
-    const rows = exportList.map((c: any) => [
-      c.id,
-      c.name,
-      c.company,
-      c.contact,
-      c.registeredBy,
-      c.lastUpdate
-    ]);
-    exportToExcel({
-      title: "Customer Directory Statement",
-      filename: "customer_directory",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      summary: [
-        { label: "Total Matching Customers", value: exportList.length }
-      ]
-    });
-    showToast(`Exported all ${exportList.length} customer records to Excel!`, "success");
   };
 
-  const handlePrint = async (title: string = "Customer Directory Statement") => {
-    const exportList = await fetchAllMatchingCustomers();
-    if (exportList.length === 0) {
-      showToast("No data to print!", "error");
-      return;
+  const handlePrint = async (title: string = "Customer Directory Statement", fmtType: string = "Print") => {
+    setExportingFmt(fmtType);
+    try {
+      const exportList = await fetchAllMatchingCustomers();
+      if (exportList.length === 0) {
+        showToast("No data to print!", "error");
+        return;
+      }
+      const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
+      const rows = exportList.map((c: any) => [
+        c.id,
+        c.name,
+        c.company,
+        c.contact,
+        c.registeredBy,
+        c.lastUpdate
+      ]);
+      exportToPDF({
+        title,
+        filename: "customer_directory",
+        headers,
+        rows,
+        companyName: "HEBA CAB",
+        orientation: "landscape",
+        summary: [
+          { label: "Total Matching Customers", value: exportList.length }
+        ]
+      });
+    } finally {
+      setExportingFmt(null);
     }
-    const headers = ["Customer ID", "Customer Name", "Associated Company", "Contact Number", "Registered Agent", "Last Update"];
-    const rows = exportList.map((c: any) => [
-      c.id,
-      c.name,
-      c.company,
-      c.contact,
-      c.registeredBy,
-      c.lastUpdate
-    ]);
-    exportToPDF({
-      title,
-      filename: "customer_directory",
-      headers,
-      rows,
-      companyName: "HEBA CAB",
-      orientation: "landscape",
-      summary: [
-        { label: "Total Matching Customers", value: exportList.length }
-      ]
-    });
   };
 
   return (
@@ -397,20 +414,24 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
       <div className="table-card" style={{ padding: "25px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "10px" }}>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={handleCopy} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px" }}>
+            <button disabled={!!exportingFmt} onClick={handleCopy} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px" }}>
               Copy
             </button>
-            <button onClick={handleExportCSV} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px" }}>
-              CSV
+            <button disabled={!!exportingFmt} onClick={handleExportCSV} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "CSV" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>CSV</span>
             </button>
-            <button onClick={handleExportExcel} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px" }}>
-              Excel
+            <button disabled={!!exportingFmt} onClick={handleExportExcel} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "Excel" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>Excel</span>
             </button>
-            <button onClick={() => handlePrint("Customer Directory - PDF Statement")} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px" }}>
-              PDF
+            <button disabled={!!exportingFmt} onClick={() => handlePrint("Customer Directory - PDF Statement", "PDF")} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "PDF" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>PDF</span>
             </button>
-            <button onClick={() => handlePrint("Customer Directory Statement")} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px" }}>
-              Print
+            <button disabled={!!exportingFmt} onClick={() => handlePrint("Customer Directory Statement", "Print")} className="hub-btn hub-btn-list" style={{ padding: "6px 12px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+              {exportingFmt === "Print" && <i className="fas fa-spinner fa-spin"></i>}
+              <span>Print</span>
             </button>
           </div>
           <input

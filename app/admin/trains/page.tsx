@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface TrainItem {
   id: string;      // custom_id (e.g. #TRN-32003)
@@ -201,7 +202,7 @@ export default function TrainsDirectory() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `trains_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `trains_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -229,7 +230,7 @@ export default function TrainsDirectory() {
       title: "Train Passenger Registry",
       headers,
       rows: textRows,
-      filename: `trains_${new Date().toISOString().split("T")[0]}.xls`
+      filename: `trains_${getSaudiTodayDate()}.xls`
     });
   };
 

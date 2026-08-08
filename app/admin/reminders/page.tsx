@@ -3,26 +3,21 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
-import { formatTimeOnly } from "@/utils/formatters";
+import { formatTimeOnly, getSaudiTodayDate, getSaudiDateWithOffset } from "@/utils/formatters";
 
 export default function RemindersPage() {
   const router = useRouter();
 
   const getYesterdayStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return getSaudiDateWithOffset(-1);
   };
 
   const getTodayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return getSaudiTodayDate();
   };
 
   const getTomorrowStr = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return getSaudiDateWithOffset(1);
   };
 
   const getFormattedLabel = (dateStr: string) => {

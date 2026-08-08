@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
-import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
+import { formatDateToCustom, formatTimeTo24h, getSaudiTodayDate } from "@/utils/formatters";
 
 function CustomerPrintContent() {
   const searchParams = useSearchParams();
@@ -280,7 +280,7 @@ function CustomerPrintContent() {
           <div style={{ textAlign: "right" }}>
             <h3 style={{ fontSize: "14px", fontWeight: "700", color: "#d4af37", margin: 0, textTransform: "uppercase", letterSpacing: "1px" }}>Travel Schedule Report</h3>
             <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>
-              Date: {formatDateToCustom(new Date().toISOString().split('T')[0])} | {formatTimeTo24h(new Date().toTimeString().split(' ')[0])}
+              Date: {formatDateToCustom(getSaudiTodayDate())} | {formatTimeTo24h(new Date().toLocaleTimeString("en-US", { timeZone: "Asia/Riyadh", hour12: false }))}
             </p>
             <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>Cust ID: {customer.custom_id || `#CST-${customer.id}`}</p>
           </div>

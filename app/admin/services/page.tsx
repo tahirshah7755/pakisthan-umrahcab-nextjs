@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface ServiceItem {
   id: string;      // custom_id (e.g. #SRV-4068)
@@ -120,7 +121,7 @@ export default function ServicesDirectory() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `services_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `services_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -149,7 +150,7 @@ export default function ServicesDirectory() {
       title: "Other Services Directory Report",
       headers,
       rows: textRows,
-      filename: `services_${new Date().toISOString().split("T")[0]}.xls`,
+      filename: `services_${getSaudiTodayDate()}.xls`,
       totalsIndices: [7, 8],
       statusIndex: 6
     });

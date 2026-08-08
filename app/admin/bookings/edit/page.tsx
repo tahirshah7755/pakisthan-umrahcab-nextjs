@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
-import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
+import { formatDateToCustom, formatTimeTo24h, getSaudiTodayDate } from "@/utils/formatters";
 import TimePicker24h from "@/components/admin/TimePicker24h";
 
 const defaultCountryCodes = [
@@ -621,7 +621,7 @@ function BookingEditContent() {
       showToast("Please enter pickup date and time.", "error");
       return;
     }
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getSaudiTodayDate();
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
     if (pickupDate < minEditDate) {
       showToast("Pickup date cannot be in the past.", "error");
@@ -900,14 +900,14 @@ function BookingEditContent() {
                 type="date"
                 className="form-input"
                 style={{
-                  borderColor: pickupDate && pickupDate < (originalDate && originalDate < new Date().toISOString().split("T")[0] ? originalDate : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                  borderColor: pickupDate && pickupDate < (originalDate && originalDate < getSaudiTodayDate() ? originalDate : getSaudiTodayDate()) ? "#ef4444" : undefined
                 }}
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
-                min={originalDate && originalDate < new Date().toISOString().split("T")[0] ? originalDate : new Date().toISOString().split("T")[0]}
+                min={originalDate && originalDate < getSaudiTodayDate() ? originalDate : getSaudiTodayDate()}
                 required
               />
-              {pickupDate && pickupDate < (originalDate && originalDate < new Date().toISOString().split("T")[0] ? originalDate : new Date().toISOString().split("T")[0]) && (
+              {pickupDate && pickupDate < (originalDate && originalDate < getSaudiTodayDate() ? originalDate : getSaudiTodayDate()) && (
                 <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                   ⚠️ Past dates are not allowed. Please select a current or future date.
                 </span>

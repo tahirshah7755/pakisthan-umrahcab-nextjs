@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetFollowupsQuery, useDeleteFollowupMutation } from "@/store/api/followupsApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
+import { getSaudiTodayDate, getSaudiDateWithOffset } from "@/utils/formatters";
 
 interface RatingSelectorProps {
   rating: number;
@@ -108,17 +109,15 @@ export default function AgentFollowupsPage() {
 
   const handlePresetClick = (preset: string) => {
     setDatePreset(preset);
-    const today = new Date().toISOString().split("T")[0];
     if (preset === "today") {
+      const today = getSaudiTodayDate();
       setStartDate(today); setEndDate(today);
     } else if (preset === "yesterday") {
-      const d = new Date(); d.setDate(d.getDate() - 1);
-      const s = d.toISOString().split("T")[0];
-      setStartDate(s); setEndDate(s);
+      const yesterday = getSaudiDateWithOffset(-1);
+      setStartDate(yesterday); setEndDate(yesterday);
     } else if (preset === "tomorrow") {
-      const d = new Date(); d.setDate(d.getDate() + 1);
-      const s = d.toISOString().split("T")[0];
-      setStartDate(s); setEndDate(s);
+      const tomorrow = getSaudiDateWithOffset(1);
+      setStartDate(tomorrow); setEndDate(tomorrow);
     } else {
       setStartDate(""); setEndDate("");
     }

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 import TimePicker24h from "@/components/admin/TimePicker24h";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface TrainDetail {
   id: number;
@@ -143,7 +144,7 @@ function EditTrainContent() {
       return;
     }
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getSaudiTodayDate();
     const originalDate = trnSelected?.date ? trnSelected.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
 
@@ -431,14 +432,14 @@ function EditTrainContent() {
                         className="form-input"
                         value={trnArrDate}
                         onChange={(e) => setTrnArrDate(e.target.value)}
-                        min={trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]}
+                        min={trnSelected && trnSelected.date && trnSelected.date < getSaudiTodayDate() ? trnSelected.date : getSaudiTodayDate()}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: trnArrDate && trnArrDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                          borderColor: trnArrDate && trnArrDate < (trnSelected && trnSelected.date && trnSelected.date < getSaudiTodayDate() ? trnSelected.date : getSaudiTodayDate()) ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {trnArrDate && trnArrDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) && (
+                    {trnArrDate && trnArrDate < (trnSelected && trnSelected.date && trnSelected.date < getSaudiTodayDate() ? trnSelected.date : getSaudiTodayDate()) && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>
@@ -502,14 +503,14 @@ function EditTrainContent() {
                         className="form-input"
                         value={trnDepDate}
                         onChange={(e) => setTrnDepDate(e.target.value)}
-                        min={trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]}
+                        min={trnSelected && trnSelected.date && trnSelected.date < getSaudiTodayDate() ? trnSelected.date : getSaudiTodayDate()}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: trnDepDate && trnDepDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                          borderColor: trnDepDate && trnDepDate < (trnSelected && trnSelected.date && trnSelected.date < getSaudiTodayDate() ? trnSelected.date : getSaudiTodayDate()) ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {trnDepDate && trnDepDate < (trnSelected && trnSelected.date && trnSelected.date < new Date().toISOString().split("T")[0] ? trnSelected.date : new Date().toISOString().split("T")[0]) && (
+                    {trnDepDate && trnDepDate < (trnSelected && trnSelected.date && trnSelected.date < getSaudiTodayDate() ? trnSelected.date : getSaudiTodayDate()) && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>

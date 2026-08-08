@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface VehicleOption {
   name: string;
@@ -388,7 +389,7 @@ export default function PublicHomePage() {
         alert("Please fill in all location and timing details.");
         return;
       }
-      if (bookingData.date < new Date().toISOString().split("T")[0]) {
+      if (bookingData.date < getSaudiTodayDate()) {
         alert("Pickup Date cannot be in the past.");
         return;
       }
@@ -697,12 +698,12 @@ export default function PublicHomePage() {
                       className="uc-form-input"
                       value={bookingData.date}
                       onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
-                      min={new Date().toISOString().split("T")[0]}
+                      min={getSaudiTodayDate()}
                       style={{
-                        borderColor: bookingData.date && bookingData.date < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                        borderColor: bookingData.date && bookingData.date < getSaudiTodayDate() ? "#ef4444" : undefined
                       }}
                     />
-                    {bookingData.date && bookingData.date < new Date().toISOString().split("T")[0] && (
+                    {bookingData.date && bookingData.date < getSaudiTodayDate() && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>

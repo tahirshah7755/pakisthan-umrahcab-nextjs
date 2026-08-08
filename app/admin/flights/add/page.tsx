@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+import { getSaudiTodayDate } from "@/utils/formatters";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 import TimePicker24h from "@/components/admin/TimePicker24h";
 
@@ -10,6 +11,8 @@ function AddFlightContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const customerId = searchParams.get("customerId") || "";
+
+  const saudiToday = getSaudiTodayDate();
 
   const [fltSelectedCustomerObj, setFltSelectedCustomerObj] = useState<any | null>(null);
   const [fltLeg, setFltLeg] = useState<"Arrival" | "Departure" | "Both Legs">("Arrival");
@@ -56,7 +59,7 @@ function AddFlightContent() {
       return;
     }
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = saudiToday;
     if (fltLeg === "Arrival" || fltLeg === "Both Legs") {
       if (fltArrDate && fltArrDate < todayStr) {
         showToast("Arrival date cannot be in the past.", "error");
@@ -273,14 +276,14 @@ function AddFlightContent() {
                         className="form-input"
                         value={fltArrDate}
                         onChange={(e) => setFltArrDate(e.target.value)}
-                        min={new Date().toISOString().split("T")[0]}
+                        min={saudiToday}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: fltArrDate && fltArrDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                          borderColor: fltArrDate && fltArrDate < saudiToday ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {fltArrDate && fltArrDate < new Date().toISOString().split("T")[0] && (
+                    {fltArrDate && fltArrDate < saudiToday && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>
@@ -324,14 +327,14 @@ function AddFlightContent() {
                         className="form-input"
                         value={fltDepDate}
                         onChange={(e) => setFltDepDate(e.target.value)}
-                        min={new Date().toISOString().split("T")[0]}
+                        min={saudiToday}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: fltDepDate && fltDepDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                          borderColor: fltDepDate && fltDepDate < saudiToday ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {fltDepDate && fltDepDate < new Date().toISOString().split("T")[0] && (
+                    {fltDepDate && fltDepDate < saudiToday && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>

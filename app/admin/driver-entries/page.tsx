@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 export default function AdminDriverEntriesPage() {
   const router = useRouter();
@@ -62,7 +63,7 @@ export default function AdminDriverEntriesPage() {
     driver_id: "",
     vehicle_id: "",
     manual_vehicle: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getSaudiTodayDate(),
     trip: "",
     hotel_drop_off: "",
     agent: "",
@@ -160,7 +161,7 @@ export default function AdminDriverEntriesPage() {
       driver_id: "",
       vehicle_id: "",
       manual_vehicle: "",
-      date: new Date().toISOString().split("T")[0],
+      date: getSaudiTodayDate(),
       trip: "",
       hotel_drop_off: "",
       agent: "",
@@ -205,7 +206,7 @@ export default function AdminDriverEntriesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getSaudiTodayDate();
     if (formData.date < todayStr) {
       showToast("Date cannot be in the past.", "error");
       return;
@@ -238,7 +239,7 @@ export default function AdminDriverEntriesPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEntry) return;
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getSaudiTodayDate();
     const originalDate = editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
     if (formData.date < minEditDate) {
@@ -540,7 +541,7 @@ export default function AdminDriverEntriesPage() {
           Number(item.pay_to_waqas || 0) + Number(item.mic || 0)
   , 0);
   const totalNetBalance = entries.reduce((sum, item) => sum + Number(item.total || 0), 0);
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getSaudiTodayDate();
   const editingEntryDateNormalized = editingEntry && editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
   const minDateVal = editingEntryDateNormalized && editingEntryDateNormalized < todayStr ? editingEntryDateNormalized : todayStr;
 

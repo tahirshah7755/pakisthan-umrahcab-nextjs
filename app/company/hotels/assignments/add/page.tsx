@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 const mockHotels = [
   { id: "m1", name: "Makkah Clock Royal Tower (Fairmont)", city: "Makkah" },
@@ -135,7 +136,7 @@ function AddHotelAssignmentContent() {
 
     const finalHotelName = isCustomHotel ? customHotelName : hotelName;
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getSaudiTodayDate();
     if (checkIn && checkIn < todayStr) {
       showToast("Check-in date cannot be in the past.", "error");
       return;
@@ -316,14 +317,14 @@ function AddHotelAssignmentContent() {
                     className="form-input"
                     value={checkIn}
                     onChange={(e) => setCheckIn(e.target.value)}
-                    min={new Date().toISOString().split("T")[0]}
+                    min={getSaudiTodayDate()}
                     style={{
                       paddingLeft: "15px",
-                      borderColor: checkIn && checkIn < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                      borderColor: checkIn && checkIn < getSaudiTodayDate() ? "#ef4444" : undefined
                     }}
                   />
                 </div>
-                {checkIn && checkIn < new Date().toISOString().split("T")[0] && (
+                {checkIn && checkIn < getSaudiTodayDate() && (
                   <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                     ⚠️ Past dates are not allowed.
                   </span>
@@ -338,14 +339,14 @@ function AddHotelAssignmentContent() {
                     className="form-input"
                     value={checkOut}
                     onChange={(e) => setCheckOut(e.target.value)}
-                    min={checkIn || new Date().toISOString().split("T")[0]}
+                    min={checkIn || getSaudiTodayDate()}
                     style={{
                       paddingLeft: "15px",
-                      borderColor: checkOut && checkOut < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                      borderColor: checkOut && checkOut < getSaudiTodayDate() ? "#ef4444" : undefined
                     }}
                   />
                 </div>
-                {checkOut && checkOut < new Date().toISOString().split("T")[0] && (
+                {checkOut && checkOut < getSaudiTodayDate() && (
                   <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                     ⚠️ Past dates are not allowed.
                   </span>

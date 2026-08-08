@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 import TimePicker24h from "@/components/admin/TimePicker24h";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 function AddTrainContent() {
   const router = useRouter();
@@ -56,7 +57,7 @@ function AddTrainContent() {
       return;
     }
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getSaudiTodayDate();
     if (trnLeg === "Arrival" || trnLeg === "Both Legs") {
       if (trnArrDate && trnArrDate < todayStr) {
         showToast("Arrival date cannot be in the past.", "error");
@@ -273,14 +274,14 @@ function AddTrainContent() {
                         className="form-input"
                         value={trnArrDate}
                         onChange={(e) => setTrnArrDate(e.target.value)}
-                        min={new Date().toISOString().split("T")[0]}
+                        min={getSaudiTodayDate()}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: trnArrDate && trnArrDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                          borderColor: trnArrDate && trnArrDate < getSaudiTodayDate() ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {trnArrDate && trnArrDate < new Date().toISOString().split("T")[0] && (
+                    {trnArrDate && trnArrDate < getSaudiTodayDate() && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>
@@ -324,14 +325,14 @@ function AddTrainContent() {
                         className="form-input"
                         value={trnDepDate}
                         onChange={(e) => setTrnDepDate(e.target.value)}
-                        min={new Date().toISOString().split("T")[0]}
+                        min={getSaudiTodayDate()}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: trnDepDate && trnDepDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                          borderColor: trnDepDate && trnDepDate < getSaudiTodayDate() ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {trnDepDate && trnDepDate < new Date().toISOString().split("T")[0] && (
+                    {trnDepDate && trnDepDate < getSaudiTodayDate() && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>

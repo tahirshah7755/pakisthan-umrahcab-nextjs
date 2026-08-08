@@ -65,7 +65,7 @@ export default function CompanyDashboardPage() {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
-        hour12: true,
+        hour12: false,
       });
       const dateFmt = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Riyadh",

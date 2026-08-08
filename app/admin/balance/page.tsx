@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useGetBalanceSummaryQuery } from "@/store/api/balanceApi";
 import { exportToExcel } from "@/utils/excelHelper";
 import { useGetCompaniesQuery, useUpdateCompanyMutation } from "@/store/api/companiesApi";
-import { formatDateToCustom } from "@/utils/formatters";
+import { formatDateToCustom, getSaudiTodayDate } from "@/utils/formatters";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -118,7 +118,7 @@ export default function BalancePage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `balance_statement_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `balance_statement_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -147,7 +147,7 @@ export default function BalancePage() {
       title: "Balance Statement Report",
       headers,
       rows: textRows,
-      filename: `balance_statement_${new Date().toISOString().split("T")[0]}.xls`,
+      filename: `balance_statement_${getSaudiTodayDate()}.xls`,
       totalsIndices: [3, 4, 5, 6, 7],
       statusIndex: 2
     });

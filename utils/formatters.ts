@@ -219,3 +219,29 @@ export const formatTimeTo24h = (timeStr: string | null | undefined): string => {
     return String(timeStr);
   }
 };
+
+/**
+ * Get current date in Saudi Arabia timezone (Asia/Riyadh) as "YYYY-MM-DD"
+ */
+export const getSaudiTodayDate = (): string => {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Riyadh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date());
+};
+
+/**
+ * Get date in Saudi Arabia timezone (Asia/Riyadh) offset by offsetDays as "YYYY-MM-DD"
+ */
+export const getSaudiDateWithOffset = (offsetDays: number): string => {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Riyadh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(new Date(Date.now() + offsetDays * 86400000));
+};
+
+

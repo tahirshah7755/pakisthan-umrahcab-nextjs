@@ -1,6 +1,7 @@
 import { api } from "@/utils/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface ExportOptions {
   title: string;
@@ -32,6 +33,7 @@ export function exportToExcel(options: ExportOptions) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Riyadh",
   });
 
   const headerCells = headers
@@ -110,7 +112,7 @@ export function exportToExcel(options: ExportOptions) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.setAttribute("download", `${filename.replace(/\.[^/.]+$/, "")}_${new Date().toISOString().split("T")[0]}.xls`);
+  link.setAttribute("download", `${filename.replace(/\.[^/.]+$/, "")}_${getSaudiTodayDate()}.xls`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -137,7 +139,7 @@ export function exportToCSV(options: ExportOptions) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.setAttribute("download", `${filename.replace(/\.[^/.]+$/, "")}_${new Date().toISOString().split("T")[0]}.csv`);
+  link.setAttribute("download", `${filename.replace(/\.[^/.]+$/, "")}_${getSaudiTodayDate()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -221,6 +223,7 @@ export async function exportToPDF(options: ExportOptions) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Riyadh",
   });
 
   if (mode === "Print") {
@@ -447,6 +450,6 @@ export async function exportToPDF(options: ExportOptions) {
     }
   }
 
-  const outFilename = filename.endsWith(".pdf") ? filename : `${filename}_${new Date().toISOString().split("T")[0]}.pdf`;
+  const outFilename = filename.endsWith(".pdf") ? filename : `${filename}_${getSaudiTodayDate()}.pdf`;
   doc.save(outFilename);
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCreateFollowupMutation } from "@/store/api/followupsApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { useGetCustomersQuery } from "@/store/api/customersApi";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface RatingSelectorProps {
   rating: number;
@@ -52,7 +53,7 @@ export default function AddFollowupPage() {
   const [formCompany, setFormCompany] = useState("");
   const [formCustomerId, setFormCustomerId] = useState("");
   const [formContact, setFormContact] = useState("");
-  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formDate, setFormDate] = useState(getSaudiTodayDate());
   const [formStatus, setFormStatus] = useState("Pending");
   
   // Custom serialized fields in notes

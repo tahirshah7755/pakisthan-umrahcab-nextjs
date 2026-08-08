@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface PaymentRecord {
   id: string;
@@ -67,7 +68,7 @@ export default function CompanyPaymentsPage() {
       title: "Corporate Balance Deposits Statement",
       headers,
       rows: textRows,
-      filename: `payments_${new Date().toISOString().split("T")[0]}.xls`,
+      filename: `payments_${getSaudiTodayDate()}.xls`,
       totalsIndices: [4],
       statusIndex: 6
     });
@@ -117,7 +118,7 @@ export default function CompanyPaymentsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `payments_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `payments_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

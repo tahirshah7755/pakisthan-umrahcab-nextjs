@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 export default function BulkDownloadsPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function BulkDownloadsPage() {
     try {
       const backupData: any = {
         metadata: {
-          timestamp: new Date().toISOString(),
+          timestamp: `${getSaudiTodayDate()}T${new Date().toLocaleTimeString("en-US", { timeZone: "Asia/Riyadh", hour12: false })}`,
           version: "2.0",
           tablesExported: []
         }
@@ -72,7 +73,7 @@ export default function BulkDownloadsPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `umrahcab_backup_${new Date().toISOString().split("T")[0]}.json`);
+      link.setAttribute("download", `umrahcab_backup_${getSaudiTodayDate()}.json`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

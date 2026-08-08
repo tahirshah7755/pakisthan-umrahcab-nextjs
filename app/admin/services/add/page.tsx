@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 import TimePicker24h from "@/components/admin/TimePicker24h";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 function AddServicePageContent() {
   const router = useRouter();
@@ -75,7 +76,7 @@ function AddServicePageContent() {
     if (!selectedCustomer) { showToast("Please select a customer.", "error"); return; }
     if (!srvName) { showToast("Service Description is required.", "error"); return; }
     if (!srvDate) { showToast("Service Date is required.", "error"); return; }
-    if (srvDate < new Date().toISOString().split("T")[0]) {
+    if (srvDate < getSaudiTodayDate()) {
       showToast("Service Date cannot be in the past.", "error");
       return;
     }
@@ -309,14 +310,14 @@ function AddServicePageContent() {
                 className="form-input"
                 value={srvDate}
                 onChange={(e) => setSrvDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
+                min={getSaudiTodayDate()}
                 style={{
-                  borderColor: srvDate && srvDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                  borderColor: srvDate && srvDate < getSaudiTodayDate() ? "#ef4444" : undefined
                 }}
                 required
               />
             </div>
-            {srvDate && srvDate < new Date().toISOString().split("T")[0] && (
+            {srvDate && srvDate < getSaudiTodayDate() && (
               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                 ⚠️ Past dates are not allowed. Please select a current or future date.
               </span>

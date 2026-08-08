@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCreatePaymentMutation } from "@/store/api/paymentsApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 export default function AddPaymentPage() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function AddPaymentPage() {
         transaction_ref: reference || undefined,
         proof_details: parts.length > 0 ? parts.join(" | ") : undefined,
         proof_file: screenshot1 || file1 || undefined,
-        date: new Date().toISOString().split("T")[0],
+        date: getSaudiTodayDate(),
       };
 
       await createPayment(payload).unwrap();

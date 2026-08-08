@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useGetPaymentsQuery, useUpdatePaymentStatusMutation, useDeletePaymentMutation } from "@/store/api/paymentsApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToExcel } from "@/utils/excelHelper";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 const fmt = (n: number, curr = "SAR") =>
   `${curr} ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -107,7 +108,7 @@ export default function PaymentsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `payments_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `payments_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -135,7 +136,7 @@ export default function PaymentsPage() {
       title: "Payments Register Report",
       headers,
       rows: textRows,
-      filename: `payments_${new Date().toISOString().split("T")[0]}.xls`,
+      filename: `payments_${getSaudiTodayDate()}.xls`,
       totalsIndices: [5],
       statusIndex: 7
     });
@@ -405,12 +406,14 @@ export default function PaymentsPage() {
   };
 
   const setQuickDateFilter = (days: number) => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - days);
+    const saudiTodayStr = getSaudiTodayDate();
+    const [year, month, day] = saudiTodayStr.split("-").map(Number);
+    const end = new Date(Date.UTC(year, month - 1, day));
+    const start = new Date(Date.UTC(year, month - 1, day));
+    start.setUTCDate(end.getUTCDate() - days);
 
     const startStr = start.toISOString().split("T")[0];
-    const endStr = end.toISOString().split("T")[0];
+    const endStr = saudiTodayStr;
 
     setStartDate(startStr);
     setEndDate(endStr);

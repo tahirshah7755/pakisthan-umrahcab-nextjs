@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
-import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
+import { formatDateToCustom, formatTimeTo24h, getSaudiTodayDate } from "@/utils/formatters";
 import TimePicker24h from "@/components/admin/TimePicker24h";
 
 interface ServiceItem {
@@ -543,7 +543,7 @@ _Thank you for choosing UmrahCab!_`;
 
               <div>
                 <label className="form-label">Service Date *</label>
-                <input type="date" className="form-input" value={editDate} onChange={(e) => setEditDate(e.target.value)} min={editDate && editDate < new Date().toISOString().split("T")[0] ? editDate : new Date().toISOString().split("T")[0]} required />
+                <input type="date" className="form-input" value={editDate} onChange={(e) => setEditDate(e.target.value)} min={editDate && editDate < getSaudiTodayDate() ? editDate : getSaudiTodayDate()} required />
               </div>
 
               <div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { exportToExcel } from "@/utils/excelHelper";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface LedgerRecord {
   id: string;
@@ -132,7 +133,7 @@ export default function CompanyLedgerPage() {
       title: "Agent Account Ledger Statement",
       headers,
       rows: textRows,
-      filename: `ledger_${new Date().toISOString().split("T")[0]}.xls`,
+      filename: `ledger_${getSaudiTodayDate()}.xls`,
       totalsIndices: [3, 4]
     });
   };
@@ -179,7 +180,7 @@ export default function CompanyLedgerPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `ledger_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `ledger_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

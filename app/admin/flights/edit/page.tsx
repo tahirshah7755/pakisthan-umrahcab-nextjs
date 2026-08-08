@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+import { getSaudiTodayDate } from "@/utils/formatters";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
 import TimePicker24h from "@/components/admin/TimePicker24h";
 
@@ -29,6 +30,8 @@ function EditFlightContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryId = searchParams.get("id");
+
+  const saudiToday = getSaudiTodayDate();
 
   const [fltSelected, setFltSelected] = useState<FlightDetail | null>(null);
   const [singleFltLoading, setSingleFltLoading] = useState(true);
@@ -144,7 +147,7 @@ function EditFlightContent() {
       return;
     }
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = saudiToday;
     const originalDate = fltSelected?.date ? fltSelected.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
 
@@ -434,14 +437,14 @@ function EditFlightContent() {
                         className="form-input"
                         value={fltArrDate}
                         onChange={(e) => setFltArrDate(e.target.value)}
-                        min={fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]}
+                        min={fltSelected && fltSelected.date && fltSelected.date < saudiToday ? fltSelected.date : saudiToday}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: fltArrDate && fltArrDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                          borderColor: fltArrDate && fltArrDate < (fltSelected && fltSelected.date && fltSelected.date < saudiToday ? fltSelected.date : saudiToday) ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {fltArrDate && fltArrDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) && (
+                    {fltArrDate && fltArrDate < (fltSelected && fltSelected.date && fltSelected.date < saudiToday ? fltSelected.date : saudiToday) && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>
@@ -507,14 +510,14 @@ function EditFlightContent() {
                         className="form-input"
                         value={fltDepDate}
                         onChange={(e) => setFltDepDate(e.target.value)}
-                        min={fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]}
+                        min={fltSelected && fltSelected.date && fltSelected.date < saudiToday ? fltSelected.date : saudiToday}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: fltDepDate && fltDepDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                          borderColor: fltDepDate && fltDepDate < (fltSelected && fltSelected.date && fltSelected.date < saudiToday ? fltSelected.date : saudiToday) ? "#ef4444" : undefined
                         }}
                       />
                     </div>
-                    {fltDepDate && fltDepDate < (fltSelected && fltSelected.date && fltSelected.date < new Date().toISOString().split("T")[0] ? fltSelected.date : new Date().toISOString().split("T")[0]) && (
+                    {fltDepDate && fltDepDate < (fltSelected && fltSelected.date && fltSelected.date < saudiToday ? fltSelected.date : saudiToday) && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { exportToExcel } from "@/utils/excelHelper";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface InvoiceRecord {
   id: string;
@@ -53,7 +54,7 @@ export default function CompanyInvoicesPage() {
       title: "Agent Invoices Statement",
       headers,
       rows: textRows,
-      filename: `invoices_${new Date().toISOString().split("T")[0]}.xls`,
+      filename: `invoices_${getSaudiTodayDate()}.xls`,
       totalsIndices: [5, 6],
       statusIndex: 7
     });
@@ -105,7 +106,7 @@ export default function CompanyInvoicesPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `invoices_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `invoices_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

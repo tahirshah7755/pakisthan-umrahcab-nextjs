@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 import TimePicker24h from "@/components/admin/TimePicker24h";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface CompanyItem {
   id: string;
@@ -74,6 +75,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
 }) => {
   const { companyUser } = useAuth();
   const pathname = usePathname();
+  const saudiToday = getSaudiTodayDate();
   const isCompanyPanel = pathname?.startsWith("/company");
 
   const [activeStep, setActiveStep] = useState(1);
@@ -638,7 +640,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       }
     }
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = saudiToday;
 
     if (step === 2) {
       routes.forEach((route, idx) => {
@@ -900,7 +902,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       const customerId = createdCustomer.id;
 
       // 3. Create Booking Record per Route
-      const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = saudiToday;
 
       let bookingFlightNo = null;
       if (requireFlight) {
@@ -1393,16 +1395,16 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               className="form-input"
                               value={route.pickupDate}
                               onChange={(e) => updateRouteField(index, "pickupDate", e.target.value)}
-                              min={new Date().toISOString().split("T")[0]}
+                              min={saudiToday}
                               required
                               style={{
                                 paddingLeft: "42px",
                                 width: "100%",
-                                borderColor: (errors[`route_${index}_pickupDate`] || (route.pickupDate && route.pickupDate < new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                                borderColor: (errors[`route_${index}_pickupDate`] || (route.pickupDate && route.pickupDate < saudiToday)) ? "#ef4444" : undefined
                               }}
                             />
                           </div>
-                          {(errors[`route_${index}_pickupDate`] || (route.pickupDate && route.pickupDate < new Date().toISOString().split("T")[0])) && (
+                          {(errors[`route_${index}_pickupDate`] || (route.pickupDate && route.pickupDate < saudiToday)) && (
                             <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                               {errors[`route_${index}_pickupDate`] || "⚠️ Past dates are not allowed. Please select a current or future date."}
                             </span>
@@ -2026,14 +2028,14 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               className="form-input"
                               value={fltArrDate}
                               onChange={(e) => setFltArrDate(e.target.value)}
-                              min={new Date().toISOString().split("T")[0]}
+                              min={saudiToday}
                               required={fltLeg === "Arrival" || fltLeg === "Both Legs"}
                               style={{
                                 paddingLeft: "15px",
-                                borderColor: (errors.fltArrDate || (fltArrDate && fltArrDate < new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                                borderColor: (errors.fltArrDate || (fltArrDate && fltArrDate < saudiToday)) ? "#ef4444" : undefined
                               }}
                             />
-                            {(errors.fltArrDate || (fltArrDate && fltArrDate < new Date().toISOString().split("T")[0])) && (
+                            {(errors.fltArrDate || (fltArrDate && fltArrDate < saudiToday)) && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                                 {errors.fltArrDate || "⚠️ Past dates are not allowed. Please select a current or future date."}
                               </span>
@@ -2090,14 +2092,14 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               className="form-input"
                               value={fltDepDate}
                               onChange={(e) => setFltDepDate(e.target.value)}
-                              min={new Date().toISOString().split("T")[0]}
+                              min={saudiToday}
                               required={fltLeg === "Departure" || fltLeg === "Both Legs"}
                               style={{
                                 paddingLeft: "15px",
-                                borderColor: (errors.fltDepDate || (fltDepDate && fltDepDate < new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                                borderColor: (errors.fltDepDate || (fltDepDate && fltDepDate < saudiToday)) ? "#ef4444" : undefined
                               }}
                             />
-                            {(errors.fltDepDate || (fltDepDate && fltDepDate < new Date().toISOString().split("T")[0])) && (
+                            {(errors.fltDepDate || (fltDepDate && fltDepDate < saudiToday)) && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                                 {errors.fltDepDate || "⚠️ Past dates are not allowed. Please select a current or future date."}
                               </span>
@@ -2227,14 +2229,14 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               className="form-input"
                               value={trnArrDate}
                               onChange={(e) => setTrnArrDate(e.target.value)}
-                              min={new Date().toISOString().split("T")[0]}
+                              min={saudiToday}
                               required={trnLeg === "Arrival" || trnLeg === "Both Legs"}
                               style={{
                                 paddingLeft: "15px",
-                                borderColor: (errors.trnArrDate || (trnArrDate && trnArrDate < new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                                borderColor: (errors.trnArrDate || (trnArrDate && trnArrDate < saudiToday)) ? "#ef4444" : undefined
                               }}
                             />
-                            {(errors.trnArrDate || (trnArrDate && trnArrDate < new Date().toISOString().split("T")[0])) && (
+                            {(errors.trnArrDate || (trnArrDate && trnArrDate < saudiToday)) && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                                 {errors.trnArrDate || "⚠️ Past dates are not allowed. Please select a current or future date."}
                               </span>
@@ -2291,14 +2293,14 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                               className="form-input"
                               value={trnDepDate}
                               onChange={(e) => setTrnDepDate(e.target.value)}
-                              min={new Date().toISOString().split("T")[0]}
+                              min={saudiToday}
                               required={trnLeg === "Departure" || trnLeg === "Both Legs"}
                               style={{
                                 paddingLeft: "15px",
-                                borderColor: (errors.trnDepDate || (trnDepDate && trnDepDate < new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                                borderColor: (errors.trnDepDate || (trnDepDate && trnDepDate < saudiToday)) ? "#ef4444" : undefined
                               }}
                             />
-                            {(errors.trnDepDate || (trnDepDate && trnDepDate < new Date().toISOString().split("T")[0])) && (
+                            {(errors.trnDepDate || (trnDepDate && trnDepDate < saudiToday)) && (
                               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                                 {errors.trnDepDate || "⚠️ Past dates are not allowed. Please select a current or future date."}
                               </span>
@@ -2393,13 +2395,13 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         className="form-input"
                         value={hotelCheckin}
                         onChange={(e) => setHotelCheckin(e.target.value)}
-                        min={new Date().toISOString().split("T")[0]}
+                        min={saudiToday}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: (errors.hotelCheckin || (hotelCheckin && hotelCheckin < new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                          borderColor: (errors.hotelCheckin || (hotelCheckin && hotelCheckin < saudiToday)) ? "#ef4444" : undefined
                         }}
                       />
-                      {(errors.hotelCheckin || (hotelCheckin && hotelCheckin < new Date().toISOString().split("T")[0])) && (
+                      {(errors.hotelCheckin || (hotelCheckin && hotelCheckin < saudiToday)) && (
                         <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                           {errors.hotelCheckin || "⚠️ Past dates are not allowed. Please select a current or future date."}
                         </span>
@@ -2413,13 +2415,13 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                         className="form-input"
                         value={hotelCheckout}
                         onChange={(e) => setHotelCheckout(e.target.value)}
-                        min={hotelCheckin || new Date().toISOString().split("T")[0]}
+                        min={hotelCheckin || saudiToday}
                         style={{
                           paddingLeft: "15px",
-                          borderColor: (errors.hotelCheckout || (hotelCheckout && hotelCheckout < new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                          borderColor: (errors.hotelCheckout || (hotelCheckout && hotelCheckout < saudiToday)) ? "#ef4444" : undefined
                         }}
                       />
-                      {(errors.hotelCheckout || (hotelCheckout && hotelCheckout < new Date().toISOString().split("T")[0])) && (
+                      {(errors.hotelCheckout || (hotelCheckout && hotelCheckout < saudiToday)) && (
                         <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                           {errors.hotelCheckout || "⚠️ Past dates are not allowed. Please select a current or future date."}
                         </span>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import CustomerSearchDropdown from "@/components/admin/CustomerSearchDropdown";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 const mockHotels = [
   { id: "m1", name: "Makkah Clock Royal Tower (Fairmont)", city: "Makkah" },
@@ -189,7 +190,7 @@ function EditHotelAssignmentContent() {
     }
     if (!queryId) return;
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getSaudiTodayDate();
     const minCheckIn = originalCheckIn && originalCheckIn < todayStr ? originalCheckIn : todayStr;
     const minCheckOut = originalCheckOut && originalCheckOut < todayStr ? originalCheckOut : todayStr;
 
@@ -418,14 +419,14 @@ function EditHotelAssignmentContent() {
                   className="form-input"
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
-                  min={originalCheckIn && originalCheckIn < new Date().toISOString().split("T")[0] ? originalCheckIn : new Date().toISOString().split("T")[0]}
+                  min={originalCheckIn && originalCheckIn < getSaudiTodayDate() ? originalCheckIn : getSaudiTodayDate()}
                   style={{
                     width: "100%",
                     paddingLeft: "12px",
-                    borderColor: checkIn && checkIn < (originalCheckIn && originalCheckIn < new Date().toISOString().split("T")[0] ? originalCheckIn : new Date().toISOString().split("T")[0]) ? "#ef4444" : undefined
+                    borderColor: checkIn && checkIn < (originalCheckIn && originalCheckIn < getSaudiTodayDate() ? originalCheckIn : getSaudiTodayDate()) ? "#ef4444" : undefined
                   }}
                 />
-                {checkIn && checkIn < (originalCheckIn && originalCheckIn < new Date().toISOString().split("T")[0] ? originalCheckIn : new Date().toISOString().split("T")[0]) && (
+                {checkIn && checkIn < (originalCheckIn && originalCheckIn < getSaudiTodayDate() ? originalCheckIn : getSaudiTodayDate()) && (
                   <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                     ⚠️ Past dates are not allowed.
                   </span>
@@ -438,14 +439,14 @@ function EditHotelAssignmentContent() {
                   className="form-input"
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  min={checkIn || (originalCheckOut && originalCheckOut < new Date().toISOString().split("T")[0] ? originalCheckOut : new Date().toISOString().split("T")[0])}
+                  min={checkIn || (originalCheckOut && originalCheckOut < getSaudiTodayDate() ? originalCheckOut : getSaudiTodayDate())}
                   style={{
                     width: "100%",
                     paddingLeft: "12px",
-                    borderColor: checkOut && checkOut < (checkIn || (originalCheckOut && originalCheckOut < new Date().toISOString().split("T")[0] ? originalCheckOut : new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                    borderColor: checkOut && checkOut < (checkIn || (originalCheckOut && originalCheckOut < getSaudiTodayDate() ? originalCheckOut : getSaudiTodayDate())) ? "#ef4444" : undefined
                   }}
                 />
-                {checkOut && checkOut < (checkIn || (originalCheckOut && originalCheckOut < new Date().toISOString().split("T")[0] ? originalCheckOut : new Date().toISOString().split("T")[0])) && (
+                {checkOut && checkOut < (checkIn || (originalCheckOut && originalCheckOut < getSaudiTodayDate() ? originalCheckOut : getSaudiTodayDate())) && (
                   <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                     ⚠️ Past dates are not allowed.
                   </span>

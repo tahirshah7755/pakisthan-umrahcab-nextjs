@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api, getDefaultPhoneCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
-import { formatDateToCustom, formatTimeTo24h } from "@/utils/formatters";
+import { formatDateToCustom, formatTimeTo24h, getSaudiTodayDate } from "@/utils/formatters";
 import TimePicker24h from "@/components/admin/TimePicker24h";
 
 const defaultCountryCodes = [
@@ -503,7 +503,7 @@ function AddNewBookingContent() {
       showToast("Please enter pickup date and time.", "error");
       return;
     }
-    if (pickupDate < new Date().toISOString().split("T")[0]) {
+    if (pickupDate < getSaudiTodayDate()) {
       showToast("Pickup Date cannot be in the past.", "error");
       return;
     }
@@ -773,14 +773,14 @@ function AddNewBookingContent() {
                 className="form-input"
                 value={pickupDate}
                 onChange={(e) => setPickupDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
+                min={getSaudiTodayDate()}
                 style={{
-                  borderColor: pickupDate && pickupDate < new Date().toISOString().split("T")[0] ? "#ef4444" : undefined
+                  borderColor: pickupDate && pickupDate < getSaudiTodayDate() ? "#ef4444" : undefined
                 }}
                 required
               />
             </div>
-            {pickupDate && pickupDate < new Date().toISOString().split("T")[0] && (
+            {pickupDate && pickupDate < getSaudiTodayDate() && (
               <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                 ⚠️ Past dates are not allowed. Please select a current or future date.
               </span>

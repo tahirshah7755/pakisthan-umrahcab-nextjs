@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
-import { formatDateToCustom } from "@/utils/formatters";
+import { formatDateToCustom, getSaudiTodayDate } from "@/utils/formatters";
 import { exportToExcel } from "@/utils/excelHelper";
 
 interface FlightItem {
@@ -203,7 +203,7 @@ export default function FlightsDirectory() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `flights_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `flights_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -231,7 +231,7 @@ export default function FlightsDirectory() {
       title: "Flight Passenger Registry",
       headers,
       rows: textRows,
-      filename: `flights_${new Date().toISOString().split("T")[0]}.xls`
+      filename: `flights_${getSaudiTodayDate()}.xls`
     });
   };
 
@@ -247,7 +247,7 @@ export default function FlightsDirectory() {
       return;
     }
 
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" });
     
     const rowsHtml = flights.map((f: any) => `
       <tr>

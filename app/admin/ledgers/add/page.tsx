@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateLedgerMutation } from "@/store/api/ledgersApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 export default function AddLedgerPage() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function AddLedgerPage() {
     try {
       const payload = {
         company: companyName,
-        date: new Date().toISOString().split("T")[0],
+        date: getSaudiTodayDate(),
         description: description,
         // The Laravel UcLedger model calculates running balance based on debit/credit values
         debit: entryType === "Debit" ? amount : 0,

@@ -6,6 +6,7 @@ import { useGetLedgersQuery, useGetDirectClientsLedgerQuery } from "@/store/api/
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToExcel } from "@/utils/excelHelper";
 import { api } from "@/utils/api";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -180,12 +181,14 @@ export default function LedgersPage() {
   };
 
   const setQuickDateFilter = (type: "VW" | "PW", days: number) => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - days);
+    const saudiTodayStr = getSaudiTodayDate();
+    const [year, month, day] = saudiTodayStr.split("-").map(Number);
+    const end = new Date(Date.UTC(year, month - 1, day));
+    const start = new Date(Date.UTC(year, month - 1, day));
+    start.setUTCDate(end.getUTCDate() - days);
 
     const startStr = start.toISOString().split("T")[0];
-    const endStr = end.toISOString().split("T")[0];
+    const endStr = saudiTodayStr;
 
     setStartDate(startStr);
     setEndDate(endStr);
@@ -246,7 +249,7 @@ export default function LedgersPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `ledgers_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `ledgers_${getSaudiTodayDate()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -274,7 +277,7 @@ export default function LedgersPage() {
       title: "Ledger Audit Report",
       headers,
       rows,
-      filename: `ledgers_${new Date().toISOString().split("T")[0]}.xls`,
+      filename: `ledgers_${getSaudiTodayDate()}.xls`,
       totalsIndices: [4, 5]
     });
   };
@@ -291,7 +294,7 @@ export default function LedgersPage() {
       return;
     }
 
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" });
     
     const rowsHtml = filteredLedgers.map((ld: any) => `
       <tr>
@@ -369,7 +372,7 @@ export default function LedgersPage() {
       return;
     }
 
-    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" });
     const formattedDate = ld.date ? new Date(ld.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--";
     const debitStr = ld.debit > 0 ? fmt(ld.debit) : "--";
     const creditStr = ld.credit > 0 ? fmt(ld.credit) : "--";

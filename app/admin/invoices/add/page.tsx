@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { useCalculateInvoiceMutation, useCreateInvoiceMutation } from "@/store/api/invoicesApi";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -14,7 +15,7 @@ export default function AddInvoicePage() {
   // Form states
   const [selectedCompany, setSelectedCompany] = useState("");
   const [startDate,       setStartDate]       = useState("");
-  const [endDate,         setEndDate]         = useState(new Date().toISOString().split("T")[0]);
+  const [endDate,         setEndDate]         = useState(getSaudiTodayDate());
   const [calculationType, setCalculationType] = useState<"VW" | "PW">("VW");
   const [remarks,         setRemarks]         = useState("");
 
@@ -101,7 +102,7 @@ export default function AddInvoicePage() {
       // 2. Save invoice to backend
       const saveRes = await createInvoice({
         customer: selectedCompany,
-        date: new Date().toISOString().split("T")[0],
+        date: getSaudiTodayDate(),
         period: `${startDate} to ${endDate}`,
         type: calculationType,
         amount: totalAmt,

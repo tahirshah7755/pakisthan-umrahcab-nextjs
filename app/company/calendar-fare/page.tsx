@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { useRouter } from "next/navigation";
+import { getSaudiTodayDate } from "@/utils/formatters";
 
 interface PriceCell {
   price: string;
@@ -36,7 +37,7 @@ export default function CalendarFarePage() {
   // Selector state
   const [selectedRouteId, setSelectedRouteId] = useState("");
   const [selectedDate, setSelectedDate] = useState(() => {
-    return new Date().toISOString().split("T")[0];
+    return getSaudiTodayDate();
   });
 
   // Calendar render helper

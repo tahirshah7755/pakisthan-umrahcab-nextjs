@@ -239,7 +239,7 @@ export default function AdminDriverEntriesPage() {
     e.preventDefault();
     if (!editingEntry) return;
     const todayStr = new Date().toISOString().split("T")[0];
-    const originalDate = editingEntry.date;
+    const originalDate = editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
     if (formData.date < minEditDate) {
       showToast("Date cannot be in the past.", "error");
@@ -540,6 +540,9 @@ export default function AdminDriverEntriesPage() {
           Number(item.pay_to_waqas || 0) + Number(item.mic || 0)
   , 0);
   const totalNetBalance = entries.reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const editingEntryDateNormalized = editingEntry && editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
+  const minDateVal = editingEntryDateNormalized && editingEntryDateNormalized < todayStr ? editingEntryDateNormalized : todayStr;
 
   return (
     <div className="entries-page-container">
@@ -882,6 +885,12 @@ export default function AdminDriverEntriesPage() {
           display: flex;
           flex-direction: column;
           animation: modalEnter 0.2s ease-out;
+        }
+        .modal-window form {
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          flex-grow: 1;
         }
         @keyframes modalEnter {
           from { opacity: 0; transform: scale(0.96); }
@@ -1471,13 +1480,13 @@ export default function AdminDriverEntriesPage() {
                       name="date"
                       value={formData.date}
                       onChange={handleInputChange}
-                      min={editingEntry && editingEntry.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0]}
+                      min={minDateVal}
                       className="input-control"
                       style={{
-                        borderColor: (formData.date && formData.date < (editingEntry && editingEntry.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                        borderColor: (formData.date && formData.date < minDateVal) ? "#ef4444" : undefined
                       }}
                     />
-                    {formData.date && formData.date < (editingEntry && editingEntry.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0]) && (
+                    {formData.date && formData.date < minDateVal && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>

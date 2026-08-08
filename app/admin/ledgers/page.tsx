@@ -362,6 +362,97 @@ export default function LedgersPage() {
     printWindow.document.close();
   };
 
+  const handlePrintSingle = (ld: any) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const formattedDate = ld.date ? new Date(ld.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--";
+    const debitStr = ld.debit > 0 ? fmt(ld.debit) : "--";
+    const creditStr = ld.credit > 0 ? fmt(ld.credit) : "--";
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Ledger Voucher - ${ld.custom_id || `LED-${ld.id}`}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .receipt-container { max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 30px; borderRadius: 12px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ea580c; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #ea580c; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            .details-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+            .details-label { color: #64748b; font-weight: 600; }
+            .details-value { color: #1e293b; font-weight: 700; }
+            .remarks-box { margin-top: 25px; padding: 15px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; }
+            .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+            @media print {
+              body { margin: 20px; }
+              .receipt-container { border: none; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-container">
+            <div class="header">
+              <div>
+                <h1>Ledger Voucher</h1>
+                <p>Umrah Cab Account Statement Receipt</p>
+              </div>
+              <div style="text-align: right;">
+                <p><strong>Print Date:</strong> ${today}</p>
+              </div>
+            </div>
+            
+            <div class="details-row">
+              <span class="details-label">Voucher Code</span>
+              <span class="details-value" style="color: #ea580c;">${ld.custom_id || `LED-${ld.id}`}</span>
+            </div>
+            <div class="details-row">
+              <span class="details-label">Company / Account</span>
+              <span class="details-value">${ld.company || ""}</span>
+            </div>
+            <div class="details-row">
+              <span class="details-label">Transaction Date</span>
+              <span class="details-value">${formattedDate}</span>
+            </div>
+            <div class="details-row">
+              <span class="details-label">Debit (Dr) - Reduction</span>
+              <span class="details-value">${debitStr}</span>
+            </div>
+            <div class="details-row">
+              <span class="details-label">Credit (Cr) - Addition</span>
+              <span class="details-value" style="color: #059669;">${creditStr}</span>
+            </div>
+            <div class="details-row" style="border-bottom: 2px solid #e2e8f0;">
+              <span class="details-label">Resulting Ledger Balance</span>
+              <span class="details-value" style="font-size: 16px;">${fmt(ld.balance)}</span>
+            </div>
+
+            <div class="remarks-box">
+              <strong style="display: block; margin-bottom: 5px; color: #475569;">Description / Remarks:</strong>
+              <span style="color: #334155;">${ld.description || "No description provided."}</span>
+            </div>
+
+            <div class="footer">
+              Thank you for choosing Umrah Cab &bull; Ledger Auditor Verification System
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "10px" }}>
       {/* Toast Notification */}
@@ -851,7 +942,7 @@ export default function LedgersPage() {
                       <td style={{ paddingRight: "16px", textAlign: "right" }}>
                         <button
                           title="Print Ledger Report"
-                          onClick={() => showToast(`Printing ledger statement ${ld.custom_id}...`, "success")}
+                          onClick={() => handlePrintSingle(ld)}
                           style={{ background: "#eff6ff", color: "#1e5cff", border: "none", borderRadius: "6px", width: "28px", height: "28px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                         >
                           <i className="fas fa-print"></i>

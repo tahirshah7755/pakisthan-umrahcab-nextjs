@@ -336,7 +336,7 @@ export default function DriverDashboardPage() {
     setSuccessMessage("");
 
     const todayStr = new Date().toISOString().split("T")[0];
-    const originalDate = editingEntry.date;
+    const originalDate = editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
     if (editFormData.date < minEditDate) {
       setErrorMessage("Date cannot be in the past.");
@@ -598,6 +598,10 @@ export default function DriverDashboardPage() {
   // Stats
   const totalSubmissions = entries.length;
   const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0) + Number(item.waqas_received || 0), 0);
+
+  const todayStr = new Date().toISOString().split("T")[0];
+  const editingEntryDateNormalized = editingEntry && editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
+  const minDateVal = editingEntryDateNormalized && editingEntryDateNormalized < todayStr ? editingEntryDateNormalized : todayStr;
 
   return (
     <div className="driver-dashboard-page">
@@ -1836,13 +1840,13 @@ export default function DriverDashboardPage() {
                       name="date"
                       value={editFormData.date}
                       onChange={handleEditInputChange}
-                      min={editFormData.date && editFormData.date < new Date().toISOString().split("T")[0] ? editFormData.date : new Date().toISOString().split("T")[0]}
+                      min={minDateVal}
                       className="form-input"
                       style={{
-                        borderColor: (editFormData.date && editFormData.date < (editingEntry?.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0])) ? "#ef4444" : undefined
+                        borderColor: (editFormData.date && editFormData.date < minDateVal) ? "#ef4444" : undefined
                       }}
                     />
-                    {editFormData.date && editFormData.date < (editingEntry?.date && editingEntry.date < new Date().toISOString().split("T")[0] ? editingEntry.date : new Date().toISOString().split("T")[0]) && (
+                    {editFormData.date && editFormData.date < minDateVal && (
                       <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                         ⚠️ Past dates are not allowed. Please select a current or future date.
                       </span>

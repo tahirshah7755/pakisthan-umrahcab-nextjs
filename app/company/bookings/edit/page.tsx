@@ -386,8 +386,8 @@ function BookingEditContent() {
         setLoading(true);
         const b = await api.getBooking(targetId);
         if (b) {
-          setPickupDate(b.date || "");
-          setOriginalDate(b.date || "");
+          setPickupDate(b.date ? b.date.split("T")[0].split(" ")[0] : "");
+          setOriginalDate(b.date ? b.date.split("T")[0].split(" ")[0] : "");
           setPickupTime(b.time ? b.time.substring(0, 5) : "");
           setPickupLocation(b.pickup || "");
           setDropoffLocation(b.destination || "");

@@ -223,6 +223,102 @@ export default function PaymentsPage() {
     printWindow.document.close();
   };
 
+  const handlePrintSingle = (p: any) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const formattedDate = p.date ? new Date(p.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "--";
+    const amountStr = fmt(p.amount, p.currency);
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payment Receipt - ${p.custom_id || `PAY-${p.id}`}</title>
+          <style>
+            body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+            .receipt-container { max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 30px; borderRadius: 12px; }
+            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0d9488; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #0d9488; font-size: 24px; }
+            .header p { margin: 5px 0 0 0; color: #64748b; font-size: 13px; }
+            .details-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+            .details-label { color: #64748b; font-weight: 600; }
+            .details-value { color: #1e293b; font-weight: 700; }
+            .remarks-box { margin-top: 25px; padding: 15px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; }
+            .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+            @media print {
+              body { margin: 20px; }
+              .receipt-container { border: none; padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-container">
+            <div class="header">
+              <div>
+                <h1>Payment Receipt</h1>
+                <p>Corporate Deposit Voucher Registry</p>
+              </div>
+              <div style="text-align: right;">
+                <p><strong>Print Date:</strong> ${today}</p>
+              </div>
+            </div>
+            
+            <div class="details-row">
+              <span class="details-label">Reference ID</span>
+              <span class="details-value" style="color: #0d9488;">${p.custom_id || `PAY-${p.id}`}</span>
+            </div>
+            <div class="details-row">
+              <span class="details-label">B2B Company / Client</span>
+              <span class="details-value">${p.company || ""}</span>
+            </div>
+            <div class="details-row">
+              <span class="details-label">Payment Date</span>
+              <span class="details-value">${formattedDate}</span>
+            </div>
+            <div class="details-row">
+              <span class="details-label">Payment Method</span>
+              <span class="details-value">${p.method || ""}</span>
+            </div>
+            ${p.transaction_ref ? `
+            <div class="details-row">
+              <span class="details-label">Transaction Ref / Cheque</span>
+              <span class="details-value">${p.transaction_ref}</span>
+            </div>
+            ` : ""}
+            <div class="details-row">
+              <span class="details-label">Audit Status</span>
+              <span class="details-value" style="text-transform: uppercase;">${p.status || "Pending"}</span>
+            </div>
+            <div class="details-row" style="border-bottom: 2px solid #e2e8f0;">
+              <span class="details-label">Deposited Amount</span>
+              <span class="details-value" style="font-size: 18px; color: ${p.amount < 0 ? "#dc2626" : "#059669"};">${amountStr}</span>
+            </div>
+
+            <div class="remarks-box">
+              <strong style="display: block; margin-bottom: 5px; color: #475569;">Transaction Notes:</strong>
+              <span style="color: #334155;">${p.remarks || "No remarks/notes recorded for this transaction."}</span>
+            </div>
+
+            <div class="footer">
+              Thank you for choosing Umrah Cab &bull; Corporate Financial Ledger Registry
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // RTK Queries
   const { data: paymentsData, isLoading, isFetching } = useGetPaymentsQuery({
     page: currentPage,
@@ -763,7 +859,7 @@ export default function PaymentsPage() {
                         <div style={{ display: "inline-flex", gap: "6px" }}>
                           <button
                             title="Print Receipt"
-                            onClick={() => showToast(`Downloading receipt for payment ${p.custom_id || p.id}...`, "success")}
+                            onClick={() => handlePrintSingle(p)}
                             style={{ background: "#f0fdf4", color: "#16a34a", border: "none", borderRadius: "6px", width: "28px", height: "28px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
                           >
                             <i className="fas fa-print"></i>

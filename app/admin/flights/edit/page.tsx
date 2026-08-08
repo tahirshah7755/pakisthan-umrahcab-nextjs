@@ -145,7 +145,7 @@ function EditFlightContent() {
     }
 
     const todayStr = new Date().toISOString().split("T")[0];
-    const originalDate = fltSelected?.date || "";
+    const originalDate = fltSelected?.date ? fltSelected.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
 
     if (editFltLeg === "Arrival" || editFltLeg === "Both Legs") {

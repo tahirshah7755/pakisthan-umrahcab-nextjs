@@ -144,7 +144,7 @@ function EditTrainContent() {
     }
 
     const todayStr = new Date().toISOString().split("T")[0];
-    const originalDate = trnSelected?.date || "";
+    const originalDate = trnSelected?.date ? trnSelected.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
 
     if (trnLeg === "Arrival" || trnLeg === "Both Legs") {

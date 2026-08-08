@@ -128,10 +128,10 @@ function EditHotelAssignmentContent() {
           }
 
           setHotelActive(h.active);
-          setCheckIn(h.check_in || "");
-          setCheckOut(h.check_out || "");
-          setOriginalCheckIn(h.check_in || "");
-          setOriginalCheckOut(h.check_out || "");
+          setCheckIn(h.check_in ? h.check_in.split("T")[0].split(" ")[0] : "");
+          setCheckOut(h.check_out ? h.check_out.split("T")[0].split(" ")[0] : "");
+          setOriginalCheckIn(h.check_in ? h.check_in.split("T")[0].split(" ")[0] : "");
+          setOriginalCheckOut(h.check_out ? h.check_out.split("T")[0].split(" ")[0] : "");
           setCustomId(h.custom_id || "");
 
           // Load customer details

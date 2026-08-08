@@ -477,6 +477,12 @@ export default function AdminDriversPage() {
           flex-direction: column;
           animation: modalEnter 0.2s ease-out;
         }
+        .modal-window form {
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          flex-grow: 1;
+        }
         @keyframes modalEnter {
           from { opacity: 0; transform: scale(0.96); }
           to { opacity: 1; transform: scale(1); }

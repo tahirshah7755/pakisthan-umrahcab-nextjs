@@ -34,6 +34,7 @@ export default function DriverDashboardPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [serverToday, setServerToday] = useState(getSaudiTodayDate());
 
   // UI Helper States for Custom Inputs
   const [customTripActive, setCustomTripActive] = useState(false);
@@ -84,6 +85,19 @@ export default function DriverDashboardPage() {
     loadEntries();
     loadCompanies();
     loadVehicles();
+
+    async function fetchServerTime() {
+      try {
+        const timeData = await api.getServerTime();
+        if (timeData && timeData.date) {
+          setServerToday(timeData.date);
+          setFormData(prev => ({ ...prev, date: timeData.date }));
+        }
+      } catch (err) {
+        console.warn("Failed to fetch server time:", err);
+      }
+    }
+    fetchServerTime();
   }, [driverUser]);
 
   useEffect(() => {
@@ -230,7 +244,7 @@ export default function DriverDashboardPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const todayStr = getSaudiTodayDate();
+    const todayStr = serverToday;
     if (formData.date < todayStr) {
       setErrorMessage("Date cannot be in the past.");
       setSubmitLoading(false);
@@ -250,7 +264,7 @@ export default function DriverDashboardPage() {
         setSuccessMessage("Daily sheet submitted successfully! It is now locked.");
         // Reset form except date
         setFormData({
-          date: getSaudiTodayDate(),
+          date: serverToday,
           trip: "",
           hotel_drop_off: "",
           agent: "",
@@ -336,7 +350,7 @@ export default function DriverDashboardPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const todayStr = getSaudiTodayDate();
+    const todayStr = serverToday;
     const originalDate = editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
     const minEditDate = originalDate && originalDate < todayStr ? originalDate : todayStr;
     if (editFormData.date < minEditDate) {
@@ -600,7 +614,7 @@ export default function DriverDashboardPage() {
   const totalSubmissions = entries.length;
   const totalCashCollected = entries.reduce((sum, item) => sum + Number(item.cash || 0) + Number(item.waqas_received || 0), 0);
 
-  const todayStr = getSaudiTodayDate();
+  const todayStr = serverToday;
   const editingEntryDateNormalized = editingEntry && editingEntry.date ? editingEntry.date.split("T")[0].split(" ")[0] : "";
   const minDateVal = editingEntryDateNormalized && editingEntryDateNormalized < todayStr ? editingEntryDateNormalized : todayStr;
 
@@ -1329,13 +1343,13 @@ export default function DriverDashboardPage() {
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  min={getSaudiTodayDate()}
+                  min={serverToday}
                   className="form-input"
                   style={{
-                    borderColor: formData.date && formData.date < getSaudiTodayDate() ? "#ef4444" : undefined
+                    borderColor: formData.date && formData.date < serverToday ? "#ef4444" : undefined
                   }}
                 />
-                {formData.date && formData.date < getSaudiTodayDate() && (
+                {formData.date && formData.date < serverToday && (
                   <span style={{ color: "#ef4444", fontSize: "11px", marginTop: "4px", display: "block", fontWeight: 600 }}>
                     ⚠️ Past dates are not allowed. Please select a current or future date.
                   </span>

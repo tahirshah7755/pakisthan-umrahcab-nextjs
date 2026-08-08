@@ -1012,6 +1012,11 @@ export const api = {
     });
     if (data) return { success: true, data };
     return { success: false, error: "API connection failed" };
+  },
+
+  async getServerTime() {
+    const res = await request(`/server-time`);
+    return res;
   }
 };
 

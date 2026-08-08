@@ -11,6 +11,7 @@ export interface WebsiteSettings {
   contact_phone?: string;
   contact_address?: string;
   whatsapp_link?: string;
+  whatsapp_link_pak?: string;
   facebook_link?: string;
   instagram_link?: string;
   twitter_link?: string;

@@ -24,7 +24,15 @@ export default function PublicHomePage() {
   const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";
   const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
   const baseWa = cleanPhone ? `https://wa.me/${cleanPhone}` : "https://wa.me/966567799616";
-  const whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
+  let whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
+  if (whatsappLink && !whatsappLink.startsWith("http://") && !whatsappLink.startsWith("https://")) {
+    const cleanNum = whatsappLink.replace(/[^0-9]/g, "");
+    if (/^\d+$/.test(cleanNum)) {
+      whatsappLink = `https://wa.me/${cleanNum}`;
+    } else {
+      whatsappLink = `https://${whatsappLink}`;
+    }
+  }
 
 
   // Default offers array for fallback

@@ -21,7 +21,25 @@ export default function BookingStatusPage() {
   const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
   const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
   const baseWa = cleanPhone ? `https://wa.me/${cleanPhone}` : "https://wa.me/966567799616";
-  const whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
+  let whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
+  if (whatsappLink && !whatsappLink.startsWith("http://") && !whatsappLink.startsWith("https://")) {
+    const cleanNum = whatsappLink.replace(/[^0-9]/g, "");
+    if (/^\d+$/.test(cleanNum)) {
+      whatsappLink = `https://wa.me/${cleanNum}`;
+    } else {
+      whatsappLink = `https://${whatsappLink}`;
+    }
+  }
+
+  let whatsappLinkPak = websiteSettings?.whatsapp_link_pak || "https://wa.me/923219462533?text=HI";
+  if (whatsappLinkPak && !whatsappLinkPak.startsWith("http://") && !whatsappLinkPak.startsWith("https://")) {
+    const cleanNum = whatsappLinkPak.replace(/[^0-9]/g, "");
+    if (/^\d+$/.test(cleanNum)) {
+      whatsappLinkPak = `https://wa.me/${cleanNum}`;
+    } else {
+      whatsappLinkPak = `https://${whatsappLinkPak}`;
+    }
+  }
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<StatusItem[]>([]);
@@ -148,7 +166,7 @@ export default function BookingStatusPage() {
 
                     <div style={{ borderTop: "1px solid #f0f3f6", marginTop: "16px", paddingTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: "12px", color: "var(--uc-muted)" }}>* Driver & Vehicle registration plate details will show once active.</span>
-                      <a href="https://wa.me/966567799616?text=HI" target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "12px", padding: "8px 16px" }}>
+                      <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "12px", padding: "8px 16px" }}>
                         <i className="fab fa-whatsapp"></i> Chat Support
                       </a>
                     </div>
@@ -171,10 +189,10 @@ export default function BookingStatusPage() {
             <p style={{ fontSize: "13px", color: "#8b949e" }}>Speak directly with our local dispatcher team for emergency bookings.</p>
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
-            <a href="https://wa.me/966567799616?text=HI" target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px" }}>
+            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px" }}>
               <i className="fab fa-whatsapp"></i> KSA Help
             </a>
-            <a href="https://wa.me/923219462533?text=HI" target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px", background: "#3b82f6" }}>
+            <a href={whatsappLinkPak} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px", background: "#3b82f6" }}>
               <i className="fab fa-whatsapp"></i> PAK Help
             </a>
           </div>

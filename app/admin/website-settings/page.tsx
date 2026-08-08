@@ -12,6 +12,7 @@ export default function WebsiteSettingsPage() {
     contact_phone: "",
     contact_address: "",
     whatsapp_link: "",
+    whatsapp_link_pak: "",
     facebook_link: "",
     instagram_link: "",
     twitter_link: "",
@@ -57,6 +58,7 @@ export default function WebsiteSettingsPage() {
             contact_phone: data.contact_phone || "",
             contact_address: data.contact_address || "",
             whatsapp_link: data.whatsapp_link || "",
+            whatsapp_link_pak: data.whatsapp_link_pak || "",
             facebook_link: data.facebook_link || "",
             instagram_link: data.instagram_link || "",
             twitter_link: data.twitter_link || "",
@@ -149,6 +151,7 @@ export default function WebsiteSettingsPage() {
             contact_phone: refreshed.contact_phone || "",
             contact_address: refreshed.contact_address || "",
             whatsapp_link: refreshed.whatsapp_link || "",
+            whatsapp_link_pak: refreshed.whatsapp_link_pak || "",
             facebook_link: refreshed.facebook_link || "",
             instagram_link: refreshed.instagram_link || "",
             twitter_link: refreshed.twitter_link || "",
@@ -661,7 +664,7 @@ export default function WebsiteSettingsPage() {
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">WhatsApp Direct Link</label>
+                <label className="form-label">WhatsApp Direct Link (KSA/Primary Help)</label>
                 <input 
                   type="text" 
                   name="whatsapp_link" 
@@ -669,6 +672,17 @@ export default function WebsiteSettingsPage() {
                   onChange={handleChange} 
                   className="form-input" 
                   placeholder="e.g. https://wa.me/966500000000"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">WhatsApp Direct Link (Pakistan Help)</label>
+                <input 
+                  type="text" 
+                  name="whatsapp_link_pak" 
+                  value={settings.whatsapp_link_pak} 
+                  onChange={handleChange} 
+                  className="form-input" 
+                  placeholder="e.g. https://wa.me/923219462533"
                 />
               </div>
               <div className="form-group">

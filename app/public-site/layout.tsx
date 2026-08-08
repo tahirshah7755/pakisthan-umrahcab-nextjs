@@ -171,7 +171,19 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
   const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";
 
   const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
-  const whatsappLink = websiteSettings?.whatsapp_link || (cleanPhone ? `https://wa.me/${cleanPhone}?text=HI` : "https://wa.me/966567799616?text=HI");
+  let whatsappLink = websiteSettings?.whatsapp_link || "";
+  if (whatsappLink) {
+    if (!whatsappLink.startsWith("http://") && !whatsappLink.startsWith("https://")) {
+      const cleanNum = whatsappLink.replace(/[^0-9]/g, "");
+      if (/^\d+$/.test(cleanNum)) {
+        whatsappLink = `https://wa.me/${cleanNum}`;
+      } else {
+        whatsappLink = `https://${whatsappLink}`;
+      }
+    }
+  } else {
+    whatsappLink = cleanPhone ? `https://wa.me/${cleanPhone}?text=HI` : "https://wa.me/966567799616?text=HI";
+  }
 
 
   return (

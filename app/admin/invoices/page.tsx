@@ -79,8 +79,17 @@ export default function InvoicesPage() {
         end_date:   appliedFilters.end_date   || undefined,
         per_page:   10000,
       }).unwrap();
-      const paginator = res?.data ?? res;
-      return Array.isArray(paginator?.data) ? paginator.data : (Array.isArray(paginator) ? paginator : invoices);
+      
+      const tempPaginator = res && typeof res === "object" && "data" in res && res.data && !Array.isArray(res.data)
+        ? res.data
+        : res;
+
+      const list = tempPaginator && typeof tempPaginator === "object" && Array.isArray(tempPaginator.data)
+        ? tempPaginator.data
+        : Array.isArray(tempPaginator)
+          ? tempPaginator
+          : [];
+      return list;
     } catch (err) {
       console.error("Failed to fetch all invoices for export:", err);
       return invoices;
@@ -215,13 +224,32 @@ export default function InvoicesPage() {
     ? companiesData
     : (Array.isArray((companiesData as any)?.data) ? (companiesData as any).data : []);
 
-  // Response structure
-  const paginator = response?.data ?? response;
-  const invoices  = Array.isArray(paginator?.data) ? paginator.data : [];
-  const totalRows = paginator?.total ?? 0;
-  const totalPages = paginator?.last_page ?? 1;
-  const fromRow   = paginator?.from ?? 0;
-  const toRow     = paginator?.to ?? 0;
+  // Robust parsing of nested data structure
+  const paginator = response && typeof response === "object" && "data" in response && response.data && !Array.isArray(response.data)
+    ? response.data
+    : response;
+
+  const invoices = paginator && typeof paginator === "object" && Array.isArray(paginator.data)
+    ? paginator.data
+    : Array.isArray(paginator)
+      ? paginator
+      : [];
+
+  const totalRows = paginator && typeof paginator === "object" && paginator.total
+    ? paginator.total
+    : invoices.length;
+
+  const totalPages = paginator && typeof paginator === "object" && paginator.last_page
+    ? paginator.last_page
+    : 1;
+
+  const fromRow = paginator && typeof paginator === "object" && paginator.from
+    ? paginator.from
+    : (invoices.length > 0 ? 1 : 0);
+
+  const toRow = paginator && typeof paginator === "object" && paginator.to
+    ? paginator.to
+    : invoices.length;
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {

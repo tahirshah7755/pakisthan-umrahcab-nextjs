@@ -2848,3 +2848,76 @@ input[type="checkbox"]:checked + .switch-slider::before {
   }
 }
 
+/* On screen, hide the print-only version */
+.print-only {
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+}
+
+/* Custom Print Stylesheet */
+@media print {
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Hide admin layout chrome, sidebar, header, and buttons */
+  .admin-sidebar,
+  .admin-header,
+  .mobile-sidebar-overlay,
+  .route-loader-bar,
+  .no-print,
+  button,
+  a[href],
+  iframe,
+  footer {
+    display: none !important;
+  }
+
+  /* Reset layout boxes to be invisible wrapper elements */
+  .admin-layout {
+    display: block !important;
+    min-height: auto !important;
+  }
+
+  .admin-main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .admin-content-area {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide original screen-only layout */
+  #invoice-print-area {
+    display: none !important;
+  }
+
+  /* Display print-optimized layout instead */
+  .print-only {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Ensure colors and background-colors print exactly as defined */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

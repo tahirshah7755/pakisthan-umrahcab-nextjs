@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useGetInvoiceQuery } from "@/store/api/invoicesApi";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -15,6 +16,10 @@ export default function ViewInvoicePage() {
   const id = params?.id as string;
 
   const { data: res, isLoading, isError } = useGetInvoiceQuery(id);
+  const { settings } = useWebsiteSettings();
+  const siteLogo = settings?.website_logo || "";
+  const siteName = settings?.site_title || "Muhabiya Transport";
+  const siteDesc = settings?.hero_title || settings?.meta_description || "Premium Transportation Solutions";
 
   // View state modes (can toggle if condensed or VAT view is clicked)
   const [viewMode, setViewMode] = useState<"standard" | "condensed" | "vat">("standard");
@@ -40,7 +45,7 @@ export default function ViewInvoicePage() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${invCode} - Muhabiya Transport</title>
+          <title>${invCode} - ${siteName}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
             * { box-sizing: border-box; }
@@ -246,11 +251,21 @@ export default function ViewInvoicePage() {
         {/* Top Header Block */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-              <div style={{ background: "#facc15", color: "#000", padding: "10px", borderRadius: "8px", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", width: "42px", height: "42px" }}>U</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px" }}>
+              {siteLogo ? (
+                <img
+                  src={siteLogo}
+                  alt={siteName}
+                  style={{ height: "48px", maxWidth: "160px", objectFit: "contain", borderRadius: "6px" }}
+                />
+              ) : (
+                <div style={{ background: "#facc15", color: "#000", padding: "10px", borderRadius: "8px", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", width: "42px", height: "42px" }}>
+                  {siteName.charAt(0) || "M"}
+                </div>
+              )}
               <div>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a" }}>Muhabiya Transport</h3>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>Premium Transportation Solutions</span>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a" }}>{siteName}</h3>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>{siteDesc}</span>
               </div>
             </div>
           </div>
@@ -388,7 +403,7 @@ export default function ViewInvoicePage() {
 
         {/* Print Footer Disclaimer */}
         <div style={{ textAlign: "center", marginTop: "50px", fontSize: "11px", color: "#94a3b8", borderTop: "1px dashed #e2e8f0", paddingTop: "20px" }}>
-          This is a computer-generated invoice. No signature is required. Thank you for choosing Muhabiya Transport. We appreciate your business!
+          This is a computer-generated invoice. No signature is required. Thank you for choosing {siteName}. We appreciate your business!
         </div>
       </div>
 
@@ -402,10 +417,21 @@ export default function ViewInvoicePage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#facc15", padding: "6px", borderRadius: "8px", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", width: "42px", height: "42px", boxShadow: "0 4px 10px rgba(15,23,42,0.15)" }}>M</div>
+              {siteLogo ? (
+                <img
+                  src={siteLogo}
+                  alt={siteName}
+                  crossOrigin="anonymous"
+                  style={{ height: "42px", maxWidth: "150px", objectFit: "contain" }}
+                />
+              ) : (
+                <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", color: "#facc15", padding: "6px", borderRadius: "8px", fontWeight: "900", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center", width: "42px", height: "42px", boxShadow: "0 4px 10px rgba(15,23,42,0.15)" }}>
+                  {siteName.charAt(0) || "M"}
+                </div>
+              )}
               <div>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.5px" }}>Muhabiya Transport</h3>
-                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "500" }}>Premium Transportation Solutions</span>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a", letterSpacing: "-0.5px" }}>{siteName}</h3>
+                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "500" }}>{siteDesc}</span>
               </div>
             </div>
           </div>
@@ -550,7 +576,7 @@ export default function ViewInvoicePage() {
 
         {/* Print Footer Disclaimer */}
         <div style={{ textAlign: "center", marginTop: "30px", fontSize: "11px", color: "#94a3b8", borderTop: "1px dashed #e2e8f0", paddingTop: "15px" }}>
-          This is a computer-generated invoice. No signature is required. Thank you for choosing Muhabiya Transport. We appreciate your business!
+          This is a computer-generated invoice. No signature is required. Thank you for choosing {siteName}. We appreciate your business!
         </div>
       </div>
 

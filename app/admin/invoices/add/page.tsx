@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { useCalculateInvoiceMutation, useCreateInvoiceMutation } from "@/store/api/invoicesApi";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 import { getSaudiTodayDate } from "@/utils/formatters";
 
 const fmt = (n: number) =>
@@ -11,6 +12,10 @@ const fmt = (n: number) =>
 
 export default function AddInvoicePage() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+  const siteLogo = settings?.website_logo || "";
+  const siteName = settings?.site_title || "Muhabiya Transport";
+  const siteDesc = settings?.hero_title || settings?.meta_description || "Premium Transportation Solutions";
 
   // Form states
   const [selectedCompany, setSelectedCompany] = useState("");
@@ -361,11 +366,21 @@ export default function AddInvoicePage() {
               {/* Top Row: Brand & Ref */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                    <div style={{ background: "#facc15", color: "#000", padding: "10px", borderRadius: "8px", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px" }}>U</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
+                    {siteLogo ? (
+                      <img
+                        src={siteLogo}
+                        alt={siteName}
+                        style={{ height: "44px", maxWidth: "150px", objectFit: "contain", borderRadius: "6px" }}
+                      />
+                    ) : (
+                      <div style={{ background: "#facc15", color: "#000", padding: "10px", borderRadius: "8px", fontWeight: "800", fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center", width: "40px", height: "40px" }}>
+                        {siteName.charAt(0) || "M"}
+                      </div>
+                    )}
                     <div>
-                      <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>Muhabiya Transport</h3>
-                      <span style={{ fontSize: "11px", color: "#64748b" }}>Premium Transportation Solutions</span>
+                      <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>{siteName}</h3>
+                      <span style={{ fontSize: "11px", color: "#64748b" }}>{siteDesc}</span>
                     </div>
                   </div>
                 </div>

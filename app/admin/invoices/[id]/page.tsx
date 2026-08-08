@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useGetInvoiceQuery } from "@/store/api/invoicesApi";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
@@ -21,6 +21,79 @@ export default function ViewInvoicePage() {
   const siteName = settings?.site_title || "Muhabiya Transport";
   const siteDesc = settings?.hero_title || settings?.meta_description || "Premium Transportation Solutions";
 
+  // Preload logo into Base64 to ensure 100% reliable rendering in popup windows and PDF canvas
+  const [logoBase64, setLogoBase64] = useState<string>("");
+
+  useEffect(() => {
+    if (!siteLogo) {
+      setLogoBase64("");
+      return;
+    }
+    if (siteLogo.startsWith("data:")) {
+      setLogoBase64(siteLogo);
+      return;
+    }
+
+    let isMounted = true;
+    let fullUrl = siteLogo;
+
+    if (typeof window !== "undefined") {
+      if (siteLogo.startsWith("http://") || siteLogo.startsWith("https://") || siteLogo.startsWith("data:")) {
+        fullUrl = siteLogo;
+      } else if (siteLogo.startsWith("/")) {
+        fullUrl = window.location.origin + siteLogo;
+      } else {
+        const apiEnv = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+        const backendOrigin = apiEnv.replace(/\/api\/.*$/, "").replace(/\/+$/, "");
+        fullUrl = `${backendOrigin}/${siteLogo}`;
+      }
+    }
+
+    // Try fetching as Blob first
+    fetch(fullUrl)
+      .then((r) => {
+        if (!r.ok) throw new Error("fetch failed");
+        return r.blob();
+      })
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (isMounted && typeof reader.result === "string" && reader.result.startsWith("data:image")) {
+            setLogoBase64(reader.result);
+          }
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(() => {
+        // Fallback: draw image on canvas
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              const dataUrl = canvas.toDataURL("image/png");
+              if (isMounted) setLogoBase64(dataUrl);
+            }
+          } catch (e) {
+            if (isMounted) setLogoBase64(fullUrl);
+          }
+        };
+        img.onerror = () => {
+          if (isMounted) setLogoBase64(fullUrl);
+        };
+        img.src = fullUrl;
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [siteLogo]);
+
   // View state modes (can toggle if condensed or VAT view is clicked)
   const [viewMode, setViewMode] = useState<"standard" | "condensed" | "vat">("standard");
   const [isExportingPDF, setIsExportingPDF] = useState(false);
@@ -40,11 +113,13 @@ export default function ViewInvoicePage() {
 
     const contentHtml = printArea.innerHTML;
     const invCode = res.data.invoice.invoice_code || "INVOICE";
+    const baseHref = typeof window !== "undefined" ? window.location.origin : "";
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
+          <base href="${baseHref}/">
           <title>${invCode} - ${siteName}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
@@ -79,10 +154,44 @@ export default function ViewInvoicePage() {
             ${contentHtml}
           </div>
           <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            };
+            function waitForImagesAndPrint() {
+              var imgs = document.images;
+              var total = imgs.length;
+              var count = 0;
+
+              function doPrint() {
+                setTimeout(function() {
+                  window.focus();
+                  window.print();
+                  setTimeout(function() { window.close(); }, 600);
+                }, 200);
+              }
+
+              if (total === 0) {
+                doPrint();
+                return;
+              }
+
+              for (var i = 0; i < total; i++) {
+                if (imgs[i].complete && imgs[i].naturalHeight !== 0) {
+                  count++;
+                  if (count === total) doPrint();
+                } else {
+                  imgs[i].onload = imgs[i].onerror = function() {
+                    count++;
+                    if (count === total) doPrint();
+                  };
+                }
+              }
+
+              setTimeout(doPrint, 1500);
+            }
+
+            if (document.readyState === 'complete') {
+              waitForImagesAndPrint();
+            } else {
+              window.addEventListener('load', waitForImagesAndPrint);
+            }
           </script>
         </body>
       </html>
@@ -96,11 +205,25 @@ export default function ViewInvoicePage() {
     
     try {
       setIsExportingPDF(true);
-      await new Promise(r => setTimeout(r, 100));
+
+      // Preload all images inside element before capturing canvas
+      const imgElements = Array.from(element.querySelectorAll("img"));
+      await Promise.all(
+        imgElements.map((img) => {
+          if (img.complete && img.naturalHeight !== 0) return Promise.resolve(true);
+          return new Promise((resolve) => {
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+          });
+        })
+      );
+
+      await new Promise(r => setTimeout(r, 200));
 
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: "#ffffff"
       });
@@ -254,7 +377,7 @@ export default function ViewInvoicePage() {
             <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px" }}>
               {siteLogo ? (
                 <img
-                  src={siteLogo}
+                  src={logoBase64 || siteLogo}
                   alt={siteName}
                   style={{ height: "48px", maxWidth: "160px", objectFit: "contain", borderRadius: "6px" }}
                 />
@@ -419,7 +542,7 @@ export default function ViewInvoicePage() {
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               {siteLogo ? (
                 <img
-                  src={siteLogo}
+                  src={logoBase64 || siteLogo}
                   alt={siteName}
                   crossOrigin="anonymous"
                   style={{ height: "42px", maxWidth: "150px", objectFit: "contain" }}

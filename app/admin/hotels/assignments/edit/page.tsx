@@ -115,8 +115,8 @@ function EditHotelAssignmentContent() {
         setLoading(true);
         setError("");
         const res = await api.getHotel(queryId);
-        if (res && res.success && res.data) {
-          const h = res.data;
+        if (res && (res.data || res.id)) {
+          const h = res.data || res;
           setHotelName(h.name || "");
           
           if (DEFAULT_CITIES.includes(h.city)) {

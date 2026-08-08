@@ -49,10 +49,12 @@ export default function ViewInvoicePage() {
       }
     }
 
-    // Try fetching as Blob first
-    fetch(fullUrl)
+    // Use our server-side image proxy to eliminate CORS restrictions for PDF canvas
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fullUrl)}`;
+
+    fetch(proxyUrl)
       .then((r) => {
-        if (!r.ok) throw new Error("fetch failed");
+        if (!r.ok) throw new Error("proxy fetch failed");
         return r.blob();
       })
       .then((blob) => {
@@ -65,28 +67,7 @@ export default function ViewInvoicePage() {
         reader.readAsDataURL(blob);
       })
       .catch(() => {
-        // Fallback: draw image on canvas
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.naturalWidth || img.width;
-            canvas.height = img.naturalHeight || img.height;
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-              ctx.drawImage(img, 0, 0);
-              const dataUrl = canvas.toDataURL("image/png");
-              if (isMounted) setLogoBase64(dataUrl);
-            }
-          } catch (e) {
-            if (isMounted) setLogoBase64(fullUrl);
-          }
-        };
-        img.onerror = () => {
-          if (isMounted) setLogoBase64(fullUrl);
-        };
-        img.src = fullUrl;
+        if (isMounted) setLogoBase64(fullUrl);
       });
 
     return () => {
@@ -100,103 +81,84 @@ export default function ViewInvoicePage() {
 
   const handlePrint = () => {
     const printArea = document.getElementById("invoice-pdf-download-area");
-    if (!printArea || !res?.data?.invoice) {
-      window.print();
-      return;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
+    if (!printArea) {
       window.print();
       return;
     }
 
     const contentHtml = printArea.innerHTML;
-    const invCode = res.data.invoice.invoice_code || "INVOICE";
-    const baseHref = typeof window !== "undefined" ? window.location.origin : "";
+    let iframe = document.getElementById("invoice-print-frame") as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "invoice-print-frame";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0px";
+      iframe.style.height = "0px";
+      iframe.style.border = "none";
+      iframe.style.zIndex = "-9999";
+      document.body.appendChild(iframe);
+    }
 
-    printWindow.document.write(`
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    const invCode = res?.data?.invoice?.invoice_code || "INVOICE";
+
+    doc.open();
+    doc.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <base href="${baseHref}/">
           <title>${invCode} - ${siteName}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
             * { box-sizing: border-box; }
             body {
-              font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              margin: 0;
-              padding: 20px;
-              color: #0f172a;
-              background: #ffffff;
+              font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+              background-color: #ffffff !important;
+              color: #0f172a !important;
+              margin: 0 !important;
+              padding: 0 !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            .invoice-wrapper {
-              max-width: 800px;
-              margin: 0 auto;
-              background: #ffffff;
-            }
-            table { width: 100%; border-collapse: collapse; }
             @page {
               size: A4 portrait;
               margin: 8mm 6mm;
             }
-            @media print {
-              body { padding: 0; }
-              .invoice-wrapper { max-width: 100%; width: 100%; box-shadow: none !important; border: none !important; }
+            .print-only {
+              display: block !important;
+              border: none !important;
+              box-shadow: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              max-width: 100% !important;
+              width: 100% !important;
+            }
+            img {
+              max-width: 100%;
+              display: block;
             }
           </style>
         </head>
         <body>
-          <div class="invoice-wrapper">
+          <div class="print-only">
             ${contentHtml}
           </div>
-          <script>
-            function waitForImagesAndPrint() {
-              var imgs = document.images;
-              var total = imgs.length;
-              var count = 0;
-
-              function doPrint() {
-                setTimeout(function() {
-                  window.focus();
-                  window.print();
-                  setTimeout(function() { window.close(); }, 600);
-                }, 200);
-              }
-
-              if (total === 0) {
-                doPrint();
-                return;
-              }
-
-              for (var i = 0; i < total; i++) {
-                if (imgs[i].complete && imgs[i].naturalHeight !== 0) {
-                  count++;
-                  if (count === total) doPrint();
-                } else {
-                  imgs[i].onload = imgs[i].onerror = function() {
-                    count++;
-                    if (count === total) doPrint();
-                  };
-                }
-              }
-
-              setTimeout(doPrint, 1500);
-            }
-
-            if (document.readyState === 'complete') {
-              waitForImagesAndPrint();
-            } else {
-              window.addEventListener('load', waitForImagesAndPrint);
-            }
-          </script>
         </body>
       </html>
     `);
-    printWindow.document.close();
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    }, 200);
   };
 
   const handleDownloadPDF = async () => {
@@ -749,6 +711,34 @@ export default function ViewInvoicePage() {
         <span>&copy; 2026 Umrah Cab. All Rights Reserved.</span>
         <span>v2.0</span>
       </div>
+
+      <style jsx global>{`
+        @media print {
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+          .no-print,
+          header,
+          aside,
+          nav {
+            display: none !important;
+          }
+          #invoice-pdf-download-area {
+            display: block !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 8mm 6mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }

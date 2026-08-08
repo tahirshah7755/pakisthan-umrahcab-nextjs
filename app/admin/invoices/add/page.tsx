@@ -44,9 +44,11 @@ export default function AddInvoicePage() {
       }
     }
 
-    fetch(fullUrl)
+    const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fullUrl)}`;
+
+    fetch(proxyUrl)
       .then((r) => {
-        if (!r.ok) throw new Error("fetch failed");
+        if (!r.ok) throw new Error("proxy fetch failed");
         return r.blob();
       })
       .then((blob) => {
@@ -59,27 +61,7 @@ export default function AddInvoicePage() {
         reader.readAsDataURL(blob);
       })
       .catch(() => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => {
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.naturalWidth || img.width;
-            canvas.height = img.naturalHeight || img.height;
-            const ctx = canvas.getContext("2d");
-            if (ctx) {
-              ctx.drawImage(img, 0, 0);
-              const dataUrl = canvas.toDataURL("image/png");
-              if (isMounted) setLogoBase64(dataUrl);
-            }
-          } catch (e) {
-            if (isMounted) setLogoBase64(fullUrl);
-          }
-        };
-        img.onerror = () => {
-          if (isMounted) setLogoBase64(fullUrl);
-        };
-        img.src = fullUrl;
+        if (isMounted) setLogoBase64(fullUrl);
       });
 
     return () => {

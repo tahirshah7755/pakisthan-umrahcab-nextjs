@@ -289,7 +289,7 @@ export async function exportToPDF(options: ExportOptions) {
         <body>
           <div class="banner">
             <div class="logo-box">
-              ${logoUrl ? `<img src="${logoUrl}" class="logo-img" alt="${companyName}" />` : ""}
+              ${logoUrl ? `<img src="${logoUrl}" class="logo-img" alt="${companyName}" onerror="this.src='/logo2.png'" />` : ""}
               <div>
                 <h1 class="company-title">${companyName}</h1>
                 <p class="report-title">${title}</p>

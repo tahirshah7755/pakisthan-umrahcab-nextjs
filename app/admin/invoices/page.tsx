@@ -433,7 +433,7 @@ export default function InvoicesPage() {
               className="form-input"
               value={companyFilter}
               onChange={(e) => setCompanyFilter(e.target.value)}
-              style={{ width: "100%", height: "38px" }}
+              style={{ width: "100%", height: "38px", color: "#1e293b", paddingLeft: "12px", background: "#ffffff", borderColor: "#cbd5e1" }}
             >
               <option value="">All Companies</option>
               {companies.map((c: any) => (
@@ -448,7 +448,7 @@ export default function InvoicesPage() {
               className="form-input"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              style={{ width: "100%", height: "38px" }}
+              style={{ width: "100%", height: "38px", color: "#1e293b", paddingLeft: "12px", background: "#ffffff", borderColor: "#cbd5e1" }}
             >
               <option value="all">All Types</option>
               <option value="VW">VW (Voucher Wise)</option>
@@ -463,7 +463,7 @@ export default function InvoicesPage() {
               className="form-input"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              style={{ width: "100%", height: "38px" }}
+              style={{ width: "100%", height: "38px", color: "#1e293b", paddingLeft: "12px", background: "#ffffff", borderColor: "#cbd5e1" }}
             />
           </div>
 
@@ -474,7 +474,7 @@ export default function InvoicesPage() {
               className="form-input"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              style={{ width: "100%", height: "38px" }}
+              style={{ width: "100%", height: "38px", color: "#1e293b", paddingLeft: "12px", background: "#ffffff", borderColor: "#cbd5e1" }}
             />
           </div>
 

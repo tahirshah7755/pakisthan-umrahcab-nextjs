@@ -868,13 +868,50 @@ Pickup Details:
   };
 
   const getClientCopy = (b: any) => {
-    let paymentStr = "";
+    const bookingCode = b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : (b.custom_id ? String(b.custom_id).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(b.id || 0)}`);
+    const guestName = b.full_name || b.customer_relation?.name || "Guest";
+    const phone = b.whatsapp || b.phone || b.contact || "N/A";
+    const passengers = b.passengers || "N/A";
+    const pickup = b.pickup || "N/A";
+    const dropoff = b.destination || "N/A";
+    const pDate = formatDateVoucher(b.date);
+    const pTime = b.time ? b.time.substring(0, 5) : "";
+    const carType = b.car_type || "Sedan";
+    const driverName = b.driver?.name || "";
+    const driverContact = b.driver?.phone || "";
+
+    let cashPending = 0;
     if (b.payment_method === "Cash") {
-      paymentStr = `\n*Pending Cash to Pay:* SR ${parseFloat(b.pending_amount as any || 0).toFixed(2)}`;
+      cashPending = b.pending_amount !== undefined && b.pending_amount !== null ? Number(b.pending_amount) : Number(b.car_price || 0);
+    } else if (b.pending_amount) {
+      cashPending = Number(b.pending_amount);
     }
-    const dName = b.driver ? b.driver.name : "TBD";
-    const dPhone = b.driver ? b.driver.phone : "TBD";
-    return `*HEBA CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.full_name}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n*Vehicle:* ${b.car_type}${paymentStr}\n\nThank you for choosing Heba Cab!`;
+
+    const extraInfo = b.notes || (b.flight_no ? `Flight No: ${b.flight_no}` : "");
+
+    return `★ Customer Voucher ★
+
+📄 PNR No: ${bookingCode}
+👤 Guest Name: ${guestName}
+📞 Contact No: ${phone}
+💬 Whatsapp: ${phone}
+👥 No Of Passengers: ${passengers}
+
+Pickup Details:
+📍 Pickup Location: ${pickup}
+🏨 Drop Off Location: ${dropoff}
+📅 Pickup Date: ${pDate}
+⏰ Pickup Time: ${pTime}
+🚖 Driver Name: ${driverName}
+📱 Driver Contact: ${driverContact}
+🚗 Car Type: (${carType})
+💵 Cash Receive From Customer: ${cashPending} SAR
+ℹ️ Extra Information: ${extraInfo ? extraInfo : ""}
+🛄 Visa Type: ( Umrah )
+
+For Driver Details:
+Please Contact On: +966567799616
+Thanks for choosing hebacab.com`;
   };
 
   const textMap = {
@@ -928,7 +965,7 @@ Pickup Details:
                 marginBottom: "-2px"
               }}
             >
-              {tab} Copy
+              {tab === "client" ? "Customer" : tab} Voucher
             </button>
           ))}
         </div>

@@ -73,7 +73,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
   companies: initialCompanies,
   router,
 }) => {
-  const { companyUser } = useAuth();
+  const { companyUser, user } = useAuth();
   const pathname = usePathname();
   const saudiToday = getSaudiTodayDate();
   const isCompanyPanel = pathname?.startsWith("/company");
@@ -884,7 +884,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         passport_no: passportNo || null,
         hotel_info: requireHotel ? `${hotelName} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})` : null,
         notes: custNotes || null,
-        registered_by: "umrahcab (Today)",
+        registered_by: `${user?.name || user?.username || companyUser?.name || "hebacab"} (Today)`,
         last_update: "No edits",
       };
 

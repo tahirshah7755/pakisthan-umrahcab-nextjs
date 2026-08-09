@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface CatalogueItem {
   id: number;
@@ -16,6 +17,7 @@ interface CatalogueItem {
 
 export default function ServicesItemsCatalogue() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const [serviceCatalogue, setServiceCatalogue] = useState<CatalogueItem[]>([]);
   const [catalogItemsPage, setCatalogItemsPage] = useState(1);
@@ -58,7 +60,7 @@ export default function ServicesItemsCatalogue() {
                 id: s.id,
                 custom_id: s.custom_id || `#CAT-${s.id}`,
                 name: s.name,
-                entryBy: entryByMatch ? entryByMatch[1].trim() : "umrahcab",
+                entryBy: entryByMatch ? (entryByMatch[1].trim().includes("umrahcab") ? entryByMatch[1].trim().replace(/umrahcab/gi, user?.name || user?.username || "hebacab") : entryByMatch[1].trim()) : (user?.name || user?.username || "hebacab"),
                 entryDate: entryDateMatch
                   ? entryDateMatch[1].trim()
                   : new Date(s.created_at || Date.now()).toLocaleDateString("en-GB", {
@@ -108,7 +110,7 @@ export default function ServicesItemsCatalogue() {
       showToast("Service item name is required.", "error");
       return;
     }
-    const entryBy = "umrahcab";
+    const entryBy = user?.name || user?.username || "hebacab";
     const entryDate = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
     const res = await api.createService({
       name: catalogItemName.trim(),
@@ -130,7 +132,7 @@ export default function ServicesItemsCatalogue() {
     e.preventDefault();
     if (!editingCatalogItem || !catalogItemName.trim()) return;
 
-    const editedBy = "umrahcab";
+    const editedBy = user?.name || user?.username || "hebacab";
     const editedDate = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
     const res = await api.updateService(editingCatalogItem.id.toString(), {

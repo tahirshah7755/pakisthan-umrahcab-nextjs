@@ -1122,7 +1122,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
             <tbody>
               <tr>
                 <td>22 May, 2026 09:59 PM</td>
-                <td style={{ fontWeight: 600 }}>umrahcab</td>
+                <td style={{ fontWeight: 600 }}>{currentProfile.meta.lastEditedBy || "hebacab"}</td>
                 <td style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span>Updated customer profile: {currentProfile.name}</span>
                   <span onClick={() => showToast("Loading detailed audit log changeset...", "success")} style={{ color: "#2563eb", cursor: "pointer", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
@@ -1132,7 +1132,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
               </tr>
               <tr>
                 <td>22 May, 2026 08:32 PM</td>
-                <td style={{ fontWeight: 600 }}>umrahcab</td>
+                <td style={{ fontWeight: 600 }}>{currentProfile.meta.registeredBy || "hebacab"}</td>
                 <td>Added new customer: {currentProfile.name} ({currentProfile.phones[0]})</td>
               </tr>
             </tbody>

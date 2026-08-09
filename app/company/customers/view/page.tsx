@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { CustomerProfileView } from "@/components/admin/CustomerProfileView";
 import { formatDateTime, formatDateOnly } from "@/utils/formatters";
+import { useAuth } from "@/context/AuthContext";
 
 interface CustomerItem {
   id: string;
@@ -18,6 +19,7 @@ interface CustomerItem {
 
 function CompanyCustomerViewContent() {
   const router = useRouter();
+  const { companyUser, user } = useAuth();
   const searchParams = useSearchParams();
   const targetId = searchParams.get("id") || "";
 
@@ -157,7 +159,7 @@ function CompanyCustomerViewContent() {
             name: c.name,
             company: c.company,
             contact: c.contact,
-            registeredBy: c.registered_by || "umrahcab",
+            registeredBy: c.registered_by ? (c.registered_by.includes("umrahcab") ? c.registered_by.replace(/umrahcab/gi, companyUser?.name || user?.name || "hebacab") : c.registered_by) : (companyUser?.name || user?.name || "hebacab"),
             lastUpdate: c.last_update || "No edits"
           })));
         }
@@ -255,9 +257,13 @@ function CompanyCustomerViewContent() {
     hotelInfo: parsedHotelInfo || undefined,
     company: selectedCust ? selectedCust.company : "Corporate Account",
     meta: {
-      registeredBy: selectedCust?.registered_by || selectedCust?.registeredBy || "umrahcab",
+      registeredBy: (selectedCust?.registered_by || selectedCust?.registeredBy)
+        ? String(selectedCust?.registered_by || selectedCust?.registeredBy).replace(/umrahcab/gi, companyUser?.name || user?.name || "hebacab")
+        : (companyUser?.name || user?.name || "hebacab"),
       registeredDate: selectedCust?.created_at ? formatDateTime(selectedCust.created_at) : "22 May, 2026 08:32 PM",
-      lastEditedBy: selectedCust?.registered_by || selectedCust?.registeredBy || "umrahcab",
+      lastEditedBy: (selectedCust?.registered_by || selectedCust?.registeredBy)
+        ? String(selectedCust?.registered_by || selectedCust?.registeredBy).replace(/umrahcab/gi, companyUser?.name || user?.name || "hebacab")
+        : (companyUser?.name || user?.name || "hebacab"),
       lastEditedDate: selectedCust?.updated_at ? formatDateTime(selectedCust.updated_at) : (selectedCust?.last_update || selectedCust?.lastUpdate || "No edits")
     },
     externalRemarks: selectedCust ? parsedNotes : "No external notes.",

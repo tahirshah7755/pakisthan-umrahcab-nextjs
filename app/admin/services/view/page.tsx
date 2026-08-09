@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
 import { formatDateToCustom, formatTimeTo24h, getSaudiTodayDate } from "@/utils/formatters";
 import TimePicker24h from "@/components/admin/TimePicker24h";
+import { useAuth } from "@/context/AuthContext";
 
 interface ServiceItem {
   id: string;
@@ -23,6 +24,7 @@ interface ServiceItem {
 
 function ServiceDetailViewContent() {
   const router = useRouter();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const targetId = searchParams.get("id") || "";
 
@@ -130,9 +132,9 @@ function ServiceDetailViewContent() {
     phones: [customerObj.contact ? customerObj.contact.split(" (")[0] : "+966567799616"],
     email: customerObj.contact?.includes("@") ? customerObj.contact.split(" (Email)")[0].split("customer").pop() || "N/A" : "N/A",
     meta: {
-      entryBy: service?.customer?.registered_by || "umrahcab",
+      entryBy: service?.customer?.registered_by ? (service.customer.registered_by.includes("umrahcab") ? service.customer.registered_by.replace(/umrahcab/gi, user?.name || user?.username || "hebacab") : service.customer.registered_by) : (user?.name || user?.username || "hebacab"),
       entryDate: service?.customer?.created_at ? new Date(service.customer.created_at).toLocaleString("en-US", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "25 May, 2026 07:16 AM",
-      editedBy: service?.customer?.last_update || "umrahcab",
+      editedBy: service?.customer?.last_update || "No edits",
       editedDate: "No edits"
     }
   };
@@ -181,7 +183,7 @@ ID: *${currentSvc.id}*
 💵 Cash Collected: *SAR ${currentSvc.basePrice.toFixed(2)}*
 
 *Status:* Service has been successfully completed. Cash collected and logged.
-_Thank you for choosing UmrahCab!_`;
+_Thank you for choosing HebaCab!_`;
 
   const getActiveMessage = () => {
     if (activeTab === "Service Started") return startedMessage;

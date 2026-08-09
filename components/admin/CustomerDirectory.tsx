@@ -254,7 +254,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
         name: c.name || "",
         company: c.company || "",
         contact: c.contact || "",
-        registeredBy: c.registered_by || "umrahcab",
+        registeredBy: c.registered_by ? (c.registered_by.includes("umrahcab") ? c.registered_by.replace(/umrahcab/gi, user?.name || user?.username || "hebacab") : c.registered_by) : (user?.name || user?.username || "hebacab"),
         lastUpdate: c.last_update || "No edits"
       }));
     } catch (err) {

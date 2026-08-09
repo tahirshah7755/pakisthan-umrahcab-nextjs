@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
 const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
@@ -25,6 +26,8 @@ interface CompanyItem {
 
 function CompanyProfileContent() {
   const router = useRouter();
+  const { user } = useAuth();
+  const actorName = user?.name || user?.username || "hebacab";
   const searchParams = useSearchParams();
   const targetId = searchParams.get("id") || "";
 
@@ -355,11 +358,11 @@ function CompanyProfileContent() {
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
                 <span style={{ color: "#64748b" }}>REGISTERED BY</span>
-                <span style={{ fontWeight: "600", color: "#1e293b" }}>umrahcab <span style={{ color: "#94a3b8", fontWeight: "normal" }}>| 23 May, 2026 | 02:40 PM</span></span>
+                <span style={{ fontWeight: "600", color: "#1e293b" }}>{actorName} <span style={{ color: "#94a3b8", fontWeight: "normal" }}>| 23 May, 2026 | 02:40 PM</span></span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
                 <span style={{ color: "#64748b" }}>LAST PROFILE UPDATE</span>
-                <span style={{ fontWeight: "600", color: "#1e293b" }}>umrahcab <span style={{ color: "#94a3b8", fontWeight: "normal" }}>| 23 May, 2026 | 04:06 PM</span></span>
+                <span style={{ fontWeight: "600", color: "#1e293b" }}>{actorName} <span style={{ color: "#94a3b8", fontWeight: "normal" }}>| 23 May, 2026 | 04:06 PM</span></span>
               </div>
             </div>
           </div>
@@ -524,12 +527,12 @@ function CompanyProfileContent() {
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
           <div style={{ display: "flex", gap: "15px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
             <span style={{ fontSize: "12px", color: "#94a3b8", minWidth: "150px" }}>23 May, 2026 | 04:06 PM</span>
-            <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>umrahcab</span>
+            <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>{actorName}</span>
             <span style={{ fontSize: "13px", color: "#1e293b" }}>Updated company profile for {company.name} ({displayId})</span>
           </div>
           <div style={{ display: "flex", gap: "15px" }}>
             <span style={{ fontSize: "12px", color: "#94a3b8", minWidth: "150px" }}>23 May, 2026 | 02:40 PM</span>
-            <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>umrahcab</span>
+            <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>{actorName}</span>
             <span style={{ fontSize: "13px", color: "#1e293b" }}>Registered new company: {company.name} ({displayId})</span>
           </div>
         </div>

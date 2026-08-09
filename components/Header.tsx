@@ -97,7 +97,7 @@ export default function Header() {
           {profileDropdownOpen && (
             <div className="profile-dropdown-menu">
               <div className="dropdown-header-info">
-                <strong>{user?.name || user?.username || "umrahcab"}</strong>
+                <strong>{user?.name || user?.username || "hebacab"}</strong>
                 <span className="user-role">Administrator</span>
               </div>
               <hr />

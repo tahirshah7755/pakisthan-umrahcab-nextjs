@@ -201,7 +201,7 @@ export default function Sidebar() {
           <div className="profile-avatar">
             <i className="fas fa-user-tie"></i>
           </div>
-          <span className="profile-name">{isMounted ? (user?.name || user?.username || "umrahcab") : "umrahcab"}</span>
+          <span className="profile-name">{isMounted ? (user?.name || user?.username || "hebacab") : "hebacab"}</span>
         </div>
         <button onClick={logout} className="logout-btn" title="Sign Out">
           <i className="fas fa-right-from-bracket"></i>

@@ -1115,7 +1115,7 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     const bookingCode = b.id || (b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : "HCB-10001");
     const guestName = b.customerName || b.full_name || "Guest";
     const phone = b.whatsapp || b.phone || b.contact || "N/A";
-    const passengers = b.passengers || "N/A";
+    const passengers = b.passengers ? `${b.passengers} Passengers` : "N/A";
     const pickup = b.pickupLocation || b.pickup || "N/A";
     const dropoff = b.dropoffLocation || b.destination || "N/A";
     const pDate = formatDateVoucher(b.pickupDate || b.date);
@@ -1123,10 +1123,13 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     const carType = b.vehicle || b.car_type || "Sedan";
     
     let cashPending = 0;
-    if (b.paymentMethod === "Cash" || b.payment_method === "Cash") {
-      cashPending = b.pendingAmount !== undefined && b.pendingAmount !== null ? Number(b.pendingAmount) : Number(b.finalPrice || 0);
-    } else if (b.pendingAmount) {
-      cashPending = Number(b.pendingAmount);
+    const isCash = (b.paymentMethod === "Cash" || b.payment_method === "Cash");
+    if (isCash) {
+      cashPending = b.pendingAmount !== undefined && b.pendingAmount !== null 
+        ? Number(b.pendingAmount) 
+        : (b.pending_amount !== undefined && b.pending_amount !== null ? Number(b.pending_amount) : Number(b.finalPrice || b.car_price || 0));
+    } else {
+      cashPending = b.cash_to_receive ? Number(b.cash_to_receive) : 0;
     }
 
     const extraInfo = b.notes || (b.flightNo ? `Flight No: ${b.flightNo}` : "");
@@ -1165,7 +1168,7 @@ Pickup Details:
     const bookingCode = b.id || (b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : "HCB-10001");
     const guestName = b.customerName || b.full_name || "Guest";
     const phone = b.whatsapp || b.phone || b.contact || "N/A";
-    const passengers = b.passengers || "N/A";
+    const passengers = b.passengers ? `${b.passengers} Passengers` : "N/A";
     const pickup = b.pickupLocation || b.pickup || "N/A";
     const dropoff = b.dropoffLocation || b.destination || "N/A";
     const pDate = formatDateVoucher(b.pickupDate || b.date);
@@ -1175,10 +1178,13 @@ Pickup Details:
     const driverContact = b.driverPhone || b.driver?.phone || "";
 
     let cashPending = 0;
-    if (b.paymentMethod === "Cash" || b.payment_method === "Cash") {
-      cashPending = b.pendingAmount !== undefined && b.pendingAmount !== null ? Number(b.pendingAmount) : Number(b.finalPrice || 0);
-    } else if (b.pendingAmount) {
-      cashPending = Number(b.pendingAmount);
+    const isCash = (b.paymentMethod === "Cash" || b.payment_method === "Cash");
+    if (isCash) {
+      cashPending = b.pendingAmount !== undefined && b.pendingAmount !== null 
+        ? Number(b.pendingAmount) 
+        : (b.pending_amount !== undefined && b.pending_amount !== null ? Number(b.pending_amount) : Number(b.finalPrice || b.car_price || 0));
+    } else {
+      cashPending = b.cash_to_receive ? Number(b.cash_to_receive) : 0;
     }
 
     const extraInfo = b.notes || (b.flightNo ? `Flight No: ${b.flightNo}` : "");

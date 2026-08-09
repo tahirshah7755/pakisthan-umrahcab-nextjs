@@ -790,14 +790,69 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
 
   if (!isOpen || !booking) return null;
 
-  const getDriverCopy = (b: any) => {
-    let paymentStr = "";
-    if (b.payment_method === "Cash") {
-      paymentStr = `\n*Payment Method:* Cash\n*Cash to Collect (Pending):* SR ${parseFloat(b.pending_amount as any || 0).toFixed(2)}\n*Amount Received:* SR ${parseFloat(b.received_amount as any || 0).toFixed(2)}`;
-    } else {
-      paymentStr = `\n*Payment Method:* Credit (Paid)`;
+  const formatDateVoucher = (dStr: string | null | undefined) => {
+    if (!dStr) return "";
+    try {
+      const match = String(dStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const day = match[3];
+        const month = months[parseInt(match[2], 10) - 1];
+        const year = match[1];
+        return `${day}-${month}-${year}`;
+      }
+      const d = new Date(dStr);
+      if (!isNaN(d.getTime())) {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const day = d.getDate() < 10 ? `0${d.getDate()}` : String(d.getDate());
+        const month = months[d.getMonth()];
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+      }
+      return String(dStr);
+    } catch {
+      return String(dStr);
     }
-    return `*HEBA CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.date} at ${b.time}\n*Pickup Location:* ${b.pickup}\n*Destination:* ${b.destination}\n*Vehicle:* ${b.car_type}\n*Flight No:* ${b.flight_no || "N/A"}${paymentStr}\n*Notes:* ${b.notes || "N/A"}`;
+  };
+
+  const getDriverCopy = (b: any) => {
+    const bookingCode = b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : (b.custom_id ? String(b.custom_id).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(b.id || 0)}`);
+    const guestName = b.full_name || b.customer_relation?.name || "Guest";
+    const phone = b.whatsapp || b.phone || b.contact || "N/A";
+    const passengers = b.passengers || "N/A";
+    const pickup = b.pickup || "N/A";
+    const dropoff = b.destination || "N/A";
+    const pDate = formatDateVoucher(b.date);
+    const pTime = b.time ? b.time.substring(0, 5) : "";
+    const carType = b.car_type || "Sedan";
+    
+    let cashPending = 0;
+    if (b.payment_method === "Cash") {
+      cashPending = b.pending_amount !== undefined && b.pending_amount !== null ? Number(b.pending_amount) : Number(b.car_price || 0);
+    } else if (b.pending_amount) {
+      cashPending = Number(b.pending_amount);
+    }
+
+    const extraInfo = b.notes || (b.flight_no ? `Flight No: ${b.flight_no}` : "");
+
+    return `★ hebacab.com ★
+★ Driver Voucher ★
+👤 Guest Name: ${guestName}
+
+📄 PNR No: ${bookingCode}
+📞 Contact No: ${phone}
+💬 Whatsapp: ${phone}
+👥 No Of Passengers: ${passengers}
+
+Pickup Details:
+📍 Pickup Location: ${pickup}
+🏨 Drop Off Location: ${dropoff}
+📅 Pickup Date: ${pDate}
+⏰ Pickup Time: ${pTime}
+🚗 Car Type: (${carType})
+💵 Cash Receive From Customer: ${cashPending} SAR
+ℹ️ Extra Information: ${extraInfo ? extraInfo : ""}
+🛄 Visa Type: ( Umrah )`;
   };
 
   const getAgentCopy = (b: any) => {

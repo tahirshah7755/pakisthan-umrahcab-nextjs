@@ -466,19 +466,19 @@ function ShareTemplateModal({ booking, isOpen, onClose, GOLD_COLOR }: { booking:
   if (!isOpen || !booking) return null;
 
   const getDriverCopy = (b: any) => {
-    return `*UMRAH CAB HOTEL ASSIGNMENT DETAILS (DRIVER COPY)*\n---------------------------------\n*Stay Code:* ${b.custom_id || `#HTL-${b.id}`}\n*Hotel/Property:* ${b.name}\n*City:* ${b.city}\n*Guest Name:* ${b.customer ? b.customer.name : "N/A"}\n*Guest Phone:* ${b.customer ? b.customer.contact : "N/A"}\n*Check-In:* ${b.check_in || "N/A"}\n*Check-Out:* ${b.check_out || "N/A"}`;
+    return `*HEBA CAB HOTEL ASSIGNMENT DETAILS (DRIVER COPY)*\n---------------------------------\n*Stay Code:* ${b.custom_id || `#HTL-${b.id}`}\n*Hotel/Property:* ${b.name}\n*City:* ${b.city}\n*Guest Name:* ${b.customer ? b.customer.name : "N/A"}\n*Guest Phone:* ${b.customer ? b.customer.contact : "N/A"}\n*Check-In:* ${b.check_in || "N/A"}\n*Check-Out:* ${b.check_out || "N/A"}`;
   };
 
   const getAgentCopy = (b: any) => {
     const dName = b.driver ? b.driver.name : "None";
     const dPhone = b.driver ? b.driver.phone : "";
-    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Stay Code:* ${b.custom_id || `#HTL-${b.id}`}\n*Hotel/Property:* ${b.name}\n*Guest Name:* ${b.customer ? b.customer.name : "N/A"}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}`;
+    return `*HEBA CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Stay Code:* ${b.custom_id || `#HTL-${b.id}`}\n*Hotel/Property:* ${b.name}\n*Guest Name:* ${b.customer ? b.customer.name : "N/A"}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}`;
   };
 
   const getClientCopy = (b: any) => {
     const dName = b.driver ? b.driver.name : "TBD";
     const dPhone = b.driver ? b.driver.phone : "TBD";
-    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.customer ? b.customer.name : "Guest"}*,\n\nYour driver's status has been updated for your hotel stay assignment:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n\nThank you for choosing Umrah Cab!`;
+    return `*HEBA CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.customer ? b.customer.name : "Guest"}*,\n\nYour driver's status has been updated for your hotel stay assignment:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n\nThank you for choosing Heba Cab!`;
   };
 
   const textMap = {

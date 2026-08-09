@@ -2919,5 +2919,30 @@ input[type="checkbox"]:checked + .switch-slider::before {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  /* Voucher Modal Print Isolation */
+  body:has(.voucher-modal-overlay) .admin-sidebar,
+  body:has(.voucher-modal-overlay) .admin-header,
+  body:has(.voucher-modal-overlay) .db-grid > *:not(.voucher-modal-overlay) {
+    display: none !important;
+  }
+
+  .voucher-modal-overlay {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .voucher-print-card {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    background: #ffffff !important;
+  }
 }
 

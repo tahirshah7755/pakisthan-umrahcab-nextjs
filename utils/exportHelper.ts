@@ -453,3 +453,136 @@ export async function exportToPDF(options: ExportOptions) {
   const outFilename = filename.endsWith(".pdf") ? filename : `${filename}_${getSaudiTodayDate()}.pdf`;
   doc.save(outFilename);
 }
+
+export interface VoucherPrintOptions {
+  id?: string;
+  type?: string;
+  customerName?: string;
+  companyName?: string;
+  route?: string;
+  vehicle?: string;
+  tafweej?: string;
+  serviceName?: string;
+  details?: string;
+  time?: string;
+  price?: number;
+}
+
+/**
+ * Prints a clean, dedicated service/transport voucher modal preview without background elements.
+ */
+export function printVoucher(v: VoucherPrintOptions) {
+  if (!v) return;
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Pop-up blocked! Please allow pop-ups to print.");
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${v.type || "Transport Voucher"} - ${v.id || ""}</title>
+        <style>
+          * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+          body { background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 30px; color: #1e293b; }
+          .voucher-card { width: 100%; max-width: 580px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px dashed #cbd5e1; padding-bottom: 18px; margin-bottom: 20px; }
+          .brand-title { font-size: 20px; font-weight: 800; color: #d97706; }
+          .brand-sub { font-size: 10px; color: #94a3b8; font-weight: 700; margin-top: 3px; letter-spacing: 0.5px; }
+          .header-right { text-align: right; }
+          .voucher-type { font-size: 14px; font-weight: 700; color: #334155; }
+          .voucher-ref { font-size: 11px; color: #d97706; font-weight: 700; margin-top: 2px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+          .col-span-2 { grid-column: span 2; }
+          .label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: block; }
+          .val { font-size: 14px; font-weight: 700; color: #1e293b; display: block; }
+          .val-agency { color: #10b981; }
+          .val-desc { color: #334155; }
+          .val-sub { color: #475569; }
+          .val-italic { font-style: italic; color: #64748b; font-size: 13px; }
+          .divider { border-top: 1px solid #f1f5f9; grid-column: span 2; padding-top: 10px; }
+          .price-val { font-size: 18px; font-weight: 800; color: #10b981; }
+          .footer { border-top: 2px dashed #cbd5e1; padding-top: 16px; text-align: center; font-size: 11px; color: #94a3b8; }
+          @media print {
+            body { background: #ffffff; padding: 0; min-height: auto; }
+            .voucher-card { box-shadow: none; border: 1px solid #e2e8f0; max-width: 100%; margin: 0 auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="voucher-card">
+          <div class="header">
+            <div>
+              <div class="brand-title">UmrahCab</div>
+              <div class="brand-sub">OFFICIAL ADMINISTRATIVE VOUCHER</div>
+            </div>
+            <div class="header-right">
+              <div class="voucher-type">${v.type || "Transport Voucher"}</div>
+              <div class="voucher-ref">REF: ${v.id || "N/A"}</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <span class="label">Passenger Customer</span>
+              <span class="val">${v.customerName || "Guest"}</span>
+            </div>
+            <div>
+              <span class="label">Corporate Agency</span>
+              <span class="val val-agency">${v.companyName || "Independent"}</span>
+            </div>
+
+            ${v.route ? `
+              <div class="col-span-2">
+                <span class="label">Route Sector</span>
+                <span class="val val-desc">${v.route}</span>
+              </div>
+              <div>
+                <span class="label">Vehicle Type</span>
+                <span class="val val-sub">${v.vehicle || "Sedan"}</span>
+              </div>
+              <div>
+                <span class="label">Tafweej Reference</span>
+                <span class="val val-sub">${v.tafweej || "N/A"}</span>
+              </div>
+            ` : `
+              <div class="col-span-2">
+                <span class="label">Service Provided</span>
+                <span class="val val-desc">${v.serviceName || "Service"}</span>
+              </div>
+              <div class="col-span-2">
+                <span class="label">Service Details</span>
+                <span class="val val-italic">${v.details || "No details provided"}</span>
+              </div>
+            `}
+
+            <div class="divider"></div>
+
+            <div>
+              <span class="label">Issue Time</span>
+              <span class="val val-sub" style="font-weight: 600; font-size: 13px;">${v.time || "N/A"}</span>
+            </div>
+            <div style="text-align: right;">
+              <span class="label">Voucher Price</span>
+              <span class="price-val">SAR ${Number(v.price || 0).toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            Official Voucher &bull; Umrah Cab Administrative Operations Registry
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}

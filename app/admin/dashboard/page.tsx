@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { printVoucher } from "@/utils/exportHelper";
 
 interface BookingRecord {
   id: string;
@@ -70,6 +71,12 @@ export default function OperationsDashboard() {
     setTimeout(() => {
       setToast({ show: false, message: "", type: "success" });
     }, 3000);
+  };
+
+  const handlePrintVoucher = (v: any) => {
+    if (!v) return;
+    printVoucher(v);
+    showToast("Sent voucher to printer spool!", "success");
   };
 
   // Clock Update Effect (Saudi Arabia Riyad / Makkah Time Zone)
@@ -1008,8 +1015,8 @@ export default function OperationsDashboard() {
 
       {/* 🧾 PRINT SERVICE VOUCHER (SV) MODAL PREVIEW */}
       {selectedVoucher && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
-          <div className="form-card" style={{ width: "100%", maxWidth: "600px", margin: "20px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", background: "#ffffff", padding: "30px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+        <div className="voucher-modal-overlay" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(15, 23, 42, 0.6)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
+          <div className="form-card voucher-print-card" style={{ width: "100%", maxWidth: "600px", margin: "20px", boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)", background: "#ffffff", padding: "30px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
             
             {/* Header Voucher */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px dashed #cbd5e1", paddingBottom: "20px", marginBottom: "20px" }}>
@@ -1070,14 +1077,14 @@ export default function OperationsDashboard() {
               </div>
               <div style={{ textAlign: "right" }}>
                 <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" }}>Voucher Price</span>
-                <span style={{ fontSize: "18px", fontWeight: 800, color: "#10b981", display: "block" }}>SAR {selectedVoucher.price.toFixed(2)}</span>
+                <span style={{ fontSize: "18px", fontWeight: 800, color: "#10b981", display: "block" }}>SAR {Number(selectedVoucher.price || 0).toFixed(2)}</span>
               </div>
             </div>
 
             {/* Footer and controls */}
-            <div style={{ display: "flex", gap: "10px", borderTop: "2px dashed #cbd5e1", paddingTop: "20px", justifyContent: "flex-end" }}>
+            <div className="no-print" style={{ display: "flex", gap: "10px", borderTop: "2px dashed #cbd5e1", paddingTop: "20px", justifyContent: "flex-end" }}>
               <button 
-                onClick={() => { window.print(); showToast("Sent voucher to printer spool!", "success"); }}
+                onClick={() => handlePrintVoucher(selectedVoucher)}
                 className="btn-submit"
                 style={{ background: "#d97706", display: "flex", alignItems: "center", gap: "8px", height: "42px" }}
               >

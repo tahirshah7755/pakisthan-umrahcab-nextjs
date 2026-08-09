@@ -432,7 +432,7 @@ export default function CompanyLedgerPage() {
                           const isPaid = (item.pending_amount || 0) <= 0;
                           return (
                             <tr key={item.id}>
-                              <td style={{ fontWeight: 700, color: "#2563eb" }}>{item.booking_code || `UCB-${item.id}`}</td>
+                              <td style={{ fontWeight: 700, color: "#2563eb" }}>{item.booking_code ? String(item.booking_code).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(item.id || 0)}`}</td>
                               <td>
                                 <div style={{ fontWeight: "600" }}>{item.full_name || item.customer?.name || "Client"}</div>
                                 <div style={{ fontSize: "11px", color: "#64748b" }}>{item.whatsapp || "N/A"}</div>
@@ -504,7 +504,7 @@ export default function CompanyLedgerPage() {
                   </div>
 
                   <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", fontSize: "13px", color: "#334155", marginBottom: "16px" }}>
-                    <div style={{ marginBottom: "4px" }}><strong>Booking:</strong> <span style={{ color: "#2563eb", fontWeight: "700" }}>{paymentModal.booking.booking_code || `UCB-${paymentModal.booking.id}`}</span></div>
+                    <div style={{ marginBottom: "4px" }}><strong>Booking:</strong> <span style={{ color: "#2563eb", fontWeight: "700" }}>{paymentModal.booking.booking_code ? String(paymentModal.booking.booking_code).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(paymentModal.booking.id || 0)}`}</span></div>
                     <div style={{ marginBottom: "4px" }}><strong>Client Name:</strong> {paymentModal.booking.full_name || paymentModal.booking.customer?.name}</div>
                     <div><strong>Car Price:</strong> SAR {Number(paymentModal.booking.car_price || 0).toFixed(2)}</div>
                   </div>

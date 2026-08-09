@@ -56,7 +56,7 @@ export default function BookingStatusPage() {
     const data = await api.getBookingStatus(query);
     if (data) {
       const mapped = data.map((b: any) => ({
-        id: b.booking_code || b.id,
+        id: b.booking_code ? String(b.booking_code).replace(/^UCB-/i, "HCB-") : (b.id ? `HCB-${10000 + Number(b.id)}` : "HCB-10001"),
         pickup: b.pickup,
         destination: b.destination,
         date: b.date,
@@ -82,7 +82,7 @@ export default function BookingStatusPage() {
           <span className="uc-section-label">Real-time Tracking</span>
           <h2 className="uc-section-title" style={{ fontSize: "32px" }}>Check Your Booking Status</h2>
           <p className="uc-section-subtitle" style={{ margin: "0 auto" }}>
-            Input your Booking Reference Code (e.g. UCB-8736) or registered name to search dispatch status.
+            Input your Booking Reference Code (e.g. HCB-10001) or registered name to search dispatch status.
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export default function BookingStatusPage() {
             <div style={{ position: "relative", flex: 1 }}>
               <input
                 type="text"
-                placeholder="Enter Booking Reference (UCB-XXXXXX) or Name..."
+                placeholder="Enter Booking Reference (HCB-10001) or Name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{

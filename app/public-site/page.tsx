@@ -444,7 +444,8 @@ export default function PublicHomePage() {
         notes: bookingData.notes
       });
 
-      const bookingCode = res?.data?.booking_code || res?.data?.id || "UCB-" + Math.floor(100000 + Math.random() * 900000);
+      const rawCode = res?.data?.booking_code || res?.data?.id;
+      const bookingCode = rawCode ? String(rawCode).replace(/^UCB-/i, "HCB-") : ("HCB-" + Math.floor(10000 + Math.random() * 90000));
       
       const whatsappMsg = `Assalamu Alaikum, I would like to book a cab.\n\n*Booking Summary*:\n• Code: ${bookingCode}\n• From: ${bookingData.pickup}\n• To: ${bookingData.destination}\n• Date: ${bookingData.date} @ ${bookingData.time}\n• Vehicle: ${bookingData.carType} (${bookingData.carPrice} SAR)\n• Client: ${bookingData.fullName}\n• WhatsApp: ${bookingData.whatsapp}\n\nPlease confirm my booking.`;
       const encoded = encodeURIComponent(whatsappMsg);

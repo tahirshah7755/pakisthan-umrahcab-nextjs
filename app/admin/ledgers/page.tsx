@@ -617,7 +617,7 @@ export default function LedgersPage() {
                         return (
                           <tr key={item.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                             <td style={{ padding: "12px", fontWeight: "700", color: "#ea580c" }}>
-                              {item.booking_code || `UCB-${item.id}`}
+                              {item.booking_code ? String(item.booking_code).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(item.id || 0)}`}
                             </td>
                             <td style={{ padding: "12px" }}>
                               <div style={{ fontWeight: "600", color: "#1e293b" }}>{item.full_name || item.customer?.name || "Direct Client"}</div>
@@ -695,7 +695,7 @@ export default function LedgersPage() {
                 </div>
 
                 <div style={{ background: "#fff7ed", borderLeft: "4px solid #ea580c", padding: "12px", borderRadius: "8px", fontSize: "13px", color: "#334155", marginBottom: "16px" }}>
-                  <div style={{ marginBottom: "4px" }}><strong>Booking:</strong> <span style={{ color: "#ea580c", fontWeight: "700" }}>{adminPaymentModal.booking.booking_code || `UCB-${adminPaymentModal.booking.id}`}</span></div>
+                  <div style={{ marginBottom: "4px" }}><strong>Booking:</strong> <span style={{ color: "#ea580c", fontWeight: "700" }}>{adminPaymentModal.booking.booking_code ? String(adminPaymentModal.booking.booking_code).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(adminPaymentModal.booking.id || 0)}`}</span></div>
                   <div style={{ marginBottom: "4px" }}><strong>Client:</strong> {adminPaymentModal.booking.full_name || adminPaymentModal.booking.customer?.name}</div>
                   <div><strong>Total Price:</strong> SAR {Number(adminPaymentModal.booking.car_price || 0).toFixed(2)}</div>
                 </div>

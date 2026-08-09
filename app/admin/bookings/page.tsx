@@ -135,7 +135,7 @@ export default function BookingsList() {
         rawList = bookings;
       }
       return rawList.map((b: any) => ({
-        id: b.custom_id || `UCB-${b.id}`,
+        id: b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : (b.custom_id ? String(b.custom_id).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(b.id || 0)}`),
         customerName: b.full_name || b.customer_relation?.name || "Guest",
         pickupDate: b.date || "",
         pickupTime: b.time || "",
@@ -298,7 +298,7 @@ export default function BookingsList() {
           else if (b.status === "Cancelled") uiStatus = "Cancelled";
  
           return {
-            id: b.booking_code || b.id || "UCB-XXXX",
+            id: b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : (b.custom_id ? String(b.custom_id).replace(/UCB-/gi, "HCB-") : (b.id ? `HCB-${10000 + Number(b.id)}` : "HCB-10001")),
             customerName: b.full_name || b.fullName || "Guest",
             pickupDate: b.date,
             pickupTime: b.time ? b.time.substring(0, 5) : "",

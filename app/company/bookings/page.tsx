@@ -86,7 +86,7 @@ function CompanyBookingsContent() {
         rawList = bookings;
       }
       return rawList.map((b: any) => ({
-        booking_code: b.custom_id || `UCB-${b.id}`,
+        booking_code: b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : (b.custom_id ? String(b.custom_id).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(b.id || 0)}`),
         full_name: b.full_name || b.customer_relation?.name || "Guest",
         pickup: b.pickup || "",
         destination: b.destination || "",
@@ -797,7 +797,7 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     } else {
       paymentStr = `\n*Payment Method:* Credit (Paid)`;
     }
-    return `*UMRAH CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.date} at ${b.time}\n*Pickup Location:* ${b.pickup}\n*Destination:* ${b.destination}\n*Vehicle:* ${b.car_type}\n*Flight No:* ${b.flight_no || "N/A"}${paymentStr}\n*Notes:* ${b.notes || "N/A"}`;
+    return `*HEBA CAB BOOKING DETAILS (DRIVER COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Guest WhatsApp:* ${b.whatsapp || "N/A"}\n*Date & Time:* ${b.date} at ${b.time}\n*Pickup Location:* ${b.pickup}\n*Destination:* ${b.destination}\n*Vehicle:* ${b.car_type}\n*Flight No:* ${b.flight_no || "N/A"}${paymentStr}\n*Notes:* ${b.notes || "N/A"}`;
   };
 
   const getAgentCopy = (b: any) => {
@@ -809,7 +809,7 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     }
     const dName = b.driver ? b.driver.name : "None";
     const dPhone = b.driver ? b.driver.phone : "";
-    return `*UMRAH CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Date & Time:* ${b.date} at ${b.time}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}${paymentStr}`;
+    return `*HEBA CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Date & Time:* ${b.date} at ${b.time}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}${paymentStr}`;
   };
 
   const getClientCopy = (b: any) => {
@@ -819,7 +819,7 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     }
     const dName = b.driver ? b.driver.name : "TBD";
     const dPhone = b.driver ? b.driver.phone : "TBD";
-    return `*UMRAH CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.full_name}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n*Vehicle:* ${b.car_type}${paymentStr}\n\nThank you for choosing Umrah Cab!`;
+    return `*HEBA CAB STATUS UPDATE (CLIENT COPY)*\n---------------------------------\nDear *${b.full_name}*,\n\nYour driver's status has been updated:\n*Status:* ${b.driver_trip_status || "Assigned"}\n*Driver Name:* ${dName}\n*Driver Phone:* ${dPhone}\n*Vehicle:* ${b.car_type}${paymentStr}\n\nThank you for choosing Heba Cab!`;
   };
 
   const textMap = {

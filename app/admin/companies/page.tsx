@@ -351,7 +351,7 @@ export default function CompaniesPage() {
                         <td style={{ color: "#64748b", fontWeight: "500" }}>{c.email && c.email !== "N/A" ? c.email : ""}</td>
                         <td>
                           <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontWeight: "600", color: "#475569", fontSize: "13px" }}>umrahcab</span>
+                            <span style={{ fontWeight: "600", color: "#475569", fontSize: "13px" }}>{(c as any).registered_by || user?.name || user?.username || "hebacab"}</span>
                             <span style={{ color: "#94a3b8", fontSize: "11px" }}>23-May-2026</span>
                           </div>
                         </td>

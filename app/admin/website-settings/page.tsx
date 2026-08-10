@@ -929,15 +929,15 @@ export default function WebsiteSettingsPage() {
             <div style={{ flexGrow: 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "10px", flexWrap: "wrap" }}>
                 <div>
-                  <h3 style={{ fontSize: "14px", fontWeight: "bold", color: "#334155", margin: 0 }}>Mega Offers & Fleet Rates</h3>
-                  <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>Configure the promo routes and vehicle pricing displayed on the homepage slider and fleet section.</p>
+                  <h3 style={{ fontSize: "14px", fontWeight: "bold", color: "#334155", margin: 0 }}>Header Slider & Promo Vehicle Offers</h3>
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>Upload custom images, set route fares, and configure promo vehicles displayed on the homepage header slider.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     setOffersList((prev) => [
                       ...prev,
-                      { vehicle: "New Sedan", route: "Pickup to Dropoff", price: 300, icon: "fa-car" }
+                      { vehicle: "New Sedan", route: "Pickup to Dropoff", price: 300, icon: "fa-car", image: "" }
                     ]);
                   }}
                   style={{
@@ -954,109 +954,205 @@ export default function WebsiteSettingsPage() {
                     gap: "6px"
                   }}
                 >
-                  <i className="fas fa-plus"></i> Add Promo Route
+                  <i className="fas fa-plus"></i> Add Promo Slide
                 </button>
               </div>
 
               <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left", minWidth: "600px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left", minWidth: "750px" }}>
                   <thead>
                     <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "140px" }}>Slider Image</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Vehicle Class</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Route / Destination</th>
-                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "110px" }}>Price (SAR)</th>
-                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "170px" }}>Icon Type</th>
-                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "80px", textAlign: "center" }}>Actions</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "100px" }}>Price (SAR)</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "140px" }}>Icon Type</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "70px", textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {offersList.map((offer, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "8px" }}>
-                          <input
-                            type="text"
-                            value={offer.vehicle || ""}
-                            onChange={(e) => {
-                              const newList = [...offersList];
-                              newList[idx].vehicle = e.target.value;
-                              setOffersList(newList);
-                            }}
-                            className="form-input"
-                            style={{ padding: "6px 8px" }}
-                            required
-                          />
-                        </td>
-                        <td style={{ padding: "8px" }}>
-                          <input
-                            type="text"
-                            value={offer.route || ""}
-                            onChange={(e) => {
-                              const newList = [...offersList];
-                              newList[idx].route = e.target.value;
-                              setOffersList(newList);
-                            }}
-                            className="form-input"
-                            style={{ padding: "6px 8px" }}
-                            required
-                          />
-                        </td>
-                        <td style={{ padding: "8px" }}>
-                          <input
-                            type="number"
-                            value={offer.price || 0}
-                            onChange={(e) => {
-                              const newList = [...offersList];
-                              newList[idx].price = Number(e.target.value);
-                              setOffersList(newList);
-                            }}
-                            className="form-input"
-                            style={{ padding: "6px 8px" }}
-                            required
-                          />
-                        </td>
-                        <td style={{ padding: "8px" }}>
-                          <select
-                            value={offer.icon || "fa-car"}
-                            onChange={(e) => {
-                              const newList = [...offersList];
-                              newList[idx].icon = e.target.value;
-                              setOffersList(newList);
-                            }}
-                            className="form-input"
-                            style={{ padding: "6px 8px", height: "36px" }}
-                          >
-                            <option value="fa-car">Sedan (fa-car)</option>
-                            <option value="fa-car-side">Premium (fa-car-side)</option>
-                            <option value="fa-van-shuttle">Family Van (fa-van-shuttle)</option>
-                            <option value="fa-suv">Luxury SUV (fa-suv)</option>
-                            <option value="fa-bus">Large Minivan (fa-bus)</option>
-                          </select>
-                        </td>
-                        <td style={{ padding: "8px", textAlign: "center" }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOffersList((prev) => prev.filter((_, i) => i !== idx));
-                            }}
-                            style={{
-                              background: "#fef2f2",
-                              color: "#ef4444",
-                              border: "1px solid #fee2e2",
-                              borderRadius: "6px",
-                              padding: "6px 10px",
-                              cursor: "pointer",
-                              transition: "all 0.2s"
-                            }}
-                            title="Remove Offer"
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {offersList.map((offer, idx) => {
+                      const currentImg = offer.image || "";
+                      return (
+                        <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          {/* Image Upload Column */}
+                          <td style={{ padding: "10px 8px" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "center" }}>
+                              <div
+                                style={{
+                                  width: "110px",
+                                  height: "65px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #cbd5e1",
+                                  background: "#f1f5f9",
+                                  overflow: "hidden",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  position: "relative"
+                                }}
+                              >
+                                {currentImg ? (
+                                  <img
+                                    src={currentImg}
+                                    alt="Vehicle"
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  />
+                                ) : (
+                                  <div style={{ textAlign: "center", color: "#94a3b8", fontSize: "10px" }}>
+                                    <i className="fas fa-car" style={{ fontSize: "16px", display: "block", marginBottom: "2px" }}></i>
+                                    Default
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ display: "flex", gap: "4px" }}>
+                                <input
+                                  type="file"
+                                  id={`offer-file-${idx}`}
+                                  accept="image/*"
+                                  style={{ display: "none" }}
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      const file = e.target.files[0];
+                                      const reader = new FileReader();
+                                      reader.onload = (re) => {
+                                        const res = re.target?.result as string;
+                                        const newList = [...offersList];
+                                        newList[idx].image = res;
+                                        setOffersList(newList);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`offer-file-${idx}`}
+                                  style={{
+                                    fontSize: "10px",
+                                    color: "#2563eb",
+                                    background: "#eff6ff",
+                                    border: "1px solid #bfdbfe",
+                                    padding: "3px 6px",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    fontWeight: "600"
+                                  }}
+                                >
+                                  <i className="fas fa-upload"></i> Upload
+                                </label>
+                                {currentImg && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newList = [...offersList];
+                                      newList[idx].image = "";
+                                      setOffersList(newList);
+                                    }}
+                                    style={{
+                                      fontSize: "10px",
+                                      color: "#dc2626",
+                                      background: "#fef2f2",
+                                      border: "1px solid #fecaca",
+                                      padding: "3px 6px",
+                                      borderRadius: "4px",
+                                      cursor: "pointer"
+                                    }}
+                                    title="Reset to default image"
+                                  >
+                                    <i className="fas fa-times"></i>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="text"
+                              value={offer.vehicle || ""}
+                              onChange={(e) => {
+                                const newList = [...offersList];
+                                newList[idx].vehicle = e.target.value;
+                                setOffersList(newList);
+                              }}
+                              className="form-input"
+                              style={{ padding: "6px 8px" }}
+                              placeholder="e.g. Sedan"
+                              required
+                            />
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="text"
+                              value={offer.route || ""}
+                              onChange={(e) => {
+                                const newList = [...offersList];
+                                newList[idx].route = e.target.value;
+                                setOffersList(newList);
+                              }}
+                              className="form-input"
+                              style={{ padding: "6px 8px" }}
+                              placeholder="e.g. Madinah to Jeddah"
+                              required
+                            />
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="number"
+                              value={offer.price || 0}
+                              onChange={(e) => {
+                                const newList = [...offersList];
+                                newList[idx].price = Number(e.target.value);
+                                setOffersList(newList);
+                              }}
+                              className="form-input"
+                              style={{ padding: "6px 8px" }}
+                              required
+                            />
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <select
+                              value={offer.icon || "fa-car"}
+                              onChange={(e) => {
+                                const newList = [...offersList];
+                                newList[idx].icon = e.target.value;
+                                setOffersList(newList);
+                              }}
+                              className="form-input"
+                              style={{ padding: "6px 8px", height: "36px" }}
+                            >
+                              <option value="fa-car">Sedan</option>
+                              <option value="fa-car-side">Premium</option>
+                              <option value="fa-van-shuttle">Family Van</option>
+                              <option value="fa-suv">Luxury SUV</option>
+                              <option value="fa-bus">Minivan / Bus</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: "8px", textAlign: "center" }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOffersList((prev) => prev.filter((_, i) => i !== idx));
+                              }}
+                              style={{
+                                background: "#fef2f2",
+                                color: "#ef4444",
+                                border: "1px solid #fee2e2",
+                                borderRadius: "6px",
+                                padding: "6px 10px",
+                                cursor: "pointer",
+                                transition: "all 0.2s"
+                              }}
+                              title="Remove Offer"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {offersList.length === 0 && (
                       <tr>
-                        <td colSpan={5} style={{ padding: "24px", textAlign: "center", color: "#94a3b8" }}>
+                        <td colSpan={6} style={{ padding: "24px", textAlign: "center", color: "#94a3b8" }}>
                           No custom promos configured. The site will display default route fares.
                         </td>
                       </tr>

@@ -35,13 +35,34 @@ export default function PublicHomePage() {
   }
 
 
+  // Fallback image helper
+  const getVehicleFallbackImage = (vehicle: string = "", icon: string = "") => {
+    const v = (vehicle || "").toLowerCase();
+    if (v.includes("sedan") || v.includes("camry") || v.includes("sonata")) {
+      return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("taurus") || v.includes("ford") || v.includes("luxury") || v.includes("bmw") || v.includes("mercedes")) {
+      return "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("staria") || v.includes("h-1") || v.includes("van") || v.includes("family")) {
+      return "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("gmc") || v.includes("yukon") || v.includes("suv") || v.includes("tahoe")) {
+      return "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("hiace") || v.includes("toyota hi") || v.includes("bus") || v.includes("coaster")) {
+      return "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=600&q=80";
+    }
+    return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80";
+  };
+
   // Default offers array for fallback
   const defaultOffers = [
-    { vehicle: "Sedan", route: "Madinah Hotel to Jeddah Airport", price: 300, icon: "fa-car" },
-    { vehicle: "Ford Taurus", route: "Madinah Hotel to Jeddah Airport", price: 400, icon: "fa-car-side" },
-    { vehicle: "Hyundai H-1", route: "Madinah Hotel to Makkah Hotel", price: 500, icon: "fa-van-shuttle" },
-    { vehicle: "GMC Yukon XL", route: "Makkah Hotel to Madinah Hotel", price: 550, icon: "fa-suv" },
-    { vehicle: "Toyota HI ACE", route: "Madinah Hotel to Makkah Hotel", price: 550, icon: "fa-bus" }
+    { vehicle: "Sedan", route: "Madinah Hotel to Jeddah Airport", price: 300, icon: "fa-car", image: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80" },
+    { vehicle: "Ford Taurus", route: "Madinah Hotel to Jeddah Airport", price: 400, icon: "fa-car-side", image: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=600&q=80" },
+    { vehicle: "Hyundai H-1", route: "Madinah Hotel to Makkah Hotel", price: 500, icon: "fa-van-shuttle", image: "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=600&q=80" },
+    { vehicle: "GMC Yukon XL", route: "Makkah Hotel to Madinah Hotel", price: 550, icon: "fa-suv", image: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80" },
+    { vehicle: "Toyota HI ACE", route: "Madinah Hotel to Makkah Hotel", price: 550, icon: "fa-bus", image: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=600&q=80" }
   ];
 
   // Parse offers from website settings or use default
@@ -507,40 +528,82 @@ export default function PublicHomePage() {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {offers.map((offer, idx) => (
-                <div key={idx} className={`uc-slide ${idx === activeOffer ? "active" : ""}`}>
-                  <span className="uc-offer-badge">
-                    <i className={`fas ${offer.icon}`} style={{ marginRight: "6px" }}></i> Mega Offer
-                  </span>
-                  <h1 className="uc-offer-vehicle">{offer.vehicle}</h1>
-                  <div className="uc-offer-route">
-                    <i className="fas fa-route" style={{ color: "var(--uc-primary)" }}></i>
-                    <span>{offer.route}</span>
+              {offers.map((offer, idx) => {
+                const vehicleImageSrc = offer.image || getVehicleFallbackImage(offer.vehicle, offer.icon);
+                return (
+                  <div key={idx} className={`uc-slide ${idx === activeOffer ? "active" : ""}`}>
+                    <div className="uc-slide-layout" style={{ display: "flex", gap: "24px", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                      <div style={{ flex: "1 1 260px" }}>
+                        <span className="uc-offer-badge">
+                          <i className={`fas ${offer.icon || 'fa-car'}`} style={{ marginRight: "6px" }}></i> Mega Offer
+                        </span>
+                        <h1 className="uc-offer-vehicle">{offer.vehicle}</h1>
+                        <div className="uc-offer-route">
+                          <i className="fas fa-route" style={{ color: "var(--uc-primary)" }}></i>
+                          <span>{offer.route}</span>
+                        </div>
+                        <div className="uc-offer-price">{offer.price} SAR</div>
+                        <p className="uc-offer-price-sub">All inclusive price: Toll tax, Fuel & Driver charges.</p>
+                      </div>
+
+                      {/* Dynamic Vehicle Slider Image */}
+                      {vehicleImageSrc && (
+                        <div 
+                          className="uc-slider-img-box"
+                          style={{
+                            flex: "0 1 230px",
+                            maxWidth: "260px",
+                            height: "170px",
+                            borderRadius: "16px",
+                            background: "radial-gradient(circle, rgba(200, 168, 75, 0.2) 0%, rgba(22, 27, 34, 0.8) 100%)",
+                            border: "1px solid rgba(200, 168, 75, 0.35)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "12px",
+                            boxShadow: "0 12px 30px rgba(0,0,0,0.5)",
+                            position: "relative",
+                            overflow: "hidden"
+                          }}
+                        >
+                          <img
+                            src={vehicleImageSrc}
+                            alt={offer.vehicle}
+                            style={{
+                              maxHeight: "100%",
+                              maxWidth: "100%",
+                              objectFit: "contain",
+                              filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.7))",
+                              transform: "scale(1.05)",
+                              transition: "transform 0.4s ease"
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="uc-slide-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "20px" }}>
+                      <a href={whatsappLink.includes('?') ? whatsappLink : `${whatsappLink}?text=HI`} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp">
+                        <i className="fab fa-whatsapp"></i> Book via WhatsApp
+                      </a>
+                      <button onClick={() => {
+                        const routes = offer.route.split(" to ");
+                        setBookingData((prev) => ({
+                          ...prev,
+                          pickup: routes[0] || "",
+                          destination: routes[1] || "",
+                          carType: offer.vehicle,
+                          carPrice: offer.price
+                        }));
+                        setStep(1);
+                        document.getElementById("booking-wizard")?.scrollIntoView({ behavior: "smooth" });
+                      }} className="uc-btn-outline">
+                        Configure Booking
+                      </button>
+                    </div>
                   </div>
-                  <div className="uc-offer-price">{offer.price} SAR</div>
-                  <p className="uc-offer-price-sub">All inclusive price: Toll tax, Fuel & Driver charges.</p>
-                  
-                  <div className="uc-slide-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <a href={whatsappLink.includes('?') ? whatsappLink : `${whatsappLink}?text=HI`} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp">
-                      <i className="fab fa-whatsapp"></i> Book via WhatsApp
-                    </a>
-                    <button onClick={() => {
-                      const routes = offer.route.split(" to ");
-                      setBookingData((prev) => ({
-                        ...prev,
-                        pickup: routes[0],
-                        destination: routes[1],
-                        carType: offer.vehicle,
-                        carPrice: offer.price
-                      }));
-                      setStep(1);
-                      document.getElementById("booking-wizard")?.scrollIntoView({ behavior: "smooth" });
-                    }} className="uc-btn-outline">
-                      Configure Booking
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Slider Navigation & Pill Indicators */}

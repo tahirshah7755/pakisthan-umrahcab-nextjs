@@ -9,6 +9,8 @@ import { formatDateToCustom } from "@/utils/formatters";
 
 interface BookingItem {
   id: string;
+  rawId?: number | string | null;
+  bookingCode?: string | null;
   customerName: string;
   pickupDate: string;
   pickupTime: string;

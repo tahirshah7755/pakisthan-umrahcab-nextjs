@@ -299,6 +299,8 @@ export default function BookingsList() {
  
           return {
             id: b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : (b.custom_id ? String(b.custom_id).replace(/UCB-/gi, "HCB-") : (b.id ? `HCB-${10000 + Number(b.id)}` : "HCB-10001")),
+            rawId: b.id,
+            bookingCode: b.booking_code || b.custom_id || null,
             customerName: b.full_name || b.fullName || "Guest",
             pickupDate: b.date,
             pickupTime: b.time ? b.time.substring(0, 5) : "",
@@ -502,7 +504,7 @@ export default function BookingsList() {
                   <td>
                     <select
                       value={b.driverId || ""}
-                      onChange={(e) => handleInlineDriverChange(b.id, e.target.value)}
+                      onChange={(e) => handleInlineDriverChange(b.rawId || b.id, e.target.value)}
                       style={{
                         padding: "4px 8px",
                         fontSize: "12px",
@@ -526,7 +528,7 @@ export default function BookingsList() {
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <select
                         value={b.driverTripStatus || ""}
-                        onChange={(e) => handleInlineDriverTripStatusChange(b.id, e.target.value)}
+                        onChange={(e) => handleInlineDriverTripStatusChange(b.rawId || b.id, e.target.value)}
                         style={{
                           padding: "4px 8px",
                           fontSize: "12px",
@@ -604,7 +606,7 @@ export default function BookingsList() {
                   <td>
                     <div style={{ display: "flex", gap: "8px" }}>
                       <button
-                        onClick={() => router.push(`/admin/bookings/view?id=${b.id}`)}
+                        onClick={() => router.push(`/admin/bookings/view?id=${b.rawId || b.id}`)}
                         title="View Details"
                         style={{
                           background: "#f1f5f9",
@@ -620,7 +622,7 @@ export default function BookingsList() {
                       </button>
                       {canEdit && (
                         <button
-                          onClick={() => router.push(`/admin/bookings/edit?id=${b.id}`)}
+                          onClick={() => router.push(`/admin/bookings/edit?id=${b.rawId || b.id}`)}
                           title="Edit Booking"
                           style={{
                             background: "#f1f5f9",

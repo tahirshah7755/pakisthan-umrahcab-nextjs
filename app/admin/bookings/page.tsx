@@ -336,10 +336,10 @@ export default function BookingsList() {
     }
   };
 
-  const handleInlineDriverChange = async (bookingId: string, driverId: string) => {
+  const handleInlineDriverChange = async (bookingId: string | number, driverId: string) => {
     try {
       setLoading(true);
-      const res = await api.updateBooking(bookingId, { 
+      const res = await api.updateBooking(String(bookingId), { 
         driver_id: driverId ? parseInt(driverId) : null,
         status: driverId ? "Active Dispatch" : "Confirmed Booking"
       });
@@ -357,10 +357,10 @@ export default function BookingsList() {
     }
   };
 
-  const handleInlineDriverTripStatusChange = async (bookingId: string, tripStatus: string) => {
+  const handleInlineDriverTripStatusChange = async (bookingId: string | number, tripStatus: string) => {
     try {
       setLoading(true);
-      const res = await api.updateBooking(bookingId, { 
+      const res = await api.updateBooking(String(bookingId), { 
         driver_trip_status: tripStatus || null
       });
       if (res?.success) {

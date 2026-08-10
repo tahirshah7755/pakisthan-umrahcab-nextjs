@@ -35,8 +35,10 @@ export default function WebsiteSettingsPage() {
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [heroBgFile, setHeroBgFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [faviconPreview, setFaviconPreview] = useState<string>("");
+  const [heroBgPreview, setHeroBgPreview] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,6 +82,7 @@ export default function WebsiteSettingsPage() {
           });
           if (data.website_logo) setLogoPreview(data.website_logo);
           if (data.favicon) setFaviconPreview(data.favicon);
+          if (data.hero_bg_image) setHeroBgPreview(data.hero_bg_image);
           
           try {
             setOffersList(JSON.parse(data.homepage_offers || "[]"));
@@ -101,15 +104,18 @@ export default function WebsiteSettingsPage() {
     setSettings((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "logo" | "favicon") => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: "logo" | "favicon" | "hero_bg") => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (type === "logo") {
         setLogoFile(file);
         setLogoPreview(URL.createObjectURL(file));
-      } else {
+      } else if (type === "favicon") {
         setFaviconFile(file);
         setFaviconPreview(URL.createObjectURL(file));
+      } else if (type === "hero_bg") {
+        setHeroBgFile(file);
+        setHeroBgPreview(URL.createObjectURL(file));
       }
     }
   };
@@ -135,6 +141,9 @@ export default function WebsiteSettingsPage() {
       }
       if (faviconFile) {
         formData.append("favicon", faviconFile);
+      }
+      if (heroBgFile) {
+        formData.append("hero_bg_image", heroBgFile);
       }
 
       const res = await api.updateWebsiteSettings(formData);
@@ -173,6 +182,7 @@ export default function WebsiteSettingsPage() {
           });
           if (refreshed.website_logo) setLogoPreview(refreshed.website_logo);
           if (refreshed.favicon) setFaviconPreview(refreshed.favicon);
+          if (refreshed.hero_bg_image) setHeroBgPreview(refreshed.hero_bg_image);
           try {
             setOffersList(JSON.parse(refreshed.homepage_offers || "[]"));
           } catch (e) {
@@ -540,6 +550,60 @@ export default function WebsiteSettingsPage() {
                 <i className="fas fa-upload" style={{ marginRight: "4px" }}></i>
                 Upload Favicon
               </label>
+            </div>
+
+            {/* Hero Slider Background Image Section */}
+            <div style={{ width: "100%", borderTop: "1px solid #f1f5f9", paddingTop: "20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <span className="form-label" style={{ width: "100%", textAlign: "left" }}>Header Slider Background Image</span>
+              <div className="logo-box" style={{ minHeight: "100px", background: "#0d1117" }}>
+                {heroBgPreview ? (
+                  <img
+                    src={heroBgPreview}
+                    alt="Hero Background"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }}
+                    onError={() => setHeroBgPreview("")}
+                  />
+                ) : (
+                  <div style={{ color: "#94a3b8", fontSize: "12px", textAlign: "center" }}>
+                    <i className="fas fa-panorama" style={{ fontSize: "24px", display: "block", marginBottom: "4px" }}></i>
+                    Default Dark Gradient
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
+                <input 
+                  type="file" 
+                  id="hero-bg-input" 
+                  accept="image/*" 
+                  onChange={(e) => handleFileChange(e, "hero_bg")} 
+                  style={{ display: "none" }} 
+                />
+                <label htmlFor="hero-bg-input" className="upload-label">
+                  <i className="fas fa-upload" style={{ marginRight: "4px" }}></i>
+                  Upload Background
+                </label>
+                {heroBgPreview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeroBgFile(null);
+                      setHeroBgPreview("");
+                      setSettings((prev: any) => ({ ...prev, hero_bg_image: "" }));
+                    }}
+                    style={{
+                      fontSize: "11px",
+                      color: "#dc2626",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      fontWeight: "700",
+                      padding: 0
+                    }}
+                  >
+                    <i className="fas fa-trash"></i> Remove
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -930,14 +994,14 @@ export default function WebsiteSettingsPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "10px", flexWrap: "wrap" }}>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: "bold", color: "#334155", margin: 0 }}>Header Slider & Promo Vehicle Offers</h3>
-                  <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>Upload custom images, set route fares, and configure promo vehicles displayed on the homepage header slider.</p>
+                  <p style={{ fontSize: "12px", color: "#64748b", margin: "4px 0 0 0" }}>Set individual background images, promo routes, and vehicle pricing for each slide in the homepage header slider.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     setOffersList((prev) => [
                       ...prev,
-                      { vehicle: "New Sedan", route: "Pickup to Dropoff", price: 300, icon: "fa-car", image: "" }
+                      { vehicle: "New Sedan", route: "Pickup to Dropoff", price: 300, icon: "fa-car", bg_image: "" }
                     ]);
                   }}
                   style={{
@@ -962,7 +1026,7 @@ export default function WebsiteSettingsPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left", minWidth: "750px" }}>
                   <thead>
                     <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "140px" }}>Slider Image</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "140px" }}>Slide Background</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Vehicle Class</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Route / Destination</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "100px" }}>Price (SAR)</th>
@@ -972,10 +1036,10 @@ export default function WebsiteSettingsPage() {
                   </thead>
                   <tbody>
                     {offersList.map((offer, idx) => {
-                      const currentImg = offer.image || "";
+                      const currentBg = offer.bg_image || offer.image || "";
                       return (
                         <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          {/* Image Upload Column */}
+                          {/* Slide Background Image Upload Column */}
                           <td style={{ padding: "10px 8px" }}>
                             <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "center" }}>
                               <div
@@ -984,7 +1048,7 @@ export default function WebsiteSettingsPage() {
                                   height: "65px",
                                   borderRadius: "6px",
                                   border: "1px solid #cbd5e1",
-                                  background: "#f1f5f9",
+                                  background: "#0f172a",
                                   overflow: "hidden",
                                   display: "flex",
                                   alignItems: "center",
@@ -992,16 +1056,16 @@ export default function WebsiteSettingsPage() {
                                   position: "relative"
                                 }}
                               >
-                                {currentImg ? (
+                                {currentBg ? (
                                   <img
-                                    src={currentImg}
-                                    alt="Vehicle"
+                                    src={currentBg}
+                                    alt="Slide Background"
                                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                                   />
                                 ) : (
                                   <div style={{ textAlign: "center", color: "#94a3b8", fontSize: "10px" }}>
-                                    <i className="fas fa-car" style={{ fontSize: "16px", display: "block", marginBottom: "2px" }}></i>
-                                    Default
+                                    <i className="fas fa-image" style={{ fontSize: "16px", display: "block", marginBottom: "2px" }}></i>
+                                    Default BG
                                   </div>
                                 )}
                               </div>
@@ -1018,6 +1082,7 @@ export default function WebsiteSettingsPage() {
                                       reader.onload = (re) => {
                                         const res = re.target?.result as string;
                                         const newList = [...offersList];
+                                        newList[idx].bg_image = res;
                                         newList[idx].image = res;
                                         setOffersList(newList);
                                       };
@@ -1040,11 +1105,12 @@ export default function WebsiteSettingsPage() {
                                 >
                                   <i className="fas fa-upload"></i> Upload
                                 </label>
-                                {currentImg && (
+                                {currentBg && (
                                   <button
                                     type="button"
                                     onClick={() => {
                                       const newList = [...offersList];
+                                      newList[idx].bg_image = "";
                                       newList[idx].image = "";
                                       setOffersList(newList);
                                     }}
@@ -1057,7 +1123,7 @@ export default function WebsiteSettingsPage() {
                                       borderRadius: "4px",
                                       cursor: "pointer"
                                     }}
-                                    title="Reset to default image"
+                                    title="Reset to default background"
                                   >
                                     <i className="fas fa-times"></i>
                                   </button>

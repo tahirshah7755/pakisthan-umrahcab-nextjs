@@ -32,6 +32,7 @@ export interface WebsiteSettings {
   contact_title?: string;
   contact_desc?: string;
   homepage_offers?: string;
+  hero_bg_image?: string;
 }
 
 interface WebsiteSettingsContextType {

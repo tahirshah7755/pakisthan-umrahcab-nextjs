@@ -698,25 +698,48 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
           color: #fff;
           margin-bottom: 6px;
         }
+        .uc-offer-card-img-wrap {
+          width: 100%;
+          height: 155px;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #0d1117;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          margin: 10px 0 16px 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+        .uc-offer-card-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.4s ease;
+        }
+        .uc-offer-card:hover .uc-offer-card-img {
+          transform: scale(1.08);
+        }
         .uc-offer-card-route {
           font-size: 13px;
           color: #8b949e;
-          margin-bottom: 16px;
+          margin-bottom: 14px;
           display: flex;
           align-items: center;
           gap: 6px;
         }
         .uc-offer-card-price {
-          font-size: 32px;
+          font-size: 30px;
           font-weight: 900;
           color: var(--uc-primary);
-          margin-bottom: 16px;
+          margin-bottom: 14px;
         }
         .uc-offer-card-sub {
           font-size: 11px;
           color: #656d76;
           display: block;
-          margin-top: -8px;
+          margin-top: -6px;
           margin-bottom: 16px;
         }
 

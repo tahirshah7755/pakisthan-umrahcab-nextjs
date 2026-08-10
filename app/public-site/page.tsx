@@ -528,9 +528,32 @@ export default function PublicHomePage() {
   const currentActiveOffer = offers[activeOffer] || offers[0] || {};
   const activeSlideBg = currentActiveOffer.bg_image || currentActiveOffer.image || websiteSettings?.hero_bg_image || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80";
 
+  const getVehicleImage = (vehicleName?: string, customImage?: string) => {
+    if (customImage && (customImage.startsWith("http") || customImage.startsWith("data:") || customImage.startsWith("/"))) {
+      return customImage;
+    }
+    const v = (vehicleName || "").toLowerCase();
+    if (v.includes("camry") || v.includes("camery") || v.includes("sedan") || v.includes("sonata")) {
+      return "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("gmc") || v.includes("yukon") || v.includes("suv") || v.includes("tahoe") || v.includes("prado")) {
+      return "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("staria") || v.includes("starex") || v.includes("h-1") || v.includes("h1") || v.includes("van")) {
+      return "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("hiace") || v.includes("hi ace") || v.includes("bus") || v.includes("coaster") || v.includes("coach") || v.includes("grand cabin")) {
+      return "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&w=600&q=80";
+    }
+    if (v.includes("taurus") || v.includes("ford") || v.includes("accord")) {
+      return "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=600&q=80";
+    }
+    return "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80";
+  };
+
   return (
     <div>
-      {/* ===== HERO BANNER ===== */}
+      {/* ===== HERO SLIDER WITH BOOKING WIDGET ===== */}
       <section 
         className="uc-hero"
         style={{
@@ -1066,6 +1089,19 @@ export default function PublicHomePage() {
             <div key={idx} className="uc-offer-card">
               <span className="uc-offer-card-badge">Special Promo</span>
               <h3 className="uc-offer-card-vehicle">{offer.vehicle}</h3>
+              
+              {/* Vehicle Picture Frame */}
+              <div className="uc-offer-card-img-wrap">
+                <img 
+                  src={getVehicleImage(offer.vehicle, offer.image || offer.bg_image)} 
+                  alt={offer.vehicle || "Vehicle"} 
+                  className="uc-offer-card-img"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80";
+                  }}
+                />
+              </div>
+
               <div className="uc-offer-card-route">
                 <i className="fas fa-map-marker-alt"></i>
                 <span>{offer.route}</span>
@@ -1074,11 +1110,11 @@ export default function PublicHomePage() {
               <span className="uc-offer-card-sub">Fuel, Driver, and Toll included</span>
               <button
                 onClick={() => {
-                  const r = offer.route.split(" to ");
+                  const r = (offer.route || "").includes(" to ") ? offer.route.split(" to ") : [offer.route, ""];
                   setBookingData((prev) => ({
                     ...prev,
-                    pickup: r[0],
-                    destination: r[1],
+                    pickup: r[0] || "",
+                    destination: r[1] || "",
                     carType: offer.vehicle,
                     carPrice: offer.price
                   }));

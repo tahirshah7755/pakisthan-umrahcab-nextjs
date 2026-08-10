@@ -1026,7 +1026,7 @@ export default function WebsiteSettingsPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left", minWidth: "750px" }}>
                   <thead>
                     <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "140px" }}>Slide Background</th>
+                      <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "140px" }}>Vehicle / Slide Image</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Vehicle Class</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569" }}>Route / Destination</th>
                       <th style={{ padding: "12px", fontWeight: 700, color: "#475569", width: "100px" }}>Price (SAR)</th>

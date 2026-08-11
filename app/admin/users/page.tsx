@@ -10,9 +10,12 @@ import {
 } from "@/store/api/usersApi";
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/exportHelper";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 export default function UsersManagementPage() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
 
   // Queries & Mutations
   const { data: usersData, isLoading: usersLoading, isFetching } = useGetUsersQuery(undefined);
@@ -582,7 +585,7 @@ export default function UsersManagementPage() {
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
-        <span>&copy; 2026 Umrah Cab. User Management Portal.</span>
+        <span>&copy; {new Date().getFullYear()} {brandName}. User Management Portal.</span>
         <span>v2.0</span>
       </div>
     </div>

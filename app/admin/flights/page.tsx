@@ -6,6 +6,7 @@ import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateToCustom, getSaudiTodayDate } from "@/utils/formatters";
 import { exportToExcel } from "@/utils/excelHelper";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface FlightItem {
   id: string;
@@ -31,6 +32,8 @@ interface FlightItem {
 export default function FlightsDirectory() {
   const router = useRouter();
   const { user } = useAuth();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
 
   // Determine permissions
   const getPermission = () => {
@@ -284,7 +287,7 @@ export default function FlightsDirectory() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab Flight Passenger Directory</p>
+              <p>${brandName} Flight Passenger Directory</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>

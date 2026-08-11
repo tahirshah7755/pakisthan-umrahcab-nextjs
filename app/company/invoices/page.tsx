@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface InvoiceRecord {
   id: string;
@@ -19,6 +20,8 @@ interface InvoiceRecord {
 }
 
 export default function CompanyInvoicesPage() {
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -160,7 +163,7 @@ export default function CompanyInvoicesPage() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab B2B Agent Invoices Registry</p>
+              <p>${brandName} B2B Agent Invoices Registry</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>

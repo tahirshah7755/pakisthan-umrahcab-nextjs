@@ -7,12 +7,15 @@ import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToExcel } from "@/utils/excelHelper";
 import { api } from "@/utils/api";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function LedgersPage() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
 
   // Tab State
   const [activeTab, setActiveTab] = useState<"agent" | "direct">("agent");
@@ -329,7 +332,7 @@ export default function LedgersPage() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab Ledger Auditor Registry Statement</p>
+              <p>${brandName} Ledger Auditor Registry Statement</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>
@@ -403,7 +406,7 @@ export default function LedgersPage() {
             <div class="header">
               <div>
                 <h1>Ledger Voucher</h1>
-                <p>Umrah Cab Account Statement Receipt</p>
+                <p>${brandName} Account Statement Receipt</p>
               </div>
               <div style="text-align: right;">
                 <p><strong>Print Date:</strong> ${today}</p>
@@ -441,7 +444,7 @@ export default function LedgersPage() {
             </div>
 
             <div class="footer">
-              Thank you for choosing Umrah Cab &bull; Ledger Auditor Verification System
+              Thank you for choosing ${brandName} &bull; Ledger Auditor Verification System
             </div>
           </div>
           <script>
@@ -1006,8 +1009,7 @@ export default function LedgersPage() {
 
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
-
-        <span>&copy; 2026 Umrah Cab. Ledger Auditor Module.</span>
+        <span>&copy; {new Date().getFullYear()} {brandName}. Ledger Auditor Module.</span>
         <span>v2.0</span>
       </div>
     </div>

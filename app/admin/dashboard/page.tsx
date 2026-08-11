@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { printVoucher } from "@/utils/exportHelper";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface BookingRecord {
   id: string;
@@ -36,6 +37,8 @@ interface ServiceRecord {
 
 export default function OperationsDashboard() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
   
   // Tab Navigation state
   const [activeTab, setActiveTab] = useState<"bookings-today" | "bookings-tomorrow" | "services-today" | "services-tomorrow">("bookings-today");
@@ -242,15 +245,15 @@ export default function OperationsDashboard() {
     let message = "";
     if (isBooking) {
       if (mode === "start") {
-        message = `*UmrahCab Alert - Booking Starting*\n\nDear ${item.customerName},\nYour vehicle (${item.vehicle}) for route *${item.route}* is preparing to start. Tafweej ref: ${item.tafweej}.\n\nThank you for choosing UmrahCab.`;
+        message = `*${brandName} Alert - Booking Starting*\n\nDear ${item.customerName},\nYour vehicle (${item.vehicle}) for route *${item.route}* is preparing to start. Tafweej ref: ${item.tafweej}.\n\nThank you for choosing ${brandName}.`;
       } else {
-        message = `*UmrahCab Alert - Booking Completed*\n\nDear ${item.customerName},\nYour transport booking *${item.id}* has been marked as COMPLETED. We hope you had a pleasant journey.\n\nBest regards,\nUmrahCab Operations.`;
+        message = `*${brandName} Alert - Booking Completed*\n\nDear ${item.customerName},\nYour transport booking *${item.id}* has been marked as COMPLETED. We hope you had a pleasant journey.\n\nBest regards,\n${brandName} Operations.`;
       }
     } else {
       if (mode === "start") {
-        message = `*UmrahCab Alert - Service Commenced*\n\nDear ${item.customerName},\nYour additional service *${item.serviceName}* (${item.id}) has been activated.\nDetails: ${item.details}.\n\nBest regards,\nUmrahCab Services.`;
+        message = `*${brandName} Alert - Service Commenced*\n\nDear ${item.customerName},\nYour additional service *${item.serviceName}* (${item.id}) has been activated.\nDetails: ${item.details}.\n\nBest regards,\n${brandName} Services.`;
       } else {
-        message = `*UmrahCab Alert - Service Done*\n\nDear ${item.customerName},\nYour additional service *${item.serviceName}* (${item.id}) has been successfully completed.\n\nThank you,\nUmrahCab Services.`;
+        message = `*${brandName} Alert - Service Done*\n\nDear ${item.customerName},\nYour additional service *${item.serviceName}* (${item.id}) has been successfully completed.\n\nThank you,\n${brandName} Services.`;
       }
     }
 
@@ -1021,7 +1024,7 @@ export default function OperationsDashboard() {
             {/* Header Voucher */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px dashed #cbd5e1", paddingBottom: "20px", marginBottom: "20px" }}>
               <div>
-                <span style={{ fontSize: "20px", fontWeight: 800, color: "#d97706" }}><i className="fas fa-kaaba"></i> UmrahCab</span>
+                <span style={{ fontSize: "20px", fontWeight: 800, color: "#d97706" }}><i className="fas fa-kaaba"></i> {brandName}</span>
                 <span style={{ fontSize: "10px", display: "block", color: "#94a3b8", fontWeight: 600, marginTop: "2px" }}>OFFICIAL ADMINISTRATIVE VOUCHER</span>
               </div>
               <div style={{ textAlign: "right" }}>

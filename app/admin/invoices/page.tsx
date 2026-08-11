@@ -737,7 +737,7 @@ export default function InvoicesPage() {
 
       {/* Premium Footer */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
-        <span>&copy; 2026 Umrah Cab. All Rights Reserved.</span>
+        <span>&copy; {new Date().getFullYear()} Heba Cab. All Rights Reserved.</span>
         <span>v2.0</span>
       </div>
     </div>

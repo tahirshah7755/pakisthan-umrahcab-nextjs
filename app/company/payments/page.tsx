@@ -5,6 +5,7 @@ import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface PaymentRecord {
   id: string;
@@ -21,6 +22,8 @@ interface PaymentRecord {
 
 export default function CompanyPaymentsPage() {
   const { companyUser } = useAuth();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -174,7 +177,7 @@ export default function CompanyPaymentsPage() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab B2B Agent Balance Deposits Registry</p>
+              <p>${brandName} B2B Agent Balance Deposits Registry</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>

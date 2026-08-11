@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface Shortcut {
   id: number;
@@ -12,6 +13,8 @@ interface Shortcut {
 
 export default function ShortcutsPage() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
 
   // Active Shortcuts state (mock CRUD in state for instant feedback)
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([
@@ -263,7 +266,7 @@ export default function ShortcutsPage() {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
-        <span>&copy; 2026 Umrah Cab. Hotkey Accessibility Manager.</span>
+        <span>&copy; {new Date().getFullYear()} {brandName}. Hotkey Accessibility Manager.</span>
         <span>v2.0</span>
       </div>
     </div>

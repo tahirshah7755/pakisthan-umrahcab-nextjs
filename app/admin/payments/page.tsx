@@ -6,12 +6,15 @@ import { useGetPaymentsQuery, useUpdatePaymentStatusMutation, useDeletePaymentMu
 import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 const fmt = (n: number, curr = "SAR") =>
   `${curr} ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function PaymentsPage() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
 
   // Filter input states
   const [companyFilter, setCompanyFilter] = useState("");
@@ -190,7 +193,7 @@ export default function PaymentsPage() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab Payments Ledger Registry</p>
+              <p>${brandName} Payments Ledger Registry</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>
@@ -305,7 +308,7 @@ export default function PaymentsPage() {
             </div>
 
             <div class="footer">
-              Thank you for choosing Umrah Cab &bull; Corporate Financial Ledger Registry
+              Thank you for choosing ${brandName} &bull; Corporate Financial Ledger Registry
             </div>
           </div>
           <script>
@@ -1184,7 +1187,7 @@ export default function PaymentsPage() {
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
-        <span>&copy; 2026 Umrah Cab. General Payments Registrar.</span>
+        <span>&copy; {new Date().getFullYear()} {brandName}. General Payments Registrar.</span>
         <span>v2.0</span>
       </div>
     </div>

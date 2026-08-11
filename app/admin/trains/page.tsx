@@ -6,6 +6,7 @@ import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface TrainItem {
   id: string;      // custom_id (e.g. #TRN-32003)
@@ -29,6 +30,8 @@ interface TrainItem {
 export default function TrainsDirectory() {
   const router = useRouter();
   const { user } = useAuth();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
 
   // Determine permissions
   const getPermission = () => {
@@ -166,7 +169,7 @@ export default function TrainsDirectory() {
       t.id,
       t.trainNo || "",
       t.customer ? t.customer.name : "Walk-in Passenger",
-      t.customer ? t.customer.company : "UmrahCab Admin",
+      t.customer ? t.customer.company : `${brandName} Admin`,
       t.leg || "",
       t.route || "",
       t.date ? formatScheduleDate(t.date) : "N/A",
@@ -190,7 +193,7 @@ export default function TrainsDirectory() {
         `"${(t.id || "").replace(/"/g, '""')}"`,
         `"${(t.trainNo || "").replace(/"/g, '""')}"`,
         `"${(t.customer ? t.customer.name : "Walk-in Passenger").replace(/"/g, '""')}"`,
-        `"${(t.customer ? t.customer.company : "UmrahCab Admin").replace(/"/g, '""')}"`,
+        `"${(t.customer ? t.customer.company : `${brandName} Admin`).replace(/"/g, '""')}"`,
         `"${(t.leg || "").replace(/"/g, '""')}"`,
         `"${(t.route || "").replace(/"/g, '""')}"`,
         `"${(t.date ? formatScheduleDate(t.date) : "N/A").replace(/"/g, '""')}"`,
@@ -219,7 +222,7 @@ export default function TrainsDirectory() {
       t.id,
       t.trainNo || "",
       t.customer ? t.customer.name : "Walk-in Passenger",
-      t.customer ? t.customer.company : "UmrahCab Admin",
+      t.customer ? t.customer.company : `${brandName} Admin`,
       t.leg || "",
       t.route || "",
       t.date ? formatScheduleDate(t.date) : "N/A",
@@ -254,7 +257,7 @@ export default function TrainsDirectory() {
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${t.trainNo || ""}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
           <div style="font-weight: 700;">${t.customer ? t.customer.name : "Walk-in Passenger"}</div>
-          <div style="font-size: 10px; color: #64748b;">${t.customer ? t.customer.company : "UmrahCab Admin"}</div>
+          <div style="font-size: 10px; color: #64748b;">${t.customer ? t.customer.company : `${brandName} Admin`}</div>
         </td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${t.leg || ""}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${t.route || ""}</td>
@@ -283,7 +286,7 @@ export default function TrainsDirectory() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab Train Passenger Directory</p>
+              <p>${brandName} Train Passenger Directory</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>
@@ -609,7 +612,7 @@ export default function TrainsDirectory() {
                         {t.customer ? t.customer.name : "Walk-in Passenger"}
                       </div>
                       <div style={{ fontSize: "11px", color: "#64748b" }}>
-                        {t.customer ? t.customer.company : "UmrahCab Admin"}
+                        {t.customer ? t.customer.company : `${brandName} Admin`}
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px" }}>

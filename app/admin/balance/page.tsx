@@ -6,6 +6,7 @@ import { useGetBalanceSummaryQuery } from "@/store/api/balanceApi";
 import { exportToExcel } from "@/utils/excelHelper";
 import { useGetCompaniesQuery, useUpdateCompanyMutation } from "@/store/api/companiesApi";
 import { formatDateToCustom, getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 const fmt = (n: number) =>
   `SAR ${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -49,6 +50,8 @@ const TABS = [
 
 export default function BalancePage() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
   const [activeTab,     setActiveTab]     = useState("all");
   const [filterCompany, setFilterCompany] = useState("");
   const [search,        setSearch]        = useState("");
@@ -201,7 +204,7 @@ export default function BalancePage() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab Balance Statement Registry</p>
+              <p>${brandName} Balance Statement Registry</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>

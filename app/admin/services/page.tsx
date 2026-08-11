@@ -6,6 +6,7 @@ import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface ServiceItem {
   id: string;      // custom_id (e.g. #SRV-4068)
@@ -26,6 +27,8 @@ interface ServiceItem {
 export default function ServicesDirectory() {
   const router = useRouter();
   const { user } = useAuth();
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
 
   // Determine permissions
   const getPermission = () => {
@@ -206,7 +209,7 @@ export default function ServicesDirectory() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab Supplementary Services Registrar</p>
+              <p>${brandName} Supplementary Services Registrar</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>

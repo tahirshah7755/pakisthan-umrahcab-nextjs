@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface LedgerRecord {
   id: string;
@@ -16,6 +17,8 @@ interface LedgerRecord {
 }
 
 export default function CompanyLedgerPage() {
+  const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
   const [activeTab, setActiveTab] = useState<"settlement" | "client">("settlement");
   const [ledgers, setLedgers] = useState<LedgerRecord[]>([]);
   const [clientLedgerData, setClientLedgerData] = useState<any>(null);
@@ -236,7 +239,7 @@ export default function CompanyLedgerPage() {
           <div class="header">
             <div>
               <h1>${title}</h1>
-              <p>Umrah Cab B2B Agent Account Ledger Registry</p>
+              <p>${brandName} B2B Agent Account Ledger Registry</p>
             </div>
             <div style="text-align: right;">
               <p><strong>Generated Date:</strong> ${today}</p>

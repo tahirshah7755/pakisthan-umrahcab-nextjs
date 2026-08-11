@@ -17,8 +17,9 @@ export default function ViewInvoicePage() {
 
   const { data: res, isLoading, isError } = useGetInvoiceQuery(id);
   const { settings } = useWebsiteSettings();
+  const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
   const siteLogo = settings?.website_logo || "";
-  const siteName = settings?.site_title || "Muhabiya Transport";
+  const siteName = settings?.site_title || "Heba Cab";
   const siteDesc = settings?.hero_title || settings?.meta_description || "Premium Transportation Solutions";
 
   // Preload logo into Base64 to ensure 100% reliable rendering in popup windows and PDF canvas
@@ -708,7 +709,7 @@ export default function ViewInvoicePage() {
 
       {/* Premium Footer */}
       <div className="no-print" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", color: "#94a3b8", fontSize: "12px" }}>
-        <span>&copy; 2026 Umrah Cab. All Rights Reserved.</span>
+        <span>&copy; {new Date().getFullYear()} {brandName}. All Rights Reserved.</span>
         <span>v2.0</span>
       </div>
 

@@ -571,7 +571,7 @@ export function printVoucher(v: VoucherPrintOptions) {
           </div>
 
           <div class="footer">
-            Official Voucher &bull; Umrah Cab Administrative Operations Registry
+            Official Voucher &bull; Heba Cab Administrative Operations Registry
           </div>
         </div>
 

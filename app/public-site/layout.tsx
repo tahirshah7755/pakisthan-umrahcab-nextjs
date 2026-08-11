@@ -703,23 +703,22 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
           height: 155px;
           border-radius: 12px;
           overflow: hidden;
-          background: #0d1117;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: transparent;
           margin: 10px 0 16px 0;
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
-          box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
         }
         .uc-offer-card-img {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
           transition: transform 0.4s ease;
+          filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
         }
         .uc-offer-card:hover .uc-offer-card-img {
-          transform: scale(1.08);
+          transform: scale(1.06);
         }
         .uc-offer-card-route {
           font-size: 13px;

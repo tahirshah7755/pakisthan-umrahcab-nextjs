@@ -161,27 +161,19 @@ export default function PublicHomePage() {
   const [publicFleet, setPublicFleet] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const defaultLocationsList = [
-    "Jeddah Airport (JED) - Terminal 1",
-    "Jeddah Airport (JED) - North Terminal",
-    "Makkah Hotel",
-    "Madinah Hotel",
-    "Jeddah Hotel",
-    "Makkah Haram",
-    "Madinah Haram",
-    "Makkah Station (Haramain)",
-    "Madinah Station (Haramain)",
-    "Jeddah Station (Haramain)",
-    "Taif",
-    "Yanbu"
-  ];
-
   // Fetch locations, public rates, and public fleet on mount
   useEffect(() => {
     async function loadPublicData() {
       try {
         const locs = await api.getLocations();
-        setLocationsList(locs || []);
+        let parsedLocs: string[] = [];
+        if (Array.isArray(locs)) {
+          parsedLocs = locs
+            .map((l: any) => (typeof l === "string" ? l : l?.name))
+            .filter((name: any): name is string => Boolean(name && typeof name === "string" && name.trim().length > 0));
+        }
+        // Deduplicate location names
+        setLocationsList(Array.from(new Set(parsedLocs)));
         
         const rates = await api.getPublicRates();
         setAllRates(rates || []);
@@ -744,7 +736,7 @@ export default function PublicHomePage() {
                       onChange={(e) => setBookingData({ ...bookingData, pickup: e.target.value })}
                     >
                       <option value="">Select location...</option>
-                      {(locationsList.length > 0 ? locationsList : defaultLocationsList).map((loc) => (
+                      {locationsList.map((loc) => (
                         <option key={loc} value={loc}>{loc}</option>
                       ))}
                     </select>
@@ -757,7 +749,7 @@ export default function PublicHomePage() {
                       onChange={(e) => setBookingData({ ...bookingData, destination: e.target.value })}
                     >
                       <option value="">Select location...</option>
-                      {(locationsList.length > 0 ? locationsList : defaultLocationsList).map((loc) => (
+                      {locationsList.map((loc) => (
                         <option key={loc} value={loc}>{loc}</option>
                       ))}
                     </select>

@@ -1048,7 +1048,7 @@ export default function WebsiteSettingsPage() {
                                   height: "65px",
                                   borderRadius: "6px",
                                   border: "1px solid #cbd5e1",
-                                  background: "#0f172a",
+                                  background: "#f8fafc",
                                   overflow: "hidden",
                                   display: "flex",
                                   alignItems: "center",
@@ -1060,7 +1060,7 @@ export default function WebsiteSettingsPage() {
                                   <img
                                     src={currentBg}
                                     alt="Slide Background"
-                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
                                   />
                                 ) : (
                                   <div style={{ textAlign: "center", color: "#94a3b8", fontSize: "10px" }}>

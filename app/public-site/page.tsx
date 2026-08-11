@@ -574,6 +574,19 @@ export default function PublicHomePage() {
                     <i className="fas fa-route" style={{ color: "var(--uc-primary)" }}></i>
                     <span>{offer.route}</span>
                   </div>
+
+                  {/* Vehicle Picture Frame in Hero Slide */}
+                  <div className="uc-hero-slide-img-wrap" style={{ width: "100%", maxHeight: "170px", margin: "10px 0 14px 0", display: "flex", alignItems: "center" }}>
+                    <img 
+                      src={getVehicleImage(offer.vehicle, offer.image || offer.bg_image)} 
+                      alt={offer.vehicle || "Vehicle"} 
+                      style={{ maxHeight: "155px", maxWidth: "100%", objectFit: "contain", filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.6))" }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+
                   <div className="uc-offer-price">{offer.price} SAR</div>
                   <p className="uc-offer-price-sub">All inclusive price: Toll tax, Fuel & Driver charges.</p>
                   

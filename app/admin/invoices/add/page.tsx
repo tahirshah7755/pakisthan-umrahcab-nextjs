@@ -165,7 +165,7 @@ export default function AddInvoicePage() {
         amount: totalAmt,
         balance: totalAmt,
         remarks: remarks || `Invoice for ${selectedCompany} (${startDate} to ${endDate})`,
-        entered_by: "Hebacab",
+        entered_by: "Heba Cab",
       }).unwrap();
 
       if (saveRes && !saveRes.isError) {

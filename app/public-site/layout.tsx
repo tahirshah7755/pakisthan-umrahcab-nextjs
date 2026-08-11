@@ -5,17 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { api } from "../../utils/api";
 
-import { WebsiteSettingsProvider, useWebsiteSettings } from "@/context/WebsiteSettingsContext";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <WebsiteSettingsProvider>
-      <PublicLayoutContent>{children}</PublicLayoutContent>
-    </WebsiteSettingsProvider>
-  );
-}
-
-function PublicLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -23,6 +15,12 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
   const [displayTitle, setDisplayTitle] = useState("Loading...");
 
   useEffect(() => {
+    if (websiteSettings?.site_title) {
+      const brand = websiteSettings.site_title.split("-")[0]?.trim() || websiteSettings.site_title;
+      setDisplayTitle(brand);
+      return;
+    }
+
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
       if (hostname) {
@@ -43,7 +41,7 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
         setDisplayTitle(formatted);
       }
     }
-  }, []);
+  }, [websiteSettings]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);

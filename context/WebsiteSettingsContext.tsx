@@ -48,25 +48,13 @@ const WebsiteSettingsContext = createContext<WebsiteSettingsContextType>({
 });
 
 export const WebsiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<WebsiteSettings | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("umrahcab_cached_website_settings");
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          (window as any).__WEBSITE_SETTINGS__ = parsed;
-          return parsed;
-        }
-      } catch (e) {}
-    }
-    return null;
-  });
-  const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState<WebsiteSettings | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const fetchSettings = async () => {
     try {
       const data = await api.getWebsiteSettings();
-      if (data) {
+      if (data && typeof data === "object" && Object.keys(data).length > 0) {
         setSettings(data);
         if (typeof window !== "undefined") {
           (window as any).__WEBSITE_SETTINGS__ = data;
@@ -83,6 +71,18 @@ export const WebsiteSettingsProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   useEffect(() => {
+    // 1. Immediately hydrate from localStorage cache on client mount
+    try {
+      const cached = localStorage.getItem("umrahcab_cached_website_settings");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setSettings(parsed);
+        (window as any).__WEBSITE_SETTINGS__ = parsed;
+        setLoading(false);
+      }
+    } catch (e) {}
+
+    // 2. Fetch fresh settings from optimized backend
     fetchSettings();
   }, []);
 

@@ -48,8 +48,20 @@ const WebsiteSettingsContext = createContext<WebsiteSettingsContextType>({
 });
 
 export const WebsiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<WebsiteSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<WebsiteSettings | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("umrahcab_cached_website_settings");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          (window as any).__WEBSITE_SETTINGS__ = parsed;
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(false);
 
   const fetchSettings = async () => {
     try {
@@ -58,6 +70,9 @@ export const WebsiteSettingsProvider: React.FC<{ children: React.ReactNode }> = 
         setSettings(data);
         if (typeof window !== "undefined") {
           (window as any).__WEBSITE_SETTINGS__ = data;
+          try {
+            localStorage.setItem("umrahcab_cached_website_settings", JSON.stringify(data));
+          } catch (e) {}
         }
       }
     } catch (err) {
@@ -109,71 +124,7 @@ export const WebsiteSettingsProvider: React.FC<{ children: React.ReactNode }> = 
 
   return (
     <WebsiteSettingsContext.Provider value={{ settings, loading, refetchSettings: fetchSettings }}>
-      {loading ? (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "#0d1117",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 999999,
-            fontFamily: "'Inter', 'Public Sans', system-ui, sans-serif",
-          }}
-        >
-          <div style={{ position: "relative", width: "64px", height: "64px", marginBottom: "20px" }}>
-            <div
-              style={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                border: "4px solid rgba(212, 175, 55, 0.15)",
-                borderRadius: "50%",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                border: "4px solid transparent",
-                borderTopColor: "#d4af37",
-                borderRadius: "50%",
-                animation: "spinGlobalSettings 1s linear infinite",
-              }}
-            />
-          </div>
-          <h3
-            style={{
-              color: "#d4af37",
-              fontSize: "18px",
-              fontWeight: 700,
-              margin: "0 0 6px 0",
-              letterSpacing: "0.5px",
-            }}
-          >
-            Loading System Settings...
-          </h3>
-          <p style={{ color: "#8b949e", fontSize: "12px", margin: 0, letterSpacing: "0.3px" }}>
-            Initializing system configuration & brand assets
-          </p>
-          <style>{`
-            @keyframes spinGlobalSettings {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </WebsiteSettingsContext.Provider>
   );
 };

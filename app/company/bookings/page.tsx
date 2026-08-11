@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { api } from "@/utils/api";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/exportHelper";
 import { formatDateToCustom } from "@/utils/formatters";
 
@@ -785,6 +786,10 @@ function CompanyBookingsContent() {
 }
 
 function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen: boolean; onClose: () => void }) {
+  const { settings: websiteSettings } = useWebsiteSettings();
+  const siteTitle = websiteSettings?.site_title || "Official Voucher";
+  const sitePhone = websiteSettings?.contact_phone || "";
+
   const [activeTab, setActiveTab] = useState<"driver" | "agent" | "client">("driver");
   const [copied, setCopied] = useState(false);
 
@@ -838,7 +843,7 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
 
     const extraInfo = b.notes || (b.flight_no ? `Flight No: ${b.flight_no}` : "");
 
-    return `★ hebacab.com ★
+    return `★ ${siteTitle} ★
 ★ Driver Voucher ★
 👤 Guest Name: ${guestName}
 
@@ -867,7 +872,7 @@ Pickup Details:
     }
     const dName = b.driver ? b.driver.name : "None";
     const dPhone = b.driver ? b.driver.phone : "";
-    return `*HEBA CAB STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Date & Time:* ${b.date} at ${b.time}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}${paymentStr}`;
+    return `*${siteTitle.toUpperCase()} STATUS UPDATE (AGENT COPY)*\n---------------------------------\n*Booking Code:* ${b.booking_code || b.id}\n*Guest Name:* ${b.full_name}\n*Date & Time:* ${b.date} at ${b.time}\n*Driver Assigned:* ${dName} ${dPhone ? `(${dPhone})` : ""}\n*Trip Status:* ${b.driver_trip_status || "Not Set"}${paymentStr}`;
   };
 
   const getClientCopy = (b: any) => {
@@ -914,10 +919,8 @@ Pickup Details:
 💵 Cash Receive From Customer: ${cashPending} SAR
 ℹ️ Extra Information: ${extraInfo ? extraInfo : ""}
 🛄 Visa Type: ( Umrah )
-
-For Driver Details:
-Please Contact On: +966567799616
-Thanks for choosing hebacab.com`;
+${sitePhone ? `\nFor Driver Details:\nPlease Contact On: ${sitePhone}` : ""}
+Thanks for choosing ${siteTitle}`;
   };
 
   const textMap = {

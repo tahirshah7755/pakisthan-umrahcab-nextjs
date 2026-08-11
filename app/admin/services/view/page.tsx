@@ -117,23 +117,23 @@ function ServiceDetailViewContent() {
 
   const customerObj = service?.customer || {
     id: 0,
-    name: "Abu Bakar",
+    name: "Customer",
     custom_id: "#CST-1",
-    company: "Zahid Travels",
-    contact: "+966567799616 (WhatsApp) customer@zahid.com (Email)"
+    company: "Company",
+    contact: ""
   };
 
   const mockCustomer = {
     rawId: customerObj.id,
-    name: customerObj.name || "Abu Bakar",
+    name: customerObj.name || "Customer",
     id: customerObj.custom_id || "#CST-1",
-    company: customerObj.company || "Zahid Travels",
+    company: customerObj.company || "Independent",
     companyId: "#CMP-1",
-    phones: [customerObj.contact ? customerObj.contact.split(" (")[0] : "+966567799616"],
+    phones: [customerObj.contact ? customerObj.contact.split(" (")[0] : "N/A"],
     email: customerObj.contact?.includes("@") ? customerObj.contact.split(" (Email)")[0].split("customer").pop() || "N/A" : "N/A",
     meta: {
-      entryBy: service?.customer?.registered_by ? (service.customer.registered_by.includes("umrahcab") ? service.customer.registered_by.replace(/umrahcab/gi, user?.name || user?.username || "hebacab") : service.customer.registered_by) : (user?.name || user?.username || "hebacab"),
-      entryDate: service?.customer?.created_at ? new Date(service.customer.created_at).toLocaleString("en-US", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "25 May, 2026 07:16 AM",
+      entryBy: service?.customer?.registered_by ? (service.customer.registered_by.includes("umrahcab") ? service.customer.registered_by.replace(/umrahcab/gi, user?.name || user?.username || "Admin") : service.customer.registered_by) : (user?.name || user?.username || "Admin"),
+      entryDate: service?.customer?.created_at ? new Date(service.customer.created_at).toLocaleString("en-US", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "N/A",
       editedBy: service?.customer?.last_update || "No edits",
       editedDate: "No edits"
     }
@@ -156,9 +156,9 @@ ID: *${currentSvc.id}*
 (${mockCustomer.phones[0]})
 
 🛠️ Service: *${currentSvc.name}*
-📅 Date: *${currentSvc.date ? formatDateForDisplay(currentSvc.date) : "25 May, 2026"}*
+📅 Date: *${currentSvc.date ? formatDateForDisplay(currentSvc.date) : "N/A"}*
 ⏰ Time: *${currentSvc.time ? formatTimeForDisplay(currentSvc.time) : "12:00 AM"}*
-📍 Location: *${currentSvc.pickup || "Makkah"}*
+📍 Location: *${currentSvc.pickup || "Location"}*
 
 💵 Cash to Collect: *SAR ${currentSvc.basePrice.toFixed(2)}*
 
@@ -183,7 +183,7 @@ ID: *${currentSvc.id}*
 💵 Cash Collected: *SAR ${currentSvc.basePrice.toFixed(2)}*
 
 *Status:* Service has been successfully completed. Cash collected and logged.
-_Thank you for choosing HebaCab!_`;
+_Thank you for your business!_`;
 
   const getActiveMessage = () => {
     if (activeTab === "Service Started") return startedMessage;

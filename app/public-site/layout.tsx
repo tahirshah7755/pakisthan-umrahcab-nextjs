@@ -161,12 +161,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  // Fallbacks
-  const siteLogo = websiteSettings?.website_logo || "/logo2.png";
-  const siteTitle = websiteSettings?.site_title || "Heba Cab";
-  const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
-  const siteEmail = websiteSettings?.contact_email || "Info@umrahcab.com";
-  const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";
+  // Dynamic website settings
+  const siteLogo = websiteSettings?.website_logo || "";
+  const siteTitle = websiteSettings?.site_title || "";
+  const sitePhone = websiteSettings?.contact_phone || "";
+  const siteEmail = websiteSettings?.contact_email || "";
+  const siteAddress = websiteSettings?.contact_address || "";
 
   const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
   let whatsappLink = websiteSettings?.whatsapp_link || "";
@@ -179,8 +179,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         whatsappLink = `https://${whatsappLink}`;
       }
     }
+  } else if (cleanPhone) {
+    whatsappLink = `https://wa.me/${cleanPhone}?text=HI`;
   } else {
-    whatsappLink = cleanPhone ? `https://wa.me/${cleanPhone}?text=HI` : "https://wa.me/966567799616?text=HI";
+    whatsappLink = "#contact";
   }
 
 
@@ -349,19 +351,206 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         }
         .uc-slide {
           display: none;
-          animation: fadeInSlide 0.5s ease-out;
+          animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .uc-slide.active { display: block; }
         @keyframes fadeInSlide {
-          from { opacity: 0; transform: translateX(20px); }
-          to { opacity: 1; transform: translateX(0); }
+          from { opacity: 0; transform: translateY(12px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .uc-slider-nav-btn {
-          width: 38px;
-          height: 38px;
+
+        /* Hero Glassmorphic Card */
+        .uc-hero-card {
+          background: linear-gradient(145deg, rgba(22, 27, 34, 0.90) 0%, rgba(13, 17, 23, 0.96) 100%);
+          border: 1px solid rgba(200, 168, 75, 0.38);
+          border-radius: 24px;
+          padding: 28px 30px;
+          box-shadow: 0 24px 50px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(18px);
+          position: relative;
+        }
+
+        .uc-badge-hot {
+          display: inline-flex;
+          align-items: center;
+          background: linear-gradient(135deg, #c8a84b 0%, #dfc067 100%);
+          color: #0d1117;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+          padding: 5px 14px;
+          border-radius: 20px;
+          text-transform: uppercase;
+          box-shadow: 0 4px 14px rgba(200, 168, 75, 0.4);
+        }
+
+        .uc-slide-counter {
+          display: flex;
+          align-items: center;
+          background: rgba(0, 0, 0, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 4px 12px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #8b949e;
+        }
+
+        .uc-vehicle-pill-type {
+          display: inline-block;
+          background: rgba(200, 168, 75, 0.14);
+          color: var(--uc-primary);
+          border: 1px solid rgba(200, 168, 75, 0.35);
+          font-size: 12px;
+          font-weight: 700;
+          padding: 3px 12px;
+          border-radius: 12px;
+        }
+
+        .uc-route-ribbon {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(0, 0, 0, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          padding: 10px 16px;
+          border-radius: 12px;
+          margin: 12px 0 16px 0;
+          font-size: 13px;
+          font-weight: 600;
+          color: #e6edf3;
+          flex-wrap: wrap;
+        }
+
+        .uc-route-point {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .uc-hero-showcase {
+          position: relative;
+          width: 100%;
+          height: 175px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 6px 0 16px 0;
+        }
+
+        .uc-showcase-glow {
+          position: absolute;
+          width: 240px;
+          height: 110px;
+          background: radial-gradient(ellipse, rgba(200, 168, 75, 0.3) 0%, transparent 70%);
           border-radius: 50%;
-          background: rgba(22, 27, 34, 0.8);
-          border: 1px solid rgba(200, 168, 75, 0.4);
+          z-index: 1;
+          pointer-events: none;
+          filter: blur(12px);
+        }
+
+        .uc-showcase-img {
+          max-height: 160px;
+          max-width: 95%;
+          object-fit: contain;
+          z-index: 2;
+          filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.8));
+          transition: transform 0.4s ease;
+        }
+
+        .uc-specs-row {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+          margin-bottom: 18px;
+        }
+
+        .uc-spec-badge {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 8px;
+          padding: 7px 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #d0d7de;
+        }
+        .uc-spec-badge i {
+          color: var(--uc-primary);
+        }
+
+        .uc-price-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          padding-top: 14px;
+        }
+
+        .uc-slide-actions {
+          display: grid;
+          grid-template-columns: 1.15fr 1fr;
+          gap: 12px;
+        }
+
+        /* Slider Bottom Bar & Tabs */
+        .uc-slider-bottom-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 18px;
+          gap: 14px;
+        }
+
+        .uc-fleet-tabs {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          scrollbar-width: none;
+          padding-bottom: 4px;
+          flex: 1;
+        }
+        .uc-fleet-tabs::-webkit-scrollbar { display: none; }
+
+        .uc-fleet-tab-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          border-radius: 12px;
+          background: rgba(22, 27, 34, 0.85);
+          border: 1px solid rgba(200, 168, 75, 0.25);
+          color: #8b949e;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.2s ease;
+          font-family: 'Poppins', sans-serif;
+        }
+        .uc-fleet-tab-btn:hover {
+          color: #fff;
+          border-color: var(--uc-primary);
+          background: rgba(33, 38, 45, 0.9);
+        }
+        .uc-fleet-tab-btn.active {
+          background: var(--uc-primary);
+          color: #000;
+          border-color: var(--uc-primary);
+          font-weight: 700;
+          box-shadow: 0 4px 16px rgba(200, 168, 75, 0.4);
+        }
+
+        .uc-slider-nav-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(22, 27, 34, 0.9);
+          border: 1px solid rgba(200, 168, 75, 0.45);
           color: #fff;
           display: flex;
           align-items: center;
@@ -374,54 +563,27 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           background: var(--uc-primary);
           color: #000;
           border-color: var(--uc-primary);
-        }
-        .uc-slide-pill {
-          height: 8px;
-          border-radius: 10px;
-          border: none;
-          cursor: pointer;
-          transition: all 0.3s ease;
+          transform: scale(1.05);
         }
 
-        /* ===== OFFER CARD ===== */
-        .uc-offer-badge {
-          display: inline-block;
-          background: var(--uc-primary);
-          color: #000;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 2px;
-          padding: 4px 14px;
-          border-radius: 20px;
-          text-transform: uppercase;
-          margin-bottom: 16px;
-        }
+        /* ===== OFFER CARD LEGACY SUPPORT ===== */
         .uc-offer-vehicle {
-          font-size: clamp(2rem, 5vw, 4rem);
+          font-size: clamp(1.8rem, 4vw, 2.6rem);
           font-weight: 800;
           color: #fff;
-          line-height: 1.1;
-          margin-bottom: 12px;
-        }
-        .uc-offer-route {
-          font-size: 16px;
-          color: #8b949e;
-          margin-bottom: 24px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
+          line-height: 1.15;
+          letter-spacing: -0.5px;
         }
         .uc-offer-price {
-          font-size: clamp(2.5rem, 6vw, 5rem);
+          font-size: clamp(2.2rem, 5vw, 3.2rem);
           font-weight: 900;
           color: var(--uc-primary);
           line-height: 1;
-          margin-bottom: 8px;
         }
         .uc-offer-price-sub {
-          font-size: 14px;
-          color: #656d76;
-          margin-bottom: 32px;
+          font-size: 12px;
+          color: #8b949e;
+          margin-top: 4px;
         }
 
         /* ===== BUTTONS ===== */
@@ -976,12 +1138,76 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             background: #000;
             color: var(--uc-primary);
           }
-          .uc-summary-grid {
-            grid-template-columns: 1fr !important;
+          .uc-hero-card {
+            padding: 20px 16px;
+            border-radius: 18px;
           }
-          .uc-status-box {
-            padding: 20px;
-            margin: 0 16px;
+          .uc-offer-vehicle {
+            font-size: 22px !important;
+          }
+          .uc-vehicle-pill-type {
+            font-size: 11px;
+            padding: 2px 8px;
+          }
+          .uc-route-ribbon {
+            padding: 8px 12px;
+            font-size: 12px;
+            gap: 8px;
+            margin: 10px 0 12px 0;
+          }
+          .uc-hero-showcase {
+            height: 140px;
+            margin: 4px 0 12px 0;
+          }
+          .uc-showcase-glow {
+            width: 180px;
+            height: 80px;
+          }
+          .uc-showcase-img {
+            max-height: 130px;
+          }
+          .uc-specs-row {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 14px;
+          }
+          .uc-spec-badge {
+            padding: 5px 6px;
+            font-size: 10px;
+          }
+          .uc-offer-price {
+            font-size: 26px !important;
+          }
+          .uc-offer-price-sub {
+            font-size: 11px;
+          }
+          .uc-price-row {
+            margin-bottom: 14px;
+            padding-top: 10px;
+          }
+          .uc-slide-actions {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
+          .uc-slide-actions .uc-btn-whatsapp,
+          .uc-slide-actions .uc-btn-outline {
+            width: 100%;
+            justify-content: center;
+            padding: 12px 16px;
+            font-size: 14px;
+          }
+          .uc-slider-bottom-bar {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            gap: 12px;
+            margin-top: 14px;
+          }
+          .uc-fleet-tabs {
+            justify-content: flex-start;
+          }
+          .uc-fleet-tab-btn {
+            padding: 6px 12px;
+            font-size: 11px;
           }
         }
 
@@ -1282,9 +1508,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
           <div>
             <div className="uc-footer-heading">Contact</div>
-            <span className="uc-footer-link">{sitePhone}</span>
-            <span className="uc-footer-link">{siteEmail}</span>
-            <span className="uc-footer-link" style={{ fontSize: "12px" }}>{siteAddress}</span>
+            {sitePhone && <span className="uc-footer-link">{sitePhone}</span>}
+            {siteEmail && <span className="uc-footer-link">{siteEmail}</span>}
+            {siteAddress && <span className="uc-footer-link" style={{ fontSize: "12px" }}>{siteAddress}</span>}
             {(websiteSettings?.facebook_link || websiteSettings?.instagram_link || websiteSettings?.twitter_link) && (
               <div style={{ display: "flex", gap: "14px", marginTop: "14px" }}>
                 {websiteSettings?.facebook_link && (
@@ -1307,8 +1533,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
         <div className="uc-footer-bottom">
-          <span>Copyright © 2018–2026 {siteTitle}. All Rights Reserved.</span>
-          <span>Powered by UmrahCab Platform v2.0</span>
+          <span>Copyright &copy; {new Date().getFullYear()} {siteTitle}. All Rights Reserved.</span>
+          <span>{siteTitle} Private Chauffeur &amp; Booking Management Platform</span>
         </div>
       </footer>
     </div>

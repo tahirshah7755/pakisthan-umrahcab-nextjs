@@ -457,6 +457,7 @@ export async function exportToPDF(options: ExportOptions) {
 export interface VoucherPrintOptions {
   id?: string;
   type?: string;
+  siteTitle?: string;
   customerName?: string;
   companyName?: string;
   route?: string;
@@ -515,7 +516,7 @@ export function printVoucher(v: VoucherPrintOptions) {
         <div class="voucher-card">
           <div class="header">
             <div>
-              <div class="brand-title">HebaCab</div>
+              <div class="brand-title">${v.siteTitle || "Transport Service"}</div>
               <div class="brand-sub">OFFICIAL ADMINISTRATIVE VOUCHER</div>
             </div>
             <div class="header-right">

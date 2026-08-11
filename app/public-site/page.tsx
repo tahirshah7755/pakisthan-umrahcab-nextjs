@@ -19,19 +19,25 @@ export default function PublicHomePage() {
   const router = useRouter();
   const { settings: websiteSettings } = useWebsiteSettings();
 
-  const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
-  const siteEmail = websiteSettings?.contact_email || "Info@umrahcab.com";
-  const siteAddress = websiteSettings?.contact_address || "Challenge House, Unit 123, 616 Mitcham Road, Thornton Heath, CR0 3AA";
+  const siteTitle = websiteSettings?.site_title || "Umrah Cab";
+  const sitePhone = websiteSettings?.contact_phone || "";
+  const siteEmail = websiteSettings?.contact_email || "";
+  const siteAddress = websiteSettings?.contact_address || "";
   const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
-  const baseWa = cleanPhone ? `https://wa.me/${cleanPhone}` : "https://wa.me/966567799616";
-  let whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
-  if (whatsappLink && !whatsappLink.startsWith("http://") && !whatsappLink.startsWith("https://")) {
-    const cleanNum = whatsappLink.replace(/[^0-9]/g, "");
-    if (/^\d+$/.test(cleanNum)) {
-      whatsappLink = `https://wa.me/${cleanNum}`;
-    } else {
-      whatsappLink = `https://${whatsappLink}`;
+  let whatsappLink = websiteSettings?.whatsapp_link || "";
+  if (whatsappLink) {
+    if (!whatsappLink.startsWith("http://") && !whatsappLink.startsWith("https://")) {
+      const cleanNum = whatsappLink.replace(/[^0-9]/g, "");
+      if (/^\d+$/.test(cleanNum)) {
+        whatsappLink = `https://wa.me/${cleanNum}`;
+      } else {
+        whatsappLink = `https://${whatsappLink}`;
+      }
     }
+  } else if (cleanPhone) {
+    whatsappLink = `https://wa.me/${cleanPhone}?text=HI`;
+  } else {
+    whatsappLink = "#contact";
   }
 
 
@@ -467,12 +473,12 @@ export default function PublicHomePage() {
       });
 
       const rawCode = res?.data?.booking_code || res?.data?.id;
-      const bookingCode = rawCode ? String(rawCode).replace(/^UCB-/i, "HCB-") : ("HCB-" + Math.floor(10000 + Math.random() * 90000));
+      const bookingCode = rawCode ? String(rawCode) : ("BK-" + Math.floor(10000 + Math.random() * 90000));
       
       const whatsappMsg = `Assalamu Alaikum, I would like to book a cab.\n\n*Booking Summary*:\n• Code: ${bookingCode}\n• From: ${bookingData.pickup}\n• To: ${bookingData.destination}\n• Date: ${bookingData.date} @ ${bookingData.time}\n• Vehicle: ${bookingData.carType} (${bookingData.carPrice} SAR)\n• Client: ${bookingData.fullName}\n• WhatsApp: ${bookingData.whatsapp}\n\nPlease confirm my booking.`;
       const encoded = encodeURIComponent(whatsappMsg);
 
-      const targetWa = websiteSettings?.whatsapp_link ? websiteSettings.whatsapp_link.split('?')[0] : baseWa;
+      const targetWa = whatsappLink && whatsappLink !== "#contact" ? whatsappLink.split('?')[0] : (cleanPhone ? `https://wa.me/${cleanPhone}` : "https://wa.me/");
       window.open(`${targetWa}?text=${encoded}`, "_blank");
       alert(`Your booking has been compiled successfully! Booking Reference: ${bookingCode}. Redirecting you to WhatsApp for immediate dispatcher assignment.`);
       router.push("/public-site/booking-status");
@@ -517,6 +523,23 @@ export default function PublicHomePage() {
     }
   };
 
+  const getVehicleSpecs = (vehicleName?: string) => {
+    const v = (vehicleName || "").toLowerCase();
+    if (v.includes("hiace") || v.includes("hi ace") || v.includes("bus") || v.includes("coaster") || v.includes("grand cabin")) {
+      return { seats: "10-13 Seats", luggage: "8-10 Bags", type: "Executive Van / Minibus", icon: "fa-van-shuttle" };
+    }
+    if (v.includes("gmc") || v.includes("yukon") || v.includes("suv") || v.includes("tahoe") || v.includes("prado")) {
+      return { seats: "6-7 Seats", luggage: "5-6 Bags", type: "Luxury VIP SUV", icon: "fa-car-side" };
+    }
+    if (v.includes("staria") || v.includes("starex") || v.includes("h-1") || v.includes("h1") || v.includes("van")) {
+      return { seats: "7 Seats", luggage: "4-5 Bags", type: "Family MPV", icon: "fa-van-shuttle" };
+    }
+    if (v.includes("taurus") || v.includes("accord") || v.includes("business")) {
+      return { seats: "4 Seats", luggage: "3 Bags", type: "Business Sedan", icon: "fa-car" };
+    }
+    return { seats: "4 Seats", luggage: "3 Bags", type: "Standard Sedan", icon: "fa-car" };
+  };
+
   const currentActiveOffer = offers[activeOffer] || offers[0] || {};
   const activeSlideBg = currentActiveOffer.bg_image || currentActiveOffer.image || websiteSettings?.hero_bg_image || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80";
 
@@ -549,14 +572,14 @@ export default function PublicHomePage() {
       <section 
         className="uc-hero"
         style={{
-          backgroundImage: `linear-gradient(rgba(13, 17, 23, 0.78), rgba(22, 27, 34, 0.86)), url("${activeSlideBg}")`,
+          backgroundImage: `linear-gradient(rgba(10, 13, 18, 0.82), rgba(13, 17, 23, 0.90)), url("${activeSlideBg}")`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          transition: "background-image 0.7s ease-in-out"
+          transition: "background-image 0.8s ease-in-out"
         }}
       >
-        <div className="uc-hero-grid" style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", padding: "0 40px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px", alignItems: "center" }}>
+        <div className="uc-hero-grid" style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", padding: "0 24px", display: "grid", gridTemplateColumns: "1.15fr 0.85fr", gap: "36px", alignItems: "center" }}>
           <div>
             <div
               className="uc-carousel-wrapper"
@@ -564,74 +587,136 @@ export default function PublicHomePage() {
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {offers.map((offer, idx) => (
-                <div key={idx} className={`uc-slide ${idx === activeOffer ? "active" : ""}`}>
-                  <span className="uc-offer-badge">
-                    <i className={`fas ${offer.icon || 'fa-car'}`} style={{ marginRight: "6px" }}></i> Mega Offer
-                  </span>
-                  <h1 className="uc-offer-vehicle">{offer.vehicle}</h1>
-                  <div className="uc-offer-route">
-                    <i className="fas fa-route" style={{ color: "var(--uc-primary)" }}></i>
-                    <span>{offer.route}</span>
-                  </div>
+              {offers.map((offer, idx) => {
+                const specs = getVehicleSpecs(offer.vehicle);
+                const isSelected = idx === activeOffer;
+                const routes = (offer.route || "").split(" to ");
+                const fromLoc = routes[0] || offer.route || "Pick-up";
+                const toLoc = routes[1] || "Destination";
+                const directWaMsg = encodeURIComponent(`Salam, I want to book the ${offer.vehicle} offer (${offer.route}) for ${offer.price} SAR.`);
+                const targetWa = (whatsappLink.includes('?') ? whatsappLink.split('?')[0] : whatsappLink) + `?text=${directWaMsg}`;
 
-                  {/* Vehicle Picture Frame in Hero Slide */}
-                  <div className="uc-hero-slide-img-wrap" style={{ width: "100%", maxHeight: "170px", margin: "10px 0 14px 0", display: "flex", alignItems: "center" }}>
-                    <img 
-                      src={getVehicleImage(offer.vehicle, offer.image || offer.bg_image)} 
-                      alt={offer.vehicle || "Vehicle"} 
-                      style={{ maxHeight: "155px", maxWidth: "100%", objectFit: "contain", filter: "drop-shadow(0 8px 20px rgba(0,0,0,0.6))" }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = "none";
-                      }}
-                    />
-                  </div>
+                return (
+                  <div key={idx} className={`uc-slide ${isSelected ? "active" : ""}`}>
+                    <div className="uc-hero-card">
+                      {/* Top Header Strip */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                        <span className="uc-badge-hot">
+                          <i className="fas fa-crown" style={{ marginRight: "6px", color: "#f5d020" }}></i> Mega Offer
+                        </span>
+                        <div className="uc-slide-counter">
+                          <span style={{ color: "var(--uc-primary)", fontWeight: 800 }}>0{idx + 1}</span>
+                          <span style={{ color: "#6e7681", margin: "0 4px" }}>/</span>
+                          <span>0{offers.length}</span>
+                        </div>
+                      </div>
 
-                  <div className="uc-offer-price">{offer.price} SAR</div>
-                  <p className="uc-offer-price-sub">All inclusive price: Toll tax, Fuel & Driver charges.</p>
-                  
-                  <div className="uc-slide-actions" style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "20px" }}>
-                    <a href={whatsappLink.includes('?') ? whatsappLink : `${whatsappLink}?text=HI`} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp">
-                      <i className="fab fa-whatsapp"></i> Book via WhatsApp
-                    </a>
-                    <button onClick={() => {
-                      const routes = offer.route.split(" to ");
-                      setBookingData((prev) => ({
-                        ...prev,
-                        pickup: routes[0] || "",
-                        destination: routes[1] || "",
-                        carType: offer.vehicle,
-                        carPrice: offer.price
-                      }));
-                      setStep(1);
-                      document.getElementById("booking-wizard")?.scrollIntoView({ behavior: "smooth" });
-                    }} className="uc-btn-outline">
-                      Configure Booking
-                    </button>
+                      {/* Vehicle Title & Type */}
+                      <div style={{ display: "flex", alignItems: "baseline", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
+                        <h1 className="uc-offer-vehicle" style={{ margin: 0 }}>{offer.vehicle}</h1>
+                        <span className="uc-vehicle-pill-type">{specs.type}</span>
+                      </div>
+
+                      {/* Route Pill Ribbon */}
+                      <div className="uc-route-ribbon">
+                        <div className="uc-route-point">
+                          <i className="fas fa-circle-dot" style={{ color: "var(--uc-primary)", fontSize: "12px" }}></i>
+                          <span>{fromLoc}</span>
+                        </div>
+                        <i className="fas fa-arrow-right-long" style={{ color: "#6e7681", fontSize: "14px" }}></i>
+                        <div className="uc-route-point">
+                          <i className="fas fa-location-dot" style={{ color: "#25D366", fontSize: "13px" }}></i>
+                          <span>{toLoc}</span>
+                        </div>
+                      </div>
+
+                      {/* Vehicle Showcase Image Box */}
+                      <div className="uc-hero-showcase">
+                        <div className="uc-showcase-glow"></div>
+                        <img 
+                          src={getVehicleImage(offer.vehicle, offer.image || offer.bg_image)} 
+                          alt={offer.vehicle || "Vehicle"} 
+                          className="uc-showcase-img"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                      </div>
+
+                      {/* Vehicle Specs Grid */}
+                      <div className="uc-specs-row">
+                        <div className="uc-spec-badge">
+                          <i className="fas fa-user-group"></i>
+                          <span>{specs.seats}</span>
+                        </div>
+                        <div className="uc-spec-badge">
+                          <i className="fas fa-suitcase-rolling"></i>
+                          <span>{specs.luggage}</span>
+                        </div>
+                        <div className="uc-spec-badge">
+                          <i className="fas fa-snowflake"></i>
+                          <span>Full AC</span>
+                        </div>
+                        <div className="uc-spec-badge">
+                          <i className="fas fa-shield-halved"></i>
+                          <span>Verified</span>
+                        </div>
+                      </div>
+
+                      {/* Price & Inclusion */}
+                      <div className="uc-price-row">
+                        <div>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                            <span className="uc-offer-price">{offer.price}</span>
+                            <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--uc-primary)" }}>SAR</span>
+                          </div>
+                          <p className="uc-offer-price-sub">All-inclusive: Toll tax, Fuel & Private Driver</p>
+                        </div>
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="uc-slide-actions">
+                        <a href={targetWa} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp">
+                          <i className="fab fa-whatsapp"></i> Book via WhatsApp
+                        </a>
+                        <button onClick={() => {
+                          setBookingData((prev) => ({
+                            ...prev,
+                            pickup: fromLoc,
+                            destination: toLoc,
+                            carType: offer.vehicle,
+                            carPrice: offer.price
+                          }));
+                          setStep(1);
+                          document.getElementById("booking-wizard")?.scrollIntoView({ behavior: "smooth" });
+                        }} className="uc-btn-outline">
+                          <i className="fas fa-sliders"></i> Custom Booking
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Slider Navigation & Pill Indicators */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "24px", gap: "16px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                {offers.map((_, idx) => (
+            {/* Slider Interactive Thumbnails & Controls */}
+            <div className="uc-slider-bottom-bar">
+              {/* Vehicle Pill Switchers */}
+              <div className="uc-fleet-tabs">
+                {offers.map((offer, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveOffer(idx)}
-                    className="uc-slide-pill"
-                    style={{
-                      width: idx === activeOffer ? "28px" : "10px",
-                      background: idx === activeOffer ? "var(--uc-primary)" : "#30363d",
-                    }}
-                    aria-label={`Slide ${idx + 1}`}
-                  ></button>
+                    className={`uc-fleet-tab-btn ${idx === activeOffer ? "active" : ""}`}
+                  >
+                    <i className={`fas ${offer.icon || 'fa-car'}`}></i>
+                    <span>{offer.vehicle}</span>
+                  </button>
                 ))}
               </div>
 
               {/* Next/Prev Arrow Controls */}
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 <button onClick={handlePrevOffer} className="uc-slider-nav-btn" aria-label="Previous Slide">
                   <i className="fas fa-chevron-left"></i>
                 </button>
@@ -1137,34 +1222,40 @@ export default function PublicHomePage() {
       </section>
 
       {/* ===== DOWNLOAD APP SECTION ===== */}
-      <section className="uc-app-section">
-        <div style={{ maxWidth: "800px", margin: "0 auto", color: "#fff" }}>
-          <span className="uc-section-label" style={{ color: "var(--uc-primary)" }}>Mobile Apps</span>
-          <h2 style={{ fontSize: "32px", fontWeight: 800, marginTop: "12px", marginBottom: "16px" }}>
-            {websiteSettings?.app_title || "Download the UMRAH-CAB App Free Today"}
-          </h2>
-          <p style={{ color: "#8b949e", fontSize: "15px", lineHeight: 1.6 }}>
-            {websiteSettings?.app_desc || "Access rides, confirm drivers, and download vouchers directly on your mobile device. Compatible with all Android and iOS smartphones."}
-          </p>
+      {(websiteSettings?.app_store_link || websiteSettings?.play_store_link || websiteSettings?.app_title) && (
+        <section className="uc-app-section">
+          <div style={{ maxWidth: "800px", margin: "0 auto", color: "#fff" }}>
+            <span className="uc-section-label" style={{ color: "var(--uc-primary)" }}>Mobile Apps</span>
+            <h2 style={{ fontSize: "32px", fontWeight: 800, marginTop: "12px", marginBottom: "16px" }}>
+              {websiteSettings?.app_title || `Download the ${siteTitle} App Free Today`}
+            </h2>
+            <p style={{ color: "#8b949e", fontSize: "15px", lineHeight: 1.6 }}>
+              {websiteSettings?.app_desc || "Access rides, confirm drivers, and download vouchers directly on your mobile device. Compatible with all Android and iOS smartphones."}
+            </p>
 
-          <div className="uc-app-btns">
-            <a href={websiteSettings?.app_store_link || "https://itunes.apple.com/us/app/umrah-cab/id1382524932?ls=1&mt=8"} target="_blank" rel="noopener noreferrer" className="uc-app-btn">
-              <i className="fab fa-apple uc-app-btn-icon" style={{ color: "#000" }}></i>
-              <div style={{ textAlign: "left" }}>
-                <span className="uc-app-btn-label">Download on the</span>
-                <span className="uc-app-btn-store">App Store</span>
-              </div>
-            </a>
-            <a href={websiteSettings?.play_store_link || "https://play.google.com/store/apps/details?id=com.UmrahCab.UmrahCab"} target="_blank" rel="noopener noreferrer" className="uc-app-btn">
-              <i className="fab fa-google-play uc-app-btn-icon" style={{ color: "#34A853" }}></i>
-              <div style={{ textAlign: "left" }}>
-                <span className="uc-app-btn-label">Get it on</span>
-                <span className="uc-app-btn-store">Google Play</span>
-              </div>
-            </a>
+            <div className="uc-app-btns">
+              {websiteSettings?.app_store_link && (
+                <a href={websiteSettings.app_store_link} target="_blank" rel="noopener noreferrer" className="uc-app-btn">
+                  <i className="fab fa-apple uc-app-btn-icon" style={{ color: "#000" }}></i>
+                  <div style={{ textAlign: "left" }}>
+                    <span className="uc-app-btn-label">Download on the</span>
+                    <span className="uc-app-btn-store">App Store</span>
+                  </div>
+                </a>
+              )}
+              {websiteSettings?.play_store_link && (
+                <a href={websiteSettings.play_store_link} target="_blank" rel="noopener noreferrer" className="uc-app-btn">
+                  <i className="fab fa-google-play uc-app-btn-icon" style={{ color: "#34A853" }}></i>
+                  <div style={{ textAlign: "left" }}>
+                    <span className="uc-app-btn-label">Get it on</span>
+                    <span className="uc-app-btn-store">Google Play</span>
+                  </div>
+                </a>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ===== CONTACT SECTION ===== */}
       <section id="contact" className="uc-section">
@@ -1178,35 +1269,41 @@ export default function PublicHomePage() {
               {websiteSettings?.contact_desc || "Our support team is online 24/7 to solve transport route issues, customize group packages, or provide special VIP executive fleet rates."}
             </p>
 
-            <div className="uc-contact-item">
-              <div className="uc-contact-icon">
-                <i className="fas fa-map-marker-alt"></i>
+            {siteAddress && (
+              <div className="uc-contact-item">
+                <div className="uc-contact-icon">
+                  <i className="fas fa-map-marker-alt"></i>
+                </div>
+                <div>
+                  <div className="uc-contact-label">Office Address</div>
+                  <div className="uc-contact-value">{siteAddress}</div>
+                </div>
               </div>
-              <div>
-                <div className="uc-contact-label">Office Address</div>
-                <div className="uc-contact-value">{siteAddress}</div>
-              </div>
-            </div>
+            )}
 
-            <div className="uc-contact-item">
-              <div className="uc-contact-icon">
-                <i className="fas fa-phone-alt"></i>
+            {sitePhone && (
+              <div className="uc-contact-item">
+                <div className="uc-contact-icon">
+                  <i className="fas fa-phone-alt"></i>
+                </div>
+                <div>
+                  <div className="uc-contact-label">Helpline Numbers</div>
+                  <div className="uc-contact-value">{sitePhone}</div>
+                </div>
               </div>
-              <div>
-                <div className="uc-contact-label">Helpline Numbers</div>
-                <div className="uc-contact-value">{sitePhone} (WhatsApp & Call)</div>
-              </div>
-            </div>
+            )}
 
-            <div className="uc-contact-item">
-              <div className="uc-contact-icon">
-                <i className="fas fa-envelope"></i>
+            {siteEmail && (
+              <div className="uc-contact-item">
+                <div className="uc-contact-icon">
+                  <i className="fas fa-envelope"></i>
+                </div>
+                <div>
+                  <div className="uc-contact-label">Email Queries</div>
+                  <div className="uc-contact-value">{siteEmail}</div>
+                </div>
               </div>
-              <div>
-                <div className="uc-contact-label">Email Queries</div>
-                <div className="uc-contact-value">{siteEmail}</div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Web form */}

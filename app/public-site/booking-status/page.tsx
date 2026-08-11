@@ -18,20 +18,25 @@ interface StatusItem {
 
 export default function BookingStatusPage() {
   const { settings: websiteSettings } = useWebsiteSettings();
-  const sitePhone = websiteSettings?.contact_phone || "+966 567 799 616";
+  const sitePhone = websiteSettings?.contact_phone || "";
   const cleanPhone = sitePhone.replace(/[^0-9]/g, "");
-  const baseWa = cleanPhone ? `https://wa.me/${cleanPhone}` : "https://wa.me/966567799616";
-  let whatsappLink = websiteSettings?.whatsapp_link || `${baseWa}?text=HI`;
-  if (whatsappLink && !whatsappLink.startsWith("http://") && !whatsappLink.startsWith("https://")) {
-    const cleanNum = whatsappLink.replace(/[^0-9]/g, "");
-    if (/^\d+$/.test(cleanNum)) {
-      whatsappLink = `https://wa.me/${cleanNum}`;
-    } else {
-      whatsappLink = `https://${whatsappLink}`;
+  let whatsappLink = websiteSettings?.whatsapp_link || "";
+  if (whatsappLink) {
+    if (!whatsappLink.startsWith("http://") && !whatsappLink.startsWith("https://")) {
+      const cleanNum = whatsappLink.replace(/[^0-9]/g, "");
+      if (/^\d+$/.test(cleanNum)) {
+        whatsappLink = `https://wa.me/${cleanNum}`;
+      } else {
+        whatsappLink = `https://${whatsappLink}`;
+      }
     }
+  } else if (cleanPhone) {
+    whatsappLink = `https://wa.me/${cleanPhone}?text=HI`;
+  } else {
+    whatsappLink = "#contact";
   }
 
-  let whatsappLinkPak = websiteSettings?.whatsapp_link_pak || "https://wa.me/923219462533?text=HI";
+  let whatsappLinkPak = websiteSettings?.whatsapp_link_pak || "";
   if (whatsappLinkPak && !whatsappLinkPak.startsWith("http://") && !whatsappLinkPak.startsWith("https://")) {
     const cleanNum = whatsappLinkPak.replace(/[^0-9]/g, "");
     if (/^\d+$/.test(cleanNum)) {
@@ -56,7 +61,7 @@ export default function BookingStatusPage() {
     const data = await api.getBookingStatus(query);
     if (data) {
       const mapped = data.map((b: any) => ({
-        id: b.booking_code ? String(b.booking_code).replace(/^UCB-/i, "HCB-") : (b.id ? `HCB-${10000 + Number(b.id)}` : "HCB-10001"),
+        id: b.booking_code ? String(b.booking_code) : (b.id ? `#BK-${b.id}` : ""),
         pickup: b.pickup,
         destination: b.destination,
         date: b.date,
@@ -189,12 +194,16 @@ export default function BookingStatusPage() {
             <p style={{ fontSize: "13px", color: "#8b949e" }}>Speak directly with our local dispatcher team for emergency bookings.</p>
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
-            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px" }}>
-              <i className="fab fa-whatsapp"></i> KSA Help
-            </a>
-            <a href={whatsappLinkPak} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px", background: "#3b82f6" }}>
-              <i className="fab fa-whatsapp"></i> PAK Help
-            </a>
+            {whatsappLink && whatsappLink !== "#contact" && (
+              <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px" }}>
+                <i className="fab fa-whatsapp"></i> WhatsApp Support
+              </a>
+            )}
+            {whatsappLinkPak && (
+              <a href={whatsappLinkPak} target="_blank" rel="noopener noreferrer" className="uc-btn-whatsapp" style={{ fontSize: "13px", padding: "10px 20px", background: "#3b82f6" }}>
+                <i className="fab fa-whatsapp"></i> Regional Help
+              </a>
+            )}
           </div>
         </div>
 

@@ -10,8 +10,7 @@ export default function PublicInvoicePage() {
   const router = useRouter();
   const code = params?.code as string;
   const { settings } = useWebsiteSettings();
-
-  const siteTitle = settings?.site_title || "Umrah Cab";
+  const siteTitle = settings?.site_title || "Official";
 
   const [invoice, setInvoice] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);

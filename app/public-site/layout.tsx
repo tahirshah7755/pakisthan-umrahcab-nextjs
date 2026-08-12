@@ -1340,8 +1340,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <nav className={`uc-nav ${scrolled ? "scrolled" : ""}`} style={{ background: scrolled ? undefined : "linear-gradient(180deg, rgba(13,17,23,0.9) 0%, transparent 100%)" }}>
         <div className="uc-nav-inner">
           <Link href="/" className="uc-nav-logo">
-            <img src={siteLogo} alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-            <span className="uc-nav-logo-text">{siteTitle}</span>
+            {siteLogo ? (
+              <img src={siteLogo} alt={siteTitle || "Logo"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            ) : null}
+            {siteTitle ? (
+              <span className="uc-nav-logo-text">{siteTitle}</span>
+            ) : null}
           </Link>
 
           <ul className="uc-nav-links">
@@ -1486,13 +1490,21 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <footer className="uc-footer">
         <div className="uc-footer-grid">
           <div>
-            <div className="uc-footer-logo">
-              <img src={siteLogo} alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-              <span className="uc-footer-logo-text">{siteTitle}</span>
-            </div>
-            <p className="uc-footer-desc">
-              Book your Umrah cab online. Cheap, reliable transport services across Saudi Arabia — Jeddah Airport to Makkah, Madinah, and beyond.
-            </p>
+            {(siteLogo || siteTitle) && (
+              <div className="uc-footer-logo">
+                {siteLogo ? (
+                  <img src={siteLogo} alt={siteTitle || "Logo"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                ) : null}
+                {siteTitle ? (
+                  <span className="uc-footer-logo-text">{siteTitle}</span>
+                ) : null}
+              </div>
+            )}
+            {(websiteSettings?.meta_description || websiteSettings?.hero_desc) && (
+              <p className="uc-footer-desc">
+                {websiteSettings.meta_description || websiteSettings.hero_desc}
+              </p>
+            )}
           </div>
           <div>
             <div className="uc-footer-heading">Quick Links</div>
@@ -1533,8 +1545,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
         <div className="uc-footer-bottom">
-          <span>Copyright &copy; {new Date().getFullYear()} {siteTitle}. All Rights Reserved.</span>
-          <span>{siteTitle} Private Chauffeur &amp; Booking Management Platform</span>
+          <span>Copyright &copy; {new Date().getFullYear()}{siteTitle ? ` ${siteTitle}` : ""}. All Rights Reserved.</span>
+          <span>{siteTitle ? `${siteTitle} ` : ""}Private Chauffeur &amp; Booking Management Platform</span>
         </div>
       </footer>
     </div>

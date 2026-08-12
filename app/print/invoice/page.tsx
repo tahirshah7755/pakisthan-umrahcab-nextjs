@@ -18,8 +18,8 @@ function InvoicePrintContent() {
   const { settings } = useWebsiteSettings();
 
   const siteLogo = settings?.website_logo || "";
-  const siteName = settings?.site_title || "HEBA CAB";
-  const siteDesc = settings?.hero_title || settings?.meta_description || "Premium Transportation Solutions";
+  const siteName = settings?.site_title || "";
+  const siteDesc = settings?.hero_title || settings?.meta_description || "";
 
   const [hasTriggeredPrint, setHasTriggeredPrint] = useState(false);
 
@@ -134,7 +134,7 @@ function InvoicePrintContent() {
                   alt={siteName}
                   style={{ height: "42px", maxWidth: "150px", objectFit: "contain" }}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/logo2.png";
+                    (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
               ) : (

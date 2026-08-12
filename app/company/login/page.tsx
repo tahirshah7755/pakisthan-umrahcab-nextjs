@@ -11,7 +11,7 @@ export default function CompanyLoginPage() {
   const { settings } = useWebsiteSettings();
 
   const siteLogo = settings?.website_logo || "";
-  const siteTitle = settings?.site_title || "Heba Cab";
+  const siteTitle = settings?.site_title || "Portal";
 
   // Form states
   const [username, setUsername] = useState("");
@@ -107,7 +107,9 @@ export default function CompanyLoginPage() {
 
         {/* Right Side: Form */}
         <div className="login-form-side">
-          <img src={siteLogo} className="login-logo" alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
+          {siteLogo ? (
+            <img src={siteLogo} className="login-logo" alt={siteTitle} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+          ) : null}
           
           <h2 className="login-title">Agent Portal</h2>
           <p className="login-subtitle">Enter your agent credentials to access your B2B account</p>

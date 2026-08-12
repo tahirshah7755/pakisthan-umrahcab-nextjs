@@ -269,12 +269,14 @@ function CustomerPrintContent() {
         {/* Document Header */}
         <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "2px solid #e2e8f0", paddingBottom: "25px", marginBottom: "30px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <img src={logoUrl} alt="Logo" style={{ maxHeight: "60px", maxWidth: "160px", objectFit: "contain" }} onError={(e) => { (e.target as HTMLImageElement).src = "/logo2.png"; }} />
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" style={{ maxHeight: "60px", maxWidth: "160px", objectFit: "contain" }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            ) : null}
             <div>
               <h2 style={{ fontSize: "20px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
-                {websiteSettings?.site_title || "Heba Cab"}
+                {websiteSettings?.site_title || "Official Report"}
               </h2>
-              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>High-Performance Transport & Travel Management</p>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: "2px 0 0 0" }}>High-Performance Transport &amp; Travel Management</p>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>

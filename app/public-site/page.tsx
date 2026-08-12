@@ -19,7 +19,7 @@ export default function PublicHomePage() {
   const router = useRouter();
   const { settings: websiteSettings } = useWebsiteSettings();
 
-  const siteTitle = websiteSettings?.site_title || "Umrah Cab";
+  const siteTitle = websiteSettings?.site_title || "";
   const sitePhone = websiteSettings?.contact_phone || "";
   const siteEmail = websiteSettings?.contact_email || "";
   const siteAddress = websiteSettings?.contact_address || "";

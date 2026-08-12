@@ -315,10 +315,12 @@ function InvoicePrintContent() {
 
           {/* Pricing Totals Box */}
           <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "14px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px", color: "#64748b" }}>
-              <span>Previous Balance Carry-over:</span>
-              <strong style={{ color: "#0f172a" }}>{fmt(invoice.previous_balance || 0)}</strong>
-            </div>
+            {Number(invoice.previous_balance || 0) > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px", color: "#64748b" }}>
+                <span>Previous Balance Carry-over:</span>
+                <strong style={{ color: "#0f172a" }}>{fmt(invoice.previous_balance || 0)}</strong>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "12px", color: "#64748b" }}>
               <span>Current Cycle Bookings (Gross):</span>
               <strong style={{ color: "#0f172a" }}>{fmt(invoice.bookings_amount || 0)}</strong>

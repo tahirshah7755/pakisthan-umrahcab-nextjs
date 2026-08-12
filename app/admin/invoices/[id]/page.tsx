@@ -454,10 +454,12 @@ export default function ViewInvoicePage() {
 
           {/* Breakdowns Column */}
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569" }}>
-              <span>Previous Balance Carry-over:</span>
-              <span style={{ fontWeight: "600" }}>{fmt(breakdown.prev_balance)}</span>
-            </div>
+            {breakdown.prev_balance > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569" }}>
+                <span>Previous Balance Carry-over:</span>
+                <span style={{ fontWeight: "600" }}>{fmt(breakdown.prev_balance)}</span>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569" }}>
               <span>Current Cycle Bookings (Gross):</span>
               <span style={{ fontWeight: "600" }}>{fmt(breakdown.bookings_sum)}</span>
@@ -627,10 +629,12 @@ export default function ViewInvoicePage() {
 
           {/* Breakdowns Column */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569", borderBottom: "1px dashed #e2e8f0", paddingBottom: "4px" }}>
-              <span>Previous Balance Carry-over:</span>
-              <span style={{ fontWeight: "700", color: "#0f172a" }}>{fmt(breakdown.prev_balance)}</span>
-            </div>
+            {breakdown.prev_balance > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569", borderBottom: "1px dashed #e2e8f0", paddingBottom: "4px" }}>
+                <span>Previous Balance Carry-over:</span>
+                <span style={{ fontWeight: "700", color: "#0f172a" }}>{fmt(breakdown.prev_balance)}</span>
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569", borderBottom: "1px dashed #e2e8f0", paddingBottom: "4px" }}>
               <span>Current Cycle Bookings (Gross):</span>
               <span style={{ fontWeight: "700", color: "#0f172a" }}>{fmt(breakdown.bookings_sum)}</span>

@@ -74,6 +74,7 @@ export default function AddInvoicePage() {
   const [startDate,       setStartDate]       = useState("");
   const [endDate,         setEndDate]         = useState(getSaudiTodayDate());
   const [calculationType, setCalculationType] = useState<"VW" | "PW">("VW");
+  const [includePreviousBalance, setIncludePreviousBalance] = useState(false);
   const [remarks,         setRemarks]         = useState("");
 
   // Preview overlay states
@@ -116,6 +117,7 @@ export default function AddInvoicePage() {
         start_date: startDate,
         end_date: endDate,
         type: calculationType,
+        include_previous_balance: includePreviousBalance,
       }).unwrap();
 
       if (res && !res.isError) {
@@ -147,6 +149,7 @@ export default function AddInvoicePage() {
         start_date: startDate,
         end_date: endDate,
         type: calculationType,
+        include_previous_balance: includePreviousBalance,
       }).unwrap();
 
       if (!calcRes || calcRes.isError) {
@@ -165,7 +168,7 @@ export default function AddInvoicePage() {
         amount: totalAmt,
         balance: totalAmt,
         remarks: remarks || `Invoice for ${selectedCompany} (${startDate} to ${endDate})`,
-        entered_by: "Heba Cab",
+        entered_by: siteName,
       }).unwrap();
 
       if (saveRes && !saveRes.isError) {
@@ -293,6 +296,24 @@ export default function AddInvoicePage() {
             </div>
             <p style={{ margin: 0, fontSize: "12px", color: "#64748b", lineHeight: "1.5" }}>
               VW uses Voucher Dates for bookings and Entry Dates for services. PW uses Pickup Dates for bookings and Service Dates for services.
+            </p>
+          </div>
+
+          {/* Include Previous Balance Option */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "16px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px", fontWeight: "700", color: "#1e293b", margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={includePreviousBalance}
+                onChange={(e) => setIncludePreviousBalance(e.target.checked)}
+                style={{ width: "18px", height: "18px", accentColor: "#2563eb", cursor: "pointer" }}
+              />
+              <span>Include Previous Balance Carry-over (Account Statement Mode)</span>
+            </label>
+            <p style={{ margin: "6px 0 0 28px", fontSize: "12px", color: "#64748b", lineHeight: "1.4" }}>
+              {includePreviousBalance
+                ? "Statement Mode: Past unpaid balances before 'Date From' will be added into this invoice."
+                : "Standard Invoice Mode (Default): Only bills bookings and services within the selected date range."}
             </p>
           </div>
 
@@ -519,10 +540,12 @@ export default function AddInvoicePage() {
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569" }}>
-                    <span>Prev. Carry-over:</span>
-                    <span style={{ fontWeight: "600" }}>{fmt(previewData.prev_balance)}</span>
-                  </div>
+                  {previewData.prev_balance > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569" }}>
+                      <span>Prev. Carry-over:</span>
+                      <span style={{ fontWeight: "600" }}>{fmt(previewData.prev_balance)}</span>
+                    </div>
+                  )}
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#475569" }}>
                     <span>Cycle Items:</span>
                     <span style={{ fontWeight: "600" }}>{fmt(previewData.cycle_subtotal)}</span>

@@ -370,6 +370,54 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           position: relative;
         }
 
+        /* Borderless Typography Design */
+        .uc-hero-text-container {
+          padding: 10px 0;
+          position: relative;
+          width: 100%;
+        }
+
+        .uc-route-minimal {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 16px 0 24px 0;
+          font-size: 15px;
+          font-weight: 600;
+          color: #e6edf3;
+          flex-wrap: wrap;
+        }
+
+        .uc-specs-minimal {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 24px;
+          flex-wrap: wrap;
+        }
+
+        .uc-spec-minimal-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #d0d7de;
+        }
+
+        .uc-spec-minimal-item i {
+          color: var(--uc-primary);
+          font-size: 14px;
+        }
+
+        .uc-price-minimal-row {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          margin-bottom: 24px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          padding-top: 20px;
+        }
+
         .uc-badge-hot {
           display: inline-flex;
           align-items: center;
@@ -458,6 +506,21 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           transition: transform 0.4s ease;
         }
 
+        .uc-vehicle-glow-icon {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: rgba(200, 168, 75, 0.15);
+          border: 1px solid rgba(200, 168, 75, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--uc-primary);
+          font-size: 20px;
+          box-shadow: 0 0 15px rgba(200, 168, 75, 0.25);
+          flex-shrink: 0;
+        }
+
         .uc-specs-row {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -543,6 +606,108 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           border-color: var(--uc-primary);
           font-weight: 700;
           box-shadow: 0 4px 16px rgba(200, 168, 75, 0.4);
+        }
+
+        /* Slider Dots/Indicators */
+        .uc-slider-dots {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          flex: 1;
+        }
+
+        .uc-slider-dot-btn {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.25);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          cursor: pointer;
+          transition: all 0.25s ease;
+          padding: 0;
+        }
+
+        .uc-slider-dot-btn:hover {
+          background: rgba(255, 255, 255, 0.50);
+          transform: scale(1.15);
+        }
+
+        .uc-slider-dot-btn.active {
+          background: var(--uc-primary);
+          border-color: var(--uc-primary);
+          box-shadow: 0 0 12px rgba(200, 168, 75, 0.7);
+          width: 28px;
+          border-radius: 6px;
+        }
+
+        /* Professional Side-by-Side Hero Layout */
+        .uc-hero-main-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+
+        .uc-hero-title-col {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .uc-vehicle-mini-icon {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: rgba(200, 168, 75, 0.1);
+          border: 1px solid rgba(200, 168, 75, 0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--uc-primary);
+          font-size: 11px;
+        }
+
+        .uc-hero-price-col {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          text-align: right;
+        }
+
+        .uc-hero-price-wrap {
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+
+        .uc-hero-price-amount {
+          font-size: 38px;
+          font-weight: 900;
+          color: var(--uc-primary);
+          line-height: 1;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .uc-hero-price-currency {
+          font-size: 16px;
+          font-weight: 800;
+          color: var(--uc-primary);
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .uc-hero-price-label {
+          font-size: 11px;
+          color: #8b949e;
+          font-weight: 600;
+          margin-top: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .uc-hero-divider {
+          height: 1px;
+          background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+          margin-bottom: 24px;
         }
 
         .uc-slider-nav-btn {
@@ -1071,6 +1236,21 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           .uc-contact-grid {
             grid-template-columns: 1fr !important;
             gap: 32px !important;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .uc-hero-main-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+          .uc-hero-price-col {
+            align-items: flex-start !important;
+            text-align: left !important;
+          }
+          .uc-hero-price-amount {
+            font-size: 32px !important;
           }
         }
 

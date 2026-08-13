@@ -598,7 +598,7 @@ export default function PublicHomePage() {
 
                 return (
                   <div key={idx} className={`uc-slide ${isSelected ? "active" : ""}`}>
-                    <div className="uc-hero-card">
+                    <div className="uc-hero-text-container">
                       {/* Top Header Strip */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                         <span className="uc-badge-hot">
@@ -611,68 +611,30 @@ export default function PublicHomePage() {
                         </div>
                       </div>
 
-                      {/* Vehicle Title & Type */}
-                      <div style={{ display: "flex", alignItems: "baseline", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
-                        <h1 className="uc-offer-vehicle" style={{ margin: 0 }}>{offer.vehicle}</h1>
-                        <span className="uc-vehicle-pill-type">{specs.type}</span>
-                      </div>
-
-                      {/* Route Pill Ribbon */}
-                      <div className="uc-route-ribbon">
-                        <div className="uc-route-point">
-                          <i className="fas fa-circle-dot" style={{ color: "var(--uc-primary)", fontSize: "12px" }}></i>
-                          <span>{fromLoc}</span>
-                        </div>
-                        <i className="fas fa-arrow-right-long" style={{ color: "#6e7681", fontSize: "14px" }}></i>
-                        <div className="uc-route-point">
-                          <i className="fas fa-location-dot" style={{ color: "#25D366", fontSize: "13px" }}></i>
-                          <span>{toLoc}</span>
-                        </div>
-                      </div>
-
-                      {/* Vehicle Showcase Image Box */}
-                      <div className="uc-hero-showcase">
-                        <div className="uc-showcase-glow"></div>
-                        <img 
-                          src={getVehicleImage(offer.vehicle, offer.image || offer.bg_image)} 
-                          alt={offer.vehicle || "Vehicle"} 
-                          className="uc-showcase-img"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      </div>
-
-                      {/* Vehicle Specs Grid */}
-                      <div className="uc-specs-row">
-                        <div className="uc-spec-badge">
-                          <i className="fas fa-user-group"></i>
-                          <span>{specs.seats}</span>
-                        </div>
-                        <div className="uc-spec-badge">
-                          <i className="fas fa-suitcase-rolling"></i>
-                          <span>{specs.luggage}</span>
-                        </div>
-                        <div className="uc-spec-badge">
-                          <i className="fas fa-snowflake"></i>
-                          <span>Full AC</span>
-                        </div>
-                        <div className="uc-spec-badge">
-                          <i className="fas fa-shield-halved"></i>
-                          <span>Verified</span>
-                        </div>
-                      </div>
-
-                      {/* Price & Inclusion */}
-                      <div className="uc-price-row">
-                        <div>
-                          <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                            <span className="uc-offer-price">{offer.price}</span>
-                            <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--uc-primary)" }}>SAR</span>
+                      {/* Vehicle Header & Price Row (Side by side on desktop, stacked on mobile) */}
+                      <div className="uc-hero-main-row">
+                        {/* Title & Type */}
+                        <div className="uc-hero-title-col">
+                          <h1 className="uc-offer-vehicle" style={{ margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>{offer.vehicle}</h1>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "6px" }}>
+                            <span className="uc-vehicle-pill-type" style={{ background: "rgba(200, 168, 75, 0.2)", backdropFilter: "blur(4px)" }}>{specs.type}</span>
+                            <div className="uc-vehicle-mini-icon">
+                              <i className={`fas ${specs.icon || 'fa-car'}`}></i>
+                            </div>
                           </div>
-                          <p className="uc-offer-price-sub">All-inclusive: Toll tax, Fuel & Private Driver</p>
+                        </div>
+
+                        {/* Price & All-inclusive tag */}
+                        <div className="uc-hero-price-col">
+                          <div className="uc-hero-price-wrap">
+                            <span className="uc-hero-price-amount">{offer.price}</span>
+                            <span className="uc-hero-price-currency">SAR</span>
+                          </div>
+                          <span className="uc-hero-price-label">All-inclusive Rate</span>
                         </div>
                       </div>
+
+                      <div className="uc-hero-divider"></div>
                       
                       {/* Action Buttons */}
                       <div className="uc-slide-actions">
@@ -689,7 +651,7 @@ export default function PublicHomePage() {
                           }));
                           setStep(1);
                           document.getElementById("booking-wizard")?.scrollIntoView({ behavior: "smooth" });
-                        }} className="uc-btn-outline">
+                        }} className="uc-btn-outline" style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(4px)" }}>
                           <i className="fas fa-sliders"></i> Custom Booking
                         </button>
                       </div>
@@ -701,17 +663,15 @@ export default function PublicHomePage() {
 
             {/* Slider Interactive Thumbnails & Controls */}
             <div className="uc-slider-bottom-bar">
-              {/* Vehicle Pill Switchers */}
-              <div className="uc-fleet-tabs">
-                {offers.map((offer, idx) => (
+              {/* Slider Dots/Indicators */}
+              <div className="uc-slider-dots">
+                {offers.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveOffer(idx)}
-                    className={`uc-fleet-tab-btn ${idx === activeOffer ? "active" : ""}`}
-                  >
-                    <i className={`fas ${offer.icon || 'fa-car'}`}></i>
-                    <span>{offer.vehicle}</span>
-                  </button>
+                    className={`uc-slider-dot-btn ${idx === activeOffer ? "active" : ""}`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
                 ))}
               </div>
 

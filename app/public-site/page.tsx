@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { countryCodesList } from "@/utils/countriesData";
 
 interface VehicleOption {
   name: string;
@@ -161,6 +162,44 @@ export default function PublicHomePage() {
     notes: ""
   });
 
+  // Local state for split WhatsApp number
+  const [whatsappCode, setWhatsappCode] = useState("+966");
+  const [whatsappLocal, setWhatsappLocal] = useState("");
+
+  // Sort countryCodesList placing the common/popular country codes first
+  const sortedCountryCodes = React.useMemo(() => {
+    const popularCodes = ["+966", "+92", "+880", "+91", "+971", "+44", "+1"];
+    const popular = countryCodesList.filter(c => popularCodes.includes(c.code));
+    const others = countryCodesList.filter(c => !popularCodes.includes(c.code));
+    
+    // Deduplicate popular ones
+    const uniquePopularMap = new Map();
+    popular.forEach(c => {
+      if (!uniquePopularMap.has(c.code)) {
+        uniquePopularMap.set(c.code, c);
+      }
+    });
+    const uniquePopular = Array.from(uniquePopularMap.values());
+    uniquePopular.sort((a, b) => popularCodes.indexOf(a.code) - popularCodes.indexOf(b.code));
+    return [...uniquePopular, ...others];
+  }, []);
+
+  // Sync state values to bookingData.whatsapp
+  useEffect(() => {
+    const cleanedLocal = whatsappLocal.replace(/[^0-9]/g, "");
+    if (cleanedLocal) {
+      setBookingData(prev => ({
+        ...prev,
+        whatsapp: `${whatsappCode}${cleanedLocal}`
+      }));
+    } else {
+      setBookingData(prev => ({
+        ...prev,
+        whatsapp: ""
+      }));
+    }
+  }, [whatsappCode, whatsappLocal]);
+
   // Dynamic Data & Checkout States
   const [locationsList, setLocationsList] = useState<string[]>([]);
   const [allRates, setAllRates] = useState<any[]>([]);
@@ -205,30 +244,83 @@ export default function PublicHomePage() {
         .replace(/- north terminal/gi, "")
         .replace(/\(haramain\)/gi, "")
         .replace(/\(.*?\)/g, "")
+        .replace(/[^a-z0-9]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 
     const pClean = clean(pickup);
     const dClean = clean(destination);
 
+    if (!pClean || !dClean) return null;
+
     const match1 = `${pClean} to ${dClean}`;
     const match2 = `${dClean} to ${pClean}`;
 
-    return allRates.find((r) => {
+    // 1. Try exact match first
+    const exact = allRates.find((r) => {
       const rClean = clean(r.route);
-      if (rClean === match1 || rClean === match2) return true;
-
-      // Secondary check: match main city/location keywords
-      const cities = ["jeddah", "makkah", "madinah", "taif", "yanbu"];
-      const pCity = cities.find(c => pClean.includes(c));
-      const dCity = cities.find(c => dClean.includes(c));
-
-      if (pCity && dCity && pCity !== dCity) {
-        return (rClean.includes(pCity) && rClean.includes(dCity));
-      }
-
-      return false;
+      return rClean === match1 || rClean === match2;
     });
+    if (exact) return exact;
+
+    // 2. Score each route in allRates for the best match based on word overlap density
+    let bestRoute: any = null;
+    let bestScore = -1;
+
+    allRates.forEach((r) => {
+      const rClean = clean(r.route);
+      const parts = rClean.split(" to ");
+      if (parts.length < 2) return;
+
+      const sideA = parts[0].trim();
+      const sideB = parts[1].trim();
+
+      const getOverlapScore = (loc1: string, side1: string, loc2: string, side2: string) => {
+        const w1 = new Set(loc1.split(" ").filter(w => w.length > 0));
+        const w2 = new Set(loc2.split(" ").filter(w => w.length > 0));
+        const s1 = new Set(side1.split(" ").filter(w => w.length > 0));
+        const s2 = new Set(side2.split(" ").filter(w => w.length > 0));
+
+        let overlap1 = 0;
+        w1.forEach(w => { if (s1.has(w)) overlap1++; });
+
+        let overlap2 = 0;
+        w2.forEach(w => { if (s2.has(w)) overlap2++; });
+
+        // Both pickup and destination must match at least one word on their respective side
+        if (overlap1 === 0 || overlap2 === 0) return 0;
+
+        // Normalise by word counts to reward higher specificity and prevent bias towards long strings
+        const score = (overlap1 / Math.max(w1.size, s1.size)) + (overlap2 / Math.max(w2.size, s2.size));
+        return score;
+      };
+
+      const scoreForward = getOverlapScore(pClean, sideA, dClean, sideB);
+      const scoreBackward = getOverlapScore(pClean, sideB, dClean, sideA);
+      const score = Math.max(scoreForward, scoreBackward);
+
+      if (score > bestScore && score > 0.3) {
+        bestScore = score;
+        bestRoute = r;
+      }
+    });
+
+    if (bestRoute) return bestRoute;
+
+    // 3. Fallback check: match main city/location keywords
+    const cities = ["jeddah", "makkah", "madinah", "taif", "yanbu"];
+    const pCity = cities.find(c => pClean.includes(c));
+    const dCity = cities.find(c => dClean.includes(c));
+
+    if (pCity && dCity && pCity !== dCity) {
+      const fallback = allRates.find((r) => {
+        const rClean = clean(r.route);
+        return rClean.includes(pCity) && rClean.includes(dCity);
+      });
+      if (fallback) return fallback;
+    }
+
+    return null;
   };
 
   const defaultVehicles = [
@@ -255,16 +347,19 @@ export default function PublicHomePage() {
       if (lower.includes("taurus")) {
         return { type: "Premium Sedan", capacity: "4 Passengers", luggage: "3 Bags", maxPassengers: 4, icon: "fa-car-side" };
       }
-      if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("van")) {
+      if (lower.includes("camry") || lower.includes("camery") || lower.includes("accord") || lower.includes("sonata") || lower.includes("sedan") || lower.includes("corolla") || lower.includes("civic")) {
+        return { type: "Standard Sedan", capacity: "4 Passengers", luggage: "3 Bags", maxPassengers: 4, icon: "fa-car-side" };
+      }
+      if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("h1") || lower.includes("van")) {
         return { type: "Family Van", capacity: "7 Passengers", luggage: "5 Bags", maxPassengers: 7, icon: "fa-van-shuttle" };
       }
-      if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc")) {
+      if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc") || lower.includes("tahoe") || lower.includes("prado")) {
         return { type: "Luxury SUV", capacity: "7 Passengers", luggage: "6 Bags", maxPassengers: 7, icon: "fa-suv" };
       }
-      if (lower.includes("hiace") || lower.includes("coaster") || lower.includes("bus") || lower.includes("coach")) {
+      if (lower.includes("hiace") || lower.includes("hi ace") || lower.includes("bus") || lower.includes("coaster") || lower.includes("coach") || lower.includes("grand cabin")) {
         return { type: "Large Minivan", capacity: "10 Passengers", luggage: "8 Bags", maxPassengers: 10, icon: "fa-bus" };
       }
-      return { type: "Economy", capacity: "4 Passengers", luggage: "2 Bags", maxPassengers: 4, icon: "fa-car" };
+      return { type: "Standard Sedan", capacity: "4 Passengers", luggage: "3 Bags", maxPassengers: 4, icon: "fa-car" };
     };
 
     const resolvePrice = (name: string) => {
@@ -278,13 +373,13 @@ export default function PublicHomePage() {
         const sedanP = Number(custom.sedan_price || match?.sedan_price) || 300;
         return sedanP + 100;
       }
-      if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("van")) {
+      if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("h1") || lower.includes("van")) {
         return Number(custom.van_price || match?.van_price) || 500;
       }
-      if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc")) {
+      if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc") || lower.includes("tahoe") || lower.includes("prado")) {
         return Number(custom.suv_price || match?.suv_price) || 550;
       }
-      if (lower.includes("hiace") || lower.includes("coaster") || lower.includes("bus") || lower.includes("coach")) {
+      if (lower.includes("hiace") || lower.includes("hi ace") || lower.includes("bus") || lower.includes("coaster") || lower.includes("coach") || lower.includes("grand cabin")) {
         return Number(custom.coach_price || match?.coach_price) || 550;
       }
       return Number(custom.sedan_price || match?.sedan_price) || 300;
@@ -955,15 +1050,22 @@ export default function PublicHomePage() {
                       onClick={() => handleCarSelect(v.name, v.price)}
                       className={`uc-vehicle-card ${bookingData.carType === v.name ? "selected" : ""}`}
                     >
-                      <span className="uc-vehicle-icon">
-                        <i className={`fas ${v.icon}`} style={{ color: "var(--uc-primary)" }}></i>
-                      </span>
+                      <div style={{ width: "100%", height: "135px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px", background: "transparent", overflow: "hidden", borderRadius: "10px" }}>
+                        <img 
+                          src={getVehicleImage(v.name)} 
+                          alt={v.name} 
+                          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15))", transition: "transform 0.3s ease" }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80";
+                          }}
+                        />
+                      </div>
                       <div className="uc-vehicle-name">{v.name}</div>
                       <div className="uc-vehicle-cap">
                         {v.capacity} • {v.luggage}
                       </div>
                       <div className="uc-vehicle-price">{v.price} SAR</div>
-                      <div style={{ fontSize: "11px", color: "var(--uc-muted)", marginTop: "4px" }}>{v.type}</div>
+                      <div style={{ fontSize: "11px", color: "var(--uc-muted)", marginTop: "4px", fontWeight: 600 }}>{v.type}</div>
                     </div>
                   ))}
                 </div>
@@ -995,13 +1097,31 @@ export default function PublicHomePage() {
                   </div>
                   <div className="uc-form-group">
                     <label className="uc-form-label">WhatsApp Number *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. +923001234567..."
-                      className="uc-form-input"
-                      value={bookingData.whatsapp}
-                      onChange={(e) => setBookingData({ ...bookingData, whatsapp: e.target.value })}
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <div style={{ width: "135px", position: "relative" }}>
+                        <select
+                          className="uc-form-input"
+                          style={{ width: "100%", paddingRight: "28px", appearance: "none" }}
+                          value={whatsappCode}
+                          onChange={(e) => setWhatsappCode(e.target.value)}
+                        >
+                          {sortedCountryCodes.map((c) => (
+                            <option key={`${c.code}-${c.name}`} value={c.code}>
+                              {c.flag} {c.code}
+                            </option>
+                          ))}
+                        </select>
+                        <i className="fas fa-chevron-down" style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}></i>
+                      </div>
+                      <input
+                        type="tel"
+                        placeholder="e.g. 501234567"
+                        className="uc-form-input"
+                        style={{ flex: 1 }}
+                        value={whatsappLocal}
+                        onChange={(e) => setWhatsappLocal(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1135,49 +1255,63 @@ export default function PublicHomePage() {
         </div>
 
         <div className="uc-offers-grid">
-          {offers.map((offer, idx) => (
-            <div key={idx} className="uc-offer-card">
-              <span className="uc-offer-card-badge">Special Promo</span>
-              <h3 className="uc-offer-card-vehicle">{offer.vehicle}</h3>
-              
-              {/* Vehicle Picture Frame */}
-              <div className="uc-offer-card-img-wrap">
-                <img 
-                  src={getVehicleImage(offer.vehicle, offer.image || offer.bg_image)} 
-                  alt={offer.vehicle || "Vehicle"} 
-                  className="uc-offer-card-img"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80";
-                  }}
-                />
-              </div>
+          {offers.map((offer, idx) => {
+            const specs = getVehicleSpecs(offer.vehicle);
+            return (
+              <div key={idx} className="uc-offer-card">
+                <span className="uc-offer-card-badge">Special Promo</span>
+                <h3 className="uc-offer-card-vehicle">{offer.vehicle}</h3>
+                
+                {/* Vehicle Picture Frame */}
+                <div className="uc-offer-card-img-wrap">
+                  <img 
+                    src={getVehicleImage(offer.vehicle, offer.image || offer.bg_image)} 
+                    alt={offer.vehicle || "Vehicle"} 
+                    className="uc-offer-card-img"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80";
+                    }}
+                  />
+                </div>
 
-              <div className="uc-offer-card-route">
-                <i className="fas fa-map-marker-alt"></i>
-                <span>{offer.route}</span>
+                <div className="uc-offer-card-route">
+                  <i className="fas fa-map-marker-alt"></i>
+                  <span>{offer.route}</span>
+                </div>
+
+                {/* Capacity badge details */}
+                <div style={{ display: "flex", gap: "10px", margin: "14px 0", justifyContent: "flex-start" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, color: "#c9d1d9", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px" }}>
+                    <i className="fas fa-users" style={{ color: "var(--uc-primary)" }}></i> {specs.seats}
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, color: "#c9d1d9", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", padding: "6px 10px" }}>
+                    <i className="fas fa-suitcase" style={{ color: "var(--uc-primary)" }}></i> {specs.luggage}
+                  </span>
+                </div>
+
+                <div className="uc-offer-card-price">{offer.price} SAR</div>
+                <span className="uc-offer-card-sub">Fuel, Driver, and Toll included</span>
+                <button
+                  onClick={() => {
+                    const r = (offer.route || "").includes(" to ") ? offer.route.split(" to ") : [offer.route, ""];
+                    setBookingData((prev) => ({
+                      ...prev,
+                      pickup: r[0] || "",
+                      destination: r[1] || "",
+                      carType: offer.vehicle,
+                      carPrice: offer.price
+                    }));
+                    setStep(1);
+                    document.getElementById("booking-wizard")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="uc-btn-outline"
+                  style={{ width: "100%", justifyContent: "center", fontSize: "13px" }}
+                >
+                  Select Offer
+                </button>
               </div>
-              <div className="uc-offer-card-price">{offer.price} SAR</div>
-              <span className="uc-offer-card-sub">Fuel, Driver, and Toll included</span>
-              <button
-                onClick={() => {
-                  const r = (offer.route || "").includes(" to ") ? offer.route.split(" to ") : [offer.route, ""];
-                  setBookingData((prev) => ({
-                    ...prev,
-                    pickup: r[0] || "",
-                    destination: r[1] || "",
-                    carType: offer.vehicle,
-                    carPrice: offer.price
-                  }));
-                  setStep(1);
-                  document.getElementById("booking-wizard")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="uc-btn-outline"
-                style={{ width: "100%", justifyContent: "center", fontSize: "13px" }}
-              >
-                Select Offer
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

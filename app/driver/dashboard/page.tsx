@@ -147,18 +147,18 @@ export default function DriverDashboardPage() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === "number" ? Number(value) : value
+      [name]: value
     }));
   };
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setEditFormData((prev: any) => ({
       ...prev,
-      [name]: type === "number" ? Number(value) : value
+      [name]: value
     }));
   };
 
@@ -254,6 +254,17 @@ export default function DriverDashboardPage() {
     const total = calculateTotal(formData);
     const payload = {
       ...formData,
+      rate: formData.rate === "" ? null : Number(formData.rate),
+      voucher: formData.voucher === "" ? null : Number(formData.voucher),
+      cash: formData.cash === "" ? null : Number(formData.cash),
+      fuel: formData.fuel === "" ? null : Number(formData.fuel),
+      parking: formData.parking === "" ? null : Number(formData.parking),
+      wash: formData.wash === "" ? null : Number(formData.wash),
+      oil_change: formData.oil_change === "" ? null : Number(formData.oil_change),
+      car_maintenance: formData.car_maintenance === "" ? null : Number(formData.car_maintenance),
+      waqas_received: formData.waqas_received === "" ? null : Number(formData.waqas_received),
+      pay_to_waqas: formData.pay_to_waqas === "" ? null : Number(formData.pay_to_waqas),
+      mic: formData.mic === "" ? null : Number(formData.mic),
       total,
       vehicle_id: formData.vehicle_id ? Number(formData.vehicle_id) : null
     };
@@ -362,6 +373,17 @@ export default function DriverDashboardPage() {
     const total = calculateTotal(editFormData);
     const payload = {
       ...editFormData,
+      rate: editFormData.rate === "" ? null : Number(editFormData.rate),
+      voucher: editFormData.voucher === "" ? null : Number(editFormData.voucher),
+      cash: editFormData.cash === "" ? null : Number(editFormData.cash),
+      fuel: editFormData.fuel === "" ? null : Number(editFormData.fuel),
+      parking: editFormData.parking === "" ? null : Number(editFormData.parking),
+      wash: editFormData.wash === "" ? null : Number(editFormData.wash),
+      oil_change: editFormData.oil_change === "" ? null : Number(editFormData.oil_change),
+      car_maintenance: editFormData.car_maintenance === "" ? null : Number(editFormData.car_maintenance),
+      waqas_received: editFormData.waqas_received === "" ? null : Number(editFormData.waqas_received),
+      pay_to_waqas: editFormData.pay_to_waqas === "" ? null : Number(editFormData.pay_to_waqas),
+      mic: editFormData.mic === "" ? null : Number(editFormData.mic),
       total,
       vehicle_id: editFormData.vehicle_id ? Number(editFormData.vehicle_id) : null
     };
@@ -1493,6 +1515,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Rate</label>
                   <input
                     type="number"
+                    step="any"
                     name="rate"
                     min="0"
                     value={formData.rate || ""}
@@ -1505,6 +1528,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Voucher</label>
                   <input
                     type="number"
+                    step="any"
                     name="voucher"
                     min="0"
                     value={formData.voucher || ""}
@@ -1517,6 +1541,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Cash</label>
                   <input
                     type="number"
+                    step="any"
                     name="cash"
                     min="0"
                     value={formData.cash || ""}
@@ -1529,6 +1554,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label" style={{ color: "#10b981", fontWeight: "700" }}>Received From Waqas</label>
                   <input
                     type="number"
+                    step="any"
                     name="waqas_received"
                     min="0"
                     value={formData.waqas_received || ""}
@@ -1549,6 +1575,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Fuel / Petrol</label>
                   <input
                     type="number"
+                    step="any"
                     name="fuel"
                     min="0"
                     value={formData.fuel || ""}
@@ -1561,6 +1588,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Parking</label>
                   <input
                     type="number"
+                    step="any"
                     name="parking"
                     min="0"
                     value={formData.parking || ""}
@@ -1573,6 +1601,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Car Wash</label>
                   <input
                     type="number"
+                    step="any"
                     name="wash"
                     min="0"
                     value={formData.wash || ""}
@@ -1585,6 +1614,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Oil Change</label>
                   <input
                     type="number"
+                    step="any"
                     name="oil_change"
                     min="0"
                     value={formData.oil_change || ""}
@@ -1600,6 +1630,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Maintenance</label>
                   <input
                     type="number"
+                    step="any"
                     name="car_maintenance"
                     min="0"
                     value={formData.car_maintenance || ""}
@@ -1612,6 +1643,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label" style={{ color: "#ef4444", fontWeight: "700" }}>Pay to Waqas</label>
                   <input
                     type="number"
+                    step="any"
                     name="pay_to_waqas"
                     min="0"
                     value={formData.pay_to_waqas || ""}
@@ -1624,6 +1656,7 @@ export default function DriverDashboardPage() {
                   <label className="sub-input-label">Miscellaneous</label>
                   <input
                     type="number"
+                    step="any"
                     name="mic"
                     min="0"
                     value={formData.mic || ""}
@@ -1757,28 +1790,28 @@ export default function DriverDashboardPage() {
                           {item.agent || "-"}
                         </td>
                         <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
-                          {Number(item.rate || 0).toFixed(0)} SAR
+                          {Number(item.rate || 0).toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
-                          {Number(item.voucher || 0).toFixed(0)} SAR
+                          {Number(item.voucher || 0).toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "right", fontWeight: 500, color: "var(--dark-color)", whiteSpace: "nowrap" }}>
-                          {Number(item.cash || 0).toFixed(0)} SAR
+                          {Number(item.cash || 0).toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "right", fontWeight: 600, color: "#10b981", whiteSpace: "nowrap" }}>
-                          {Number(item.waqas_received || 0).toFixed(0)} SAR
+                          {Number(item.waqas_received || 0).toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "right", color: "var(--danger-color)", whiteSpace: "nowrap" }}>
-                          {Number(item.fuel || 0).toFixed(0)} SAR
+                          {Number(item.fuel || 0).toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "right", color: "var(--danger-color)", fontWeight: 600, whiteSpace: "nowrap" }}>
-                          {Number(item.pay_to_waqas || 0).toFixed(0)} SAR
+                          {Number(item.pay_to_waqas || 0).toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "right", color: "var(--danger-color)", whiteSpace: "nowrap" }}>
-                          {totalExpenses.toFixed(0)} SAR
+                          {totalExpenses.toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "right", fontWeight: "bold", whiteSpace: "nowrap" }} className={Number(item.total || 0) >= 0 ? "text-success" : "text-danger"}>
-                          {Number(item.total || 0).toFixed(0)} SAR
+                          {Number(item.total || 0).toFixed(2)} SAR
                         </td>
                         <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                           {isLocked ? (
@@ -1983,6 +2016,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Rate</label>
                       <input
                         type="number"
+                        step="any"
                         name="rate"
                         min="0"
                         value={editFormData.rate}
@@ -1994,6 +2028,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Voucher</label>
                       <input
                         type="number"
+                        step="any"
                         name="voucher"
                         min="0"
                         value={editFormData.voucher}
@@ -2005,6 +2040,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Cash</label>
                       <input
                         type="number"
+                        step="any"
                         name="cash"
                         min="0"
                         value={editFormData.cash}
@@ -2019,6 +2055,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Pay to Waqas / Received From Waqas</label>
                       <input
                         type="number"
+                        step="any"
                         name="waqas_received"
                         min="0"
                         value={editFormData.waqas_received || ""}
@@ -2036,6 +2073,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Fuel / Petrol</label>
                       <input
                         type="number"
+                        step="any"
                         name="fuel"
                         min="0"
                         value={editFormData.fuel}
@@ -2047,6 +2085,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Parking</label>
                       <input
                         type="number"
+                        step="any"
                         name="parking"
                         min="0"
                         value={editFormData.parking}
@@ -2058,6 +2097,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Car Wash</label>
                       <input
                         type="number"
+                        step="any"
                         name="wash"
                         min="0"
                         value={editFormData.wash}
@@ -2069,6 +2109,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Oil Change</label>
                       <input
                         type="number"
+                        step="any"
                         name="oil_change"
                         min="0"
                         value={editFormData.oil_change}
@@ -2083,6 +2124,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Maintenance</label>
                       <input
                         type="number"
+                        step="any"
                         name="car_maintenance"
                         min="0"
                         value={editFormData.car_maintenance}
@@ -2094,6 +2136,7 @@ export default function DriverDashboardPage() {
                       <label className="sub-input-label">Pay to Waqas / Miscellaneous</label>
                       <input
                         type="number"
+                        step="any"
                         name="mic"
                         min="0"
                         value={editFormData.mic}

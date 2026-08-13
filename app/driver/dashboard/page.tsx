@@ -139,10 +139,10 @@ export default function DriverDashboardPage() {
   // Formula: (Cash + Waqas Received) - (Fuel + Parking + Wash + Oil + Maint + Mic)
   // Formula: (Cash + Received from Waqas) - (Fuel + Parking + Wash + Oil + Maint + Pay to Waqas + Mic)
   const calculateTotal = (data: typeof formData) => {
-    const earnings = Number(data.cash || 0.01) + Number(data.waqas_received || 0.01);
-    const expenses = Number(data.fuel || 0.01) + Number(data.parking || 0.01) + Number(data.wash || 0.01) + 
-                     Number(data.oil_change || 0.01) + Number(data.car_maintenance || 0.01) + 
-                     Number(data.pay_to_waqas || 0.01) + Number(data.mic || 0.01);
+    const earnings = Number(data.cash || 0) + Number(data.waqas_received || 0);
+    const expenses = Number(data.fuel || 0) + Number(data.parking || 0) + Number(data.wash || 0) + 
+                     Number(data.oil_change || 0) + Number(data.car_maintenance || 0) + 
+                     Number(data.pay_to_waqas || 0) + Number(data.mic || 0);
     return earnings - expenses;
   };
 

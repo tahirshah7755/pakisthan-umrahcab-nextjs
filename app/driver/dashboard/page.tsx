@@ -254,17 +254,18 @@ export default function DriverDashboardPage() {
     const total = calculateTotal(formData);
     const payload = {
       ...formData,
-      rate: formData.rate === "" ? null : Number(formData.rate),
-      voucher: formData.voucher === "" ? null : Number(formData.voucher),
-      cash: formData.cash === "" ? null : Number(formData.cash),
-      fuel: formData.fuel === "" ? null : Number(formData.fuel),
-      parking: formData.parking === "" ? null : Number(formData.parking),
-      wash: formData.wash === "" ? null : Number(formData.wash),
-      oil_change: formData.oil_change === "" ? null : Number(formData.oil_change),
-      car_maintenance: formData.car_maintenance === "" ? null : Number(formData.car_maintenance),
-      waqas_received: formData.waqas_received === "" ? null : Number(formData.waqas_received),
-      pay_to_waqas: formData.pay_to_waqas === "" ? null : Number(formData.pay_to_waqas),
-      mic: formData.mic === "" ? null : Number(formData.mic),
+
+      rate: String(formData.rate) === "" ? null : Number(formData.rate),
+      voucher: String(formData.voucher) === "" ? null : Number(formData.voucher),
+      cash: String(formData.cash) === "" ? null : Number(formData.cash),
+      fuel: String(formData.fuel) === "" ? null : Number(formData.fuel),
+      parking: String(formData.parking) === "" ? null : Number(formData.parking),
+      wash: String(formData.wash) === "" ? null : Number(formData.wash),
+      oil_change: String(formData.oil_change) === "" ? null : Number(formData.oil_change),
+      car_maintenance: String(formData.car_maintenance) === "" ? null : Number(formData.car_maintenance),
+      waqas_received: String(formData.waqas_received) === "" ? null : Number(formData.waqas_received),
+      pay_to_waqas: String(formData.pay_to_waqas) === "" ? null : Number(formData.pay_to_waqas),
+      mic: String(formData.mic) === "" ? null : Number(formData.mic),
       total,
       vehicle_id: formData.vehicle_id ? Number(formData.vehicle_id) : null
     };

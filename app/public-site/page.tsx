@@ -474,7 +474,8 @@ export default function PublicHomePage() {
           ...v,
           price,
           maxPassengers: meta.maxPassengers,
-          maxLuggage: meta.luggage ? parseInt(meta.luggage.replace(/[^0-9]/g, ""), 10) : 2
+          maxLuggage: meta.luggage ? parseInt(meta.luggage.replace(/[^0-9]/g, ""), 10) : 2,
+          image: null
         };
       });
     }

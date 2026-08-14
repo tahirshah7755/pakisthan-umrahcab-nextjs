@@ -442,7 +442,7 @@ function AddNewBookingContent() {
 
     // Resolve customer details from selection state securely
     const fullName = selectedCustomerObj ? selectedCustomerObj.name : "";
-    const whatsappContact = selectedCustomerObj?.contact ? selectedCustomerObj.contact.split(" (")[0] : "+966567799616";
+    const whatsappContact = selectedCustomerObj?.contact ? selectedCustomerObj.contact.split(" (")[0] : "+966501199008";
 
     // Call Laravel Backend API
     const res = await api.createBooking({

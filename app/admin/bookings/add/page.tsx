@@ -518,7 +518,7 @@ function AddNewBookingContent() {
 
     // Resolve customer details from selection state securely
     const fullName = selectedCustomerObj ? selectedCustomerObj.name : "";
-    const whatsappContact = selectedCustomerObj?.phone || selectedCustomerObj?.secondary_phone || selectedCustomerObj?.alternative_phone || "+966567799616";
+    const whatsappContact = selectedCustomerObj?.phone || selectedCustomerObj?.secondary_phone || selectedCustomerObj?.alternative_phone || "+966501199008";
     const customerEmail = selectedCustomerObj?.email || "";
 
     try {

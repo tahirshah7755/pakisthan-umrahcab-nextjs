@@ -1084,7 +1084,7 @@ export default function BookingsList() {
 function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen: boolean; onClose: () => void }) {
   const { settings: websiteSettings } = useWebsiteSettings();
   const siteTitle = websiteSettings?.site_title || "Official Voucher";
-  const sitePhone = websiteSettings?.contact_phone || "";
+  const sitePhone = websiteSettings?.contact_phone || "+966501199008";
 
   const [activeTab, setActiveTab] = useState<"driver" | "agent" | "client">("driver");
   const [copied, setCopied] = useState(false);

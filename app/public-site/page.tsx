@@ -1016,7 +1016,14 @@ export default function PublicHomePage() {
                     <select
                       className="uc-form-input"
                       value={bookingData.pickup}
-                      onChange={(e) => setBookingData({ ...bookingData, pickup: e.target.value })}
+                      onChange={(e) => {
+                        const newPickup = e.target.value;
+                        setBookingData((prev) => ({
+                          ...prev,
+                          pickup: newPickup,
+                          destination: ""
+                        }));
+                      }}
                     >
                       <option value="">Select location...</option>
                       {pickupOptions.map((loc) => (
@@ -1030,8 +1037,14 @@ export default function PublicHomePage() {
                       className="uc-form-input"
                       value={bookingData.destination}
                       onChange={(e) => setBookingData({ ...bookingData, destination: e.target.value })}
+                      disabled={!bookingData.pickup}
+                      style={{
+                        cursor: !bookingData.pickup ? "not-allowed" : "pointer",
+                        opacity: !bookingData.pickup ? 0.65 : 1,
+                        background: !bookingData.pickup ? "#f1f5f9" : undefined
+                      }}
                     >
-                      <option value="">Select location...</option>
+                      <option value="">{bookingData.pickup ? "Select location..." : "Select pickup location first..."}</option>
                       {destinationOptions.map((loc) => (
                         <option key={loc} value={loc}>{loc}</option>
                       ))}

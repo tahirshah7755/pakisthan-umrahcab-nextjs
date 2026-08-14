@@ -241,12 +241,15 @@ export default function PublicHomePage() {
   const pickupOptions = React.useMemo(() => {
     const set = new Set<string>();
     
-    // 1. Extract pickup side from all rates
+    // 1. Extract both sides from all rates to support bi-directional routes (e.g. Jeddah <-> Makkah)
     allRates.forEach((r) => {
       if (r.route) {
         const parts = r.route.split(/\s+to\s+/i);
         if (parts[0] && parts[0].trim()) {
           set.add(parts[0].trim());
+        }
+        if (parts[1] && parts[1].trim()) {
+          set.add(parts[1].trim());
         }
       }
     });
@@ -266,36 +269,41 @@ export default function PublicHomePage() {
     return Array.from(set);
   }, [allRates, detailedLocations, locationsList]);
 
-  // Dynamically compute available Drop-off destinations based on selected Pickup location & routes
+  // Dynamically compute available Drop-off destinations based on selected Pickup location & routes (supporting reverse routes)
   const destinationOptions = React.useMemo(() => {
     const set = new Set<string>();
 
     if (bookingData.pickup) {
       const selPickupClean = bookingData.pickup.trim().toLowerCase();
 
-      // Find destinations for the selected pickup location from allRates
+      // Find destinations for the selected pickup location from allRates (forward and reverse)
       allRates.forEach((r) => {
         if (r.route) {
           const parts = r.route.split(/\s+to\s+/i);
           if (parts.length === 2) {
             const pSide = parts[0].trim().toLowerCase();
-            const dSide = parts[1].trim();
+            const dSide = parts[1].trim().toLowerCase();
+
+            // Forward direction: pickup is on left side -> destination is on right side
             if (pSide === selPickupClean || selPickupClean.includes(pSide) || pSide.includes(selPickupClean)) {
-              set.add(dSide);
+              set.add(parts[1].trim());
+            }
+            // Reverse direction: pickup is on right side -> destination is on left side
+            if (dSide === selPickupClean || selPickupClean.includes(dSide) || dSide.includes(selPickupClean)) {
+              set.add(parts[0].trim());
             }
           }
         }
       });
     }
 
-    // If no pickup selected yet, or no specific route match found, gather all drop-off destinations from allRates
+    // If no pickup selected yet, or no specific route match found, gather all locations from allRates
     if (set.size === 0) {
       allRates.forEach((r) => {
         if (r.route) {
           const parts = r.route.split(/\s+to\s+/i);
-          if (parts[1] && parts[1].trim()) {
-            set.add(parts[1].trim());
-          }
+          if (parts[0] && parts[0].trim()) set.add(parts[0].trim());
+          if (parts[1] && parts[1].trim()) set.add(parts[1].trim());
         }
       });
 

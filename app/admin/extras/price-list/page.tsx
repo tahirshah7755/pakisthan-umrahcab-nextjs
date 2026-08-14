@@ -275,7 +275,7 @@ export default function PriceListMatrix() {
     }
   };
   const [newRoute, setNewRoute] = useState("");
-  const [locationsList, setLocationsList] = useState<string[]>([]);
+  const [locationsList, setLocationsList] = useState<any[]>([]);
   const [pickupLoc, setPickupLoc] = useState("");
   const [dropoffLoc, setDropoffLoc] = useState("");
   const [newDateFrom, setNewDateFrom] = useState("2026-06-01");
@@ -297,7 +297,7 @@ export default function PriceListMatrix() {
   useEffect(() => {
     async function loadLocs() {
       try {
-        const data = await api.getLocations();
+        const data = await api.getDetailedLocations();
         setLocationsList(data || []);
       } catch (e) {
         console.error("Failed to load locations for modal:", e);
@@ -317,7 +317,7 @@ export default function PriceListMatrix() {
       const res = await api.createLocation({ name: trimmed, type: "both" });
       if (res.success) {
         showToast(`Location "${trimmed}" added successfully!`, "success");
-        const fresh = await api.getLocations();
+        const fresh = await api.getDetailedLocations();
         setLocationsList(fresh || []);
         
         if (quickLocTarget === "pickup") {
@@ -350,6 +350,9 @@ export default function PriceListMatrix() {
       return;
     }
 
+    const pickupObj = locationsList.find(l => l.name === pickupLoc);
+    const destObj = locationsList.find(l => l.name === dropoffLoc);
+
     const formattedDates = `${newDateFrom} to ${newDateTo}`;
     const customPricesObj: Record<string, number> = {};
     activeVehicles.forEach((v: any) => {
@@ -361,6 +364,8 @@ export default function PriceListMatrix() {
     try {
       await createPriceList({
         route: newRoute.trim(),
+        pickup_id: pickupObj ? Number(pickupObj.id) : null,
+        destination_id: destObj ? Number(destObj.id) : null,
         sedan_price: Number(newRoutePrices["sedan"] || newRoutePrices["1"] || 300),
         sedan_dates: formattedDates,
         suv_price: Number(newRoutePrices["suv"] || newRoutePrices["3"] || 600),
@@ -1093,7 +1098,7 @@ export default function PriceListMatrix() {
                     >
                       <option value="">-- Select Pickup --</option>
                       {locationsList.map((loc) => (
-                        <option key={loc} value={loc}>{loc}</option>
+                        <option key={loc.id || loc} value={loc.name || loc}>{loc.name || loc}</option>
                       ))}
                     </select>
                   </div>
@@ -1145,7 +1150,7 @@ export default function PriceListMatrix() {
                     >
                       <option value="">-- Select Drop-off --</option>
                       {locationsList.map((loc) => (
-                        <option key={loc} value={loc}>{loc}</option>
+                        <option key={loc.id || loc} value={loc.name || loc}>{loc.name || loc}</option>
                       ))}
                     </select>
                   </div>

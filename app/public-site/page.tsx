@@ -6,6 +6,7 @@ import { api } from "@/utils/api";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 import { getSaudiTodayDate } from "@/utils/formatters";
 import { countryCodesList } from "@/utils/countriesData";
+import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 
 interface VehicleOption {
   name: string;
@@ -202,6 +203,7 @@ export default function PublicHomePage() {
 
   // Dynamic Data & Checkout States
   const [locationsList, setLocationsList] = useState<string[]>([]);
+  const [detailedLocations, setDetailedLocations] = useState<any[]>([]);
   const [allRates, setAllRates] = useState<any[]>([]);
   const [publicFleet, setPublicFleet] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -219,6 +221,9 @@ export default function PublicHomePage() {
         }
         // Deduplicate location names
         setLocationsList(Array.from(new Set(parsedLocs)));
+
+        const detailed = await api.getDetailedLocations();
+        setDetailedLocations(detailed || []);
         
         const rates = await api.getPublicRates();
         setAllRates(rates || []);
@@ -236,9 +241,38 @@ export default function PublicHomePage() {
   const findRouteMatch = (pickup: string, destination: string) => {
     if (!pickup || !destination || allRates.length === 0) return null;
 
+    // 1. Try ID-based route lookup first to support custom locations perfectly
+    const pickupObj = detailedLocations.find(l => l.name.toLowerCase() === pickup.toLowerCase());
+    const destObj = detailedLocations.find(l => l.name.toLowerCase() === destination.toLowerCase());
+
+    if (pickupObj && destObj) {
+      const idMatch = allRates.find(r => 
+        (Number(r.pickup_id) === Number(pickupObj.id) && Number(r.destination_id) === Number(destObj.id)) ||
+        (Number(r.pickup_id) === Number(destObj.id) && Number(r.destination_id) === Number(pickupObj.id))
+      );
+      if (idMatch) return idMatch;
+    }
+
+    // 2. Try Exact Name-based case-insensitive matching
+    const exactNameMatch = allRates.find(r => {
+      const parts = r.route.split(/\s+to\s+/i);
+      if (parts.length === 2) {
+        const pSide = parts[0].trim().toLowerCase();
+        const dSide = parts[1].trim().toLowerCase();
+        const pSel = pickup.trim().toLowerCase();
+        const dSel = destination.trim().toLowerCase();
+        return (pSide === pSel && dSide === dSel) || (pSide === dSel && dSide === pSel);
+      }
+      return false;
+    });
+    if (exactNameMatch) return exactNameMatch;
+
+    // 3. Fallback check: exact matches with cleaned strings
     const clean = (str: string) =>
       str
         .toLowerCase()
+        .replace(/jaddah/g, "jeddah")
+        .replace(/madina(?!h)/g, "madinah")
         .replace(/\(jed\)/g, "")
         .replace(/- terminal \d+/gi, "")
         .replace(/- north terminal/gi, "")
@@ -256,14 +290,13 @@ export default function PublicHomePage() {
     const match1 = `${pClean} to ${dClean}`;
     const match2 = `${dClean} to ${pClean}`;
 
-    // 1. Try exact match first
     const exact = allRates.find((r) => {
       const rClean = clean(r.route);
       return rClean === match1 || rClean === match2;
     });
     if (exact) return exact;
 
-    // 2. Score each route in allRates for the best match based on word overlap density
+    // 4. Score each route in allRates for the best match based on word overlap density
     let bestRoute: any = null;
     let bestScore = -1;
 
@@ -307,7 +340,7 @@ export default function PublicHomePage() {
 
     if (bestRoute) return bestRoute;
 
-    // 3. Fallback check: match main city/location keywords
+    // 5. Fallback check: match main city/location keywords
     const cities = ["jeddah", "makkah", "madinah", "taif", "yanbu"];
     const pCity = cities.find(c => pClean.includes(c));
     const dCity = cities.find(c => dClean.includes(c));
@@ -605,9 +638,10 @@ export default function PublicHomePage() {
         flight_no: bookingData.flightNo,
         notes: bookingData.notes
       });
-      if (res && res.invoice) {
+      const invObj = res?.invoice || res?.data?.invoice;
+      if (invObj && invObj.invoice_code) {
         alert("Your independent booking order has been created! Redirecting to secure invoice page.");
-        router.push(`/public-site/invoice/${res.invoice.invoice_code}`);
+        router.push(`/public-site/invoice/${invObj.invoice_code}`);
       } else {
         alert("Failed to create order. Please try again.");
       }
@@ -639,9 +673,26 @@ export default function PublicHomePage() {
   const currentActiveOffer = offers[activeOffer] || offers[0] || {};
   const activeSlideBg = currentActiveOffer.bg_image || currentActiveOffer.image || websiteSettings?.hero_bg_image || "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80";
 
+  const getBackendOrigin = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+    try {
+      const url = new URL(apiUrl);
+      return url.origin;
+    } catch (e) {
+      return "http://localhost:8000";
+    }
+  };
+
   const getVehicleImage = (vehicleName?: string, customImage?: string) => {
-    if (customImage && (customImage.startsWith("http") || customImage.startsWith("data:") || customImage.startsWith("/"))) {
-      return customImage;
+    if (customImage) {
+      if (customImage.startsWith("http") || customImage.startsWith("data:")) {
+        return customImage;
+      }
+      const origin = getBackendOrigin();
+      if (customImage.startsWith("/")) {
+        return `${origin}${customImage}`;
+      }
+      return `${origin}/${customImage}`;
     }
     const v = (vehicleName || "").toLowerCase();
     if (v.includes("camry") || v.includes("camery") || v.includes("sedan") || v.includes("sonata")) {
@@ -1050,8 +1101,15 @@ export default function PublicHomePage() {
                       key={v.name}
                       onClick={() => handleCarSelect(v.name, v.price)}
                       className={`uc-vehicle-card ${bookingData.carType === v.name ? "selected" : ""}`}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        minHeight: "330px"
+                      }}
                     >
-                      <div style={{ width: "100%", height: "135px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px", background: "transparent", overflow: "hidden", borderRadius: "10px" }}>
+                      <div style={{ width: "100%", height: "135px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "10px", background: "transparent", overflow: "hidden", borderRadius: "10px" }}>
                         <img 
                           src={getVehicleImage(v.name, v.image)} 
                           alt={v.name} 
@@ -1061,12 +1119,23 @@ export default function PublicHomePage() {
                           }}
                         />
                       </div>
-                      <div className="uc-vehicle-name">{v.name}</div>
-                      <div className="uc-vehicle-cap">
-                        {v.capacity} • {v.luggage}
+                      <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%" }}>
+                        <div className="uc-vehicle-name" style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>{v.name}</div>
+                        <div style={{ marginBottom: "8px" }}>
+                          <span style={{ display: "inline-block", fontSize: "11px", fontWeight: 700, color: "var(--uc-primary)", background: "rgba(200,168,75,0.1)", border: "1px solid rgba(200,168,75,0.2)", borderRadius: "12px", padding: "2px 8px" }}>
+                            {v.type}
+                          </span>
+                        </div>
+                        <div className="uc-vehicle-price" style={{ marginBottom: "12px" }}>{v.price} SAR</div>
                       </div>
-                      <div className="uc-vehicle-price">{v.price} SAR</div>
-                      <div style={{ fontSize: "11px", color: "var(--uc-muted)", marginTop: "4px", fontWeight: 600 }}>{v.type}</div>
+                      <div style={{ display: "flex", gap: "8px", justifyContent: "center", width: "100%", marginTop: "auto" }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 700, color: "#24292e", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "6px", padding: "4px 8px" }}>
+                          <i className="fas fa-users" style={{ color: "var(--uc-primary)" }}></i> {v.capacity}
+                        </span>
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "11px", fontWeight: 700, color: "#24292e", background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "6px", padding: "4px 8px" }}>
+                          <i className="fas fa-suitcase" style={{ color: "var(--uc-primary)" }}></i> {v.luggage}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1099,20 +1168,11 @@ export default function PublicHomePage() {
                   <div className="uc-form-group">
                     <label className="uc-form-label">WhatsApp Number *</label>
                     <div style={{ display: "flex", gap: "8px" }}>
-                      <div style={{ width: "135px", position: "relative" }}>
-                        <select
-                          className="uc-form-input"
-                          style={{ width: "100%", paddingRight: "28px", appearance: "none" }}
+                      <div style={{ width: "135px" }}>
+                        <CountryCodeSelector
                           value={whatsappCode}
-                          onChange={(e) => setWhatsappCode(e.target.value)}
-                        >
-                          {sortedCountryCodes.map((c) => (
-                            <option key={`${c.code}-${c.name}`} value={c.code}>
-                              {c.flag} {c.code}
-                            </option>
-                          ))}
-                        </select>
-                        <i className="fas fa-chevron-down" style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }}></i>
+                          onChange={(val) => setWhatsappCode(val)}
+                        />
                       </div>
                       <input
                         type="tel"

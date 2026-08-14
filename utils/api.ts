@@ -547,6 +547,11 @@ export const api = {
     return data || [];
   },
 
+  async getDetailedLocations() {
+    const data = await request(`/locations?detailed=true`);
+    return data || [];
+  },
+
   async getPublicRates() {
     const data = await request(`/public-rates`);
     return data || [];

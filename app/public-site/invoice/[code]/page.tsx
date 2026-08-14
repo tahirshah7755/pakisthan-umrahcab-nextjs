@@ -15,13 +15,6 @@ export default function PublicInvoicePage() {
   const [invoice, setInvoice] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
-
-  // Mock Card Fields
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
-  const [cardName, setCardName] = useState("");
 
   const fetchInvoice = async () => {
     try {
@@ -45,32 +38,6 @@ export default function PublicInvoicePage() {
       fetchInvoice();
     }
   }, [code]);
-
-  const handleSimulatePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cardName || !cardNumber || !cardExpiry || !cardCvv) {
-      alert("Please fill in all credit card fields for simulation.");
-      return;
-    }
-    setPaying(true);
-    // Simulate latency
-    setTimeout(async () => {
-      try {
-        const res = await api.payIndividualOrderInvoice(code);
-        if (res.success) {
-          alert("Payment Simulated Successfully! Your booking is now confirmed.");
-          fetchInvoice();
-        } else {
-          alert("Payment gateway rejected transaction.");
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Payment simulation failed.");
-      } finally {
-        setPaying(false);
-      }
-    }, 2000);
-  };
 
   if (loading) {
     return (
@@ -264,142 +231,6 @@ export default function PublicInvoicePage() {
             </div>
           </div>
         </div>
-
-        {/* Credit Card Simulation Form (Only show if Unpaid) */}
-        {!isPaid && (
-          <div className="invoice-card-box no-print" style={{
-            background: "#161b22", border: "1px solid #30363d", borderRadius: "16px", padding: "30px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)", marginTop: "25px"
-          }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#fff", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
-              <i className="fas fa-credit-card" style={{ color: "#3b82f6" }}></i> Secure Card Payment Checkout
-            </h3>
-            
-            <form onSubmit={handleSimulatePayment} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#8b949e", textTransform: "uppercase", marginBottom: "6px" }}>
-                  Cardholder Full Name
-                </label>
-                <input
-                  type="text"
-                  placeholder="John Doe"
-                  value={cardName}
-                  onChange={(e) => setCardName(e.target.value)}
-                  required
-                  style={{
-                    width: "100%", background: "#0d1117", border: "1px solid #30363d", borderRadius: "8px",
-                    padding: "12px 16px", color: "#fff", fontSize: "14px", outline: "none"
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#8b949e", textTransform: "uppercase", marginBottom: "6px" }}>
-                  Card Number
-                </label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="4111 2222 3333 4444"
-                    maxLength={19}
-                    value={cardNumber}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-                      const matches = v.match(/\d{4,16}/g);
-                      const match = (matches && matches[0]) || "";
-                      const parts = [];
-                      for (let i = 0, len = match.length; i < len; i += 4) {
-                        parts.push(match.substring(i, i + 4));
-                      }
-                      if (parts.length > 0) {
-                        setCardNumber(parts.join(" "));
-                      } else {
-                        setCardNumber(v);
-                      }
-                    }}
-                    required
-                    style={{
-                      width: "100%", background: "#0d1117", border: "1px solid #30363d", borderRadius: "8px",
-                      padding: "12px 16px 12px 42px", color: "#fff", fontSize: "14px", outline: "none"
-                    }}
-                  />
-                  <i className="fas fa-credit-card" style={{ position: "absolute", left: "16px", top: "15px", color: "#8b949e" }}></i>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#8b949e", textTransform: "uppercase", marginBottom: "6px" }}>
-                    Expiry Date
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="MM/YY"
-                    maxLength={5}
-                    value={cardExpiry}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-                      if (v.length >= 2) {
-                        setCardExpiry(v.substring(0, 2) + "/" + v.substring(2, 4));
-                      } else {
-                        setCardExpiry(v);
-                      }
-                    }}
-                    required
-                    style={{
-                      width: "100%", background: "#0d1117", border: "1px solid #30363d", borderRadius: "8px",
-                      padding: "12px 16px", color: "#fff", fontSize: "14px", outline: "none"
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#8b949e", textTransform: "uppercase", marginBottom: "6px" }}>
-                    CVV / Security Code
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="***"
-                    maxLength={3}
-                    value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, ""))}
-                    required
-                    style={{
-                      width: "100%", background: "#0d1117", border: "1px solid #30363d", borderRadius: "8px",
-                      padding: "12px 16px", color: "#fff", fontSize: "14px", outline: "none"
-                    }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={paying}
-                style={{
-                  background: paying ? "#1e293b" : "#3b82f6", border: "none", color: "#fff",
-                  padding: "14px 20px", borderRadius: "8px", fontWeight: "700", cursor: paying ? "not-allowed" : "pointer",
-                  marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                  transition: "background 0.2s"
-                }}
-              >
-                {paying ? (
-                  <>
-                    <div style={{
-                      width: "18px", height: "18px", border: "2px solid rgba(255,255,255,0.2)",
-                      borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite"
-                    }}></div>
-                    <span>Processing Mock payment...</span>
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-lock"></i>
-                    <span>Simulate Payment of {invoice.balance} SAR</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        )}
       </div>
     </div>
   );

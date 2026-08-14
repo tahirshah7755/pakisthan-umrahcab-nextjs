@@ -4,6 +4,17 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetFleetQuery, useAddFleetMutation, useUpdateFleetMutation, useDeleteFleetMutation } from "@/store/api/fleetApi";
 
+const getImageUrl = (path?: string) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("blob:") || path.startsWith("data:")) {
+    return path;
+  }
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+  const backendBase = API_BASE.split("/api")[0];
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${backendBase}${cleanPath}`;
+};
+
 export default function FleetManagementPage() {
   const router = useRouter();
   const { data: fleetResponse, isLoading } = useGetFleetQuery(undefined);
@@ -279,7 +290,24 @@ export default function FleetManagementPage() {
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                           <div style={{ width: "50px", height: "34px", borderRadius: "6px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#312e81", overflow: "hidden", border: "1px solid #e2e8f0" }}>
                             {f.image ? (
-                              <img src={f.image} alt={f.model} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              <img
+                                src={getImageUrl(f.image)}
+                                alt={f.model}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                onError={(e) => {
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+                                  const fallbackUrl = `${API_BASE}/view-file?path=${encodeURIComponent(f.image)}`;
+                                  if (target.src !== fallbackUrl) {
+                                    target.src = fallbackUrl;
+                                  } else {
+                                    target.style.display = "none";
+                                    if (target.parentElement) {
+                                      target.parentElement.innerHTML = '<i class="fas fa-car-side" style="font-size: 14px; color: #312e81;"></i>';
+                                    }
+                                  }
+                                }}
+                              />
                             ) : (
                               <i className="fas fa-car-side" style={{ fontSize: "14px" }}></i>
                             )}
@@ -417,7 +445,7 @@ export default function FleetManagementPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <div style={{ width: "80px", height: "54px", borderRadius: "8px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #cbd5e1", overflow: "hidden", flexShrink: 0 }}>
                     {newImagePreview ? (
-                      <img src={newImagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={getImageUrl(newImagePreview)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <i className="fas fa-image" style={{ color: "#94a3b8", fontSize: "20px" }}></i>
                     )}
@@ -513,7 +541,7 @@ export default function FleetManagementPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <div style={{ width: "80px", height: "54px", borderRadius: "8px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #cbd5e1", overflow: "hidden", flexShrink: 0 }}>
                     {editImagePreview ? (
-                      <img src={editImagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={getImageUrl(editImagePreview)} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <i className="fas fa-image" style={{ color: "#94a3b8", fontSize: "20px" }}></i>
                     )}

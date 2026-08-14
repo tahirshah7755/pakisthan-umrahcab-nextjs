@@ -29,14 +29,34 @@ export default function FleetManagementPage() {
   const [newModel, setNewModel] = useState("");
   const [newCapacity, setNewCapacity] = useState<number>(4);
   const [newLuggage, setNewLuggage] = useState<number>(2);
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [newImagePreview, setNewImagePreview] = useState<string>("");
 
   // Edit Modal state
   const [editingVehicle, setEditingVehicle] = useState<any | null>(null);
   const [editCapacity, setEditCapacity] = useState<number>(4);
   const [editLuggage, setEditLuggage] = useState<number>(2);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string>("");
 
   // Delete Confirmation state
   const [deletingVehicle, setDeletingVehicle] = useState<any | null>(null);
+
+  const handleNewImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setNewImageFile(file);
+      setNewImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setEditImageFile(file);
+      setEditImagePreview(URL.createObjectURL(file));
+    }
+  };
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -47,6 +67,8 @@ export default function FleetManagementPage() {
     setEditingVehicle(vehicle);
     setEditCapacity(vehicle.capacity || 4);
     setEditLuggage(vehicle.luggage || 2);
+    setEditImageFile(null);
+    setEditImagePreview(vehicle.image || "");
   };
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -57,18 +79,24 @@ export default function FleetManagementPage() {
     }
 
     try {
-      await addFleet({
-        model: newModel,
-        count: 10,
-        active: 5,
-        capacity: newCapacity,
-        luggage: newLuggage,
-      }).unwrap();
+      const formData = new FormData();
+      formData.append("model", newModel);
+      formData.append("count", "10");
+      formData.append("active", "5");
+      formData.append("capacity", String(newCapacity));
+      formData.append("luggage", String(newLuggage));
+      if (newImageFile) {
+        formData.append("image", newImageFile);
+      }
+
+      await addFleet(formData).unwrap();
       showToast(`${newModel} added to fleet successfully!`, "success");
       setIsAddOpen(false);
       setNewModel("");
       setNewCapacity(4);
       setNewLuggage(2);
+      setNewImageFile(null);
+      setNewImagePreview("");
     } catch (err: any) {
       console.error(err);
       showToast(err?.data?.message || "Failed to add vehicle to fleet.", "error");
@@ -80,15 +108,24 @@ export default function FleetManagementPage() {
     if (!editingVehicle) return;
 
     try {
+      const formData = new FormData();
+      formData.append("_method", "PUT");
+      formData.append("count", String(editingVehicle.count || 10));
+      formData.append("active", String(editingVehicle.active || 5));
+      formData.append("capacity", String(editCapacity));
+      formData.append("luggage", String(editLuggage));
+      if (editImageFile) {
+        formData.append("image", editImageFile);
+      }
+
       await updateFleet({
         id: editingVehicle.id,
-        count: editingVehicle.count || 10,
-        active: editingVehicle.active || 5,
-        capacity: editCapacity,
-        luggage: editLuggage,
+        body: formData,
       }).unwrap();
       showToast(`${editingVehicle.model} specs updated successfully!`, "success");
       setEditingVehicle(null);
+      setEditImageFile(null);
+      setEditImagePreview("");
     } catch (err: any) {
       console.error(err);
       showToast(err?.data?.message || "Failed to update vehicle specs.", "error");
@@ -239,9 +276,13 @@ export default function FleetManagementPage() {
                   fleetList.map((f: any, i: number) => (
                     <tr key={f.id || i} style={{ borderBottom: "1px solid #f1f5f9", transition: "background 0.15s" }}>
                       <td style={{ padding: "16px 20px", fontWeight: "700", color: "#0f172a" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#312e81" }}>
-                            <i className="fas fa-car-side"></i>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <div style={{ width: "50px", height: "34px", borderRadius: "6px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", color: "#312e81", overflow: "hidden", border: "1px solid #e2e8f0" }}>
+                            {f.image ? (
+                              <img src={f.image} alt={f.model} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <i className="fas fa-car-side" style={{ fontSize: "14px" }}></i>
+                            )}
                           </div>
                           <span>{f.model}</span>
                         </div>
@@ -371,10 +412,33 @@ export default function FleetManagementPage() {
                 </div>
               </div>
 
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Vehicle Image</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: "80px", height: "54px", borderRadius: "8px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #cbd5e1", overflow: "hidden", flexShrink: 0 }}>
+                    {newImagePreview ? (
+                      <img src={newImagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <i className="fas fa-image" style={{ color: "#94a3b8", fontSize: "20px" }}></i>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleNewImageChange}
+                    style={{ fontSize: "13px", width: "100%" }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
                 <button
                   type="button"
-                  onClick={() => setIsAddOpen(false)}
+                  onClick={() => {
+                    setIsAddOpen(false);
+                    setNewImageFile(null);
+                    setNewImagePreview("");
+                  }}
                   style={{ background: "transparent", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "10px 20px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
                 >
                   Cancel
@@ -444,10 +508,33 @@ export default function FleetManagementPage() {
                 </div>
               </div>
 
+              <div>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>Vehicle Image</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: "80px", height: "54px", borderRadius: "8px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #cbd5e1", overflow: "hidden", flexShrink: 0 }}>
+                    {editImagePreview ? (
+                      <img src={editImagePreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <i className="fas fa-image" style={{ color: "#94a3b8", fontSize: "20px" }}></i>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditImageChange}
+                    style={{ fontSize: "13px", width: "100%" }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
                 <button
                   type="button"
-                  onClick={() => setEditingVehicle(null)}
+                  onClick={() => {
+                    setEditingVehicle(null);
+                    setEditImageFile(null);
+                    setEditImagePreview("");
+                  }}
                   style={{ background: "transparent", color: "#64748b", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "10px 20px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
                 >
                   Cancel

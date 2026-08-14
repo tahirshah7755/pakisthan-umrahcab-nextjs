@@ -418,7 +418,8 @@ export default function PublicHomePage() {
           maxPassengers: maxPassengers,
           maxLuggage: maxLuggage,
           price: price,
-          icon: meta.icon
+          icon: meta.icon,
+          image: f.image
         };
       });
     } else {
@@ -1052,7 +1053,7 @@ export default function PublicHomePage() {
                     >
                       <div style={{ width: "100%", height: "135px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px", background: "transparent", overflow: "hidden", borderRadius: "10px" }}>
                         <img 
-                          src={getVehicleImage(v.name)} 
+                          src={getVehicleImage(v.name, v.image)} 
                           alt={v.name} 
                           style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.15))", transition: "transform 0.3s ease" }}
                           onError={(e) => {

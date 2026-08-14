@@ -237,6 +237,83 @@ export default function PublicHomePage() {
     loadPublicData();
   }, []);
 
+  // Dynamically compute available Pickup locations from configured routes and locations database
+  const pickupOptions = React.useMemo(() => {
+    const set = new Set<string>();
+    
+    // 1. Extract pickup side from all rates
+    allRates.forEach((r) => {
+      if (r.route) {
+        const parts = r.route.split(/\s+to\s+/i);
+        if (parts[0] && parts[0].trim()) {
+          set.add(parts[0].trim());
+        }
+      }
+    });
+
+    // 2. Add detailed locations marked as 'pickup' or 'both'
+    detailedLocations.forEach((l) => {
+      if (l.type === 'pickup' || l.type === 'both' || !l.type) {
+        set.add(l.name.trim());
+      }
+    });
+
+    // 3. Fallback to locationsList if set is empty
+    if (set.size === 0) {
+      locationsList.forEach((loc) => set.add(loc.trim()));
+    }
+
+    return Array.from(set);
+  }, [allRates, detailedLocations, locationsList]);
+
+  // Dynamically compute available Drop-off destinations based on selected Pickup location & routes
+  const destinationOptions = React.useMemo(() => {
+    const set = new Set<string>();
+
+    if (bookingData.pickup) {
+      const selPickupClean = bookingData.pickup.trim().toLowerCase();
+
+      // Find destinations for the selected pickup location from allRates
+      allRates.forEach((r) => {
+        if (r.route) {
+          const parts = r.route.split(/\s+to\s+/i);
+          if (parts.length === 2) {
+            const pSide = parts[0].trim().toLowerCase();
+            const dSide = parts[1].trim();
+            if (pSide === selPickupClean || selPickupClean.includes(pSide) || pSide.includes(selPickupClean)) {
+              set.add(dSide);
+            }
+          }
+        }
+      });
+    }
+
+    // If no pickup selected yet, or no specific route match found, gather all drop-off destinations from allRates
+    if (set.size === 0) {
+      allRates.forEach((r) => {
+        if (r.route) {
+          const parts = r.route.split(/\s+to\s+/i);
+          if (parts[1] && parts[1].trim()) {
+            set.add(parts[1].trim());
+          }
+        }
+      });
+
+      detailedLocations.forEach((l) => {
+        if (l.type === 'destination' || l.type === 'both') {
+          set.add(l.name.trim());
+        }
+      });
+    }
+
+    // Exclude selected pickup location from drop-off destination list
+    if (bookingData.pickup) {
+      set.delete(bookingData.pickup.trim());
+    }
+
+    return Array.from(set);
+  }, [bookingData.pickup, allRates, detailedLocations]);
+
   // Helper to find pricing route match with smart location normalization
   const findRouteMatch = (pickup: string, destination: string) => {
     if (!pickup || !destination || allRates.length === 0) return null;
@@ -942,7 +1019,7 @@ export default function PublicHomePage() {
                       onChange={(e) => setBookingData({ ...bookingData, pickup: e.target.value })}
                     >
                       <option value="">Select location...</option>
-                      {locationsList.map((loc) => (
+                      {pickupOptions.map((loc) => (
                         <option key={loc} value={loc}>{loc}</option>
                       ))}
                     </select>
@@ -955,7 +1032,7 @@ export default function PublicHomePage() {
                       onChange={(e) => setBookingData({ ...bookingData, destination: e.target.value })}
                     >
                       <option value="">Select location...</option>
-                      {locationsList.map((loc) => (
+                      {destinationOptions.map((loc) => (
                         <option key={loc} value={loc}>{loc}</option>
                       ))}
                     </select>

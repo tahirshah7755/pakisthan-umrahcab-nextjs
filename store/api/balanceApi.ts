@@ -10,7 +10,7 @@ export const balanceApi = apiSlice.injectEndpoints({
         const qs = new URLSearchParams(p).toString();
         return `/balance/summary${qs ? `?${qs}` : ""}`;
       },
-      providesTags: ["Ledgers", "Invoices", "Payments", "Companies"],
+      providesTags: ["Ledgers", "Invoices", "Payments", "Companies", "Bookings", "Customers", "Services", "Followups"],
     }),
   }),
 });

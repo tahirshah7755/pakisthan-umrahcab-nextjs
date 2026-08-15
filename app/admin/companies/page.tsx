@@ -181,11 +181,7 @@ export default function CompaniesPage() {
             invoice: !!c.invoice
           })));
         } else {
-          // Fallback corporate list
-          setCompanies([
-            { id: "#COM-1", name: "Zahid Travels", email: "zahid@travels.com", phone: "+966501234567", address: "Jeddah", vouchers: true, reminders: true, invoice: true },
-            { id: "#COM-2", name: "Al-Latif Group", email: "contact@allatif.com", phone: "+966549876543", address: "Makkah", vouchers: true, reminders: false, invoice: true }
-          ]);
+          setCompanies([]);
         }
       } catch (err) {
         console.error(err);

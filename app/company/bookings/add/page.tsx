@@ -148,21 +148,7 @@ function AddNewBookingContent() {
     if (locationsList && locationsList.length > 0) {
       return locationsList;
     }
-    const fallbackLocations = [
-      "Jeddah Airport (JED) - Terminal 1",
-      "Jeddah Airport (JED) - North Terminal",
-      "Makkah Hotel",
-      "Madinah Hotel",
-      "Jeddah Hotel",
-      "Makkah Station (Haramain)",
-      "Madinah Station (Haramain)",
-      "Jeddah Station (Haramain)",
-      "Madinah Haram",
-      "Makkah Haram",
-      "Yanbu",
-      "Taif"
-    ];
-    return fallbackLocations;
+    return [];
   }, [locationsList]);
 
 
@@ -220,17 +206,7 @@ function AddNewBookingContent() {
         } else if (fleetData && Array.isArray(fleetData.data) && fleetData.data.length > 0) {
           setVehiclesList(fleetData.data.map((f: any) => f.model));
         } else {
-          setVehiclesList([
-            "Sedan CORE",
-            "Hyundai Staria CORE",
-            "Hyundai Starex CORE",
-            "GMC XL Yukon CORE",
-            "Hiace Grand Cabin CORE",
-            "Coaster CORE",
-            "Bus CORE",
-            "Luxury Bus CORE",
-            "SUV",
-          ]);
+          setVehiclesList([]);
         }
 
         // Map price list routes/packages dynamically
@@ -249,12 +225,7 @@ function AddNewBookingContent() {
         if (rawList.length > 0) {
           setPackagesList(rawList.map((p: any) => p.route));
         } else {
-          setPackagesList([
-            "Jeddah Airport to Makkah Hotel ★ (جدہ ایئرپورٹ سے مکہ ہوٹل)",
-            "Makkah Hotel to Jeddah Airport ★ (مکہ ہوٹل سے جدہ ایئرپورٹ)",
-            "Jeddah Airport to Madinah Hotel (جدہ ایئرپورٹ سے مدینہ ہوٹل)",
-            "4 in 1 Tour: Kiswah Factory + Makkah Museum + Hira Museum + Holy Quran Museum (ان ۱ ٹور)",
-          ]);
+          setPackagesList([]);
         }
       } catch (err) {
         console.error("Failed to load vehicle/package dynamic lists:", err);

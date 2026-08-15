@@ -287,21 +287,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     if (locationsList && locationsList.length > 0) {
       return locationsList;
     }
-    const fallbackLocations = [
-      "Jeddah Airport (JED) - Terminal 1",
-      "Jeddah Airport (JED) - North Terminal",
-      "Makkah Hotel",
-      "Madinah Hotel",
-      "Jeddah Hotel",
-      "Makkah Station (Haramain)",
-      "Madinah Station (Haramain)",
-      "Jeddah Station (Haramain)",
-      "Madinah Haram",
-      "Makkah Haram",
-      "Yanbu",
-      "Taif"
-    ];
-    return fallbackLocations;
+    return [];
   }, [locationsList]);
 
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -486,17 +472,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         } else if (fleetData && Array.isArray(fleetData.data) && fleetData.data.length > 0) {
           setVehiclesList(fleetData.data.map((f: any) => f.model));
         } else {
-          setVehiclesList([
-            "Sedan CORE",
-            "Hyundai Staria CORE",
-            "Hyundai Starex CORE",
-            "GMC XL Yukon CORE",
-            "Hiace Grand Cabin CORE",
-            "Coaster CORE",
-            "Bus CORE",
-            "Luxury Bus CORE",
-            "SUV",
-          ]);
+          setVehiclesList([]);
         }
 
         // Map price list routes/packages dynamically
@@ -515,19 +491,14 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
         if (rawList.length > 0) {
           setPackagesList(rawList.map((p: any) => p.route));
         } else {
-          setPackagesList([
-            "Jeddah Airport to Makkah Hotel ★ (جدہ ایئرپورٹ سے مکہ ہوٹل)",
-            "Makkah Hotel to Jeddah Airport ★ (مکہ ہوٹل سے جدہ ایئرپورٹ)",
-            "Jeddah Airport to Madinah Hotel (جدہ ایئرپورٹ سے مدینہ ہوٹل)",
-            "4 in 1 Tour: Kiswah Factory + Makkah Museum + Hira Museum + Holy Quran Museum (ان ۱ ٹور)",
-          ]);
+          setPackagesList([]);
         }
 
         // Map hotels dynamically
         if (Array.isArray(hotelsData) && hotelsData.length > 0) {
           setHotelsList(hotelsData);
         } else {
-          setHotelsList(mockHotels);
+          setHotelsList([]);
         }
       } catch (err) {
         console.error("Failed to load dynamic data in AddCustomerForm:", err);

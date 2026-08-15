@@ -114,25 +114,6 @@ export default function RemindersPage() {
 
   const handleOpenHistory = async (row: any) => {
     setHistoryModal({ show: true, row, logs: [] });
-    
-    // Fallback logic for mock entries
-    if (row.rawId === "9710" || row.rawId === "9711" || row.rawId === "9843" || row.rawId === "001" || row.rawId === "002" || row.rawId === "9845" || row.rawId === "003") {
-      setHistoryModal({
-        show: true,
-        row,
-        logs: [
-          {
-            id: 1,
-            reminder_type: 1,
-            recipient: row.phones[0] || "+966501234567",
-            driver_name: row.driverName || "N/A",
-            driver_trip_status: row.driverTripStatus || "Assigned",
-            created_at: new Date().toISOString()
-          }
-        ]
-      });
-      return;
-    }
 
     try {
       setLoadingHistory(true);

@@ -820,6 +820,38 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     }
   };
 
+  const cleanNotes = (notesStr: string | null | undefined) => {
+    if (!notesStr) return "";
+    let text = String(notesStr).trim();
+
+    // If structured admin notes string containing pipe separators
+    if (text.includes("|")) {
+      const extMatch = text.match(/External Notes:\s*([^|]*)/i);
+      const flightMatch = text.match(/Flight No:\s*([^|]*)/i);
+      
+      let extNotes = extMatch ? extMatch[1].trim() : "";
+      let flightNo = flightMatch ? flightMatch[1].trim() : "";
+
+      if (/^(none|n\/a|-|null|undefined)$/i.test(extNotes)) extNotes = "";
+      if (/^(none|n\/a|-|null|undefined)$/i.test(flightNo)) flightNo = "";
+
+      const parts = [];
+      if (flightNo) parts.push(`Flight No: ${flightNo}`);
+      if (extNotes) parts.push(extNotes);
+      return parts.join(" | ");
+    }
+
+    // Remove any internal management keywords if raw string
+    let cleaned = text
+      .replace(/(Discount|Price Before Discount|Discount Reason|Internal Notes|Tafweej Required|Received Amount|Pending Amount|Timing Status|Booking Status|Vehicle|Route|Passengers|Bags|Cash to Receive|Payment Method):[^\n|]*/gi, "")
+      .replace(/\|\s*\|/g, "|")
+      .replace(/^[\s|:]+|[\s|:]+$/g, "")
+      .trim();
+
+    if (/^(none|n\/a|-|null|undefined)$/i.test(cleaned)) return "";
+    return cleaned;
+  };
+
   const getDriverCopy = (b: any) => {
     const bookingCode = b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : (b.custom_id ? String(b.custom_id).replace(/UCB-/gi, "HCB-") : `HCB-${10000 + Number(b.id || 0)}`);
     const guestName = b.full_name || b.customer_relation?.name || "Guest";
@@ -834,14 +866,25 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     let cashPending = 0;
     const isCash = (b.payment_method === "Cash" || b.paymentMethod === "Cash");
     if (isCash) {
-      cashPending = b.pending_amount !== undefined && b.pending_amount !== null 
-        ? Number(b.pending_amount) 
-        : (b.pendingAmount !== undefined && b.pendingAmount !== null ? Number(b.pendingAmount) : Number(b.car_price || b.finalPrice || 0));
+      if (b.pending_amount !== undefined && b.pending_amount !== null && b.pending_amount !== "") {
+        cashPending = Math.max(0, Number(b.pending_amount));
+      } else if (b.pendingAmount !== undefined && b.pendingAmount !== null && b.pendingAmount !== "") {
+        cashPending = Math.max(0, Number(b.pendingAmount));
+      } else if (b.cash_to_receive !== undefined && b.cash_to_receive !== null && b.cash_to_receive !== "") {
+        cashPending = Math.max(0, Number(b.cash_to_receive));
+      } else {
+        cashPending = Math.max(0, Number(b.car_price || b.finalPrice || 0));
+      }
     } else {
-      cashPending = b.cash_to_receive ? Number(b.cash_to_receive) : 0;
+      cashPending = 0;
     }
 
-    const extraInfo = b.notes || (b.flight_no ? `Flight No: ${b.flight_no}` : "");
+    let extraInfo = cleanNotes(b.external_notes || b.externalNotes || b.notes);
+    if (!extraInfo && b.flight_no) {
+      extraInfo = `Flight No: ${b.flight_no}`;
+    } else if (!extraInfo && b.flightNo) {
+      extraInfo = `Flight No: ${b.flightNo}`;
+    }
 
     return `★ ${siteTitle} ★
 ★ Driver Voucher ★
@@ -891,14 +934,25 @@ Pickup Details:
     let cashPending = 0;
     const isCash = (b.payment_method === "Cash" || b.paymentMethod === "Cash");
     if (isCash) {
-      cashPending = b.pending_amount !== undefined && b.pending_amount !== null 
-        ? Number(b.pending_amount) 
-        : (b.pendingAmount !== undefined && b.pendingAmount !== null ? Number(b.pendingAmount) : Number(b.car_price || b.finalPrice || 0));
+      if (b.pending_amount !== undefined && b.pending_amount !== null && b.pending_amount !== "") {
+        cashPending = Math.max(0, Number(b.pending_amount));
+      } else if (b.pendingAmount !== undefined && b.pendingAmount !== null && b.pendingAmount !== "") {
+        cashPending = Math.max(0, Number(b.pendingAmount));
+      } else if (b.cash_to_receive !== undefined && b.cash_to_receive !== null && b.cash_to_receive !== "") {
+        cashPending = Math.max(0, Number(b.cash_to_receive));
+      } else {
+        cashPending = Math.max(0, Number(b.car_price || b.finalPrice || 0));
+      }
     } else {
-      cashPending = b.cash_to_receive ? Number(b.cash_to_receive) : 0;
+      cashPending = 0;
     }
 
-    const extraInfo = b.notes || (b.flight_no ? `Flight No: ${b.flight_no}` : "");
+    let extraInfo = cleanNotes(b.external_notes || b.externalNotes || b.notes);
+    if (!extraInfo && b.flight_no) {
+      extraInfo = `Flight No: ${b.flight_no}`;
+    } else if (!extraInfo && b.flightNo) {
+      extraInfo = `Flight No: ${b.flightNo}`;
+    }
 
     return `★ Customer Voucher ★
 

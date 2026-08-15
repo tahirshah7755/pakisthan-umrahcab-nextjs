@@ -1156,7 +1156,9 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     const bookingCode = b.id || (b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : "HCB-10001");
     const guestName = b.customerName || b.full_name || "Guest";
     const phone = b.whatsapp || b.phone || b.contact || "N/A";
-    const passengers = b.passengers ? `${b.passengers} Passengers` : "N/A";
+    const rawPax = b.passengers !== undefined && b.passengers !== null ? String(b.passengers) : "";
+    const paxDigits = rawPax.replace(/[^0-9]/g, "");
+    const passengers = paxDigits || rawPax || "N/A";
     const pickup = b.pickupLocation || b.pickup || "N/A";
     const dropoff = b.dropoffLocation || b.destination || "N/A";
     const pDate = formatDateVoucher(b.pickupDate || b.date);
@@ -1186,8 +1188,7 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
       extraInfo = `Flight No: ${b.flight_no}`;
     }
 
-    return `★ ${siteTitle} ★
-★ Driver Voucher ★
+    return `★ Driver Voucher ★
 👤 Guest Name: ${guestName}
 
 📄 PNR No: ${bookingCode}
@@ -1220,7 +1221,9 @@ Pickup Details:
     const bookingCode = b.id || (b.booking_code ? String(b.booking_code).replace(/UCB-/gi, "HCB-") : "HCB-10001");
     const guestName = b.customerName || b.full_name || "Guest";
     const phone = b.whatsapp || b.phone || b.contact || "N/A";
-    const passengers = b.passengers ? `${b.passengers} Passengers` : "N/A";
+    const rawPax = b.passengers !== undefined && b.passengers !== null ? String(b.passengers) : "";
+    const paxDigits = rawPax.replace(/[^0-9]/g, "");
+    const passengers = paxDigits || rawPax || "N/A";
     const pickup = b.pickupLocation || b.pickup || "N/A";
     const dropoff = b.dropoffLocation || b.destination || "N/A";
     const pDate = formatDateVoucher(b.pickupDate || b.date);

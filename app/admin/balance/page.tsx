@@ -680,14 +680,14 @@ export default function BalancePage() {
                 </tbody>
                 {rows.length > 0 && (
                   <tfoot>
-                    <tr style={{ background: "#0f172a", borderTop: "2px solid #b48a1d", fontWeight: 800, color: "#ffffff" }}>
-                      <td style={{ paddingLeft: "16px", color: "#ffffff" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
-                      <td style={{ color: "#d4af37", fontWeight: 800 }}>{fmt(totalLedgerBalance)}</td>
+                    <tr style={{ background: "#f8fafc", borderTop: "3px solid #1e5cff", borderBottom: "2px solid #cbd5e1", fontWeight: 800 }}>
+                      <td style={{ paddingLeft: "16px", color: "#0f172a", fontSize: "13px", fontWeight: 800, padding: "14px 16px" }} colSpan={4}>TOTALS ({rows.length} companies)</td>
+                      <td style={{ color: "#1e5cff", fontWeight: 800, fontSize: "13px", padding: "14px 8px" }}>{fmt(totalLedgerBalance)}</td>
                       <td colSpan={4}></td>
-                      <td style={{ color: "#ffffff", fontWeight: 800 }}>{fmt(totals.total_business)}</td>
+                      <td style={{ color: "#0f172a", fontWeight: 800, fontSize: "13px", padding: "14px 8px" }}>{fmt(totals.total_business)}</td>
                       <td colSpan={6}></td>
-                      <td style={{ color: "#f43f5e", fontWeight: 800 }}>{fmt(totals.total_rec_vw)}</td>
-                      <td style={{ color: "#fbbf24", fontWeight: 800 }}>{fmt(totals.total_rec_pw)}</td>
+                      <td style={{ color: "#dc2626", fontWeight: 800, fontSize: "13px", padding: "14px 8px" }}>{fmt(totals.total_rec_vw)}</td>
+                      <td style={{ color: "#ea580c", fontWeight: 800, fontSize: "13px", padding: "14px 8px" }}>{fmt(totals.total_rec_pw)}</td>
                       <td colSpan={2} style={{ paddingRight: "16px" }}></td>
                     </tr>
                   </tfoot>
@@ -908,8 +908,8 @@ export default function BalancePage() {
 
                   {/* Mobile Totals Card */}
                   <div style={{
-                    background: "#0f172a",
-                    color: "#ffffff",
+                    background: "#f8fafc",
+                    border: "2px solid #1e5cff",
                     borderRadius: "12px",
                     padding: "16px",
                     display: "flex",
@@ -917,20 +917,20 @@ export default function BalancePage() {
                     gap: "10px",
                     marginTop: "8px"
                   }}>
-                    <span style={{ fontSize: "14px", fontWeight: "800", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "8px" }}>
+                    <span style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", borderBottom: "1px solid #cbd5e1", paddingBottom: "8px" }}>
                       TOTALS ({rows.length} Companies)
                     </span>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                      <span style={{ opacity: 0.8 }}>Total Business:</span>
-                      <span style={{ fontWeight: "700" }}>{fmt(totals.total_business)}</span>
+                      <span style={{ color: "#64748b", fontWeight: "600" }}>Total Business:</span>
+                      <span style={{ fontWeight: "700", color: "#0f172a" }}>{fmt(totals.total_business)}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                      <span style={{ opacity: 0.8 }}>Total Rec. (VW):</span>
-                      <span style={{ fontWeight: "700", color: "#ef4444" }}>{fmt(totals.total_rec_vw)}</span>
+                      <span style={{ color: "#64748b", fontWeight: "600" }}>Total Rec. (VW):</span>
+                      <span style={{ fontWeight: "700", color: "#dc2626" }}>{fmt(totals.total_rec_vw)}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px" }}>
-                      <span style={{ opacity: 0.8 }}>Total Rec. (PW):</span>
-                      <span style={{ fontWeight: "700", color: "#f97316" }}>{fmt(totals.total_rec_pw)}</span>
+                      <span style={{ color: "#64748b", fontWeight: "600" }}>Total Rec. (PW):</span>
+                      <span style={{ fontWeight: "700", color: "#ea580c" }}>{fmt(totals.total_rec_pw)}</span>
                     </div>
                   </div>
                 </>

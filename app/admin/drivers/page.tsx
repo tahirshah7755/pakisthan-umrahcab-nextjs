@@ -973,12 +973,15 @@ export default function AdminDriversPage() {
                       <i className="fas fa-taxi" style={{ zIndex: 5 }}></i>
                       <select
                         name="vehicle_id"
-                        value=""
-                        disabled
+                        value={formData.vehicle_id}
+                        onChange={handleInputChange}
                         className="input-control input-with-icon"
                         style={{ height: "42px" }}
                       >
-                        <option value="">Vehicle assigned dynamically by driver on daily logs</option>
+                        <option value="">Select Vehicle Assignment (Optional)</option>
+                        {vehicles.map(v => (
+                          <option key={v.id} value={v.id}>{v.model} ({v.type})</option>
+                        ))}
                       </select>
                     </div>
                   </div>

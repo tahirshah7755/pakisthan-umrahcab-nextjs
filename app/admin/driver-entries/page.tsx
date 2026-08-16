@@ -143,7 +143,7 @@ export default function AdminDriverEntriesPage() {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === "number" ? Number(value) : value
+      [name]: type === "number" ? (value === "" ? 0 : parseFloat(value)) : value
     }));
   };
 
@@ -1559,6 +1559,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Trip Rate</label>
                     <input
                       type="number"
+                      step="any"
                       name="rate"
                       min="0"
                       value={formData.rate || ""}
@@ -1570,6 +1571,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Voucher Value</label>
                     <input
                       type="number"
+                      step="any"
                       name="voucher"
                       min="0"
                       value={formData.voucher || ""}
@@ -1581,44 +1583,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Cash Collected</label>
                     <input
                       type="number"
-                      name="cash"
-                      min="0"
-                      value={formData.cash || ""}
-                      onChange={handleInputChange}
-                      className="input-control"
-                    />
-                  </div>
-                </div>
-
-                {/* Earnings */}
-                <div className="form-section-title">Earnings & Collection (SAR)</div>
-                <div className="form-row-3">
-                  <div className="form-group">
-                    <label>Rate</label>
-                    <input
-                      type="number"
-                      name="rate"
-                      min="0"
-                      value={formData.rate || ""}
-                      onChange={handleInputChange}
-                      className="input-control"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Voucher Amount</label>
-                    <input
-                      type="number"
-                      name="voucher"
-                      min="0"
-                      value={formData.voucher || ""}
-                      onChange={handleInputChange}
-                      className="input-control"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Cash Collected</label>
-                    <input
-                      type="number"
+                      step="any"
                       name="cash"
                       min="0"
                       value={formData.cash || ""}
@@ -1633,6 +1598,7 @@ export default function AdminDriverEntriesPage() {
                     <label style={{ color: "#10b981", fontWeight: "700" }}>Received From Waqas</label>
                     <input
                       type="number"
+                      step="any"
                       name="waqas_received"
                       min="0"
                       value={formData.waqas_received || ""}
@@ -1650,6 +1616,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Fuel / Petrol</label>
                     <input
                       type="number"
+                      step="any"
                       name="fuel"
                       min="0"
                       value={formData.fuel || ""}
@@ -1661,6 +1628,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Parking</label>
                     <input
                       type="number"
+                      step="any"
                       name="parking"
                       min="0"
                       value={formData.parking || ""}
@@ -1672,6 +1640,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Car Wash</label>
                     <input
                       type="number"
+                      step="any"
                       name="wash"
                       min="0"
                       value={formData.wash || ""}
@@ -1686,6 +1655,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Oil Change</label>
                     <input
                       type="number"
+                      step="any"
                       name="oil_change"
                       min="0"
                       value={formData.oil_change || ""}
@@ -1697,6 +1667,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Maintenance</label>
                     <input
                       type="number"
+                      step="any"
                       name="car_maintenance"
                       min="0"
                       value={formData.car_maintenance || ""}
@@ -1708,6 +1679,7 @@ export default function AdminDriverEntriesPage() {
                     <label style={{ color: "#ef4444", fontWeight: "700" }}>Pay to Waqas</label>
                     <input
                       type="number"
+                      step="any"
                       name="pay_to_waqas"
                       min="0"
                       value={formData.pay_to_waqas || ""}
@@ -1723,6 +1695,7 @@ export default function AdminDriverEntriesPage() {
                     <label>Miscellaneous</label>
                     <input
                       type="number"
+                      step="any"
                       name="mic"
                       min="0"
                       value={formData.mic || ""}

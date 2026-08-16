@@ -3,12 +3,13 @@ import { apiSlice } from "./apiSlice";
 export const priceListApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getPriceList: builder.query({
-      query: (params?: { page?: number; per_page?: number; search?: string; group_name?: string }) => {
+      query: (params?: { page?: number; per_page?: number; search?: string; group_name?: string; paginate?: string | boolean }) => {
         const q = new URLSearchParams();
         if (params?.page) q.append("page", String(params.page));
         if (params?.per_page) q.append("per_page", String(params.per_page));
         if (params?.search) q.append("search", params.search);
         if (params?.group_name) q.append("group_name", params.group_name);
+        if (params?.paginate !== undefined) q.append("paginate", String(params.paginate));
         const queryStr = q.toString();
         return `/price-list${queryStr ? `?${queryStr}` : ""}`;
       },

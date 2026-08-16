@@ -33,13 +33,22 @@ const generateRouteCode = (route: string) => {
 
 export default function PackageManagementPage() {
   const router = useRouter();
-  const { data: routesData, isLoading: routesLoading, refetch: refetchRoutes } = useGetPriceListQuery(undefined);
+  const { data: routesData, isLoading: routesLoading, refetch: refetchRoutes } = useGetPriceListQuery({ paginate: "false" });
   
   const [createPriceList] = useCreatePriceListMutation();
   const [deletePriceList] = useDeletePriceListMutation();
 
   // Tab State: 'packages' | 'locations'
   const [activeTab, setActiveTab] = useState<"packages" | "locations">("packages");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab]);
 
   // Route states
   const [showAddRouteModal, setShowAddRouteModal] = useState(false);
@@ -187,6 +196,22 @@ export default function PackageManagementPage() {
     }
   }
 
+  const filteredRoutes = routes.filter((item: any) =>
+    !searchTerm.trim() || item.route?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredLocations = locations.filter((item: any) =>
+    !searchTerm.trim() || item.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const currentItems = activeTab === "packages" ? filteredRoutes : filteredLocations;
+  const totalItems = currentItems.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+
+  const paginatedRoutes = filteredRoutes.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedLocations = filteredLocations.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
       {/* Toast Notification */}
@@ -237,32 +262,55 @@ export default function PackageManagementPage() {
         </div>
       </div>
 
-      {/* Tabs Selector */}
-      <div style={{ display: "flex", gap: "10px", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px" }}>
-        <button 
-          onClick={() => setActiveTab("packages")}
-          style={{
-            padding: "10px 20px", fontWeight: "700", fontSize: "15px", border: "none", background: "none",
-            color: activeTab === "packages" ? "#059669" : "#64748b",
-            borderBottom: activeTab === "packages" ? "3px solid #059669" : "none",
-            cursor: "pointer"
-          }}
-        >
-          <i className="fas fa-route" style={{ marginRight: "8px" }}></i>
-          Route Trip Packages
-        </button>
-        <button 
-          onClick={() => setActiveTab("locations")}
-          style={{
-            padding: "10px 20px", fontWeight: "700", fontSize: "15px", border: "none", background: "none",
-            color: activeTab === "locations" ? "#059669" : "#64748b",
-            borderBottom: activeTab === "locations" ? "3px solid #059669" : "none",
-            cursor: "pointer"
-          }}
-        >
-          <i className="fas fa-location-dot" style={{ marginRight: "8px" }}></i>
-          Global Locations Database
-        </button>
+      {/* Controls Bar: Tabs Selector + Search Input */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #e2e8f0", paddingBottom: "10px", flexWrap: "wrap", gap: "15px" }}>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button 
+            onClick={() => setActiveTab("packages")}
+            style={{
+              padding: "10px 20px", fontWeight: "700", fontSize: "15px", border: "none", background: "none",
+              color: activeTab === "packages" ? "#059669" : "#64748b",
+              borderBottom: activeTab === "packages" ? "3px solid #059669" : "none",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: "8px"
+            }}
+          >
+            <i className="fas fa-route"></i>
+            <span>Route Trip Packages</span>
+            <span style={{ background: activeTab === "packages" ? "#dcfce7" : "#f1f5f9", color: activeTab === "packages" ? "#15803d" : "#64748b", padding: "2px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>
+              {routes.length}
+            </span>
+          </button>
+          <button 
+            onClick={() => setActiveTab("locations")}
+            style={{
+              padding: "10px 20px", fontWeight: "700", fontSize: "15px", border: "none", background: "none",
+              color: activeTab === "locations" ? "#059669" : "#64748b",
+              borderBottom: activeTab === "locations" ? "3px solid #059669" : "none",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: "8px"
+            }}
+          >
+            <i className="fas fa-location-dot"></i>
+            <span>Global Locations Database</span>
+            <span style={{ background: activeTab === "locations" ? "#dcfce7" : "#f1f5f9", color: activeTab === "locations" ? "#15803d" : "#64748b", padding: "2px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>
+              {locations.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Search Input */}
+        <div style={{ position: "relative", minWidth: "260px" }}>
+          <i className="fas fa-search" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}></i>
+          <input
+            type="text"
+            placeholder={activeTab === "packages" ? "Search routes..." : "Search locations..."}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: "100%", padding: "8px 12px 8px 36px", border: "1px solid #cbd5e1", borderRadius: "6px",
+              fontSize: "13px", color: "#1e293b", outline: "none"
+            }}
+          />
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -287,14 +335,14 @@ export default function PackageManagementPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {routes.length === 0 ? (
+                  {paginatedRoutes.length === 0 ? (
                     <tr>
                       <td colSpan={6} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
-                        No routes registered in the system.
+                        {searchTerm ? "No matching routes found." : "No routes registered in the system."}
                       </td>
                     </tr>
                   ) : (
-                    routes.map((item: any, idx: number) => (
+                    paginatedRoutes.map((item: any, idx: number) => (
                       <tr key={item.id || idx}>
                         <td style={{ fontWeight: 700 }}>#PKG-{String(item.id).padStart(2, "0")}</td>
                         <td style={{ fontWeight: 600 }}>{item.route}</td>
@@ -327,6 +375,63 @@ export default function PackageManagementPage() {
               </table>
             </div>
           )}
+
+          {/* Pagination Controls for Routes */}
+          {filteredRoutes.length > 0 && (
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              marginTop: "20px", paddingTop: "15px", borderTop: "1px solid #e2e8f0",
+              flexWrap: "wrap", gap: "12px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#64748b", fontSize: "13px" }}>
+                <span>
+                  Showing <strong>{startIndex + 1}</strong> to <strong>{Math.min(startIndex + itemsPerPage, filteredRoutes.length)}</strong> of <strong>{filteredRoutes.length}</strong> routes
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                  style={{ padding: "4px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", background: "#ffffff", color: "#334155" }}
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1",
+                    background: currentPage === 1 ? "#f8fafc" : "#ffffff",
+                    color: currentPage === 1 ? "#94a3b8" : "#059669",
+                    fontWeight: "600", fontSize: "13px", cursor: currentPage === 1 ? "not-allowed" : "pointer"
+                  }}
+                >
+                  <i className="fas fa-chevron-left" style={{ marginRight: "4px" }}></i> Previous
+                </button>
+
+                <span style={{ fontSize: "13px", fontWeight: "600", color: "#334155", padding: "0 8px" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  style={{
+                    padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1",
+                    background: currentPage >= totalPages ? "#f8fafc" : "#ffffff",
+                    color: currentPage >= totalPages ? "#94a3b8" : "#059669",
+                    fontWeight: "600", fontSize: "13px", cursor: currentPage >= totalPages ? "not-allowed" : "pointer"
+                  }}
+                >
+                  Next <i className="fas fa-chevron-right" style={{ marginLeft: "4px" }}></i>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="table-card" style={{ background: "#ffffff", padding: "30px", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
@@ -348,14 +453,14 @@ export default function PackageManagementPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {locations.length === 0 ? (
+                  {paginatedLocations.length === 0 ? (
                     <tr>
                       <td colSpan={5} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
-                        No locations added to database yet.
+                        {searchTerm ? "No matching locations found." : "No locations added to database yet."}
                       </td>
                     </tr>
                   ) : (
-                    locations.map((item: any, idx: number) => (
+                    paginatedLocations.map((item: any, idx: number) => (
                       <tr key={item.id || idx}>
                         <td style={{ fontWeight: 700 }}>#LOC-{String(item.id).padStart(3, "0")}</td>
                         <td style={{ fontWeight: 600 }}>{item.name}</td>
@@ -387,6 +492,63 @@ export default function PackageManagementPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination Controls for Locations */}
+          {filteredLocations.length > 0 && (
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              marginTop: "20px", paddingTop: "15px", borderTop: "1px solid #e2e8f0",
+              flexWrap: "wrap", gap: "12px"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#64748b", fontSize: "13px" }}>
+                <span>
+                  Showing <strong>{startIndex + 1}</strong> to <strong>{Math.min(startIndex + itemsPerPage, filteredLocations.length)}</strong> of <strong>{filteredLocations.length}</strong> locations
+                </span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                  style={{ padding: "4px 8px", borderRadius: "4px", border: "1px solid #cbd5e1", fontSize: "12px", background: "#ffffff", color: "#334155" }}
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1",
+                    background: currentPage === 1 ? "#f8fafc" : "#ffffff",
+                    color: currentPage === 1 ? "#94a3b8" : "#059669",
+                    fontWeight: "600", fontSize: "13px", cursor: currentPage === 1 ? "not-allowed" : "pointer"
+                  }}
+                >
+                  <i className="fas fa-chevron-left" style={{ marginRight: "4px" }}></i> Previous
+                </button>
+
+                <span style={{ fontSize: "13px", fontWeight: "600", color: "#334155", padding: "0 8px" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  style={{
+                    padding: "6px 12px", borderRadius: "6px", border: "1px solid #cbd5e1",
+                    background: currentPage >= totalPages ? "#f8fafc" : "#ffffff",
+                    color: currentPage >= totalPages ? "#94a3b8" : "#059669",
+                    fontWeight: "600", fontSize: "13px", cursor: currentPage >= totalPages ? "not-allowed" : "pointer"
+                  }}
+                >
+                  Next <i className="fas fa-chevron-right" style={{ marginLeft: "4px" }}></i>
+                </button>
+              </div>
             </div>
           )}
         </div>

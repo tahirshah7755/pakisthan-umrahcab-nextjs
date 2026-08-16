@@ -139,17 +139,21 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
     }
   };
 
-  const handleDeleteCustomerProfile = async () => {
-    if (!confirm(`Are you sure you want to delete customer "${currentProfile?.name || 'this customer'}"? This action cannot be undone.`)) {
-      return;
-    }
+  const [showDeleteCustomerModal, setShowDeleteCustomerModal] = useState(false);
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false);
+
+  const confirmDeleteCustomerProfile = async () => {
+    setIsDeletingProfile(true);
     try {
       await api.deleteCustomer(rawId);
       showToast(`Customer deleted successfully!`, "success");
+      setShowDeleteCustomerModal(false);
       router.push(isCompany ? "/company/customers" : "/admin/customers");
     } catch (err) {
       console.error("Failed to delete customer:", err);
       showToast("Failed to delete customer.", "error");
+    } finally {
+      setIsDeletingProfile(false);
     }
   };
 
@@ -250,7 +254,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                 <span>Edit</span>
               </button>
               <button
-                onClick={handleDeleteCustomerProfile}
+                onClick={() => setShowDeleteCustomerModal(true)}
                 style={{
                   background: "#ef4444",
                   color: "#ffffff",
@@ -1888,6 +1892,109 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                 }}
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Customer Profile Confirmation Modal */}
+      {showDeleteCustomerModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.75)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 10000,
+          padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            width: "90%",
+            maxWidth: "420px",
+            padding: "28px 24px",
+            textAlign: "center",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            borderTop: "6px solid #ef4444"
+          }}>
+            <div style={{
+              width: "60px",
+              height: "60px",
+              borderRadius: "50%",
+              background: "#fee2e2",
+              color: "#dc2626",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "26px",
+              margin: "0 auto 16px auto"
+            }}>
+              <i className="fas fa-triangle-exclamation"></i>
+            </div>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: "19px", fontWeight: "700", color: "#0f172a" }}>
+              Delete Customer Profile?
+            </h3>
+            <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#64748b", lineHeight: "1.5" }}>
+              Are you sure you want to delete customer <strong style={{ color: "#1e293b" }}>"{currentProfile?.name || 'this customer'}"</strong>? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={() => setShowDeleteCustomerModal(false)}
+                disabled={isDeletingProfile}
+                style={{
+                  flex: 1,
+                  padding: "11px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#475569",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  cursor: "pointer"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteCustomerProfile}
+                disabled={isDeletingProfile}
+                style={{
+                  flex: 1,
+                  padding: "11px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  color: "#ffffff",
+                  fontWeight: "700",
+                  fontSize: "14px",
+                  cursor: isDeletingProfile ? "not-allowed" : "pointer",
+                  boxShadow: "0 4px 6px -1px rgba(239, 68, 68, 0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px"
+                }}
+              >
+                {isDeletingProfile ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-trash-can"></i>
+                    <span>Delete Customer</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

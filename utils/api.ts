@@ -951,6 +951,13 @@ export const api = {
     return data;
   },
 
+  async deleteCustomer(id: number | string) {
+    const data = await request(`/customers/${id}`, {
+      method: "DELETE",
+    });
+    return data;
+  },
+
   // === GLOBAL LOCATIONS (ADMIN SIDE) ===
   async getAdminLocationsList() {
     const data = await request(`/admin/locations-list`);

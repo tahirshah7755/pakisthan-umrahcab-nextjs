@@ -171,6 +171,7 @@ interface CustomerDirectoryProps {
   setEditingCustomer: (c: CustomerItem) => void;
   triggerExportAlert: (fmt: string) => void;
   router: any;
+  onRefresh?: () => void;
 }
 
 export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
@@ -189,6 +190,7 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
   setEditingCustomer,
   triggerExportAlert,
   router,
+  onRefresh,
 }) => {
   const { user } = useAuth();
   
@@ -213,6 +215,20 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
+  };
+
+  const handleDeleteCustomer = async (id: number | string, name: string) => {
+    if (!confirm(`Are you sure you want to delete customer "${name}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await api.deleteCustomer(id);
+      showToast(`Customer "${name}" deleted successfully!`, "success");
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error("Failed to delete customer:", err);
+      showToast("Failed to delete customer.", "error");
+    }
   };
 
   const [exportingFmt, setExportingFmt] = React.useState<string | null>(null);
@@ -521,6 +537,26 @@ export const CustomerDirectory: React.FC<CustomerDirectoryProps> = ({
                             }}
                           >
                             <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteCustomer(c.rawId || c.id, c.name)}
+                            title="Delete Profile"
+                            style={{
+                              background: "#fee2e2",
+                              border: "none",
+                              borderRadius: "6px",
+                              width: "30px",
+                              height: "30px",
+                              cursor: "pointer",
+                              color: "#dc2626",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }}
+                          >
+                            <i className="fas fa-trash-can" style={{ fontSize: "12px" }}></i>
                           </button>
                         )}
                       </div>

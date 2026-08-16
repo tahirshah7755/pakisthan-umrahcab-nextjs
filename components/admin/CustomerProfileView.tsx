@@ -139,6 +139,20 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
     }
   };
 
+  const handleDeleteCustomerProfile = async () => {
+    if (!confirm(`Are you sure you want to delete customer "${currentProfile?.name || 'this customer'}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await api.deleteCustomer(rawId);
+      showToast(`Customer deleted successfully!`, "success");
+      router.push(isCompany ? "/company/customers" : "/admin/customers");
+    } catch (err) {
+      console.error("Failed to delete customer:", err);
+      showToast("Failed to delete customer.", "error");
+    }
+  };
+
   const handleActionClick = (actionName: string) => {
     showToast(`Triggered simulated customer action: ${actionName}`, "success");
   };
@@ -161,40 +175,31 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
           boxShadow: "0 10px 25px -5px rgba(15, 118, 110, 0.3)"
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span 
-              style={{ 
-                background: "rgba(255, 255, 255, 0.2)", 
-                color: "#ffffff", 
-                padding: "4px 10px", 
-                borderRadius: "6px", 
-                fontSize: "11px", 
-                fontWeight: "800",
-                letterSpacing: "0.5px"
-              }}
-            >
-              Customer Record
-            </span>
-            <span 
-              style={{ 
-                background: "rgba(15, 23, 42, 0.6)", 
-                color: "#ffffff", 
-                padding: "4px 10px", 
-                borderRadius: "6px", 
-                fontSize: "11px", 
-                fontWeight: "700" 
-              }}
-            >
-              ID: {currentProfile.id}
-            </span>
+        {/* Profile Basic Summary Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{
+            width: "56px", height: "56px", borderRadius: "50%",
+            background: "rgba(255, 255, 255, 0.2)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "24px", fontWeight: "700"
+          }}>
+            {currentProfile.name ? currentProfile.name.charAt(0).toUpperCase() : "C"}
           </div>
-          <h2 style={{ fontSize: "28px", fontWeight: "800", margin: 0, textShadow: "0 2px 4px rgba(0,0,0,0.15)" }}>
-            {currentProfile.name}
-          </h2>
-          <p style={{ margin: 0, fontSize: "14px", color: "rgba(255, 255, 255, 0.8)", fontWeight: "500" }}>
-            {currentProfile.email}
-          </p>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "700" }}>{currentProfile.name}</h2>
+              <span style={{
+                background: "rgba(255, 255, 255, 0.2)", color: "#ffffff",
+                padding: "2px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "700"
+              }}>
+                {currentProfile.id}
+              </span>
+            </div>
+            <p style={{ margin: "4px 0 0 0", fontSize: "13px", opacity: 0.9 }}>
+              <i className="fas fa-building" style={{ marginRight: "6px" }}></i>
+              {currentProfile.company}
+            </p>
+          </div>
         </div>
         
         {/* Header Action Buttons */}
@@ -220,29 +225,52 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
             <span>List</span>
           </button>
           {!isCompany && (
-            <button
-              onClick={() => {
-                router.push(`/admin/customers/edit?id=${rawId}`);
-              }}
-              style={{
-                background: "#ffffff",
-                color: "#0f766e",
-                border: "none",
-                borderRadius: "8px",
-                padding: "10px 18px",
-                fontWeight: "700",
-                fontSize: "13px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
-                transition: "all 0.2s"
-              }}
-            >
-              <i className="fas fa-pencil"></i>
-              <span>Edit</span>
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  router.push(`/admin/customers/edit?id=${rawId}`);
+                }}
+                style={{
+                  background: "#ffffff",
+                  color: "#0f766e",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 18px",
+                  fontWeight: "700",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
+                  transition: "all 0.2s"
+                }}
+              >
+                <i className="fas fa-pencil"></i>
+                <span>Edit</span>
+              </button>
+              <button
+                onClick={handleDeleteCustomerProfile}
+                style={{
+                  background: "#ef4444",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 18px",
+                  fontWeight: "700",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 6px rgba(0,0,0,0.08)",
+                  transition: "all 0.2s"
+                }}
+              >
+                <i className="fas fa-trash-can"></i>
+                <span>Delete</span>
+              </button>
+            </>
           )}
           <button 
             onClick={() => {

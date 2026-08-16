@@ -144,6 +144,7 @@ export default function CustomersPage() {
       setEditingCustomer={setEditingCustomer}
       triggerExportAlert={triggerExportAlert}
       router={router}
+      onRefresh={fetchCustomersList}
     />
   );
 }

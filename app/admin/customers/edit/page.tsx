@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api } from "@/utils/api";
+import { api, getDefaultPhoneCode, formatPhoneNumber, parsePhoneAndCode } from "@/utils/api";
+import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 
 function EditCustomerContent() {
   const router = useRouter();
@@ -13,8 +14,11 @@ function EditCustomerContent() {
   const [custName, setCustName] = useState("");
   const [custCompany, setCustCompany] = useState("");
   const [custPhone, setCustPhone] = useState("");
+  const [custPhoneCode, setCustPhoneCode] = useState("+966");
   const [custSecondaryPhone, setCustSecondaryPhone] = useState("");
+  const [custSecondaryPhoneCode, setCustSecondaryPhoneCode] = useState("+966");
   const [custAltPhone, setCustAltPhone] = useState("");
+  const [custAltPhoneCode, setCustAltPhoneCode] = useState("+966");
   const [custEmail, setCustEmail] = useState("");
   const [passportNo, setPassportNo] = useState("");
   const [hotelInfo, setHotelInfo] = useState("");
@@ -87,11 +91,22 @@ function EditCustomerContent() {
         const found = result?.customer || result;
 
         if (found) {
+          const defaultCode = getDefaultPhoneCode(found);
+          
+          const parsedPrimary = parsePhoneAndCode(found.phone || "", defaultCode);
+          setCustPhoneCode(parsedPrimary.code);
+          setCustPhone(parsedPrimary.number);
+
+          const parsedSecondary = parsePhoneAndCode(found.secondary_phone || "", defaultCode);
+          setCustSecondaryPhoneCode(parsedSecondary.code);
+          setCustSecondaryPhone(parsedSecondary.number);
+
+          const parsedAlt = parsePhoneAndCode(found.alternative_phone || "", defaultCode);
+          setCustAltPhoneCode(parsedAlt.code);
+          setCustAltPhone(parsedAlt.number);
+
           setCustName(found.name || "");
           setCustCompany(found.company || "");
-          setCustPhone(found.phone || "");
-          setCustSecondaryPhone(found.secondary_phone || "");
-          setCustAltPhone(found.alternative_phone || "");
           setCustEmail(found.email || "");
           setPassportNo(found.passport_no || "");
           setNotes(found.notes || "");
@@ -159,12 +174,16 @@ function EditCustomerContent() {
         compiledHotelInfo = `${nameToUse} in ${hotelCity} (In: ${hotelCheckin}, Out: ${hotelCheckout})`;
       }
 
+      const formattedPrimary = formatPhoneNumber(custPhoneCode, custPhone);
+      const formattedSecondary = formatPhoneNumber(custSecondaryPhoneCode, custSecondaryPhone);
+      const formattedAlt = formatPhoneNumber(custAltPhoneCode, custAltPhone);
+
       const updated = {
         name: custName,
         company: custCompany,
-        phone: custPhone || "",
-        secondary_phone: custSecondaryPhone || "",
-        alternative_phone: custAltPhone || "",
+        phone: formattedPrimary || "",
+        secondary_phone: formattedSecondary || "",
+        alternative_phone: formattedAlt || "",
         email: custEmail || "",
         passport_no: passportNo || "",
         hotel_info: compiledHotelInfo,
@@ -314,47 +333,68 @@ function EditCustomerContent() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
             <div>
               <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Primary Phone *</label>
-              <div className="form-input-wrapper">
-                <i className="fas fa-phone form-icon" style={{ color: "#0f766e" }}></i>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="e.g. +966501234567" 
-                  value={custPhone} 
-                  onChange={(e) => setCustPhone(e.target.value)} 
-                  required
-                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <CountryCodeSelector
+                  value={custPhoneCode}
+                  onChange={setCustPhoneCode}
+                  style={{ width: "130px", flexShrink: 0 }}
                 />
+                <div className="form-input-wrapper" style={{ flexGrow: 1 }}>
+                  <i className="fas fa-phone form-icon" style={{ color: "#0f766e" }}></i>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. 501234567" 
+                    value={custPhone} 
+                    onChange={(e) => setCustPhone(e.target.value)} 
+                    required
+                    style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+                  />
+                </div>
               </div>
             </div>
 
             <div>
               <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Secondary Phone</label>
-              <div className="form-input-wrapper">
-                <i className="fas fa-phone-volume form-icon" style={{ color: "#0f766e" }}></i>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="e.g. +966501234568" 
-                  value={custSecondaryPhone} 
-                  onChange={(e) => setCustSecondaryPhone(e.target.value)} 
-                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <CountryCodeSelector
+                  value={custSecondaryPhoneCode}
+                  onChange={setCustSecondaryPhoneCode}
+                  style={{ width: "130px", flexShrink: 0 }}
                 />
+                <div className="form-input-wrapper" style={{ flexGrow: 1 }}>
+                  <i className="fas fa-phone-volume form-icon" style={{ color: "#0f766e" }}></i>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. 501234568" 
+                    value={custSecondaryPhone} 
+                    onChange={(e) => setCustSecondaryPhone(e.target.value)} 
+                    style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+                  />
+                </div>
               </div>
             </div>
 
             <div>
               <label className="form-label" style={{ fontWeight: "600", color: "#334155", display: "block", marginBottom: "8px", fontSize: "14px" }}>Alternative Phone</label>
-              <div className="form-input-wrapper">
-                <i className="fas fa-phone-flip form-icon" style={{ color: "#0f766e" }}></i>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="e.g. +923001234567" 
-                  value={custAltPhone} 
-                  onChange={(e) => setCustAltPhone(e.target.value)} 
-                  style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <CountryCodeSelector
+                  value={custAltPhoneCode}
+                  onChange={setCustAltPhoneCode}
+                  style={{ width: "130px", flexShrink: 0 }}
                 />
+                <div className="form-input-wrapper" style={{ flexGrow: 1 }}>
+                  <i className="fas fa-phone-flip form-icon" style={{ color: "#0f766e" }}></i>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. 3001234567" 
+                    value={custAltPhone} 
+                    onChange={(e) => setCustAltPhone(e.target.value)} 
+                    style={{ border: "1px solid #cbd5e1", borderRadius: "6px", height: "46px" }}
+                  />
+                </div>
               </div>
             </div>
           </div>

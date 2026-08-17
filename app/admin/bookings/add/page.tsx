@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api, getDefaultPhoneCode } from "@/utils/api";
+import { api, getDefaultPhoneCode, getCustomerPhoneWithCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 import { formatDateToCustom, formatTimeTo24h, getSaudiTodayDate } from "@/utils/formatters";
 import TimePicker24h from "@/components/admin/TimePicker24h";
@@ -501,7 +501,7 @@ function AddNewBookingContent() {
 
     // Resolve customer details from selection state securely
     const fullName = selectedCustomerObj ? selectedCustomerObj.name : "";
-    const whatsappContact = selectedCustomerObj?.phone || selectedCustomerObj?.secondary_phone || selectedCustomerObj?.alternative_phone || "+966501199008";
+    const whatsappContact = getCustomerPhoneWithCode(selectedCustomerObj);
     const customerEmail = selectedCustomerObj?.email || "";
 
     try {

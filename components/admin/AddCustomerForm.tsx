@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { api, getDefaultPhoneCode } from "@/utils/api";
+import { api, getDefaultPhoneCode, formatPhoneNumber } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
@@ -60,13 +60,6 @@ const defaultCountryCodes = [
   { code: "+44", flag: "🇬🇧", name: "UK" },
   { code: "+1", flag: "🇺🇸", name: "US/Canada" },
 ];
-
-const formatPhoneNumber = (code: string, number: string) => {
-  if (!number) return "";
-  const cleaned = number.trim();
-  if (cleaned.startsWith("+") || cleaned.startsWith("00")) return cleaned;
-  return `${code}${cleaned}`;
-};
 
 
 export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
@@ -897,7 +890,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           car_price: finalPrice,
           full_name: custName,
           email: custEmail || null,
-          whatsapp: custPhone || "N/A",
+          whatsapp: formattedPhone || "N/A",
           flight_no: bookingFlightNo,
           notes: `Route: ${route.tripPackage} | Vehicle: ${route.vehicle} | Passengers: ${Number(route.adults || 0) + Number(route.childrenCount || 0)} | Timing Status: ${route.timingStatus} | Booking Status: ${route.bookingStatus} | Bags: ${route.bags || 0} | Discount Reason: ${route.discountReason} | Tafweej Required: ${route.tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${route.cashToReceive || 0} | Internal Notes: ${route.internalNotes} | External Notes: ${route.externalNotes}${notesInfo}`,
           payment_method: route.paymentMethod || "Credit",

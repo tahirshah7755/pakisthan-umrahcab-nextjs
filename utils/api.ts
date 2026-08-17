@@ -1059,3 +1059,81 @@ export function getDefaultPhoneCode(userOrCompany: any): string {
   return "+966";
 }
 
+export function formatPhoneNumber(code: string, number: string): string {
+  if (!number) return "";
+  let cleaned = number.trim();
+  if (cleaned.startsWith("+")) return cleaned;
+  if (cleaned.startsWith("00")) return "+" + cleaned.slice(2);
+  if (cleaned.startsWith("0")) cleaned = cleaned.slice(1);
+  const countryCode = code ? (code.startsWith("+") ? code : `+${code}`) : "+966";
+  return `${countryCode}${cleaned}`;
+}
+
+export function parsePhoneAndCode(fullPhone: string, fallbackCode: string = "+966"): { code: string; number: string } {
+  if (!fullPhone) return { code: fallbackCode, number: "" };
+  let cleaned = fullPhone.trim();
+
+  if (cleaned.startsWith("00")) {
+    cleaned = "+" + cleaned.slice(2);
+  }
+
+  if (cleaned.startsWith("+")) {
+    const knownCodes = ["+971", "+880", "+966", "+92", "+91", "+44", "+1"];
+    for (const code of knownCodes) {
+      if (cleaned.startsWith(code)) {
+        return {
+          code,
+          number: cleaned.slice(code.length),
+        };
+      }
+    }
+    const match = cleaned.match(/^(\+\d{1,4})(.*)$/);
+    if (match) {
+      return { code: match[1], number: match[2] };
+    }
+  }
+
+  const codesWithoutPlus = ["966", "92", "880", "91", "971", "44", "1"];
+  for (const c of codesWithoutPlus) {
+    if (cleaned.startsWith(c)) {
+      return {
+        code: `+${c}`,
+        number: cleaned.slice(c.length),
+      };
+    }
+  }
+
+  if (cleaned.startsWith("0")) {
+    cleaned = cleaned.slice(1);
+  }
+
+  return { code: fallbackCode, number: cleaned };
+}
+
+export function getCustomerPhoneWithCode(customer: any): string {
+  if (!customer) return "+966501199008";
+
+  const rawPhone = customer.phone || customer.secondary_phone || customer.alternative_phone || "";
+  const defaultCode = getDefaultPhoneCode(customer);
+
+  if (rawPhone) {
+    const parsed = parsePhoneAndCode(rawPhone, defaultCode);
+    if (parsed.number) {
+      return formatPhoneNumber(parsed.code, parsed.number);
+    }
+  }
+
+  if (customer.contact) {
+    const firstPart = customer.contact.split(" |")[0].split(" / ")[0].trim();
+    if (firstPart && firstPart !== "N/A") {
+      const parsed = parsePhoneAndCode(firstPart, defaultCode);
+      if (parsed.number) {
+        return formatPhoneNumber(parsed.code, parsed.number);
+      }
+    }
+  }
+
+  return "+966501199008";
+}
+
+

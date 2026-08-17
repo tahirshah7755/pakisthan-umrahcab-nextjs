@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api, getDefaultPhoneCode } from "@/utils/api";
+import { api, getDefaultPhoneCode, formatPhoneNumber } from "@/utils/api";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/exportHelper";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 import { useAuth } from "@/context/AuthContext";
@@ -17,12 +17,6 @@ const defaultCountryCodes = [
   { code: "+1", flag: "🇺🇸", name: "US/Canada" },
 ];
 
-const formatPhoneNumber = (code: string, number: string) => {
-  if (!number) return "";
-  const cleaned = number.trim();
-  if (cleaned.startsWith("+") || cleaned.startsWith("00")) return cleaned;
-  return `${code}${cleaned}`;
-};
 
 interface CustomerRecord {
   id: string;

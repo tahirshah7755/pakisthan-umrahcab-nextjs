@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { api, getDefaultPhoneCode } from "@/utils/api";
+import { api, getDefaultPhoneCode, getCustomerPhoneWithCode } from "@/utils/api";
 import { CountryCodeSelector } from "@/components/CountryCodeSelector";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateToCustom, formatTimeTo24h, getSaudiTodayDate } from "@/utils/formatters";
@@ -413,7 +413,7 @@ function AddNewBookingContent() {
 
     // Resolve customer details from selection state securely
     const fullName = selectedCustomerObj ? selectedCustomerObj.name : "";
-    const whatsappContact = selectedCustomerObj?.contact ? selectedCustomerObj.contact.split(" (")[0] : "+966501199008";
+    const whatsappContact = getCustomerPhoneWithCode(selectedCustomerObj);
 
     // Call Laravel Backend API
     const res = await api.createBooking({

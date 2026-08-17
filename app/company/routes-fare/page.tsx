@@ -10,6 +10,12 @@ interface PriceCell {
   to: string;
 }
 
+interface VehicleCol {
+  id: string;
+  name: string;
+  model: string;
+}
+
 interface PackageRow {
   id: string;
   englishName: string;
@@ -18,73 +24,96 @@ interface PackageRow {
   prices: Record<string, PriceCell>;
 }
 
-const VEHICLES = [
-  { id: "sedan", name: "Sedan", isCore: true },
-  { id: "staria", name: "Hyundai Staria", isCore: true },
-  { id: "starex", name: "Hyundai Starex", isCore: true },
-  { id: "yukon", name: "GMC XL Yukon", isCore: true },
-  { id: "hiace", name: "Hiace Grand Cabin", isCore: true },
-  { id: "coaster", name: "Coaster", isCore: true },
-  { id: "bus", name: "Bus", isCore: true },
-  { id: "luxury_bus", name: "Luxury Bus", isCore: true },
-];
-
-const getVehiclePrice = (b: any, vehicleName: string, defaultPrice: number, defaultDates: string) => {
+const getVehiclePrice = (b: any, modelName: string) => {
+  const defaultDates = b.sedan_dates || "2026-06-01 to 2026-10-31";
+  
   if (b.custom_prices && typeof b.custom_prices === 'object') {
-    const custom = b.custom_prices[vehicleName];
+    const custom = b.custom_prices[modelName] || b.custom_prices[modelName.toLowerCase()];
     if (custom !== undefined && custom !== null) {
       if (typeof custom === 'object') {
-        const price = custom.price !== undefined ? custom.price : defaultPrice;
+        const price = custom.price !== undefined ? custom.price : 0;
         const from = custom.from || defaultDates.split(" to ")[0] || "2026-06-01";
-        const to = custom.to || defaultDates.split(" to ")[1] || "2026-08-31";
+        const to = custom.to || defaultDates.split(" to ")[1] || "2026-10-31";
         return { price: String(price), from, to };
       } else {
         const price = custom;
         const from = defaultDates.split(" to ")[0] || "2026-06-01";
-        const to = defaultDates.split(" to ")[1] || "2026-08-31";
+        const to = defaultDates.split(" to ")[1] || "2026-10-31";
         return { price: String(price), from, to };
       }
     }
   }
+
+  const mLower = modelName.toLowerCase();
+  let price = 0;
+  if (mLower.includes("gmc") || mLower.includes("yukon") || mLower.includes("suv")) {
+    price = b.suv_price || 600;
+  } else if (mLower.includes("staria") || mLower.includes("starex") || mLower.includes("hiace") || mLower.includes("van")) {
+    price = b.van_price || 299;
+  } else if (mLower.includes("coaster") || mLower.includes("bus") || mLower.includes("coach")) {
+    price = b.coach_price || 549;
+  } else {
+    price = b.sedan_price || 249;
+  }
+
   const parts = defaultDates.split(" to ");
   return {
-    price: String(defaultPrice),
+    price: String(price),
     from: parts[0] || "2026-06-01",
-    to: parts[1] || "2026-08-31"
+    to: parts[1] || "2026-10-31"
   };
 };
 
 export default function RoutesFarePage() {
   const router = useRouter();
   const [packages, setPackages] = useState<PackageRow[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleCol[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Fetch prices on mount
+  // Fetch dynamic fleet & prices on mount
   useEffect(() => {
     const loadFares = async () => {
       try {
         setLoading(true);
-        const priceListData = await api.getPriceList();
+        const [fleetRes, priceListData] = await Promise.all([
+          api.getFleet(),
+          api.getPriceList()
+        ]);
+
+        let resolvedVehicles: VehicleCol[] = [];
+        const rawFleet = Array.isArray(fleetRes) ? fleetRes : (fleetRes?.data && Array.isArray(fleetRes.data) ? fleetRes.data : []);
+        
+        if (rawFleet.length > 0) {
+          resolvedVehicles = rawFleet.map((f: any) => ({
+            id: (f.model || f.name || "").toLowerCase().replace(/[^a-z0-9]/g, "_"),
+            name: f.model || f.name || "Vehicle",
+            model: f.model || f.name || "Vehicle"
+          }));
+        } else {
+          resolvedVehicles = [
+            { id: "gmc", name: "GMC", model: "GMC" },
+            { id: "staria", name: "Hyundai Staria", model: "Hyundai Staria" },
+            { id: "hiace", name: "Toyota Hiace", model: "Toyota Hiace" },
+            { id: "coaster", name: "Toyota Coaster", model: "Toyota Coaster" },
+            { id: "camry", name: "Toyota Camry", model: "Toyota Camry" },
+          ];
+        }
+        setVehicles(resolvedVehicles);
+
         if (priceListData && Array.isArray(priceListData)) {
           const mapped = priceListData.map((b: any) => {
-            const sedanDates = b.sedan_dates || "2026-06-01 to 2026-08-31";
+            const pricesMap: Record<string, PriceCell> = {};
+            resolvedVehicles.forEach((v) => {
+              pricesMap[v.id] = getVehiclePrice(b, v.model);
+            });
             
             return {
               id: String(b.id),
               englishName: b.route,
               urduName: b.route.includes("Airport") ? "ایئرپورٹ ٹرانسپورٹ" : "ہوٹل ٹرانسپورٹ",
               shortCode: b.route.split(" To ").map((s: string) => s.substring(0, 3).toUpperCase()).join("-"),
-              prices: {
-                sedan: getVehiclePrice(b, "Sedan", b.sedan_price || 300, sedanDates),
-                staria: getVehiclePrice(b, "Hyundai Staria", b.van_price || 500, sedanDates),
-                starex: getVehiclePrice(b, "Hyundai Starex", b.van_price || 450, sedanDates),
-                yukon: getVehiclePrice(b, "GMC XL Yukon", b.suv_price || 700, sedanDates),
-                hiace: getVehiclePrice(b, "Hiace Grand Cabin", b.van_price || 600, sedanDates),
-                coaster: getVehiclePrice(b, "Coaster", b.coach_price || 1200, sedanDates),
-                bus: getVehiclePrice(b, "Bus", b.coach_price || 1800, sedanDates),
-                luxury_bus: getVehiclePrice(b, "Luxury Bus", b.coach_price || 2400, sedanDates),
-              }
+              prices: pricesMap
             };
           });
           setPackages(mapped);
@@ -142,7 +171,7 @@ export default function RoutesFarePage() {
               <thead>
                 <tr style={{ background: "#0f172a", borderBottom: "2px solid #cbd5e1" }}>
                   <th style={{ padding: "16px 20px", textAlign: "left", color: "#ffffff", fontWeight: "700", width: "250px", position: "sticky", left: 0, background: "#0f172a", zIndex: 10 }}>Route Name</th>
-                  {VEHICLES.map((vehicle) => (
+                  {vehicles.map((vehicle) => (
                     <th key={vehicle.id} style={{ padding: "16px 20px", textAlign: "center", color: "#ffffff", fontWeight: "700" }}>
                       {vehicle.name}
                     </th>
@@ -161,7 +190,7 @@ export default function RoutesFarePage() {
                         </div>
                       </div>
                     </td>
-                    {VEHICLES.map((vehicle) => {
+                    {vehicles.map((vehicle) => {
                       const priceCell = pkg.prices[vehicle.id] || { price: "N/A", from: "", to: "" };
                       return (
                         <td key={vehicle.id} style={{ padding: "16px 20px", textAlign: "center" }}>
@@ -182,7 +211,7 @@ export default function RoutesFarePage() {
                 ))}
                 {filteredPackages.length === 0 && (
                   <tr>
-                    <td colSpan={VEHICLES.length + 1} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontWeight: "500" }}>
+                    <td colSpan={vehicles.length + 1} style={{ textAlign: "center", padding: "40px", color: "#94a3b8", fontWeight: "500" }}>
                       No routes found matching search criteria.
                     </td>
                   </tr>

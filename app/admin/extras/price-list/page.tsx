@@ -115,17 +115,32 @@ export default function PriceListMatrix() {
         : []);
 
   const activeVehicles = React.useMemo(() => {
+    if (Array.isArray(fleetList) && fleetList.length > 0) {
+      return fleetList.map((f: any) => {
+        const mName = f.model || f.name || "Vehicle";
+        const mLower = mName.toLowerCase();
+        let key = "sedan";
+        if (mLower.includes("gmc") || mLower.includes("yukon") || mLower.includes("suv")) key = "suv";
+        else if (mLower.includes("coaster") || mLower.includes("bus") || mLower.includes("coach")) key = "coach";
+        else if (mLower.includes("staria") || mLower.includes("starex") || mLower.includes("hiace") || mLower.includes("van")) key = "van";
+
+        return {
+          id: mLower.replace(/[^a-z0-9]/g, "_"),
+          key,
+          name: mName,
+          model: mName,
+          isCore: true
+        };
+      });
+    }
     return [
-      { id: "sedan", key: "sedan", name: "Sedan", isCore: true },
-      { id: "staria", key: "van", name: "Hyundai Staria", isCore: true },
-      { id: "starex", key: "van", name: "Hyundai Starex", isCore: true },
-      { id: "yukon", key: "suv", name: "GMC XL Yukon", isCore: true },
-      { id: "hiace", key: "van", name: "Hiace Grand Cabin", isCore: true },
-      { id: "coaster", key: "coach", name: "Coaster", isCore: true },
-      { id: "bus", key: "coach", name: "Bus", isCore: true },
-      { id: "luxury_bus", key: "coach", name: "Luxury Bus", isCore: true },
+      { id: "gmc", key: "suv", name: "GMC", model: "GMC", isCore: true },
+      { id: "staria", key: "van", name: "Hyundai Staria", model: "Hyundai Staria", isCore: true },
+      { id: "hiace", key: "van", name: "Toyota Hiace", model: "Toyota Hiace", isCore: true },
+      { id: "coaster", key: "coach", name: "Toyota Coaster", model: "Toyota Coaster", isCore: true },
+      { id: "camry", key: "sedan", name: "Toyota Camry", model: "Toyota Camry", isCore: true },
     ];
-  }, []);
+  }, [fleetList]);
 
   // Redirect if extras not unlocked
   useEffect(() => {

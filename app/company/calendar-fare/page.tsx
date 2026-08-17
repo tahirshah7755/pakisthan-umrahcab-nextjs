@@ -11,6 +11,13 @@ interface PriceCell {
   to: string;
 }
 
+interface VehicleCol {
+  id: string;
+  name: string;
+  model: string;
+  icon: string;
+}
+
 interface PackageRow {
   id: string;
   englishName: string;
@@ -18,45 +25,50 @@ interface PackageRow {
   prices: Record<string, PriceCell>;
 }
 
-const VEHICLES = [
-  { id: "sedan", name: "Sedan", icon: "fa-car" },
-  { id: "staria", name: "Hyundai Staria", icon: "fa-van-shuttle" },
-  { id: "starex", name: "Hyundai Starex", icon: "fa-van-shuttle" },
-  { id: "yukon", name: "GMC XL Yukon", icon: "fa-truck-pickup" },
-  { id: "hiace", name: "Hiace Grand Cabin", icon: "fa-van-shuttle" },
-  { id: "coaster", name: "Coaster", icon: "fa-bus" },
-  { id: "bus", name: "Bus", icon: "fa-bus" },
-  { id: "luxury_bus", name: "Luxury Bus", icon: "fa-bus" },
-];
-
-const getVehiclePrice = (b: any, vehicleName: string, defaultPrice: number, defaultDates: string) => {
+const getVehiclePrice = (b: any, modelName: string) => {
+  const defaultDates = b.sedan_dates || "2026-06-01 to 2026-10-31";
+  
   if (b.custom_prices && typeof b.custom_prices === 'object') {
-    const custom = b.custom_prices[vehicleName];
+    const custom = b.custom_prices[modelName] || b.custom_prices[modelName.toLowerCase()];
     if (custom !== undefined && custom !== null) {
       if (typeof custom === 'object') {
-        const price = custom.price !== undefined ? custom.price : defaultPrice;
+        const price = custom.price !== undefined ? custom.price : 0;
         const from = custom.from || defaultDates.split(" to ")[0] || "2026-06-01";
-        const to = custom.to || defaultDates.split(" to ")[1] || "2026-08-31";
+        const to = custom.to || defaultDates.split(" to ")[1] || "2026-10-31";
         return { price: String(price), from, to };
       } else {
         const price = custom;
         const from = defaultDates.split(" to ")[0] || "2026-06-01";
-        const to = defaultDates.split(" to ")[1] || "2026-08-31";
+        const to = defaultDates.split(" to ")[1] || "2026-10-31";
         return { price: String(price), from, to };
       }
     }
   }
+
+  const mLower = modelName.toLowerCase();
+  let price = 0;
+  if (mLower.includes("gmc") || mLower.includes("yukon") || mLower.includes("suv")) {
+    price = b.suv_price || 600;
+  } else if (mLower.includes("staria") || mLower.includes("starex") || mLower.includes("hiace") || mLower.includes("van")) {
+    price = b.van_price || 299;
+  } else if (mLower.includes("coaster") || mLower.includes("bus") || mLower.includes("coach")) {
+    price = b.coach_price || 549;
+  } else {
+    price = b.sedan_price || 249;
+  }
+
   const parts = defaultDates.split(" to ");
   return {
-    price: String(defaultPrice),
+    price: String(price),
     from: parts[0] || "2026-06-01",
-    to: parts[1] || "2026-08-31"
+    to: parts[1] || "2026-10-31"
   };
 };
 
 export default function CalendarFarePage() {
   const router = useRouter();
   const [packages, setPackages] = useState<PackageRow[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleCol[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Selector state
@@ -72,25 +84,53 @@ export default function CalendarFarePage() {
     const loadFares = async () => {
       try {
         setLoading(true);
-        const priceListData = await api.getPriceList();
+        const [fleetRes, priceListData] = await Promise.all([
+          api.getFleet(),
+          api.getPriceList()
+        ]);
+
+        let resolvedVehicles: VehicleCol[] = [];
+        const rawFleet = Array.isArray(fleetRes) ? fleetRes : (fleetRes?.data && Array.isArray(fleetRes.data) ? fleetRes.data : []);
+
+        if (rawFleet.length > 0) {
+          resolvedVehicles = rawFleet.map((f: any) => {
+            const m = f.model || f.name || "Vehicle";
+            const mL = m.toLowerCase();
+            let icon = "fa-car";
+            if (mL.includes("gmc") || mL.includes("yukon")) icon = "fa-truck-pickup";
+            else if (mL.includes("coaster") || mL.includes("bus")) icon = "fa-bus";
+            else if (mL.includes("staria") || mL.includes("hiace") || mL.includes("starex")) icon = "fa-van-shuttle";
+
+            return {
+              id: mL.replace(/[^a-z0-9]/g, "_"),
+              name: m,
+              model: m,
+              icon
+            };
+          });
+        } else {
+          resolvedVehicles = [
+            { id: "gmc", name: "GMC", model: "GMC", icon: "fa-truck-pickup" },
+            { id: "staria", name: "Hyundai Staria", model: "Hyundai Staria", icon: "fa-van-shuttle" },
+            { id: "hiace", name: "Toyota Hiace", model: "Toyota Hiace", icon: "fa-van-shuttle" },
+            { id: "coaster", name: "Toyota Coaster", model: "Toyota Coaster", icon: "fa-bus" },
+            { id: "camry", name: "Toyota Camry", model: "Toyota Camry", icon: "fa-car" },
+          ];
+        }
+        setVehicles(resolvedVehicles);
+
         if (priceListData && Array.isArray(priceListData)) {
           const mapped = priceListData.map((b: any) => {
-            const sedanDates = b.sedan_dates || "2026-06-01 to 2026-08-31";
+            const pricesMap: Record<string, PriceCell> = {};
+            resolvedVehicles.forEach((v) => {
+              pricesMap[v.id] = getVehiclePrice(b, v.model);
+            });
 
             return {
               id: String(b.id),
               englishName: b.route,
               urduName: b.route.includes("Airport") ? "ایئرپورٹ ٹرانسپورٹ" : "ہوٹل ٹرانسپورٹ",
-              prices: {
-                sedan: getVehiclePrice(b, "Sedan", b.sedan_price || 300, sedanDates),
-                staria: getVehiclePrice(b, "Hyundai Staria", b.van_price || 500, sedanDates),
-                starex: getVehiclePrice(b, "Hyundai Starex", b.van_price || 450, sedanDates),
-                yukon: getVehiclePrice(b, "GMC XL Yukon", b.suv_price || 700, sedanDates),
-                hiace: getVehiclePrice(b, "Hiace Grand Cabin", b.van_price || 600, sedanDates),
-                coaster: getVehiclePrice(b, "Coaster", b.coach_price || 1200, sedanDates),
-                bus: getVehiclePrice(b, "Bus", b.coach_price || 1800, sedanDates),
-                luxury_bus: getVehiclePrice(b, "Luxury Bus", b.coach_price || 2400, sedanDates),
-              }
+              prices: pricesMap
             };
           });
           setPackages(mapped);
@@ -117,18 +157,16 @@ export default function CalendarFarePage() {
     const numDays = new Date(year, month + 1, 0).getDate();
     
     const days = [];
-    // Padding for previous month
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
-    // Days in current month
-    for (let i = 1; i <= numDays; i++) {
-      days.push(new Date(year, month, i));
+    for (let d = 1; d <= numDays; d++) {
+      days.push(new Date(year, month, d));
     }
     return days;
   };
 
-  const days = getDaysInMonth(currentMonth);
+  const calendarDays = getDaysInMonth(currentMonth);
 
   const prevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -138,31 +176,31 @@ export default function CalendarFarePage() {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
-  const isDateSelected = (day: Date) => {
+  const isSelected = (day: Date | null) => {
     if (!day) return false;
-    return day.toISOString().split("T")[0] === selectedDate;
+    const dateStr = day.toISOString().split("T")[0];
+    return dateStr === selectedDate;
   };
 
-  // Check if date falls in standard fare validity period
   const getFareStatus = (vehicleId: string) => {
-    if (!activePackage) return { valid: false, text: "No Package Selected" };
-    const priceCell = activePackage.prices[vehicleId];
-    if (!priceCell) return { valid: false, text: "Fare Not Configured" };
+    if (!activePackage) return { valid: false, text: "No Route Selected", price: "N/A" };
+    const pInfo = activePackage.prices[vehicleId];
+    if (!pInfo || pInfo.price === "N/A") return { valid: false, text: "Rate Unavailable", price: "N/A" };
 
-    const fromDate = new Date(priceCell.from);
-    const toDate = new Date(priceCell.to);
-    const targetDate = new Date(selectedDate);
+    const sel = new Date(selectedDate);
+    const from = new Date(pInfo.from);
+    const to = new Date(pInfo.to);
+    
+    // Normalize date strings
+    from.setHours(0, 0, 0, 0);
+    to.setHours(23, 59, 59, 999);
+    sel.setHours(12, 0, 0, 0);
 
-    // Remove time components for pure date comparison
-    fromDate.setHours(0,0,0,0);
-    toDate.setHours(23,59,59,999);
-    targetDate.setHours(12,0,0,0);
-
-    const valid = targetDate >= fromDate && targetDate <= toDate;
+    const isValid = sel >= from && sel <= to;
     return {
-      valid,
-      text: valid ? "Standard Season Pricing" : `Out of Period (Validity: ${priceCell.from} to ${priceCell.to})`,
-      price: priceCell.price
+      valid: isValid,
+      text: isValid ? "Standard Season Pricing" : `Out of Season Range (${pInfo.from} to ${pInfo.to})`,
+      price: pInfo.price
     };
   };
 
@@ -180,83 +218,70 @@ export default function CalendarFarePage() {
         </button>
       </div>
 
+      {/* Main Content Layout */}
       {loading ? (
-        <div style={{ padding: "50px", background: "#ffffff", borderRadius: "12px", textAlign: "center", color: "#64748b" }}>
+        <div style={{ background: "#ffffff", padding: "50px", borderRadius: "12px", textAlign: "center", color: "#64748b" }}>
           <div style={{ border: "4px solid rgba(0,0,0,0.1)", borderTop: "4px solid #d4af37", borderRadius: "50%", width: "40px", height: "40px", animation: "spin 1s linear infinite", margin: "0 auto 12px auto" }}></div>
-          <p style={{ fontWeight: "600" }}>Loading fares calendar...</p>
+          <p style={{ fontWeight: "600" }}>Loading calendar fares...</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "20px", alignItems: "start" }} className="calendar-grid-layout">
-          {/* Left: Date Selection & Custom Calendar */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }} className="responsive-calendar-grid">
+          {/* Left: Route Selector & Interactive Calendar */}
           <div style={{ background: "#ffffff", padding: "24px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", gap: "20px" }}>
-            {/* Route Selector */}
+            {/* Route Selector Dropdown */}
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "8px" }}>Select Transportation Route</label>
               <select
                 value={selectedRouteId}
                 onChange={(e) => setSelectedRouteId(e.target.value)}
-                style={{ width: "100%", padding: "12px", border: "1px solid #cbd5e1", borderRadius: "8px", fontSize: "14px", outline: "none", background: "#ffffff" }}
+                style={{ width: "100%", padding: "12px 16px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px", fontWeight: "600", outline: "none", background: "#f8fafc", color: "#0f172a" }}
               >
-                {packages.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.englishName}
+                {packages.map((pkg) => (
+                  <option key={pkg.id} value={pkg.id}>
+                    {pkg.englishName}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Calendar Widget */}
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
-              <div style={{ background: "#f8fafc", padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0" }}>
-                <span style={{ fontWeight: "700", color: "#0f172a", fontSize: "15px" }}>
-                  {currentMonth.toLocaleString("default", { month: "long" })} {currentMonth.getFullYear()}
+            {/* Calendar Controls */}
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <span style={{ fontWeight: "700", fontSize: "16px", color: "#0f172a" }}>
+                  {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                 </span>
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button onClick={prevMonth} style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <i className="fas fa-chevron-left" style={{ fontSize: "11px", color: "#64748b" }}></i>
-                  </button>
-                  <button onClick={nextMonth} style={{ background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <i className="fas fa-chevron-right" style={{ fontSize: "11px", color: "#64748b" }}></i>
-                  </button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={prevMonth} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", background: "#ffffff", borderRadius: "6px", cursor: "pointer" }}>&lt;</button>
+                  <button onClick={nextMonth} style={{ padding: "6px 12px", border: "1px solid #cbd5e1", background: "#ffffff", borderRadius: "6px", cursor: "pointer" }}>&gt;</button>
                 </div>
               </div>
 
-              {/* Day Labels */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", background: "#f1f5f9", padding: "8px 0", borderBottom: "1px solid #e2e8f0" }}>
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => (
-                  <span key={d} style={{ fontSize: "11px", fontWeight: "700", color: "#64748b" }}>{d}</span>
-                ))}
+              {/* Day Headers */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", fontWeight: "600", fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
               </div>
 
               {/* Days Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", padding: "8px", gap: "4px" }}>
-                {days.map((day, idx) => {
-                  if (!day) return <div key={`empty-${idx}`} />;
-                  const dateStr = day.toISOString().split("T")[0];
-                  const selected = isDateSelected(day);
-                  
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" }}>
+                {calendarDays.map((day, idx) => {
+                  if (!day) return <div key={`empty-${idx}`} style={{ height: "40px" }}></div>;
+                  const active = isSelected(day);
                   return (
                     <div
-                      key={dateStr}
-                      onClick={() => setSelectedDate(dateStr)}
+                      key={day.toISOString()}
+                      onClick={() => setSelectedDate(day.toISOString().split("T")[0])}
                       style={{
                         height: "40px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        borderRadius: "6px",
-                        fontSize: "13px",
-                        fontWeight: selected ? "700" : "500",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: active ? "700" : "500",
                         cursor: "pointer",
-                        background: selected ? "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)" : "transparent",
-                        color: selected ? "#0f172a" : "#334155",
-                        transition: "all 0.15s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!selected) e.currentTarget.style.background = "#f1f5f9";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!selected) e.currentTarget.style.background = "transparent";
+                        background: active ? "#d4af37" : "#ffffff",
+                        color: active ? "#ffffff" : "#1e293b",
+                        border: active ? "none" : "1px solid #f1f5f9"
                       }}
                     >
                       {day.getDate()}
@@ -284,7 +309,7 @@ export default function CalendarFarePage() {
 
             {activePackage ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {VEHICLES.map((v) => {
+                {vehicles.map((v) => {
                   const check = getFareStatus(v.id);
                   return (
                     <div
@@ -321,22 +346,23 @@ export default function CalendarFarePage() {
                 })}
               </div>
             ) : (
-              <div style={{ padding: "40px 10px", textAlign: "center", color: "#94a3b8" }}>
-                Please select a route to inspect details.
+              <div style={{ textAlign: "center", color: "#94a3b8", padding: "40px 0" }}>
+                Please select a route to view fares.
               </div>
             )}
           </div>
         </div>
       )}
+
       <style>{`
+        @media (max-width: 900px) {
+          .responsive-calendar-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
         @keyframes spin { 
           0% { transform: rotate(0deg); } 
           100% { transform: rotate(360deg); } 
-        }
-        @media (max-width: 991px) {
-          .calendar-grid-layout {
-            grid-template-columns: 1fr !important;
-          }
         }
       `}</style>
     </div>

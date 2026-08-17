@@ -1941,9 +1941,29 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
             <h3 style={{ margin: "0 0 8px 0", fontSize: "19px", fontWeight: "700", color: "#0f172a" }}>
               Delete Customer Profile?
             </h3>
-            <p style={{ margin: "0 0 24px 0", fontSize: "14px", color: "#64748b", lineHeight: "1.5" }}>
+            <p style={{ margin: "0 0 16px 0", fontSize: "14px", color: "#64748b", lineHeight: "1.5" }}>
               Are you sure you want to delete customer <strong style={{ color: "#1e293b" }}>"{currentProfile?.name || 'this customer'}"</strong>? This action cannot be undone.
             </p>
+            <div style={{
+              background: "#fff1f2",
+              border: "1px solid #fecdd3",
+              borderRadius: "10px",
+              padding: "14px 16px",
+              margin: "0 0 24px 0",
+              textAlign: "left",
+              display: "flex",
+              gap: "12px"
+            }}>
+              <i className="fas fa-circle-exclamation" style={{ color: "#e11d48", fontSize: "18px", marginTop: "2px" }}></i>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontWeight: "700", color: "#9f1239", fontSize: "13px" }}>
+                  All Associated Data Will Be Removed
+                </span>
+                <span style={{ color: "#e11d48", fontSize: "12px", lineHeight: "1.4" }}>
+                  This will permanently delete all bookings, flights, hotels, trains, services, and invoices linked to this customer.
+                </span>
+              </div>
+            </div>
             <div style={{ display: "flex", gap: "12px" }}>
               <button
                 type="button"

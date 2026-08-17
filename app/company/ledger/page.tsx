@@ -25,6 +25,12 @@ export default function CompanyLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [clientLoading, setClientLoading] = useState(false);
   const [search, setSearch] = useState("");
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [clientCurrentPage, setClientCurrentPage] = useState(1);
+  const [clientRowsPerPage, setClientRowsPerPage] = useState(10);
   const [paymentModal, setPaymentModal] = useState<{
     show: boolean;
     booking: any;
@@ -343,6 +349,12 @@ export default function CompanyLedgerPage() {
               ? clientLedgerData.data
               : (Array.isArray(clientLedgerData?.data?.data) ? clientLedgerData.data.data : []));
 
+        const totalClientRows = clientBookingsList.length;
+        const totalClientPages = Math.ceil(totalClientRows / clientRowsPerPage) || 1;
+        const fromClientRow = totalClientRows === 0 ? 0 : (clientCurrentPage - 1) * clientRowsPerPage + 1;
+        const toClientRow = Math.min(clientCurrentPage * clientRowsPerPage, totalClientRows);
+        const paginatedClientBookings = clientBookingsList.slice((clientCurrentPage - 1) * clientRowsPerPage, clientCurrentPage * clientRowsPerPage);
+
         const clientSummary = clientLedgerData?.summary || clientLedgerData?.data?.summary || {
           total_billed: clientBookingsList.reduce((s: number, b: any) => s + Number(b.car_price || 0), 0),
           total_received: clientBookingsList.reduce((s: number, b: any) => s + Number(b.received_amount || 0), 0),
@@ -424,14 +436,14 @@ export default function CompanyLedgerPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {clientBookingsList.length === 0 ? (
+                      {paginatedClientBookings.length === 0 ? (
                         <tr>
                           <td colSpan={9} style={{ textAlign: "center", color: "#64748b", padding: "30px" }}>
                             No client booking ledger entries found.
                           </td>
                         </tr>
                       ) : (
-                        clientBookingsList.map((item: any) => {
+                        paginatedClientBookings.map((item: any) => {
                           const isPaid = (item.pending_amount || 0) <= 0;
                           return (
                             <tr key={item.id}>
@@ -486,6 +498,48 @@ export default function CompanyLedgerPage() {
                       )}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* Client Ledger Pagination Footer */}
+              {totalClientRows > 0 && (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderTop: "1px solid #f1f5f9", background: "#f8fafc", marginTop: "15px", borderRadius: "8px" }}>
+                  <span style={{ fontSize: "13px", color: "#64748b" }}>
+                    Showing <strong>{fromClientRow}</strong> to <strong>{toClientRow}</strong> of <strong>{totalClientRows}</strong> entries
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <select
+                      className="form-input"
+                      style={{ padding: "4px 8px", fontSize: "12px", width: "auto", marginRight: "10px" }}
+                      value={clientRowsPerPage}
+                      onChange={(e) => {
+                        setClientRowsPerPage(Number(e.target.value));
+                        setClientCurrentPage(1);
+                      }}
+                    >
+                      {[10, 25, 50, 100].map((v) => (
+                        <option key={v} value={v}>{v} / Page</option>
+                      ))}
+                    </select>
+
+                    <button
+                      onClick={() => setClientCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={clientCurrentPage === 1}
+                      style={{ background: "#fff", color: clientCurrentPage === 1 ? "#cbd5e1" : "#475569", border: "1px solid #e2e8f0", borderRadius: "6px", width: "30px", height: "30px", cursor: clientCurrentPage === 1 ? "not-allowed" : "pointer", fontWeight: "bold" }}
+                    >
+                      &lt;
+                    </button>
+                    <span style={{ fontSize: "13px", color: "#475569", margin: "0 8px" }}>
+                      Page <strong>{clientCurrentPage}</strong> of <strong>{totalClientPages}</strong>
+                    </span>
+                    <button
+                      onClick={() => setClientCurrentPage((prev) => Math.min(totalClientPages, prev + 1))}
+                      disabled={clientCurrentPage === totalClientPages}
+                      style={{ background: "#fff", color: clientCurrentPage === totalClientPages ? "#cbd5e1" : "#475569", border: "1px solid #e2e8f0", borderRadius: "6px", width: "30px", height: "30px", cursor: clientCurrentPage === totalClientPages ? "not-allowed" : "pointer", fontWeight: "bold" }}
+                    >
+                      &gt;
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -561,9 +615,14 @@ export default function CompanyLedgerPage() {
             )}
           </div>
         );
-      })() : (
+      })() : (() => {
+        const totalLedgerRows = ledgers.length;
+        const totalLedgerPages = Math.ceil(totalLedgerRows / rowsPerPage) || 1;
+        const fromLedgerRow = totalLedgerRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+        const toLedgerRow = Math.min(currentPage * rowsPerPage, totalLedgerRows);
+        const paginatedLedgers = ledgers.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-
+        return (
         /* Ledger Table Card (Admin Settlement Ledger) */
         <div className="table-card mobile-card" style={{ padding: "25px", background: "#ffffff", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
 
@@ -600,12 +659,12 @@ export default function CompanyLedgerPage() {
                 </tr>
               </thead>
               <tbody>
-                {ledgers.length === 0 ? (
+                {paginatedLedgers.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No ledger transactions recorded yet.</td>
                   </tr>
                 ) : (
-                  ledgers.map((l) => (
+                  paginatedLedgers.map((l) => (
                     <tr key={l.id}>
                       <td style={{ fontWeight: 700, color: "#1e293b" }}>{l.custom_id}</td>
                       <td>{l.date}</td>
@@ -624,8 +683,51 @@ export default function CompanyLedgerPage() {
             </table>
           </div>
         )}
+
+        {/* Settlement Ledger Pagination Footer */}
+        {totalLedgerRows > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderTop: "1px solid #f1f5f9", background: "#f8fafc", marginTop: "15px", borderRadius: "8px" }}>
+            <span style={{ fontSize: "13px", color: "#64748b" }}>
+              Showing <strong>{fromLedgerRow}</strong> to <strong>{toLedgerRow}</strong> of <strong>{totalLedgerRows}</strong> entries
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <select
+                className="form-input"
+                style={{ padding: "4px 8px", fontSize: "12px", width: "auto", marginRight: "10px" }}
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                {[10, 25, 50, 100].map((v) => (
+                  <option key={v} value={v}>{v} / Page</option>
+                ))}
+              </select>
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                style={{ background: "#fff", color: currentPage === 1 ? "#cbd5e1" : "#475569", border: "1px solid #e2e8f0", borderRadius: "6px", width: "30px", height: "30px", cursor: currentPage === 1 ? "not-allowed" : "pointer", fontWeight: "bold" }}
+              >
+                &lt;
+              </button>
+              <span style={{ fontSize: "13px", color: "#475569", margin: "0 8px" }}>
+                Page <strong>{currentPage}</strong> of <strong>{totalLedgerPages}</strong>
+              </span>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(totalLedgerPages, prev + 1))}
+                disabled={currentPage === totalLedgerPages}
+                style={{ background: "#fff", color: currentPage === totalLedgerPages ? "#cbd5e1" : "#475569", border: "1px solid #e2e8f0", borderRadius: "6px", width: "30px", height: "30px", cursor: currentPage === totalLedgerPages ? "not-allowed" : "pointer", fontWeight: "bold" }}
+              >
+                &gt;
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-      )}
+      );
+      })()}
 
 
       <style>{`

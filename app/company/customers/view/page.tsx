@@ -250,6 +250,7 @@ function CompanyCustomerViewContent() {
 
   const currentProfile = {
     id: selectedCust ? (selectedCust.custom_id || selectedCust.id) : targetId,
+    dbId: selectedCust ? selectedCust.id : targetId,
     name: selectedCust ? selectedCust.name : "Loading profile...",
     email: selectedCust ? parsedEmail : "No email provided",
     phones: selectedCust ? parsedPhones : ["123456789"],

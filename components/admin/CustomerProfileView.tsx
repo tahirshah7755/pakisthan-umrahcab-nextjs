@@ -20,6 +20,7 @@ const getFileUrl = (path: string) => {
 interface CustomerProfileViewProps {
   currentProfile: {
     id: string;
+    dbId?: string | number;
     name: string;
     email: string;
     company: string;
@@ -85,7 +86,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
   const [selectedApproveBooking, setSelectedApproveBooking] = useState<any>(null);
 
   const basePath = isCompany ? "/company" : "/admin";
-  const rawId = currentProfile.id.replace("#CST-", "").replace("#Cst-", "").replace("#cst-", "");
+  const rawId = currentProfile.dbId ? String(currentProfile.dbId) : currentProfile.id.replace("#CST-", "").replace("#Cst-", "").replace("#cst-", "");
 
   const [documents, setDocuments] = useState<any[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);

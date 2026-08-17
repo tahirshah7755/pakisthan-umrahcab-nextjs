@@ -29,6 +29,31 @@ const VEHICLES = [
   { id: "luxury_bus", name: "Luxury Bus", icon: "fa-bus" },
 ];
 
+const getVehiclePrice = (b: any, vehicleName: string, defaultPrice: number, defaultDates: string) => {
+  if (b.custom_prices && typeof b.custom_prices === 'object') {
+    const custom = b.custom_prices[vehicleName];
+    if (custom !== undefined && custom !== null) {
+      if (typeof custom === 'object') {
+        const price = custom.price !== undefined ? custom.price : defaultPrice;
+        const from = custom.from || defaultDates.split(" to ")[0] || "2026-06-01";
+        const to = custom.to || defaultDates.split(" to ")[1] || "2026-08-31";
+        return { price: String(price), from, to };
+      } else {
+        const price = custom;
+        const from = defaultDates.split(" to ")[0] || "2026-06-01";
+        const to = defaultDates.split(" to ")[1] || "2026-08-31";
+        return { price: String(price), from, to };
+      }
+    }
+  }
+  const parts = defaultDates.split(" to ");
+  return {
+    price: String(defaultPrice),
+    from: parts[0] || "2026-06-01",
+    to: parts[1] || "2026-08-31"
+  };
+};
+
 export default function CalendarFarePage() {
   const router = useRouter();
   const [packages, setPackages] = useState<PackageRow[]>([]);
@@ -51,23 +76,20 @@ export default function CalendarFarePage() {
         if (priceListData && Array.isArray(priceListData)) {
           const mapped = priceListData.map((b: any) => {
             const sedanDates = b.sedan_dates || "2026-06-01 to 2026-08-31";
-            const parts = sedanDates.split(" to ");
-            const fromDate = parts[0] || "2026-06-01";
-            const toDate = parts[1] || "2026-08-31";
 
             return {
               id: String(b.id),
               englishName: b.route,
               urduName: b.route.includes("Airport") ? "ایئرپورٹ ٹرانسپورٹ" : "ہوٹل ٹرانسپورٹ",
               prices: {
-                sedan: { price: String(b.sedan_price || 300), from: fromDate, to: toDate },
-                staria: { price: String(b.van_price || 500), from: fromDate, to: toDate },
-                starex: { price: String(b.van_price || 450), from: fromDate, to: toDate },
-                yukon: { price: String(b.suv_price || 700), from: fromDate, to: toDate },
-                hiace: { price: String(b.van_price || 600), from: fromDate, to: toDate },
-                coaster: { price: String(b.coach_price || 1200), from: fromDate, to: toDate },
-                bus: { price: String(b.coach_price || 1800), from: fromDate, to: toDate },
-                luxury_bus: { price: String(b.coach_price || 2400), from: fromDate, to: toDate },
+                sedan: getVehiclePrice(b, "Sedan", b.sedan_price || 300, sedanDates),
+                staria: getVehiclePrice(b, "Hyundai Staria", b.van_price || 500, sedanDates),
+                starex: getVehiclePrice(b, "Hyundai Starex", b.van_price || 450, sedanDates),
+                yukon: getVehiclePrice(b, "GMC XL Yukon", b.suv_price || 700, sedanDates),
+                hiace: getVehiclePrice(b, "Hiace Grand Cabin", b.van_price || 600, sedanDates),
+                coaster: getVehiclePrice(b, "Coaster", b.coach_price || 1200, sedanDates),
+                bus: getVehiclePrice(b, "Bus", b.coach_price || 1800, sedanDates),
+                luxury_bus: getVehiclePrice(b, "Luxury Bus", b.coach_price || 2400, sedanDates),
               }
             };
           });

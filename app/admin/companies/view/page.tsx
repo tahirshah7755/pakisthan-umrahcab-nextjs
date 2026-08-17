@@ -394,10 +394,10 @@ function CompanyProfileContent() {
                 ) : (
                   companyCustomers.map(cust => (
                     <tr key={cust.id}>
-                      <td style={{ fontWeight: 700 }}>{cust.id}</td>
+                      <td style={{ fontWeight: 700 }}>{cust.custom_id || `#CST-${cust.id}`}</td>
                       <td>
                         <button
-                          onClick={() => router.push(`/admin/customers/view?id=${cust.id.replace("#CST-","")}`)}
+                          onClick={() => router.push(`/admin/customers/view?id=${cust.id}`)}
                           style={{ background: "none", border: "none", color: "#2563eb", textDecoration: "underline", cursor: "pointer", padding: 0 }}
                         >
                           {cust.name}

@@ -37,15 +37,26 @@ function getVehiclePriceInfo(b: any, key: string) {
   // Try to resolve custom vehicle-specific price first
   if (b.custom_prices && typeof b.custom_prices === 'object') {
     const custom = b.custom_prices[key];
-    if (custom && typeof custom === 'object') {
-      price = parseFloat(custom.price) || 0;
-      dates = `${custom.from || "2026-06-01"} to ${custom.to || "2026-08-31"}`;
-      const parts = dates.split(" to ");
-      return {
-        price: String(price),
-        from: parts[0] || "2026-06-01",
-        to: parts[1] || "2026-08-31"
-      };
+    if (custom !== undefined && custom !== null) {
+      if (typeof custom === 'object') {
+        price = parseFloat(custom.price) || 0;
+        dates = `${custom.from || "2026-06-01"} to ${custom.to || "2026-08-31"}`;
+        const parts = dates.split(" to ");
+        return {
+          price: String(price),
+          from: parts[0] || "2026-06-01",
+          to: parts[1] || "2026-08-31"
+        };
+      } else {
+        price = parseFloat(custom) || 0;
+        dates = b.sedan_dates || "2026-06-01 to 2026-08-31";
+        const parts = dates.split(" to ");
+        return {
+          price: String(price),
+          from: parts[0] || "2026-06-01",
+          to: parts[1] || "2026-08-31"
+        };
+      }
     }
   }
 
@@ -104,31 +115,17 @@ export default function PriceListMatrix() {
         : []);
 
   const activeVehicles = React.useMemo(() => {
-    if (fleetList.length > 0) {
-      return fleetList.map((f: any) => {
-        const modelLower = f.model.toLowerCase();
-        let dbField = "sedan";
-        if (modelLower.includes("taurus")) {
-          dbField = "taurus";
-        } else if (modelLower.includes("staria") || modelLower.includes("starex") || modelLower.includes("hiace") || modelLower.includes("van")) {
-          dbField = "van";
-        } else if (modelLower.includes("yukon") || modelLower.includes("suv") || modelLower.includes("gmc")) {
-          dbField = "suv";
-        } else if (modelLower.includes("coaster") || modelLower.includes("bus") || modelLower.includes("coach")) {
-          dbField = "coach";
-        }
-
-        return {
-          id: String(f.id),
-          key: dbField,
-          name: f.model,
-          isCore: false
-        };
-      });
-    }
-
-    return [];
-  }, [fleetList]);
+    return [
+      { id: "sedan", key: "sedan", name: "Sedan", isCore: true },
+      { id: "staria", key: "van", name: "Hyundai Staria", isCore: true },
+      { id: "starex", key: "van", name: "Hyundai Starex", isCore: true },
+      { id: "yukon", key: "suv", name: "GMC XL Yukon", isCore: true },
+      { id: "hiace", key: "van", name: "Hiace Grand Cabin", isCore: true },
+      { id: "coaster", key: "coach", name: "Coaster", isCore: true },
+      { id: "bus", key: "coach", name: "Bus", isCore: true },
+      { id: "luxury_bus", key: "coach", name: "Luxury Bus", isCore: true },
+    ];
+  }, []);
 
   // Redirect if extras not unlocked
   useEffect(() => {
@@ -282,10 +279,13 @@ export default function PriceListMatrix() {
   const [newDateTo, setNewDateTo] = useState("2026-12-31");
   const [newRoutePrices, setNewRoutePrices] = useState<Record<string, string>>({
     sedan: "300",
-    taurus: "400",
-    van: "500",
-    suv: "600",
-    coach: "800",
+    staria: "500",
+    starex: "450",
+    yukon: "700",
+    hiace: "600",
+    coaster: "1200",
+    bus: "1800",
+    luxury_bus: "2400",
   });
 
   // Inline location creator states
@@ -354,11 +354,15 @@ export default function PriceListMatrix() {
     const destObj = locationsList.find(l => l.name === dropoffLoc);
 
     const formattedDates = `${newDateFrom} to ${newDateTo}`;
-    const customPricesObj: Record<string, number> = {};
+    const customPricesObj: Record<string, any> = {};
     activeVehicles.forEach((v: any) => {
       const fieldKey = v.id || v.key || v.name;
       const priceVal = Number(newRoutePrices[fieldKey] || newRoutePrices[v.name] || newRoutePrices[v.key] || 300);
-      customPricesObj[v.name] = priceVal;
+      customPricesObj[v.name] = {
+        price: priceVal,
+        from: newDateFrom,
+        to: newDateTo
+      };
     });
 
     try {
@@ -366,13 +370,13 @@ export default function PriceListMatrix() {
         route: newRoute.trim(),
         pickup_id: pickupObj ? Number(pickupObj.id) : null,
         destination_id: destObj ? Number(destObj.id) : null,
-        sedan_price: Number(newRoutePrices["sedan"] || newRoutePrices["1"] || 300),
+        sedan_price: Number(newRoutePrices["sedan"] || 300),
         sedan_dates: formattedDates,
-        suv_price: Number(newRoutePrices["suv"] || newRoutePrices["3"] || 600),
+        suv_price: Number(newRoutePrices["yukon"] || 700),
         suv_dates: formattedDates,
-        van_price: Number(newRoutePrices["van"] || newRoutePrices["2"] || 500),
+        van_price: Number(newRoutePrices["staria"] || 500),
         van_dates: formattedDates,
-        coach_price: Number(newRoutePrices["coach"] || newRoutePrices["4"] || 800),
+        coach_price: Number(newRoutePrices["coaster"] || 1200),
         coach_dates: formattedDates,
         custom_prices: customPricesObj,
         group_name: selectedGroup
@@ -409,19 +413,16 @@ export default function PriceListMatrix() {
     let total = 0;
     let lastPg = 1;
 
-    // Handle nested data envelope
-    const rootData = priceListData.data !== undefined ? priceListData.data : priceListData;
-
-    if (rootData) {
-      if (Array.isArray(rootData)) {
-        rawData = rootData;
-        total = rootData.length;
-        lastPg = 1;
-      } else if (rootData.data && Array.isArray(rootData.data)) {
+    if (priceListData) {
+      if (priceListData.data !== undefined && Array.isArray(priceListData.data)) {
         // Laravel LengthAwarePaginator structure
-        rawData = rootData.data;
-        total = rootData.total || 0;
-        lastPg = rootData.last_page || 1;
+        rawData = priceListData.data;
+        total = priceListData.total || 0;
+        lastPg = priceListData.last_page || 1;
+      } else if (Array.isArray(priceListData)) {
+        rawData = priceListData;
+        total = priceListData.length;
+        lastPg = 1;
       }
     }
 

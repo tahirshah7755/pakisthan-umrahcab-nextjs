@@ -557,28 +557,6 @@ export default function BookingsList() {
                         <option value="No Show">No Show</option>
                         <option value="Driver Copy Shared">Driver Copy Shared</option>
                       </select>
-                      <button
-                        onClick={() => {
-                          setSelectedShareBooking(b);
-                          setShowShareModal(true);
-                        }}
-                        style={{
-                          border: "none",
-                          background: "#e0f2fe",
-                          color: "#2563eb",
-                          borderRadius: "50%",
-                          width: "24px",
-                          height: "24px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
-                          fontSize: "12px"
-                        }}
-                        title="Share template messages"
-                      >
-                        <i className="fas fa-info-circle"></i>
-                      </button>
                     </div>
                   </td>
                   <td>

@@ -562,31 +562,6 @@ function CompanyBookingsContent() {
                             </span>
                           )}
 
-                          {b.driver_id && (
-                            <button
-                              onClick={() => {
-                                setSelectedShareBooking(b);
-                                setShowShareModal(true);
-                              }}
-                              style={{
-                                border: "none",
-                                background: "#e0f2fe",
-                                color: "#2563eb",
-                                borderRadius: "50%",
-                                width: "24px",
-                                height: "24px",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
-                                fontSize: "12px",
-                                flexShrink: 0
-                              }}
-                              title="View / Share Driver Details"
-                            >
-                              <i className="fas fa-info-circle"></i>
-                            </button>
-                          )}
                         </div>
                       </td>
                       <td>

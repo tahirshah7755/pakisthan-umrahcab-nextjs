@@ -540,14 +540,19 @@ export default function BalancePage() {
                             </button>
                           </td>
                           <td>
-                            <span style={{
-                              display: "inline-block", padding: "3px 10px", borderRadius: "9999px",
-                              fontSize: "10px", fontWeight: "800", textTransform: "uppercase",
-                              background: item.status === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-                              color: item.status === "CLEARED" ? "#10b981" : "#ef4444",
-                            }}>
-                              {item.status}
-                            </span>
+                            {(() => {
+                              const effectiveStatus = (item.status === "CLEARED" || (localStatuses[item.id] !== undefined ? localStatuses[item.id] === "Done" : item.statement_status === "Done")) ? "CLEARED" : "UNPAID";
+                              return (
+                                <span style={{
+                                  display: "inline-block", padding: "3px 10px", borderRadius: "9999px",
+                                  fontSize: "10px", fontWeight: "800", textTransform: "uppercase",
+                                  background: effectiveStatus === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                                  color: effectiveStatus === "CLEARED" ? "#10b981" : "#ef4444",
+                                }}>
+                                  {effectiveStatus}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td style={{ color: "#64748b", fontWeight: "600" }}>
                             #{item.id}
@@ -737,14 +742,19 @@ export default function BalancePage() {
                             >
                               <i className={(localLocks[item.id] !== undefined ? localLocks[item.id] : item.vouchers_lock) ? "fas fa-lock-open" : "fas fa-lock"}></i>
                             </button>
-                            <span style={{
-                              display: "inline-block", padding: "3px 8px", borderRadius: "9999px",
-                              fontSize: "9px", fontWeight: "800", textTransform: "uppercase",
-                              background: item.status === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-                              color: item.status === "CLEARED" ? "#10b981" : "#ef4444",
-                            }}>
-                              {item.status}
-                            </span>
+                            {(() => {
+                              const effectiveStatus = (item.status === "CLEARED" || (localStatuses[item.id] !== undefined ? localStatuses[item.id] === "Done" : item.statement_status === "Done")) ? "CLEARED" : "UNPAID";
+                              return (
+                                <span style={{
+                                  display: "inline-block", padding: "3px 8px", borderRadius: "9999px",
+                                  fontSize: "9px", fontWeight: "800", textTransform: "uppercase",
+                                  background: effectiveStatus === "CLEARED" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                                  color: effectiveStatus === "CLEARED" ? "#10b981" : "#ef4444",
+                                }}>
+                                  {effectiveStatus}
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
 

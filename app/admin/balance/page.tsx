@@ -272,13 +272,14 @@ export default function BalancePage() {
   const totalLedgerBalance = rows.reduce((s: number, r: any) => s + Number(r.ledger_balance || 0), 0);
 
   const handleToggleLock = async (item: any) => {
-    const originalCompany = companies.find((c: any) => c.id === item.id) || {};
+    const originalCompany = companies.find((c: any) => c.id === item.id || (c.name && item.company && c.name.trim().toLowerCase() === item.company.trim().toLowerCase())) || {};
     const nextVal = !item.vouchers_lock;
     setLocalLocks(prev => ({ ...prev, [item.id]: nextVal }));
     try {
       await updateCompany({
         ...originalCompany,
         id: item.id,
+        name: item.company,
         vouchers: nextVal,
       }).unwrap();
       showToast(`Voucher lock status updated for ${item.company}!`, "success");
@@ -290,12 +291,13 @@ export default function BalancePage() {
   };
 
   const handleChangeStatementStatus = async (item: any, status: string) => {
-    const originalCompany = companies.find((c: any) => c.id === item.id) || {};
+    const originalCompany = companies.find((c: any) => c.id === item.id || (c.name && item.company && c.name.trim().toLowerCase() === item.company.trim().toLowerCase())) || {};
     setLocalStatuses(prev => ({ ...prev, [item.id]: status }));
     try {
       await updateCompany({
         ...originalCompany,
         id: item.id,
+        name: item.company,
         statement_status: status,
       }).unwrap();
       showToast(`Statement status updated to "${status}" for ${item.company}`, "success");
@@ -307,11 +309,12 @@ export default function BalancePage() {
   };
 
   const handleSaveRemarks = async (item: any) => {
-    const originalCompany = companies.find((c: any) => c.id === item.id) || {};
+    const originalCompany = companies.find((c: any) => c.id === item.id || (c.name && item.company && c.name.trim().toLowerCase() === item.company.trim().toLowerCase())) || {};
     try {
       await updateCompany({
         ...originalCompany,
         id: item.id,
+        name: item.company,
         remarks: tempRemarks,
       }).unwrap();
       setEditingRemarks(null);

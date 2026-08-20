@@ -19,6 +19,7 @@ interface PriceCell {
   price: string;
   from: string;
   to: string;
+  enabled: boolean;
 }
 
 interface PackageRow {
@@ -30,9 +31,10 @@ interface PackageRow {
   custom_prices?: any;
 }
 
-function getVehiclePriceInfo(b: any, key: string) {
+function getVehiclePriceInfo(b: any, key: string): PriceCell {
   let price = 0;
   let dates = "2026-06-01 to 2026-08-31";
+  let enabled = true;
   
   // Try to resolve custom vehicle-specific price first
   if (b.custom_prices && typeof b.custom_prices === 'object') {
@@ -41,11 +43,13 @@ function getVehiclePriceInfo(b: any, key: string) {
       if (typeof custom === 'object') {
         price = parseFloat(custom.price) || 0;
         dates = `${custom.from || "2026-06-01"} to ${custom.to || "2026-08-31"}`;
+        enabled = custom.enabled !== undefined ? Boolean(custom.enabled) : true;
         const parts = dates.split(" to ");
         return {
           price: String(price),
           from: parts[0] || "2026-06-01",
-          to: parts[1] || "2026-08-31"
+          to: parts[1] || "2026-08-31",
+          enabled
         };
       } else {
         price = parseFloat(custom) || 0;
@@ -54,7 +58,8 @@ function getVehiclePriceInfo(b: any, key: string) {
         return {
           price: String(price),
           from: parts[0] || "2026-06-01",
-          to: parts[1] || "2026-08-31"
+          to: parts[1] || "2026-08-31",
+          enabled: true
         };
       }
     }
@@ -94,7 +99,8 @@ function getVehiclePriceInfo(b: any, key: string) {
   return {
     price: String(price),
     from: parts[0] || "2026-06-01",
-    to: parts[1] || "2026-08-31"
+    to: parts[1] || "2026-08-31",
+    enabled: true
   };
 }
 
@@ -409,16 +415,45 @@ export default function PriceListMatrix() {
   };
 
   const handleDeleteRoute = async (id: string, routeName: string) => {
-    if (!confirm(`Are you sure you want to delete route "${routeName}"?`)) {
+    const isGlobal = selectedGroup === "Standard";
+    const confirmMsg = isGlobal
+      ? `Are you sure you want to delete route "${routeName}" globally for ALL pricing groups?`
+      : `Are you sure you want to remove route "${routeName}" from tier "${selectedGroup}"?`;
+
+    if (!confirm(confirmMsg)) {
       return;
     }
     try {
-      await deletePriceList(parseInt(id)).unwrap();
-      showToast(`Route "${routeName}" deleted successfully!`, "success");
+      await deletePriceList({ id: parseInt(id), group_name: selectedGroup }).unwrap();
+      showToast(
+        isGlobal
+          ? `Route "${routeName}" deleted globally!`
+          : `Route "${routeName}" removed from tier "${selectedGroup}"!`,
+        "success"
+      );
     } catch (err: any) {
       console.error(err);
       showToast(err?.data?.message || "Failed to delete route.", "error");
     }
+  };
+
+  const handleToggleVehicleEnabled = (pkgId: string, vehicleId: string) => {
+    setPackages((prev) =>
+      prev.map((pkg) => {
+        if (pkg.id !== pkgId) return pkg;
+        const currentCell = pkg.prices[vehicleId] || { price: "300", from: "2026-06-01", to: "2026-08-31", enabled: true };
+        return {
+          ...pkg,
+          prices: {
+            ...pkg.prices,
+            [vehicleId]: {
+              ...currentCell,
+              enabled: !currentCell.enabled,
+            },
+          },
+        };
+      })
+    );
   };
 
   useEffect(() => {
@@ -559,11 +594,13 @@ export default function PriceListMatrix() {
         activeVehicles.forEach((vehicle: any) => {
           const priceCell = pkg.prices[vehicle.id];
           if (priceCell) {
-            // Save vehicle-specific price dynamically
+            const isVehicleEnabled = priceCell.enabled !== false;
+            // Save vehicle-specific price and status dynamically
             customPrices[vehicle.name] = {
               price: parseFloat(priceCell.price) || 0,
               from: priceCell.from || "2026-06-01",
-              to: priceCell.to || "2026-08-31"
+              to: priceCell.to || "2026-08-31",
+              enabled: isVehicleEnabled
             };
 
             // Maintain fallback categories for backward compatibility
@@ -584,7 +621,8 @@ export default function PriceListMatrix() {
               customPrices["Ford Taurus"] = {
                 price: parseFloat(priceCell.price) || 0,
                 from: priceCell.from || "2026-06-01",
-                to: priceCell.to || "2026-08-31"
+                to: priceCell.to || "2026-08-31",
+                enabled: isVehicleEnabled
               };
             } else if (category === "sedan") {
               updatePayload.sedan_price = parseFloat(priceCell.price || "300");
@@ -872,18 +910,44 @@ export default function PriceListMatrix() {
 
                     {/* Pricing and Date cells */}
                     {activeVehicles.map((vehicle: any) => {
-                      const priceCell = pkg.prices[vehicle.id] || { price: "", from: "", to: "" };
+                      const priceCell = pkg.prices[vehicle.id] || { price: "", from: "", to: "", enabled: true };
+                      const isEnabled = priceCell.enabled !== false;
                       return (
-                        <td key={vehicle.id}>
+                        <td key={vehicle.id} style={{ opacity: isEnabled ? 1 : 0.65, background: isEnabled ? "transparent" : "#fef2f2" }}>
                           <div className="cell-price-block">
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleVehicleEnabled(pkg.id, vehicle.id)}
+                                title={isEnabled ? "Vehicle is active on this route. Click to disable." : "Vehicle is disabled on this route. Click to enable."}
+                                style={{
+                                  background: isEnabled ? "#dcfce7" : "#fee2e2",
+                                  color: isEnabled ? "#15803d" : "#b91c1c",
+                                  border: `1px solid ${isEnabled ? "#86efac" : "#fca5a5"}`,
+                                  borderRadius: "12px",
+                                  padding: "2px 8px",
+                                  fontSize: "10px",
+                                  fontWeight: "700",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px"
+                                }}
+                              >
+                                <i className={`fas ${isEnabled ? "fa-circle-check" : "fa-ban"}`}></i>
+                                <span>{isEnabled ? "Active" : "Disabled"}</span>
+                              </button>
+                            </div>
+
                             <div className="cell-price-input-wrapper">
-                              <span style={{ fontSize: "11px", position: "absolute", left: "6px", fontWeight: "700", color: "#16a34a" }}>SR</span>
+                              <span style={{ fontSize: "11px", position: "absolute", left: "6px", fontWeight: "700", color: isEnabled ? "#16a34a" : "#94a3b8" }}>SR</span>
                               <input
                                 type="text"
                                 className="cell-price-input"
-                                value={priceCell.price}
+                                value={isEnabled ? priceCell.price : "OFF"}
+                                disabled={!isEnabled}
                                 onChange={(e) => handlePriceChange(pkg.id, vehicle.id, e.target.value)}
-                                style={{ paddingLeft: "24px", color: "#16a34a", fontWeight: "700" }}
+                                style={{ paddingLeft: "24px", color: isEnabled ? "#16a34a" : "#94a3b8", fontWeight: "700", background: isEnabled ? "#ffffff" : "#f1f5f9" }}
                               />
                             </div>
 
@@ -893,6 +957,7 @@ export default function PriceListMatrix() {
                                 type="date"
                                 className="cell-date-input"
                                 value={priceCell.from}
+                                disabled={!isEnabled}
                                 onChange={(e) => handleDateChange(pkg.id, vehicle.id, "from", e.target.value)}
                               />
                             </div>
@@ -903,6 +968,7 @@ export default function PriceListMatrix() {
                                 type="date"
                                 className="cell-date-input"
                                 value={priceCell.to}
+                                disabled={!isEnabled}
                                 onChange={(e) => handleDateChange(pkg.id, vehicle.id, "to", e.target.value)}
                               />
                             </div>

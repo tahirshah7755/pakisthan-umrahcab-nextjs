@@ -36,10 +36,14 @@ export const priceListApi = apiSlice.injectEndpoints({
       invalidatesTags: ["PriceList"],
     }),
     deletePriceList: builder.mutation({
-      query: (id) => ({
-        url: `/price-list/${id}`,
-        method: "DELETE",
-      }),
+      query: (arg: number | { id: number; group_name?: string }) => {
+        const id = typeof arg === "object" ? arg.id : arg;
+        const groupName = typeof arg === "object" ? arg.group_name : undefined;
+        return {
+          url: `/price-list/${id}${groupName ? `?group_name=${encodeURIComponent(groupName)}` : ""}`,
+          method: "DELETE",
+        };
+      },
       invalidatesTags: ["PriceList"],
     }),
     applyBulkPriceList: builder.mutation({

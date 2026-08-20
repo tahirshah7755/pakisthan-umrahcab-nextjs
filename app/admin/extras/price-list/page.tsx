@@ -86,15 +86,19 @@ function getVehiclePriceInfo(b: any, key: string): PriceCell {
   } else if (category === "sedan") {
     price = b.sedan_price ?? 300;
     dates = b.sedan_dates || "2026-06-01 to 2026-08-31";
+    if (b.sedan_price === 0) enabled = false;
   } else if (category === "van") {
     price = b.van_price ?? 500;
     dates = b.van_dates || "2026-06-01 to 2026-08-31";
+    if (b.van_price === 0) enabled = false;
   } else if (category === "suv") {
     price = b.suv_price ?? 700;
     dates = b.suv_dates || "2026-06-01 to 2026-08-31";
+    if (b.suv_price === 0) enabled = false;
   } else if (category === "coach") {
     price = b.coach_price ?? 1200;
     dates = b.coach_dates || "2026-06-01 to 2026-08-31";
+    if (b.coach_price === 0) enabled = false;
   }
   
   const parts = dates.split(" to ");
@@ -102,7 +106,7 @@ function getVehiclePriceInfo(b: any, key: string): PriceCell {
     price: String(price),
     from: parts[0] || "2026-06-01",
     to: parts[1] || "2026-08-31",
-    enabled: true
+    enabled
   };
 }
 
@@ -615,9 +619,11 @@ export default function PriceListMatrix() {
           const priceCell = pkg.prices[vehicle.id];
           if (priceCell) {
             const isVehicleEnabled = priceCell.enabled !== false;
+            const numericPrice = isVehicleEnabled ? (parseFloat(priceCell.price) || 0) : 0;
+
             // Save vehicle-specific price and status dynamically
             customPrices[vehicle.name] = {
-              price: parseFloat(priceCell.price) || 0,
+              price: numericPrice,
               from: priceCell.from || "2026-06-01",
               to: priceCell.to || "2026-08-31",
               enabled: isVehicleEnabled
@@ -637,24 +643,24 @@ export default function PriceListMatrix() {
             }
 
             if (category === "taurus") {
-              customPrices["taurus_price"] = parseFloat(priceCell.price || "400");
+              customPrices["taurus_price"] = numericPrice;
               customPrices["Ford Taurus"] = {
-                price: parseFloat(priceCell.price) || 0,
+                price: numericPrice,
                 from: priceCell.from || "2026-06-01",
                 to: priceCell.to || "2026-08-31",
                 enabled: isVehicleEnabled
               };
             } else if (category === "sedan") {
-              updatePayload.sedan_price = parseFloat(priceCell.price || "300");
+              updatePayload.sedan_price = isVehicleEnabled ? (parseFloat(priceCell.price) || 300) : 0;
               updatePayload.sedan_dates = `${priceCell.from} to ${priceCell.to}`;
             } else if (category === "van") {
-              updatePayload.van_price = parseFloat(priceCell.price || "500");
+              updatePayload.van_price = isVehicleEnabled ? (parseFloat(priceCell.price) || 500) : 0;
               updatePayload.van_dates = `${priceCell.from} to ${priceCell.to}`;
             } else if (category === "suv") {
-              updatePayload.suv_price = parseFloat(priceCell.price || "700");
+              updatePayload.suv_price = isVehicleEnabled ? (parseFloat(priceCell.price) || 700) : 0;
               updatePayload.suv_dates = `${priceCell.from} to ${priceCell.to}`;
             } else if (category === "coach") {
-              updatePayload.coach_price = parseFloat(priceCell.price || "1200");
+              updatePayload.coach_price = isVehicleEnabled ? (parseFloat(priceCell.price) || 1200) : 0;
               updatePayload.coach_dates = `${priceCell.from} to ${priceCell.to}`;
             }
           }

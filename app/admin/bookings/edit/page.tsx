@@ -383,10 +383,14 @@ function BookingEditContent() {
       // Try to resolve custom price first
       if (matchedPackage.custom_prices && typeof matchedPackage.custom_prices === 'object') {
         const customPriceObj = matchedPackage.custom_prices[vehicle];
-        if (customPriceObj && typeof customPriceObj === 'object' && customPriceObj.price !== undefined) {
-          const p = parseFloat(customPriceObj.price);
-          if (!isNaN(p)) {
-            resolvedPrice = p;
+        if (customPriceObj && typeof customPriceObj === 'object') {
+          if (customPriceObj.enabled === false || customPriceObj.disabled === true) {
+            resolvedPrice = 0;
+          } else if (customPriceObj.price !== undefined) {
+            const p = parseFloat(customPriceObj.price);
+            if (!isNaN(p)) {
+              resolvedPrice = p;
+            }
           }
         }
       }

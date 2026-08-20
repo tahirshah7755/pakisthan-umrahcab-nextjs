@@ -519,6 +519,28 @@ export default function PublicHomePage() {
       return isNaN(num) ? 0 : num;
     })();
 
+    const isVehicleEnabled = (name: string) => {
+      const lower = name.toLowerCase();
+      if (custom[name]) {
+        if (typeof custom[name] === 'object') {
+          if (custom[name].enabled === false || custom[name].disabled === true) return false;
+          if (Number(custom[name].price) === 0) return false;
+        }
+      }
+      if (lower.includes("taurus")) {
+        if (custom["Ford Taurus"]?.enabled === false || custom["Ford Taurus"]?.disabled === true) return false;
+      } else if (lower.includes("staria") || lower.includes("starex") || lower.includes("h-1") || lower.includes("h1") || lower.includes("van")) {
+        if (match?.van_price === 0 || custom.van_price === 0) return false;
+      } else if (lower.includes("yukon") || lower.includes("suv") || lower.includes("gmc") || lower.includes("tahoe") || lower.includes("prado")) {
+        if (match?.suv_price === 0 || custom.suv_price === 0) return false;
+      } else if (lower.includes("hiace") || lower.includes("hi ace") || lower.includes("bus") || lower.includes("coaster") || lower.includes("coach") || lower.includes("grand cabin")) {
+        if (match?.coach_price === 0 || custom.coach_price === 0) return false;
+      } else if (lower.includes("sedan") || lower.includes("camry")) {
+        if (match?.sedan_price === 0 || custom.sedan_price === 0) return false;
+      }
+      return true;
+    };
+
     let vehicles = [];
     if (publicFleet.length > 0) {
       vehicles = publicFleet.map((f: any) => {
@@ -539,7 +561,7 @@ export default function PublicHomePage() {
           icon: meta.icon,
           image: f.image
         };
-      });
+      }).filter((v: any) => isVehicleEnabled(v.name));
     } else {
       vehicles = defaultVehicles.map(v => {
         const meta = resolveMeta(v.name);
@@ -562,7 +584,7 @@ export default function PublicHomePage() {
           maxLuggage: meta.luggage ? parseInt(meta.luggage.replace(/[^0-9]/g, ""), 10) : 2,
           image: null
         };
-      });
+      }).filter((v: any) => isVehicleEnabled(v.name));
     }
 
     const filtered = vehicles.filter(v => v.maxPassengers >= reqPassengers && v.maxLuggage >= reqLuggage);

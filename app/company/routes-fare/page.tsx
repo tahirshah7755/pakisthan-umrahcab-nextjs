@@ -8,6 +8,7 @@ interface PriceCell {
   price: string;
   from: string;
   to: string;
+  enabled?: boolean;
 }
 
 interface VehicleCol {
@@ -31,36 +32,44 @@ const getVehiclePrice = (b: any, modelName: string) => {
     const custom = b.custom_prices[modelName] || b.custom_prices[modelName.toLowerCase()];
     if (custom !== undefined && custom !== null) {
       if (typeof custom === 'object') {
-        const price = custom.price !== undefined ? custom.price : 0;
+        const enabled = custom.enabled !== undefined ? Boolean(custom.enabled) : (Number(custom.price) > 0);
+        const price = enabled ? (custom.price !== undefined ? custom.price : 0) : 0;
         const from = custom.from || defaultDates.split(" to ")[0] || "2026-06-01";
         const to = custom.to || defaultDates.split(" to ")[1] || "2026-10-31";
-        return { price: String(price), from, to };
+        return { price: enabled && Number(price) > 0 ? String(price) : "N/A", from, to, enabled: enabled && Number(price) > 0 };
       } else {
-        const price = custom;
+        const enabled = Number(custom) > 0;
+        const price = enabled ? custom : 0;
         const from = defaultDates.split(" to ")[0] || "2026-06-01";
         const to = defaultDates.split(" to ")[1] || "2026-10-31";
-        return { price: String(price), from, to };
+        return { price: enabled ? String(price) : "N/A", from, to, enabled };
       }
     }
   }
 
   const mLower = modelName.toLowerCase();
   let price = 0;
+  let enabled = true;
   if (mLower.includes("gmc") || mLower.includes("yukon") || mLower.includes("suv")) {
-    price = b.suv_price || 600;
+    price = b.suv_price ?? 600;
+    if (b.suv_price === 0) enabled = false;
   } else if (mLower.includes("staria") || mLower.includes("starex") || mLower.includes("hiace") || mLower.includes("van")) {
-    price = b.van_price || 299;
+    price = b.van_price ?? 299;
+    if (b.van_price === 0) enabled = false;
   } else if (mLower.includes("coaster") || mLower.includes("bus") || mLower.includes("coach")) {
-    price = b.coach_price || 549;
+    price = b.coach_price ?? 549;
+    if (b.coach_price === 0) enabled = false;
   } else {
-    price = b.sedan_price || 249;
+    price = b.sedan_price ?? 249;
+    if (b.sedan_price === 0) enabled = false;
   }
 
   const parts = defaultDates.split(" to ");
   return {
-    price: String(price),
+    price: enabled && Number(price) > 0 ? String(price) : "N/A",
     from: parts[0] || "2026-06-01",
-    to: parts[1] || "2026-10-31"
+    to: parts[1] || "2026-10-31",
+    enabled: enabled && Number(price) > 0
   };
 };
 

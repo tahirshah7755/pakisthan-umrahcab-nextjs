@@ -514,10 +514,15 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       // 1. Check custom prices first
       if (matchedPackage.custom_prices && typeof matchedPackage.custom_prices === 'object') {
         const customPriceObj = matchedPackage.custom_prices[veh];
-        if (customPriceObj && typeof customPriceObj === 'object' && customPriceObj.price !== undefined) {
-          const p = parseFloat(customPriceObj.price);
-          if (!isNaN(p)) {
-            return p;
+        if (customPriceObj && typeof customPriceObj === 'object') {
+          if (customPriceObj.enabled === false || customPriceObj.disabled === true) {
+            return 0;
+          }
+          if (customPriceObj.price !== undefined) {
+            const p = parseFloat(customPriceObj.price);
+            if (!isNaN(p)) {
+              return p;
+            }
           }
         }
       }

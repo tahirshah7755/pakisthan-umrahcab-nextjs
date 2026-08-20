@@ -11,6 +11,8 @@ import {
   useApplyBulkPriceListMutation,
   useCreatePriceListMutation,
   useDeletePriceListMutation,
+  useGetHiddenRoutesQuery,
+  useRestorePriceListMutation,
 } from "@/store/api/priceListApi";
 import { useGetFleetQuery } from "@/store/api/fleetApi";
 import { useGetCompaniesQuery, useUpdateCompanyMutation } from "@/store/api/companiesApi";
@@ -244,6 +246,24 @@ export default function PriceListMatrix() {
   const [applyBulkPriceList, { isLoading: isApplyingBulk }] = useApplyBulkPriceListMutation();
   const [createPriceList] = useCreatePriceListMutation();
   const [deletePriceList] = useDeletePriceListMutation();
+  const [restorePriceList] = useRestorePriceListMutation();
+
+  const { data: hiddenRoutesData, refetch: refetchHiddenRoutes } = useGetHiddenRoutesQuery(selectedGroup, {
+    skip: !extrasUnlocked || selectedGroup === "Standard",
+  });
+
+  const hiddenRoutesList = Array.isArray(hiddenRoutesData) ? hiddenRoutesData : [];
+
+  const handleRestoreRoute = async (routeName: string) => {
+    try {
+      await restorePriceList({ route: routeName, group_name: selectedGroup }).unwrap();
+      showToast(`Route "${routeName}" restored to tier "${selectedGroup}" successfully!`, "success");
+      refetchHiddenRoutes();
+    } catch (err: any) {
+      console.error(err);
+      showToast(err?.data?.message || "Failed to restore route.", "error");
+    }
+  };
 
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -808,6 +828,43 @@ export default function PriceListMatrix() {
             >
               Assign Agent
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Restore Removed Routes Section for Custom Tier */}
+      {selectedGroup !== "Standard" && hiddenRoutesList.length > 0 && (
+        <div className="matrix-tool-card" style={{ borderLeft: "5px solid #f59e0b", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #fef3c7", paddingBottom: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <i className="fas fa-trash-arrow-up" style={{ color: "#d97706", fontSize: "20px" }}></i>
+              <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#92400e" }}>
+                Removed Routes for "{selectedGroup}" ({hiddenRoutesList.length})
+              </h4>
+            </div>
+            <span style={{ fontSize: "12px", background: "#fef3c7", color: "#b45309", fontWeight: "700", padding: "4px 10px", borderRadius: "12px" }}>
+              Hidden from this tier
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            {hiddenRoutesList.map((r: any) => (
+              <div key={r.id || r.route} style={{ display: "flex", alignItems: "center", gap: "10px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", padding: "8px 14px" }}>
+                <span style={{ fontSize: "13px", fontWeight: "700", color: "#b45309" }}>{r.route}</span>
+                <button
+                  onClick={() => handleRestoreRoute(r.route)}
+                  style={{
+                    background: "#f59e0b", color: "#ffffff", border: "none", borderRadius: "6px",
+                    padding: "4px 10px", fontSize: "12px", fontWeight: "700", cursor: "pointer",
+                    display: "inline-flex", alignItems: "center", gap: "5px"
+                  }}
+                  title="Restore this route to this pricing group tier"
+                >
+                  <i className="fas fa-rotate-left"></i>
+                  <span>Restore Route</span>
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

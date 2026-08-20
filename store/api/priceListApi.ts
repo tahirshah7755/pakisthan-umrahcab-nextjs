@@ -54,6 +54,18 @@ export const priceListApi = apiSlice.injectEndpoints({
       }),
       invalidatesTags: ["PriceList"],
     }),
+    getHiddenRoutes: builder.query({
+      query: (group_name: string) => `/price-list/hidden?group_name=${encodeURIComponent(group_name)}`,
+      providesTags: ["PriceList"],
+    }),
+    restorePriceList: builder.mutation({
+      query: (body: { route: string; group_name: string }) => ({
+        url: `/price-list/restore`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["PriceList"],
+    }),
   }),
 });
 
@@ -64,4 +76,6 @@ export const {
   useUpdatePriceListMutation,
   useDeletePriceListMutation,
   useApplyBulkPriceListMutation,
+  useGetHiddenRoutesQuery,
+  useRestorePriceListMutation,
 } = priceListApi;

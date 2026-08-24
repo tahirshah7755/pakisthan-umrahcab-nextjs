@@ -55,11 +55,20 @@ export default function CompanyDashboardPage() {
       try {
         setUploadingLogo(true);
         const res = await api.uploadCompanyLogo(base64);
-        if (res && (res.success || res.company)) {
+        const updatedCompany = res?.company || (res?.id || res?.logo_path ? res : null);
+        if (res && (res.success || updatedCompany)) {
           showToast("Company logo updated successfully!", "success");
           setLogoFailed(false);
-          if (res.company) {
-            setCompanyInfo(res.company);
+          if (updatedCompany) {
+            setCompanyInfo(updatedCompany);
+            const savedCompanyUserStr = localStorage.getItem("umrahcab_company_user");
+            if (savedCompanyUserStr) {
+              try {
+                const parsed = JSON.parse(savedCompanyUserStr);
+                if (updatedCompany.logo_path) parsed.logo_path = updatedCompany.logo_path;
+                localStorage.setItem("umrahcab_company_user", JSON.stringify(parsed));
+              } catch (err) {}
+            }
           }
           window.location.reload();
         } else {

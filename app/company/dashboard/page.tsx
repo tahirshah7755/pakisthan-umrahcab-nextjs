@@ -41,6 +41,37 @@ export default function CompanyDashboardPage() {
   const [pendingPaymentsTotal, setPendingPaymentsTotal] = useState(0);
   const [pendingPaymentsList, setPendingPaymentsList] = useState<any[]>([]);
   const [logoFailed, setLogoFailed] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      try {
+        setUploadingLogo(true);
+        const res = await api.uploadCompanyLogo(base64);
+        if (res && (res.success || res.company)) {
+          showToast("Company logo updated successfully!", "success");
+          setLogoFailed(false);
+          if (res.company) {
+            setCompanyInfo(res.company);
+          }
+          window.location.reload();
+        } else {
+          showToast("Failed to upload logo.", "error");
+        }
+      } catch (err) {
+        console.error("Logo upload error:", err);
+        showToast("Error uploading company logo.", "error");
+      } finally {
+        setUploadingLogo(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -162,8 +193,43 @@ export default function CompanyDashboardPage() {
             const logoSrc = getCompanyLogoSrc(companyInfo?.logo_path);
             const showImg = logoSrc && !logoFailed;
             return (
-              <div className="mobile-header-logo-container" style={{ width: "80px", height: "80px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
-                {showImg ? (
+              <div 
+                className="mobile-header-logo-container" 
+                style={{ 
+                  width: "80px", 
+                  height: "80px", 
+                  background: "rgba(255,255,255,0.05)", 
+                  borderRadius: "12px", 
+                  padding: "8px", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center", 
+                  overflow: "hidden", 
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  position: "relative",
+                  cursor: "pointer"
+                }}
+                title="Click to upload/change company logo"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={uploadingLogo}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    opacity: 0,
+                    cursor: "pointer",
+                    zIndex: 10
+                  }}
+                />
+                {uploadingLogo ? (
+                  <i className="fas fa-spinner fa-spin" style={{ fontSize: "24px", color: "#d4af37" }}></i>
+                ) : showImg ? (
                   <img
                     src={logoSrc}
                     alt="Company Logo"
@@ -171,8 +237,14 @@ export default function CompanyDashboardPage() {
                     onError={() => setLogoFailed(true)}
                   />
                 ) : (
-                  <i className="fas fa-building" style={{ fontSize: "32px", color: "#d4af37" }}></i>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>
+                    <i className="fas fa-building" style={{ fontSize: "24px", color: "#d4af37" }}></i>
+                    <span style={{ fontSize: "9px", color: "#94a3b8", fontWeight: "600" }}>Upload Logo</span>
+                  </div>
                 )}
+                <div style={{ position: "absolute", bottom: "2px", right: "2px", background: "#d4af37", borderRadius: "50%", width: "18px", height: "18px", display: "flex", alignItems: "center", justifyContent: "center", color: "#0f172a", fontSize: "9px" }}>
+                  <i className="fas fa-camera"></i>
+                </div>
               </div>
             );
           })()}

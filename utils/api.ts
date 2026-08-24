@@ -660,6 +660,14 @@ export const api = {
     return data;
   },
 
+  async uploadCompanyLogo(logoPath: string) {
+    const data = await request(`/company-panel/upload-logo`, {
+      method: "POST",
+      body: JSON.stringify({ logo_path: logoPath }),
+    });
+    return data;
+  },
+
   async updateAdminBookingPayment(id: string | number, receivedAmount: number) {
     const data = await request(`/bookings/${id}`, {
       method: "PUT",

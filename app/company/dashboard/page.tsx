@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
-const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
+import { getCompanyLogoSrc } from "@/utils/formatters";
 
 interface BookingRecord {
   id: string;
@@ -42,6 +40,7 @@ export default function CompanyDashboardPage() {
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState(0);
   const [pendingPaymentsTotal, setPendingPaymentsTotal] = useState(0);
   const [pendingPaymentsList, setPendingPaymentsList] = useState<any[]>([]);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
     show: false,
@@ -153,11 +152,24 @@ export default function CompanyDashboardPage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "25px", flex: 1, minWidth: "280px", flexWrap: "wrap" }}>
-          {companyInfo?.logo_path && (
-            <div className="mobile-header-logo-container" style={{ width: "80px", height: "80px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <img src={`${IMAGE_BASE}/${companyInfo.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-            </div>
-          )}
+          {(() => {
+            const logoSrc = getCompanyLogoSrc(companyInfo?.logo_path);
+            const showImg = logoSrc && !logoFailed;
+            return (
+              <div className="mobile-header-logo-container" style={{ width: "80px", height: "80px", background: "rgba(255,255,255,0.05)", borderRadius: "12px", padding: "8px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+                {showImg ? (
+                  <img
+                    src={logoSrc}
+                    alt="Company Logo"
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    onError={() => setLogoFailed(true)}
+                  />
+                ) : (
+                  <i className="fas fa-building" style={{ fontSize: "32px", color: "#d4af37" }}></i>
+                )}
+              </div>
+            );
+          })()}
           <div>
             <span style={{ color: "#d4af37", fontWeight: "700", textTransform: "uppercase", fontSize: "12px", letterSpacing: "1px" }}>Welcome Back Agent</span>
             <h2 className="mobile-header-title" style={{ fontSize: "28px", fontWeight: 800, color: "#ffffff", margin: "5px 0 8px 0", letterSpacing: "-0.5px" }}>

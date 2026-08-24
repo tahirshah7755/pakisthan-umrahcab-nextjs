@@ -18,6 +18,7 @@ interface MenuItem {
 }
 
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
+import { getCompanyLogoSrc } from "@/utils/formatters";
 
 export default function CompanySidebar() {
   const pathname = usePathname();
@@ -28,6 +29,7 @@ export default function CompanySidebar() {
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>(settings?.website_logo || "");
   const [isMounted, setIsMounted] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -135,13 +137,24 @@ export default function CompanySidebar() {
       {/* Profile Card */}
       <div className="sidebar-profile-card" style={{ background: "#1e293b", margin: "15px", borderRadius: "10px" }}>
         <div className="profile-info">
-          <div className="profile-avatar" style={{ background: (isMounted && companyUser?.logo_path) ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {(isMounted && companyUser?.logo_path) ? (
-              <img src={`${IMAGE_BASE}/${companyUser.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-            ) : (
-              <i className="fas fa-handshake" style={{ color: "#0f172a" }}></i>
-            )}
-          </div>
+          {(() => {
+            const companyLogoSrc = getCompanyLogoSrc(companyUser?.logo_path);
+            const showImg = isMounted && companyLogoSrc && !logoFailed;
+            return (
+              <div className="profile-avatar" style={{ background: showImg ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {showImg ? (
+                  <img
+                    src={companyLogoSrc}
+                    alt="Logo"
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    onError={() => setLogoFailed(true)}
+                  />
+                ) : (
+                  <i className="fas fa-handshake" style={{ color: "#0f172a" }}></i>
+                )}
+              </div>
+            );
+          })()}
           <span className="profile-name" style={{ color: "#ffffff" }}>{(isMounted && companyUser?.name) ? companyUser.name : "B2B Agent"}</span>
         </div>
         <button onClick={companyLogout} className="logout-btn" title="Sign Out" style={{ color: "#f43f5e" }}>

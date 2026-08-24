@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/utils/api";
+import { getCompanyLogoSrc } from "@/utils/formatters";
 import { useAuth } from "@/context/AuthContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
@@ -37,6 +38,7 @@ function CompanyProfileContent() {
   const [companyLedgers, setCompanyLedgers] = useState<any[]>([]);
   const [companyPayments, setCompanyPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   // Toast notification
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -184,11 +186,21 @@ function CompanyProfileContent() {
         {/* Left Card: Profile Summary */}
         <div style={{ width: "320px", background: "#ffffff", padding: "30px 20px", borderRadius: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
           <div style={{ width: "100px", height: "100px", background: "#f1f5f9", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "20px", overflow: "hidden" }}>
-            {company.logo_path ? (
-              <img src={`${IMAGE_BASE}/${company.logo_path}`} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-            ) : (
-              <i className="fas fa-building" style={{ fontSize: "40px", color: "#64748b" }}></i>
-            )}
+            {(() => {
+              const logoSrc = getCompanyLogoSrc(company.logo_path);
+              const showImg = logoSrc && !logoFailed;
+              if (showImg) {
+                return (
+                  <img
+                    src={logoSrc}
+                    alt="Logo"
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    onError={() => setLogoFailed(true)}
+                  />
+                );
+              }
+              return <i className="fas fa-building" style={{ fontSize: "40px", color: "#64748b" }}></i>;
+            })()}
           </div>
           
           <h3 style={{ margin: "0 0 5px 0", fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>{company.name}</h3>

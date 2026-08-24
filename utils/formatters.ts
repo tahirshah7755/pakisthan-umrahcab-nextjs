@@ -237,11 +237,27 @@ export const getSaudiTodayDate = (): string => {
  */
 export const getSaudiDateWithOffset = (offsetDays: number): string => {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Riyadh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
   }).format(new Date(Date.now() + offsetDays * 86400000));
 };
+
+/**
+ * Resolve company/agent logo URL properly handling Base64, absolute HTTP URLs, and relative paths.
+ */
+export const getCompanyLogoSrc = (logoPath?: string | null): string => {
+  if (!logoPath || typeof logoPath !== "string") return "";
+  const trimmed = logoPath.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("data:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
+  const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
+  const cleanPath = trimmed.startsWith("/") ? trimmed.substring(1) : trimmed;
+  
+  return `${IMAGE_BASE}/${cleanPath}`;
+};
+
 
 

@@ -16,6 +16,12 @@ export default function CompanyHeader() {
     setIsMounted(true);
   }, []);
 
+  React.useEffect(() => {
+    if (companyUser?.logo_path) {
+      setLogoFailed(false);
+    }
+  }, [companyUser?.logo_path]);
+
   return (
     <header className="admin-header">
       {/* Left side: Hamburger */}

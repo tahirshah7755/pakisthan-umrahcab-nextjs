@@ -241,22 +241,27 @@ export const getSaudiDateWithOffset = (offsetDays: number): string => {
 };
 
 /**
- * Resolve company/agent logo URL properly handling Base64, absolute HTTP URLs, and relative paths.
+ * Resolve company/agent logo URL properly handling Base64, absolute HTTP URLs, and relative paths via proxy-image endpoint.
  */
 export const getCompanyLogoSrc = (logoPath?: string | null): string => {
   if (!logoPath || typeof logoPath !== "string") return "";
   const trimmed = logoPath.trim();
   if (!trimmed) return "";
 
-  if (trimmed.startsWith("data:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+  if (trimmed.startsWith("data:")) {
     return trimmed;
   }
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/umrahcab";
   const IMAGE_BASE = API_URL.split("/api/")[0] || "http://localhost:8000";
-  const cleanPath = trimmed.startsWith("/") ? trimmed.substring(1) : trimmed;
-  
-  return `${IMAGE_BASE}/${cleanPath}`;
+
+  let fullUrl = trimmed;
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+    const cleanPath = trimmed.startsWith("/") ? trimmed.substring(1) : trimmed;
+    fullUrl = `${IMAGE_BASE}/${cleanPath}`;
+  }
+
+  return `/api/proxy-image?url=${encodeURIComponent(fullUrl)}`;
 };
 
 

@@ -38,6 +38,12 @@ export default function CompanySidebar() {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (companyUser?.logo_path) {
+      setLogoFailed(false);
+    }
+  }, [companyUser?.logo_path]);
+
   const toggleSubmenu = (name: string) => {
     setOpenSubmenu((prev) => (prev === name ? null : name));
   };

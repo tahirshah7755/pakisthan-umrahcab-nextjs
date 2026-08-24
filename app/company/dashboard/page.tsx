@@ -109,6 +109,12 @@ export default function CompanyDashboardPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (companyInfo?.logo_path) {
+      setLogoFailed(false);
+    }
+  }, [companyInfo?.logo_path]);
+
   const getStatusClass = (status: string) => {
     const s = status.toLowerCase();
     if (s.includes("completed")) return "completed";

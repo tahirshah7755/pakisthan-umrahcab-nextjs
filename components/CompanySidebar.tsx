@@ -144,8 +144,10 @@ export default function CompanySidebar() {
       <div className="sidebar-profile-card" style={{ background: "#1e293b", margin: "15px", borderRadius: "10px" }}>
         <div className="profile-info">
           {(() => {
-            const companyLogoSrc = getCompanyLogoSrc(companyUser?.logo_path);
-            const showImg = isMounted && companyLogoSrc && !logoFailed;
+            const customLogo = getCompanyLogoSrc(companyUser?.logo_path);
+            const siteLogo = settings?.website_logo || "";
+            const companyLogoSrc = (!logoFailed && customLogo) ? customLogo : siteLogo;
+            const showImg = isMounted && !!companyLogoSrc;
             return (
               <div className="profile-avatar" style={{ background: showImg ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {showImg ? (
@@ -153,7 +155,9 @@ export default function CompanySidebar() {
                     src={companyLogoSrc}
                     alt="Logo"
                     style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                    onError={() => setLogoFailed(true)}
+                    onError={() => {
+                      if (customLogo) setLogoFailed(true);
+                    }}
                   />
                 ) : (
                   <i className="fas fa-handshake" style={{ color: "#0f172a" }}></i>

@@ -4,9 +4,11 @@ import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { getCompanyLogoSrc } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 export default function CompanyHeader() {
   const { sidebarOpen, setSidebarOpen, companyLogout, companyUser } = useAuth();
+  const { settings } = useWebsiteSettings();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
@@ -56,15 +58,19 @@ export default function CompanyHeader() {
             style={{ color: "#d4af37", width: "32px", height: "32px", borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", padding: 0 }}
           >
             {(() => {
-              const companyLogoSrc = getCompanyLogoSrc(companyUser?.logo_path);
-              const showImg = isMounted && companyLogoSrc && !logoFailed;
+              const customLogo = getCompanyLogoSrc(companyUser?.logo_path);
+              const siteLogo = settings?.website_logo || "";
+              const companyLogoSrc = (!logoFailed && customLogo) ? customLogo : siteLogo;
+              const showImg = isMounted && !!companyLogoSrc;
               if (showImg) {
                 return (
                   <img
                     src={companyLogoSrc}
                     alt="Avatar"
                     style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                    onError={() => setLogoFailed(true)}
+                    onError={() => {
+                      if (customLogo) setLogoFailed(true);
+                    }}
                   />
                 );
               }

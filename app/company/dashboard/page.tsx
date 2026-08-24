@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { getCompanyLogoSrc } from "@/utils/formatters";
+import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface BookingRecord {
   id: string;
@@ -21,6 +22,7 @@ interface BookingRecord {
 
 export default function CompanyDashboardPage() {
   const router = useRouter();
+  const { settings } = useWebsiteSettings();
   const [loading, setLoading] = useState(true);
   const [makkahTime, setMakkahTime] = useState("");
   const [makkahDate, setMakkahDate] = useState("");
@@ -190,8 +192,10 @@ export default function CompanyDashboardPage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: "25px", flex: 1, minWidth: "280px", flexWrap: "wrap" }}>
           {(() => {
-            const logoSrc = getCompanyLogoSrc(companyInfo?.logo_path);
-            const showImg = logoSrc && !logoFailed;
+            const customLogo = getCompanyLogoSrc(companyInfo?.logo_path);
+            const siteLogo = settings?.website_logo || "";
+            const logoSrc = (!logoFailed && customLogo) ? customLogo : siteLogo;
+            const showImg = !!logoSrc;
             return (
               <div 
                 className="mobile-header-logo-container" 
@@ -234,7 +238,9 @@ export default function CompanyDashboardPage() {
                     src={logoSrc}
                     alt="Company Logo"
                     style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                    onError={() => setLogoFailed(true)}
+                    onError={() => {
+                      if (customLogo) setLogoFailed(true);
+                    }}
                   />
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}>

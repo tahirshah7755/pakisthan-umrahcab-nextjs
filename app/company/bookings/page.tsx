@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/exportHelper";
 import { formatDateToCustom } from "@/utils/formatters";
+import { DateFilterControl } from "@/components/admin/DateFilterControl";
 
 interface BookingRecord {
   id: string;
@@ -277,10 +278,13 @@ function CompanyBookingsContent() {
     }
   };
 
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const loadBookings = async () => {
     try {
       setLoading(true);
-      const data = await api.getCompanyBookings(debouncedSearch, currentPage, perPage, filter);
+      const data = await api.getCompanyBookings(debouncedSearch, currentPage, perPage, filter, startDate, endDate);
       
       if (data) {
         if (data.data && Array.isArray(data.data)) {
@@ -303,7 +307,7 @@ function CompanyBookingsContent() {
 
   useEffect(() => {
     loadBookings();
-  }, [debouncedSearch, filter, currentPage, perPage]);
+  }, [debouncedSearch, filter, currentPage, perPage, startDate, endDate]);
 
   useEffect(() => {
     async function loadDrivers() {
@@ -420,15 +424,24 @@ function CompanyBookingsContent() {
             ))}
           </div>
           
-          <div className="mobile-search-box" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>Search:</span>
-            <input
-              type="text"
-              placeholder="Search booking, name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", width: "220px", outline: "none" }}
+          <div className="mobile-search-box" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <DateFilterControl
+              onFilterChange={(val) => {
+                setStartDate(val.startDate);
+                setEndDate(val.endDate);
+                setCurrentPage(1);
+              }}
             />
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>Search:</span>
+              <input
+                type="text"
+                placeholder="Search booking, name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", fontSize: "14px", width: "220px", outline: "none" }}
+              />
+            </div>
           </div>
         </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateToCustom, getSaudiTodayDate } from "@/utils/formatters";
+import { DateFilterControl } from "@/components/admin/DateFilterControl";
 import { exportToExcel } from "@/utils/excelHelper";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
@@ -348,7 +349,7 @@ export default function FlightsDirectory() {
 
   useEffect(() => {
     fetchFlightsList();
-  }, [fltPage, fltPerPage, fltSearch]);
+  }, [fltPage, fltPerPage, fltSearch, fltStartDate, fltEndDate]);
 
   const handleDelete = async (id: string | number) => {
     if (!confirm("Are you sure you want to delete this flight record? This cannot be undone.")) return;
@@ -445,58 +446,27 @@ export default function FlightsDirectory() {
 
       {/* Date & Filter Panel */}
       <div className="form-card" style={{ 
-        padding: "20px", 
-        display: "grid", 
-        gridTemplateColumns: "1fr 1fr auto auto", 
+        padding: "16px 20px", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "space-between",
+        flexWrap: "wrap",
         gap: "15px", 
-        alignItems: "end", 
         background: "#ffffff", 
         border: "1px solid #e2e8f0", 
         borderRadius: "12px",
         boxShadow: "0 1px 3px rgba(0,0,0,0.05)"
       }}>
-        <div>
-          <label className="form-label" style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", marginBottom: "6px", display: "block" }}>Flight Start Date</label>
-          <div className="form-input-wrapper">
-            <i className="far fa-calendar form-icon" style={{ color: "#94a3b8" }}></i>
-            <input type="date" className="form-input" value={fltStartDate} onChange={(e) => { setFltStartDate(e.target.value); setFltPage(1); }} />
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>Filter Flights by Date:</span>
+          <DateFilterControl
+            onFilterChange={(val) => {
+              setFltStartDate(val.startDate);
+              setFltEndDate(val.endDate);
+              setFltPage(1);
+            }}
+          />
         </div>
-
-        <div>
-          <label className="form-label" style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", marginBottom: "6px", display: "block" }}>Flight End Date</label>
-          <div className="form-input-wrapper">
-            <i className="far fa-calendar form-icon" style={{ color: "#94a3b8" }}></i>
-            <input type="date" className="form-input" value={fltEndDate} onChange={(e) => { setFltEndDate(e.target.value); setFltPage(1); }} />
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            fetchFlightsList();
-            showToast("Filters applied", "success");
-          }}
-          style={{
-            background: "#ffffff",
-            color: "#1e293b",
-            border: "1px solid #cbd5e1",
-            borderRadius: "8px",
-            padding: "10px 24px",
-            fontWeight: "700",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            height: "42px",
-            cursor: "pointer",
-            transition: "all 0.2s"
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
-        >
-          <i className="fas fa-filter" style={{ color: "#475569" }}></i>
-          <span>Apply Filter</span>
-        </button>
 
         <button
           onClick={() => {
@@ -511,11 +481,12 @@ export default function FlightsDirectory() {
             color: "#475569",
             border: "none",
             borderRadius: "8px",
-            width: "42px",
-            height: "42px",
+            padding: "8px 16px",
+            fontSize: "13px",
+            fontWeight: "600",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            gap: "6px",
             cursor: "pointer",
             transition: "all 0.2s"
           }}
@@ -523,7 +494,7 @@ export default function FlightsDirectory() {
           onMouseLeave={(e) => { e.currentTarget.style.background = "#cbd5e1"; e.currentTarget.style.color = "#475569"; }}
           title="Reset Filters"
         >
-          <i className="fas fa-undo"></i>
+          <i className="fas fa-undo"></i> Reset Filters
         </button>
       </div>
 

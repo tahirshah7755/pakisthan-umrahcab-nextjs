@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
+import { DateFilterControl } from "@/components/admin/DateFilterControl";
 
 interface AssignmentItem {
   id: number;
@@ -120,10 +121,13 @@ export default function HotelAssignmentsList() {
     setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const fetchAssignments = async () => {
     try {
       setLoading(true);
-      const data = await api.getHotels(undefined, searchQuery, "assignments");
+      const data = await api.getHotels(undefined, searchQuery, "assignments", startDate, endDate);
       if (data) {
         setAssignments(data);
       }
@@ -137,7 +141,7 @@ export default function HotelAssignmentsList() {
 
   useEffect(() => {
     fetchAssignments();
-  }, [searchQuery]);
+  }, [searchQuery, startDate, endDate]);
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this stay assignment? This cannot be undone.")) return;
@@ -212,7 +216,12 @@ export default function HotelAssignmentsList() {
 
       {/* Search Toolbar */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "15px", marginTop: "10px" }}>
-        <div></div>
+        <DateFilterControl
+          onFilterChange={(val) => {
+            setStartDate(val.startDate);
+            setEndDate(val.endDate);
+          }}
+        />
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "14px", color: "#475569", fontWeight: "500" }}>Search:</span>
           <input

@@ -6,6 +6,7 @@ import { api } from "@/utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { DateFilterControl } from "@/components/admin/DateFilterControl";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 
 interface TrainItem {
@@ -362,7 +363,7 @@ export default function TrainsDirectory() {
 
   useEffect(() => {
     fetchTrainsList();
-  }, [trnPage, trnPerPage, trnSearch]);
+  }, [trnPage, trnPerPage, trnSearch, trnStartDate, trnEndDate]);
 
   const handleDeleteTrain = async (id: number, customId: string) => {
     if (window.confirm(`Are you sure you want to delete train record ${customId}?`)) {
@@ -450,51 +451,27 @@ export default function TrainsDirectory() {
       </div>
 
       {/* Date & Filter Panel */}
-      <div className="form-card" style={{ padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: "15px", alignItems: "end", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px" }}>
-        <div>
-          <label className="form-label" style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", marginBottom: "6px", display: "block" }}>Journey Start Date</label>
-          <div className="form-input-wrapper">
-            <i className="fas fa-calendar form-icon" style={{ color: "#94a3b8" }}></i>
-            <input type="date" className="form-input" value={trnStartDate} onChange={(e) => { setTrnStartDate(e.target.value); setTrnPage(1); }} />
-          </div>
+      <div className="form-card" style={{ 
+        padding: "16px 20px", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "15px", 
+        background: "#ffffff", 
+        border: "1px solid #e2e8f0", 
+        borderRadius: "12px"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "13px", fontWeight: "700", color: "#475569" }}>Filter Trains by Date:</span>
+          <DateFilterControl
+            onFilterChange={(val) => {
+              setTrnStartDate(val.startDate);
+              setTrnEndDate(val.endDate);
+              setTrnPage(1);
+            }}
+          />
         </div>
-
-        <div>
-          <label className="form-label" style={{ fontSize: "12px", color: "#64748b", fontWeight: "600", marginBottom: "6px", display: "block" }}>Journey End Date</label>
-          <div className="form-input-wrapper">
-            <i className="fas fa-calendar form-icon" style={{ color: "#94a3b8" }}></i>
-            <input type="date" className="form-input" value={trnEndDate} onChange={(e) => { setTrnEndDate(e.target.value); setTrnPage(1); }} />
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            fetchTrainsList();
-            showToast("Filters applied", "success");
-          }}
-          className="btn-submit"
-          style={{
-            background: "#ffffff",
-            color: "#1e293b",
-            border: "1px solid #cbd5e1",
-            borderRadius: "8px",
-            padding: "0 24px",
-            fontWeight: "600",
-            fontSize: "14px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            height: "42px",
-            cursor: "pointer",
-            transition: "all 0.2s ease",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "#ffffff"}
-        >
-          <i className="fas fa-filter"></i>
-          <span>Apply Filter</span>
-        </button>
 
         <button
           onClick={() => {
@@ -509,19 +486,20 @@ export default function TrainsDirectory() {
             color: "#475569",
             border: "none",
             borderRadius: "8px",
-            width: "42px",
-            height: "42px",
+            padding: "8px 16px",
+            fontSize: "13px",
+            fontWeight: "600",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            gap: "6px",
             cursor: "pointer",
             transition: "all 0.2s ease"
           }}
-          onMouseEnter={(e) => e.currentTarget.style.background = "#e2e8f0"}
-          onMouseLeave={(e) => e.currentTarget.style.background = "#f1f5f9"}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#be185d"; e.currentTarget.style.color = "#ffffff"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; e.currentTarget.style.color = "#475569"; }}
           title="Reset Filters"
         >
-          <i className="fas fa-undo"></i>
+          <i className="fas fa-undo"></i> Reset Filters
         </button>
       </div>
 

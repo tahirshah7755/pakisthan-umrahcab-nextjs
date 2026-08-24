@@ -1842,38 +1842,41 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setRoutes((prev) => [
-                      ...prev,
-                      {
-                        id: Date.now(),
-                        pickupDate: "",
-                        pickupTime: "",
-                        pickupLocation: "",
-                        dropoffLocation: "",
-                        timingStatus: "Confirmed",
-                        bookingStatus: "Pending",
-                        adults: 0,
-                        childrenCount: 0,
-                        bags: 0,
-                        vehicle: "",
-                        tripPackage: "",
-                        priceBeforeDiscount: "",
-                        discount: "",
-                        cashToReceive: "",
-                        paymentMethod: "Credit",
-                        receivedAmount: "",
-                        pendingAmount: "",
-                        discountReason: "",
-                        tafweejRequired: false,
-                        internalNotes: "",
-                        externalNotes: "",
-                        showPickupSuggestions: false,
-                        showDropoffSuggestions: false,
-                        externalPickupLocations: [],
-                        externalDropoffLocations: [],
-                        driverId: ""
-                      }
-                    ]);
+                    setRoutes((prev) => {
+                      const lastRoute = prev.length > 0 ? prev[prev.length - 1] : null;
+                      return [
+                        ...prev,
+                        {
+                          id: Date.now(),
+                          pickupDate: "",
+                          pickupTime: "",
+                          pickupLocation: "",
+                          dropoffLocation: "",
+                          timingStatus: "Confirmed",
+                          bookingStatus: "Pending",
+                          adults: lastRoute && lastRoute.adults !== undefined ? lastRoute.adults : 0,
+                          childrenCount: lastRoute && lastRoute.childrenCount !== undefined ? lastRoute.childrenCount : 0,
+                          bags: lastRoute && lastRoute.bags !== undefined ? lastRoute.bags : 0,
+                          vehicle: "",
+                          tripPackage: "",
+                          priceBeforeDiscount: "",
+                          discount: "",
+                          cashToReceive: "",
+                          paymentMethod: "Credit",
+                          receivedAmount: "",
+                          pendingAmount: "",
+                          discountReason: "",
+                          tafweejRequired: false,
+                          internalNotes: "",
+                          externalNotes: "",
+                          showPickupSuggestions: false,
+                          showDropoffSuggestions: false,
+                          externalPickupLocations: [],
+                          externalDropoffLocations: [],
+                          driverId: ""
+                        }
+                      ];
+                    });
                   }}
                   style={{
                     display: "flex",

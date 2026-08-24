@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useWebsiteSettings } from "@/context/WebsiteSettingsContext";
 import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 import { formatDateToCustom } from "@/utils/formatters";
+import { DateFilterControl } from "@/components/admin/DateFilterControl";
 
 interface BookingItem {
   id: string;
@@ -277,10 +278,13 @@ export default function BookingsList() {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await api.getBookings(debouncedSearch, currentPage, perPage);
+      const response = await api.getBookings(debouncedSearch, currentPage, perPage, startDate, endDate);
       if (response) {
         let rawData = [];
         if (response.data && Array.isArray(response.data)) {
@@ -380,8 +384,8 @@ export default function BookingsList() {
  
   useEffect(() => {
     loadData();
-  }, [debouncedSearch, currentPage, perPage]);
- 
+  }, [debouncedSearch, currentPage, perPage, startDate, endDate]);
+
   useEffect(() => {
     async function loadDrivers() {
       try {
@@ -433,6 +437,14 @@ export default function BookingsList() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
+        <DateFilterControl
+          onFilterChange={(val) => {
+            setStartDate(val.startDate);
+            setEndDate(val.endDate);
+            setCurrentPage(1);
+          }}
+        />
 
         <div style={{ display: "flex", gap: "8px" }}>
           <button disabled={!!exportingFmt} onClick={handleCopy} style={{ background: "#4f46e5", color: "#ffffff", border: "none", borderRadius: "6px", padding: "8px 16px", fontSize: "13px", fontWeight: "600", cursor: exportingFmt ? "not-allowed" : "pointer", transition: "all 0.15s ease" }} onMouseEnter={(e) => e.currentTarget.style.background = "#4338ca"} onMouseLeave={(e) => e.currentTarget.style.background = "#4f46e5"}>

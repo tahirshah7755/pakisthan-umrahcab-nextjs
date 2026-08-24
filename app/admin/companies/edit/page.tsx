@@ -119,7 +119,7 @@ function EditCompanyContent() {
         tomorrow_reminder: compTomorrowReminder ? 1 : 0,
         exempt_bulk_lock: compExemptBulkLock ? 1 : 0,
         remarks: compRemarks || "",
-        logo_path: compLogoBase64 || compLogoName || "",
+        logo_path: compLogoBase64 ? compLogoBase64 : (compLogoName && (compLogoName.includes('/') || compLogoName.includes('.')) ? compLogoName : undefined),
         price_group: compPriceGroup
       };
       await api.updateCompany(targetId, updated);

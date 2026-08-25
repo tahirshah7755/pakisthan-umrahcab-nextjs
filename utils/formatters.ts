@@ -261,7 +261,7 @@ export const getCompanyLogoSrc = (logoPath?: string | null): string => {
     fullUrl = `${IMAGE_BASE}/${cleanPath}`;
   }
 
-  return `/api/proxy-image?url=${encodeURIComponent(fullUrl)}`;
+  return fullUrl;
 };
 
 

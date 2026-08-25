@@ -38,9 +38,36 @@ function AddNewBookingContent() {
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
   const [timingStatus, setTimingStatus] = useState("Confirmed");
-  const [adults, setAdults] = useState(0);
-  const [childrenCount, setChildrenCount] = useState(0);
-  const [bags, setBags] = useState(0);
+  const [adults, setAdults] = useState<number | "">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("last_booking_adults");
+      if (saved !== null && saved !== "") {
+        const p = parseInt(saved, 10);
+        if (!isNaN(p) && p > 0) return p;
+      }
+    }
+    return 0;
+  });
+  const [childrenCount, setChildrenCount] = useState<number | "">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("last_booking_children");
+      if (saved !== null && saved !== "") {
+        const p = parseInt(saved, 10);
+        if (!isNaN(p) && p >= 0) return p;
+      }
+    }
+    return 0;
+  });
+  const [bags, setBags] = useState<number | "">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("last_booking_bags");
+      if (saved !== null && saved !== "") {
+        const p = parseInt(saved, 10);
+        if (!isNaN(p) && p > 0) return p;
+      }
+    }
+    return 0;
+  });
   const [vehicle, setVehicle] = useState("");
   const [tripPackage, setTripPackage] = useState("");
   const [priceBeforeDiscount, setPriceBeforeDiscount] = useState(0);
@@ -68,35 +95,17 @@ function AddNewBookingContent() {
     }
   }, [paymentMethod, priceBeforeDiscount, discount, receivedAmount]);
 
-  // Auto-populate adults, children, and bags from previous booking values in localStorage
   useEffect(() => {
     try {
-      const savedAdults = localStorage.getItem("last_booking_adults");
-      const savedChildren = localStorage.getItem("last_booking_children");
-      const savedBags = localStorage.getItem("last_booking_bags");
-
-      if (savedAdults !== null && savedAdults !== "") {
-        const parsed = parseInt(savedAdults, 10);
-        if (!isNaN(parsed)) setAdults(parsed);
+      if (typeof adults === "number" && adults > 0) {
+        localStorage.setItem("last_booking_adults", String(adults));
       }
-      if (savedChildren !== null && savedChildren !== "") {
-        const parsed = parseInt(savedChildren, 10);
-        if (!isNaN(parsed)) setChildrenCount(parsed);
+      if (typeof childrenCount === "number" && childrenCount >= 0) {
+        localStorage.setItem("last_booking_children", String(childrenCount));
       }
-      if (savedBags !== null && savedBags !== "") {
-        const parsed = parseInt(savedBags, 10);
-        if (!isNaN(parsed)) setBags(parsed);
+      if (typeof bags === "number" && bags > 0) {
+        localStorage.setItem("last_booking_bags", String(bags));
       }
-    } catch (err) {
-      console.error("Error reading previous booking values:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      if (adults !== 0 && adults !== ("" as any)) localStorage.setItem("last_booking_adults", String(adults));
-      if (childrenCount !== 0 && childrenCount !== ("" as any)) localStorage.setItem("last_booking_children", String(childrenCount));
-      if (bags !== 0 && bags !== ("" as any)) localStorage.setItem("last_booking_bags", String(bags));
     } catch (err) {
       // Ignore storage error
     }
@@ -127,6 +136,17 @@ function AddNewBookingContent() {
             if (bagsMatch && bagsMatch[1]) {
               const bVal = parseInt(bagsMatch[1], 10);
               if (!isNaN(bVal)) setBags(bVal);
+            }
+            const passMatch = latest.notes.match(/Passengers:\s*(\d+)/i);
+            if (passMatch && passMatch[1]) {
+              const pVal = parseInt(passMatch[1], 10);
+              if (!isNaN(pVal)) setAdults(pVal);
+            }
+          } else if (latest.passengers) {
+            const numMatch = String(latest.passengers).match(/(\d+)/);
+            if (numMatch && numMatch[1]) {
+              const pVal = parseInt(numMatch[1], 10);
+              if (!isNaN(pVal)) setAdults(pVal);
             }
           }
         }
@@ -489,14 +509,14 @@ function AddNewBookingContent() {
       destination: dropoffLocation,
       date: pickupDate,
       time: formatTimeTo24h(pickupTime),
-      passengers: `${adults + childrenCount} Passengers`,
+      passengers: `${Number(adults) + Number(childrenCount)} Passengers`,
       car_type: vehicle,
       car_price: finalBookingPrice,
       full_name: fullName,
       email: selectedCustomerObj?.contact?.includes("@") ? selectedCustomerObj.contact.split(" (Email)")[0].split("customer").pop() || "" : "",
       whatsapp: whatsappContact,
       flight_no: "",
-      notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${adults + childrenCount} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`,
+      notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`,
       payment_method: paymentMethod,
       received_amount: paymentMethod === "Cash" ? (parseFloat(receivedAmount) || 0) : null,
       pending_amount: paymentMethod === "Cash" ? (parseFloat(pendingAmount) || 0) : null,

@@ -67,10 +67,72 @@ function AddNewBookingContent() {
     }
   }, [paymentMethod, priceBeforeDiscount, discount, receivedAmount]);
 
+  // Auto-populate adults, children, and bags from previous booking values in localStorage
+  useEffect(() => {
+    try {
+      const savedAdults = localStorage.getItem("last_booking_adults");
+      const savedChildren = localStorage.getItem("last_booking_children");
+      const savedBags = localStorage.getItem("last_booking_bags");
+
+      if (savedAdults !== null && savedAdults !== "") {
+        const parsed = parseInt(savedAdults, 10);
+        if (!isNaN(parsed)) setAdults(parsed);
+      }
+      if (savedChildren !== null && savedChildren !== "") {
+        const parsed = parseInt(savedChildren, 10);
+        if (!isNaN(parsed)) setChildrenCount(parsed);
+      }
+      if (savedBags !== null && savedBags !== "") {
+        const parsed = parseInt(savedBags, 10);
+        if (!isNaN(parsed)) setBags(parsed);
+      }
+    } catch (err) {
+      console.error("Error reading previous booking values:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (adults !== "") localStorage.setItem("last_booking_adults", String(adults));
+      if (childrenCount !== "") localStorage.setItem("last_booking_children", String(childrenCount));
+      if (bags !== "") localStorage.setItem("last_booking_bags", String(bags));
+    } catch (err) {
+      // Ignore storage error
+    }
+  }, [adults, childrenCount, bags]);
+
   // Searchable Dropdown state
   const [customerSearch, setCustomerSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCustomerObj, setSelectedCustomerObj] = useState<any>(null);
+
+  // Auto-populate from selected customer's latest booking history if available
+  useEffect(() => {
+    if (!selectedCustomerObj) return;
+    const fetchCustomerLatestBooking = async () => {
+      try {
+        const res = await api.getBookings();
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        const custBookings = list.filter((b: any) =>
+          (b.customer_id && String(b.customer_id) === String(selectedCustomerObj.id)) ||
+          (b.full_name && b.full_name.trim().toLowerCase() === selectedCustomerObj.name?.trim().toLowerCase())
+        );
+        if (custBookings.length > 0) {
+          const latest = custBookings[0];
+          if (latest.notes) {
+            const bagsMatch = latest.notes.match(/Bags:\s*(\d+)/i);
+            if (bagsMatch && bagsMatch[1]) {
+              const bVal = parseInt(bagsMatch[1], 10);
+              if (!isNaN(bVal)) setBags(bVal);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch customer booking history for auto-fill:", err);
+      }
+    };
+    fetchCustomerLatestBooking();
+  }, [selectedCustomerObj]);
   
   // Pagination & Scrolling state
   const [page, setPage] = useState(1);
@@ -479,7 +541,7 @@ function AddNewBookingContent() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, addNextRoute: boolean = false) => {
     e.preventDefault();
 
     if (!customer) {
@@ -530,10 +592,26 @@ function AddNewBookingContent() {
       });
 
       if (res?.success) {
-        showToast("Booking registered successfully!", "success");
-        setTimeout(() => {
-          router.push(prefilledCustomerId ? `/admin/customers/view?id=${prefilledCustomerId}` : "/admin/bookings");
-        }, 1500);
+        if (addNextRoute) {
+          showToast("Booking route saved! Auto-filled details for next route.", "success");
+          setPickupLocation("");
+          setDropoffLocation("");
+          setPickupDate("");
+          setPickupTime("");
+          setTripPackage("");
+          setPriceBeforeDiscount(0);
+          setDiscount(0);
+          setCashToReceive(0);
+          setDiscountReason("");
+          setInternalNotes("");
+          setExternalNotes("");
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          showToast("Booking registered successfully!", "success");
+          setTimeout(() => {
+            router.push(prefilledCustomerId ? `/admin/customers/view?id=${prefilledCustomerId}` : "/admin/bookings");
+          }, 1500);
+        }
       } else {
         showToast(res?.error || "Failed to register booking.", "error");
       }
@@ -1209,13 +1287,32 @@ function AddNewBookingContent() {
           </div>
 
           {/* Form Actions */}
-          <div className="form-group-full form-submit-row">
+          <div className="form-group-full form-submit-row" style={{ display: "flex", gap: "12px", justifyContent: "flex-end", flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={() => router.push("/admin/bookings")}
               className="btn-cancel"
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              style={{
+                padding: "10px 20px",
+                background: "rgba(212, 175, 55, 0.15)",
+                color: "#b48a1d",
+                border: "1px solid #d4af37",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "700",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}
+            >
+              <i className="fas fa-plus-circle"></i> Save & Add Next Route
             </button>
             <button type="submit" className="btn-submit">
               Save Booking

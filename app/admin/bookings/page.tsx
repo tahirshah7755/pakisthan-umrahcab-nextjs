@@ -41,6 +41,11 @@ export default function BookingsList() {
   const router = useRouter();
   const { user } = useAuth();
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Determine permissions
   const getPermission = () => {
     if (!user) return "none";
@@ -50,8 +55,8 @@ export default function BookingsList() {
   };
 
   const permission = getPermission();
-  const canEdit = permission === "edit" || permission === "full";
-  const canDelete = permission === "full";
+  const canEdit = mounted && (permission === "edit" || permission === "full");
+  const canDelete = mounted && (permission === "full");
 
   // Redirect if unauthorized
   useEffect(() => {

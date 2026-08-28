@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { getSaudiTodayDate } from "@/utils/formatters";
 
-export type DateFilterPreset = "all" | "today" | "yesterday" | "custom";
+export type DateFilterPreset = "all" | "today" | "tomorrow" | "yesterday" | "custom";
 
 export interface DateFilterValue {
   preset: DateFilterPreset;
@@ -39,6 +39,15 @@ export const DateFilterControl: React.FC<DateFilterControlProps> = ({
     return `${year}-${month}-${day}`;
   };
 
+  const getTomorrowDate = (): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const handlePresetSelect = (selected: DateFilterPreset) => {
     setPreset(selected);
     const saudiToday = getSaudiTodayDate();
@@ -48,6 +57,10 @@ export const DateFilterControl: React.FC<DateFilterControlProps> = ({
     if (selected === "today") {
       newStart = saudiToday;
       newEnd = saudiToday;
+    } else if (selected === "tomorrow") {
+      const tDate = getTomorrowDate();
+      newStart = tDate;
+      newEnd = tDate;
     } else if (selected === "yesterday") {
       const yDate = getYesterdayDate();
       newStart = yDate;
@@ -128,6 +141,25 @@ export const DateFilterControl: React.FC<DateFilterControlProps> = ({
           }}
         >
           <i className="fas fa-calendar-day" style={{ marginRight: "4px" }}></i> Today
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handlePresetSelect("tomorrow")}
+          style={{
+            padding: "6px 14px",
+            fontSize: "12px",
+            fontWeight: 600,
+            borderRadius: "6px",
+            border: "none",
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            backgroundColor: preset === "tomorrow" ? "#10b981" : "transparent",
+            color: preset === "tomorrow" ? "#ffffff" : "#64748b",
+            boxShadow: preset === "tomorrow" ? "0 1px 3px rgba(16,185,129,0.3)" : "none",
+          }}
+        >
+          <i className="fas fa-calendar-plus" style={{ marginRight: "4px" }}></i> Tomorrow
         </button>
 
         <button

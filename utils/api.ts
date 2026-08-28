@@ -635,7 +635,26 @@ export const api = {
 
   async getCompanyInvoices() {
     const data = await request(`/company-panel/invoices`);
-    return data || [];
+    if (Array.isArray(data)) {
+      return { invoices: data, company_info: null };
+    }
+    return data || { invoices: [], company_info: null };
+  },
+
+  async calculateCompanyInvoice(payload: { start_date: string; end_date: string; type?: string }) {
+    const data = await request(`/company-panel/invoices/calculate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+
+  async createCompanyInvoice(payload: { start_date: string; end_date: string; type?: string; remarks?: string }) {
+    const data = await request(`/company-panel/invoices`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return data;
   },
 
   async getCompanyLedgers() {

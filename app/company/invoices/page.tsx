@@ -206,11 +206,68 @@ export default function CompanyInvoicesPage() {
     else if (fmt === "PDF" || fmt === "Print") handlePrint(fmt === "PDF" ? "Invoices Statement - PDF Report" : "Invoices Statement");
   };
 
+  const [companyInfo, setCompanyInfo] = useState<{ id?: number; name?: string; invoice_allowed?: boolean } | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [calcLoading, setCalcLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [startDate, setStartDate] = useState(getSaudiTodayDate());
+  const [endDate, setEndDate] = useState(getSaudiTodayDate());
+  const [invoiceType, setInvoiceType] = useState("VW");
+  const [remarks, setRemarks] = useState("");
+  const [previewData, setPreviewData] = useState<any>(null);
+
+  const handleCalculate = async () => {
+    if (!startDate || !endDate) {
+      showToast("Please select start date and end date.", "error");
+      return;
+    }
+    try {
+      setCalcLoading(true);
+      const res = await api.calculateCompanyInvoice({ start_date: startDate, end_date: endDate, type: invoiceType });
+      if (res?.success) {
+        setPreviewData(res.data);
+        showToast("Invoice calculated successfully!", "success");
+      } else {
+        showToast(res?.message || "Failed to calculate invoice.", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Error calculating invoice.", "error");
+    } finally {
+      setCalcLoading(false);
+    }
+  };
+
+  const handleCreateInvoiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!startDate || !endDate) {
+      showToast("Please select start date and end date.", "error");
+      return;
+    }
+    try {
+      setCreateLoading(true);
+      const res = await api.createCompanyInvoice({ start_date: startDate, end_date: endDate, type: invoiceType, remarks });
+      if (res?.success) {
+        showToast(res.message || "Invoice generated successfully!", "success");
+        setShowCreateModal(false);
+        setPreviewData(null);
+        setRemarks("");
+        loadInvoices();
+      } else {
+        showToast(res?.message || "Failed to generate invoice.", "error");
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Error generating invoice.", "error");
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   const loadInvoices = async () => {
     try {
       setLoading(true);
-      const data = await api.getCompanyInvoices();
-      setInvoices(data);
+      const res = await api.getCompanyInvoices();
+      setInvoices(res?.invoices || []);
+      setCompanyInfo(res?.company_info || null);
     } catch (err) {
       console.error(err);
       showToast("Failed to retrieve corporate invoices.", "error");
@@ -245,6 +302,30 @@ export default function CompanyInvoicesPage() {
           <h2 style={{ color: "#ffffff", margin: 0, fontSize: "24px", fontWeight: "700" }}>My Invoices</h2>
           <p style={{ color: "rgba(255, 255, 255, 0.8)", margin: "5px 0 0 0", fontSize: "14px" }}>Manage and view all corporate invoices and billing summaries.</p>
         </div>
+        <button
+          onClick={() => {
+            if (companyInfo && !companyInfo.invoice_allowed) {
+              showToast("Invoice creation permission is disabled for your account by admin.", "error");
+            }
+            setShowCreateModal(true);
+          }}
+          style={{
+            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "8px",
+            padding: "10px 20px",
+            fontSize: "14px",
+            fontWeight: "700",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            boxShadow: "0 4px 6px -1px rgba(16,185,129,0.3)"
+          }}
+        >
+          <i className="fas fa-plus"></i> Generate Invoice
+        </button>
       </div>
 
       {/* Invoices Grid Card */}
@@ -311,6 +392,152 @@ export default function CompanyInvoicesPage() {
           </div>
         )}
       </div>
+
+      {/* Generate Invoice Modal */}
+      {showCreateModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)",
+          zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff", borderRadius: "16px", maxWidth: "550px", width: "100%",
+            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+            overflow: "hidden"
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              padding: "20px 24px", color: "#ffffff", display: "flex",
+              justifyContent: "space-between", alignItems: "center"
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>Generate New Invoice</h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#94a3b8" }}>
+                  Select statement date range to calculate cycle bookings and outstanding balance.
+                </p>
+              </div>
+              <button
+                onClick={() => { setShowCreateModal(false); setPreviewData(null); }}
+                style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", fontSize: "14px" }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleCreateInvoiceSubmit} style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "700", color: "#475569", display: "block", marginBottom: "6px" }}>Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => { setStartDate(e.target.value); setPreviewData(null); }}
+                    required
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "12px", fontWeight: "700", color: "#475569", display: "block", marginBottom: "6px" }}>End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => { setEndDate(e.target.value); setPreviewData(null); }}
+                    required
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "700", color: "#475569", display: "block", marginBottom: "6px" }}>Calculation Type</label>
+                <select
+                  value={invoiceType}
+                  onChange={(e) => { setInvoiceType(e.target.value); setPreviewData(null); }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                >
+                  <option value="VW">Voucher Wise (VW)</option>
+                  <option value="PW">Passenger Wise (PW)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "12px", fontWeight: "700", color: "#475569", display: "block", marginBottom: "6px" }}>Remarks / Notes (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Monthly statement summary"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
+                />
+              </div>
+
+              {/* Calculate Preview Button */}
+              <button
+                type="button"
+                onClick={handleCalculate}
+                disabled={calcLoading}
+                style={{
+                  background: "#f1f5f9", color: "#0f172a", border: "1px solid #cbd5e1",
+                  borderRadius: "8px", padding: "10px", fontWeight: "700", fontSize: "13px",
+                  cursor: calcLoading ? "not-allowed" : "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px"
+                }}
+              >
+                <i className={calcLoading ? "fas fa-spinner fa-spin" : "fas fa-calculator"}></i>
+                {calcLoading ? "Calculating..." : "Calculate Statement Totals"}
+              </button>
+
+              {/* Preview Box */}
+              {previewData && (
+                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px 18px" }}>
+                  <h4 style={{ margin: "0 0 10px 0", fontSize: "13px", fontWeight: "800", color: "#0f172a", textTransform: "uppercase" }}>Calculation Preview</h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "12px", color: "#475569" }}>
+                    <div>Bookings Count: <strong>{previewData.bookings_count}</strong></div>
+                    <div>Bookings Sum: <strong>SAR {Number(previewData.bookings_sum).toFixed(2)}</strong></div>
+                    <div>Services Sum: <strong>SAR {Number(previewData.services_sum).toFixed(2)}</strong></div>
+                    <div>Payments Received: <strong>SAR {Number(previewData.payments_sum).toFixed(2)}</strong></div>
+                  </div>
+                  <hr style={{ margin: "10px 0", borderColor: "#cbd5e1" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>
+                    <span>Total Cycle Subtotal:</span>
+                    <span>SAR {Number(previewData.subtotal).toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: "800", color: "#ef4444", marginTop: "4px" }}>
+                    <span>Balance Due:</span>
+                    <span>SAR {Number(previewData.balance_due).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer Buttons */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowCreateModal(false); setPreviewData(null); }}
+                  style={{ background: "#e2e8f0", color: "#475569", border: "none", borderRadius: "8px", padding: "10px 18px", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={Boolean(createLoading || (companyInfo && !companyInfo.invoice_allowed))}
+                  style={{
+                    background: (companyInfo && !companyInfo.invoice_allowed) ? "#cbd5e1" : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    color: "#ffffff", border: "none", borderRadius: "8px", padding: "10px 20px",
+                    fontWeight: "700", fontSize: "13px", cursor: (createLoading || (companyInfo && !companyInfo.invoice_allowed)) ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", gap: "8px"
+                  }}
+                >
+                  <i className={createLoading ? "fas fa-spinner fa-spin" : "fas fa-check"}></i>
+                  {createLoading ? "Generating..." : "Generate Invoice Now"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes spin { 
           0% { transform: rotate(0deg); } 

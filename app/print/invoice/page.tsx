@@ -182,12 +182,14 @@ function InvoicePrintContent() {
             minWidth: 0
           }}>
             <span style={{ fontSize: "10px", fontWeight: "800", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: "6px" }}>BILL TO</span>
-            <h3 style={{ margin: "0 0 3px 0", fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>{invoice.company?.name || "Corporate Account"}</h3>
+            <h3 style={{ margin: "0 0 3px 0", fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>{invoice.company?.name || invoice.customer || "Corporate Account"}</h3>
             <p style={{ margin: "0 0 3px 0", fontSize: "12px", color: "#64748b" }}>{invoice.company?.address || "Saudi Arabia"}</p>
-            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
-              <i className="fas fa-phone-alt" style={{ fontSize: "10px", marginRight: "4px" }}></i>
-              {invoice.company?.phone || invoice.company?.whatsapp || "—"}
-            </p>
+            {(invoice.company?.phone || invoice.company?.whatsapp) ? (
+              <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                <i className="fas fa-phone-alt" style={{ fontSize: "10px", marginRight: "4px" }}></i>
+                {invoice.company?.phone || invoice.company?.whatsapp}
+              </p>
+            ) : null}
           </div>
 
           {/* Payment Status */}

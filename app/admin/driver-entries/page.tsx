@@ -6,6 +6,7 @@ import { api } from "../../../utils/api";
 import { useAuth } from "@/context/AuthContext";
 import { exportToExcel, exportToCSV, exportToPDF } from "@/utils/exportHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
+import { DateFilterControl, DateFilterValue } from "@/components/admin/DateFilterControl";
 
 export default function AdminDriverEntriesPage() {
   const router = useRouter();
@@ -43,7 +44,11 @@ export default function AdminDriverEntriesPage() {
   // Filters State
   const [filterDriver, setFilterDriver] = useState("");
   const [filterVehicle, setFilterVehicle] = useState("");
-  const [filterDate, setFilterDate] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({
+    preset: "all",
+    startDate: "",
+    endDate: "",
+  });
 
   // Toast notifications
   const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" }>({
@@ -88,7 +93,7 @@ export default function AdminDriverEntriesPage() {
   // Reload logs when filters change
   useEffect(() => {
     loadEntries();
-  }, [filterDriver, filterVehicle, filterDate]);
+  }, [filterDriver, filterVehicle, dateFilter]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ show: true, message, type });
@@ -120,7 +125,9 @@ export default function AdminDriverEntriesPage() {
       const data = await api.getDriverEntries({
         driver_id: filterDriver || undefined,
         vehicle_id: filterVehicle || undefined,
-        date: filterDate || undefined
+        start_date: dateFilter.startDate || undefined,
+        end_date: dateFilter.endDate || undefined,
+        date: (dateFilter.startDate && dateFilter.startDate === dateFilter.endDate) ? dateFilter.startDate : undefined
       });
       setEntries(data || []);
     } catch (err) {
@@ -1226,17 +1233,19 @@ export default function AdminDriverEntriesPage() {
           </select>
 
           {/* Date filter */}
-          <input
-            type="date"
-            value={filterDate}
-            onChange={e => setFilterDate(e.target.value)}
-            className="filter-date-input"
+          <DateFilterControl
+            onFilterChange={(val) => setDateFilter(val)}
+            initialPreset={dateFilter.preset}
           />
 
           {/* Reset filter button */}
-          {(filterDriver || filterVehicle || filterDate) && (
+          {(filterDriver || filterVehicle || dateFilter.preset !== "all") && (
             <button
-              onClick={() => { setFilterDriver(""); setFilterVehicle(""); setFilterDate(""); }}
+              onClick={() => {
+                setFilterDriver("");
+                setFilterVehicle("");
+                setDateFilter({ preset: "all", startDate: "", endDate: "" });
+              }}
               className="btn-clear-filters"
             >
               <i className="fas fa-times"></i>

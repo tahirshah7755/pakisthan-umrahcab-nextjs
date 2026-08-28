@@ -479,7 +479,8 @@ export default function AddInvoicePage() {
                 <div>
                   <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "#94a3b8", display: "block", marginBottom: "8px" }}>Bill To</span>
                   <h4 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700", color: "#1e293b" }}>{previewData.company}</h4>
-                  <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Multan Office</p>
+                  {previewData.address ? <p style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#64748b" }}>{previewData.address}</p> : null}
+                  {previewData.phone ? <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>📞 {previewData.phone}</p> : null}
                 </div>
 
                 <div style={{ textAlign: "right" }}>

@@ -247,8 +247,9 @@ export default function ViewInvoicePage() {
   const payments = breakdown.payments || [];
   const activities = breakdown.activities || [];
 
-  const companyName = invoice.customer_relation?.company || invoice.customer || "Individual / Direct";
-  const contact = invoice.customer_relation?.contact || "—";
+  const companyName = invoice.company?.name || invoice.customer_relation?.company || invoice.customer || "Individual / Direct";
+  const companyAddress = invoice.company?.address || "";
+  const companyPhone = invoice.company?.phone || invoice.company?.whatsapp || invoice.customer_relation?.phone || invoice.customer_relation?.contact || "";
 
   // Date formatting helpers
   const formatInvoiceDate = (dStr: string) => {
@@ -377,8 +378,8 @@ export default function ViewInvoicePage() {
           <div>
             <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "#94a3b8", display: "block", marginBottom: "8px" }}>Bill To</span>
             <h4 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "700", color: "#1e293b" }}>{companyName}</h4>
-            <p style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#64748b" }}>Multan Office</p>
-            <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>📞 {contact}</p>
+            {companyAddress ? <p style={{ margin: "0 0 4px 0", fontSize: "13px", color: "#64748b" }}>{companyAddress}</p> : null}
+            {companyPhone ? <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>📞 {companyPhone}</p> : null}
           </div>
 
           <div style={{ textAlign: "right" }}>
@@ -546,8 +547,8 @@ export default function ViewInvoicePage() {
           <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "15px" }}>
             <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", color: "#64748b", display: "block", marginBottom: "6px", letterSpacing: "0.5px" }}>Bill To</span>
             <h4 style={{ margin: "0 0 4px 0", fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>{companyName}</h4>
-            <p style={{ margin: "0 0 2px 0", fontSize: "13px", color: "#475569" }}>Multan Office</p>
-            <p style={{ margin: 0, fontSize: "13px", color: "#475569", fontWeight: "600" }}>📞 {contact}</p>
+            {companyAddress ? <p style={{ margin: "0 0 2px 0", fontSize: "13px", color: "#475569" }}>{companyAddress}</p> : null}
+            {companyPhone ? <p style={{ margin: 0, fontSize: "13px", color: "#475569", fontWeight: "600" }}>📞 {companyPhone}</p> : null}
           </div>
 
           {/* Payment Status Card */}

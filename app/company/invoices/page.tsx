@@ -224,7 +224,7 @@ export default function CompanyInvoicesPage() {
     try {
       setCalcLoading(true);
       const res = await api.calculateCompanyInvoice({ start_date: startDate, end_date: endDate, type: invoiceType });
-      if (res?.success || res?.data) {
+      if (res && (res.success || res.data || res.subtotal !== undefined || res.bookings_count !== undefined || res.company)) {
         const payload = res.data || res;
         setPreviewData(payload);
         showToast("Invoice calculated successfully!", "success");
@@ -247,7 +247,7 @@ export default function CompanyInvoicesPage() {
     try {
       setCreateLoading(true);
       const res = await api.createCompanyInvoice({ start_date: startDate, end_date: endDate, type: invoiceType, remarks });
-      if (res?.success || res?.data) {
+      if (res && (res.success || res.data || res.invoice_code || res.id)) {
         showToast(res?.message || res?.Message || "Invoice generated successfully!", "success");
         setShowCreateModal(false);
         setPreviewData(null);

@@ -516,7 +516,7 @@ export default function PaymentsPage() {
       {/* Toast Notification */}
       {toast.show && (
         <div style={{
-          position: "fixed", top: "20px", right: "20px", zIndex: 9999,
+          position: "fixed", top: "30px", right: "30px", zIndex: 999999,
           background: toast.type === "success" ? "#10b981" : "#ef4444",
           color: "#ffffff", padding: "12px 24px", borderRadius: "8px",
           boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", fontWeight: "600",

@@ -291,8 +291,8 @@ export default function CompanyInvoicesPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {toast.show && (
-        <div style={{ position: "fixed", top: "20px", right: "20px", zIndex: 9999, background: toast.type === "success" ? "#10b981" : "#ef4444", color: "#ffffff", padding: "12px 24px", borderRadius: "8px", boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)", fontWeight: "600" }}>
-          <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"} style={{ marginRight: "8px" }}></i>
+        <div style={{ position: "fixed", top: "30px", right: "30px", zIndex: 999999, background: toast.type === "success" ? "#10b981" : "#ef4444", color: "#ffffff", padding: "14px 28px", borderRadius: "10px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3)", fontWeight: "700", fontSize: "14px", display: "flex", alignItems: "center", gap: "10px" }}>
+          <i className={toast.type === "success" ? "fas fa-check-circle" : "fas fa-exclamation-circle"}></i>
           <span>{toast.message}</span>
         </div>
       )}

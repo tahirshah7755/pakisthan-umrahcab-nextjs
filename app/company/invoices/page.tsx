@@ -224,11 +224,12 @@ export default function CompanyInvoicesPage() {
     try {
       setCalcLoading(true);
       const res = await api.calculateCompanyInvoice({ start_date: startDate, end_date: endDate, type: invoiceType });
-      if (res?.success) {
-        setPreviewData(res.data);
+      if (res?.success || res?.data) {
+        const payload = res.data || res;
+        setPreviewData(payload);
         showToast("Invoice calculated successfully!", "success");
       } else {
-        showToast(res?.message || "Failed to calculate invoice.", "error");
+        showToast(res?.message || res?.Message || "Failed to calculate invoice.", "error");
       }
     } catch (err: any) {
       showToast(err?.message || "Error calculating invoice.", "error");
@@ -246,14 +247,14 @@ export default function CompanyInvoicesPage() {
     try {
       setCreateLoading(true);
       const res = await api.createCompanyInvoice({ start_date: startDate, end_date: endDate, type: invoiceType, remarks });
-      if (res?.success) {
-        showToast(res.message || "Invoice generated successfully!", "success");
+      if (res?.success || res?.data) {
+        showToast(res?.message || res?.Message || "Invoice generated successfully!", "success");
         setShowCreateModal(false);
         setPreviewData(null);
         setRemarks("");
         loadInvoices();
       } else {
-        showToast(res?.message || "Failed to generate invoice.", "error");
+        showToast(res?.message || res?.Message || "Failed to generate invoice.", "error");
       }
     } catch (err: any) {
       showToast(err?.message || "Error generating invoice.", "error");

@@ -38,6 +38,8 @@ const calculateCreditTotal = (payments: any[]) => {
     const statusLower = (p.status || "").toLowerCase();
     if (statusLower === "failed" || statusLower === "rejected" || statusLower === "cancelled") return acc;
     if (!isLoanTransaction(p)) return acc;
+    const methodLower = (p.method || "").toLowerCase();
+    if (methodLower === "loan due" || methodLower.includes("due")) return acc;
     return acc + Math.abs(parseFloat(p.amount || 0));
   }, 0);
 };

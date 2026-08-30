@@ -215,6 +215,120 @@ export default function CompanyInvoicesPage() {
   const [invoiceType, setInvoiceType] = useState("VW");
   const [remarks, setRemarks] = useState("");
   const [previewData, setPreviewData] = useState<any>(null);
+  const [selectedInvoiceForView, setSelectedInvoiceForView] = useState<InvoiceRecord | null>(null);
+
+  const handlePrintSingleInvoice = (inv: InvoiceRecord) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showToast("Pop-up blocked! Please allow pop-ups to print.", "error");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    const isPaid = inv.status.toLowerCase().includes("paid") && !inv.status.toLowerCase().includes("unpaid");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Invoice Statement - ${inv.invoice_code}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; color: #1e293b; line-height: 1.5; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #10b981; padding-bottom: 20px; margin-bottom: 30px; }
+            .header h1 { margin: 0; color: #0f172a; font-size: 28px; }
+            .header p { margin: 4px 0 0 0; color: #64748b; font-size: 14px; }
+            .badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+            .badge-unpaid { background: #fee2e2; color: #991b1b; }
+            .badge-paid { background: #d1fae5; color: #065f46; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; }
+            .info-item label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block; margin-bottom: 2px; }
+            .info-item span { font-size: 15px; font-weight: 600; color: #0f172a; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+            th { background: #0f172a; color: #ffffff; padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; }
+            td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
+            .totals-table { width: 320px; margin-left: auto; margin-top: 30px; }
+            .totals-table td { padding: 8px 12px; }
+            .totals-table tr.grand-total td { font-size: 16px; font-weight: 800; border-top: 2px solid #0f172a; color: #0f172a; }
+            .footer { margin-top: 50px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; color: #94a3b8; font-size: 12px; }
+            @media print { body { margin: 20px; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${brandName} Invoice</h1>
+              <p>Official Corporate Billing Document</p>
+            </div>
+            <div style="text-align: right;">
+              <h2 style="margin: 0; color: #10b981; font-size: 22px;">${inv.invoice_code}</h2>
+              <p style="margin-top: 4px;"><strong>Date:</strong> ${inv.date}</p>
+              <span class="badge ${isPaid ? "badge-paid" : "badge-unpaid"}">${inv.status}</span>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <label>B2B Account / Customer Name</label>
+              <span>${inv.customer}</span>
+            </div>
+            <div class="info-item">
+              <label>Billing Statement Period</label>
+              <span>${inv.period || "N/A"}</span>
+            </div>
+            <div class="info-item">
+              <label>Invoice Type</label>
+              <span>${inv.type || "Voucher Wise (VW)"}</span>
+            </div>
+            <div class="info-item">
+              <label>Remarks / Reference</label>
+              <span>${inv.remarks || "Standard Billing Cycle"}</span>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Statement Period</th>
+                <th>Type</th>
+                <th style="text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight: 600;">Corporate Transport & Services Cycle Invoice (${inv.invoice_code})</td>
+                <td>${inv.period || inv.date}</td>
+                <td>${inv.type || "VW"}</td>
+                <td style="text-align: right; font-weight: 700;">SAR ${Number(inv.amount || 0).toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table class="totals-table">
+            <tr>
+              <td>Subtotal Amount:</td>
+              <td style="text-align: right; font-weight: 600;">SAR ${Number(inv.amount || 0).toFixed(2)}</td>
+            </tr>
+            <tr class="grand-total">
+              <td>Outstanding Balance:</td>
+              <td style="text-align: right; color: #ef4444;">SAR ${Number(inv.balance || 0).toFixed(2)}</td>
+            </tr>
+          </table>
+
+          <div class="footer">
+            <p>Thank you for doing business with ${brandName}. Printed on ${today}.</p>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const handleCalculate = async () => {
     if (!startDate || !endDate) {
@@ -363,12 +477,13 @@ export default function CompanyInvoicesPage() {
                   <th>Amount</th>
                   <th>Outstanding Balance</th>
                   <th>Status</th>
+                  <th style={{ width: "100px", textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No invoices registered under this account.</td>
+                    <td colSpan={9} style={{ textAlign: "center", color: "#64748b", padding: "30px 10px" }}>No invoices registered under this account.</td>
                   </tr>
                 ) : (
                   invoices.map((inv) => (
@@ -384,6 +499,46 @@ export default function CompanyInvoicesPage() {
                       <td style={{ fontWeight: 700, color: "#ef4444" }}>SAR {parseFloat(inv.balance as any || 0).toFixed(2)}</td>
                       <td>
                         <span className={`status-pill ${getStatusClass(inv.status)}`}>{inv.status}</span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                          <button
+                            onClick={() => setSelectedInvoiceForView(inv)}
+                            title="View Invoice Details"
+                            style={{
+                              background: "#eff6ff",
+                              border: "none",
+                              borderRadius: "6px",
+                              width: "30px",
+                              height: "30px",
+                              cursor: "pointer",
+                              color: "#2563eb",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }}
+                          >
+                            <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
+                          </button>
+                          <button
+                            onClick={() => handlePrintSingleInvoice(inv)}
+                            title="Print Invoice"
+                            style={{
+                              background: "#ecfdf5",
+                              border: "none",
+                              borderRadius: "6px",
+                              width: "30px",
+                              height: "30px",
+                              cursor: "pointer",
+                              color: "#10b981",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center"
+                            }}
+                          >
+                            <i className="fas fa-print" style={{ fontSize: "12px" }}></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -535,6 +690,108 @@ export default function CompanyInvoicesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Invoice Details Modal */}
+      {selectedInvoiceForView && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)",
+          zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px"
+        }}>
+          <div style={{
+            background: "#ffffff", borderRadius: "16px", maxWidth: "600px", width: "100%",
+            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+            overflow: "hidden"
+          }}>
+            {/* Header */}
+            <div style={{
+              background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              padding: "20px 24px", color: "#ffffff", display: "flex",
+              justifyContent: "space-between", alignItems: "center"
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#d4af37" }}>
+                  Invoice Details: {selectedInvoiceForView.invoice_code}
+                </h3>
+                <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#94a3b8" }}>
+                  Customer: {selectedInvoiceForView.customer}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedInvoiceForView(null)}
+                style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", fontSize: "14px" }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                <div>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Invoice Code</span>
+                  <span style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>{selectedInvoiceForView.invoice_code}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Issue Date</span>
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{selectedInvoiceForView.date}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Statement Period</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#334155" }}>{selectedInvoiceForView.period || "N/A"}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Invoice Type</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#334155" }}>{selectedInvoiceForView.type || "VW"}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Total Amount</span>
+                  <span style={{ fontSize: "15px", fontWeight: "800", color: "#10b981" }}>SAR {parseFloat(selectedInvoiceForView.amount as any || 0).toFixed(2)}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", display: "block", textTransform: "uppercase" }}>Outstanding Balance</span>
+                  <span style={{ fontSize: "15px", fontWeight: "800", color: "#ef4444" }}>SAR {parseFloat(selectedInvoiceForView.balance as any || 0).toFixed(2)}</span>
+                </div>
+              </div>
+
+              {selectedInvoiceForView.remarks && (
+                <div>
+                  <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", display: "block", textTransform: "uppercase", marginBottom: "4px" }}>Remarks / Notes</span>
+                  <div style={{ background: "#f8fafc", padding: "10px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "13px", color: "#334155" }}>
+                    {selectedInvoiceForView.remarks}
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Actions Footer */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInvoiceForView(null)}
+                  style={{ background: "#e2e8f0", color: "#475569", border: "none", borderRadius: "8px", padding: "10px 18px", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const inv = selectedInvoiceForView;
+                    setSelectedInvoiceForView(null);
+                    handlePrintSingleInvoice(inv);
+                  }}
+                  style={{
+                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    color: "#ffffff", border: "none", borderRadius: "8px", padding: "10px 20px",
+                    fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px"
+                  }}
+                >
+                  <i className="fas fa-print"></i> Print Invoice
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

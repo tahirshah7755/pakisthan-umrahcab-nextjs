@@ -616,21 +616,34 @@ function CompanyBookingsContent() {
                           >
                             <i className="fas fa-eye" style={{ fontSize: "12px" }}></i>
                           </button>
-                          <button
-                            onClick={() => router.push(`/company/bookings/edit?id=${b.id}`)}
-                            title="Edit Booking"
-                            style={{
-                              background: "#f1f5f9",
-                              border: "none",
-                              borderRadius: "6px",
-                              width: "30px",
-                              height: "30px",
-                              cursor: "pointer",
-                              color: "#b48a1d",
-                            }}
-                          >
-                            <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
-                          </button>
+                          {(() => {
+                            const isEditable = (b.status || "").toLowerCase().includes("pending");
+                            return (
+                              <button
+                                onClick={() => {
+                                  if (isEditable) {
+                                    router.push(`/company/bookings/edit?id=${b.id}`);
+                                  } else {
+                                    showToast("Confirmed bookings cannot be edited.", "error");
+                                  }
+                                }}
+                                disabled={!isEditable}
+                                title={isEditable ? "Edit Booking" : "Editing locked for confirmed bookings"}
+                                style={{
+                                  background: "#f1f5f9",
+                                  border: "none",
+                                  borderRadius: "6px",
+                                  width: "30px",
+                                  height: "30px",
+                                  cursor: isEditable ? "pointer" : "not-allowed",
+                                  color: isEditable ? "#b48a1d" : "#cbd5e1",
+                                  opacity: isEditable ? 1 : 0.4,
+                                }}
+                              >
+                                <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
+                              </button>
+                            );
+                          })()}
                         </div>
                       </td>
                     </tr>

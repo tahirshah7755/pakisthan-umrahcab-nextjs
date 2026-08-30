@@ -111,13 +111,15 @@ function CompanyCustomerViewContent() {
             if (Array.isArray(customerProfile.flights)) {
               setFlights(customerProfile.flights.map((f: any) => ({
                 id: f.id,
+                custom_id: f.custom_id || `#FLT-${f.id}`,
                 customer_id: f.customer_id,
-                flight_no: f.flight_no,
-                leg: f.leg,
+                flight_no: f.flight_no || f.flightNo || "",
+                flightNo: f.flight_no || f.flightNo || "",
+                leg: f.leg || "Arrival",
                 date: f.date,
                 time: f.time,
                 route: f.route,
-                status: f.status
+                status: f.status || "On Time"
               })));
             }
 
@@ -125,13 +127,15 @@ function CompanyCustomerViewContent() {
             if (Array.isArray(customerProfile.trains)) {
               setTrains(customerProfile.trains.map((t: any) => ({
                 id: t.id,
+                custom_id: t.custom_id || `#TRN-${t.id}`,
                 customer_id: t.customer_id,
-                train_no: t.train_no,
-                class: t.class,
+                train_no: t.train_no || t.trainNo || "",
+                trainNo: t.train_no || t.trainNo || "",
+                class: t.class || "Economy",
                 date: t.date,
                 time: t.time,
                 route: t.route,
-                status: t.status
+                status: t.status || "Scheduled"
               })));
             }
 

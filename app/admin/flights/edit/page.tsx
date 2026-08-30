@@ -78,8 +78,8 @@ function EditFlightContent() {
         setSingleFltLoading(true);
         setSingleFltError("");
         const res = await api.getFlight(queryId);
-        if (res && res.flight) {
-          const f = res.flight;
+        const f = res?.data?.flight || res?.flight || (res?.data && res?.data?.id ? res.data : null);
+        if (res && f) {
           setFltSelected(f);
           setEditFltLeg(f.leg || "Arrival");
           setFltSelectedCustomerObj(f.customer || null);

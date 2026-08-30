@@ -733,9 +733,9 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                       <tr><td colSpan={7} style={{ textAlign: "center", padding: "30px", color: "#94a3b8" }}>No flights found for this customer.</td></tr>
                     ) : custFlights.map((f: any) => (
                       <tr key={f.id}>
-                        <td style={{ fontWeight: 700 }}>{f.id}</td>
-                        <td><span className="status-pill active" style={{ background: "#eff6ff", color: "#1e40af" }}>{f.leg}</span></td>
-                        <td style={{ fontWeight: 700 }}>{f.flightNo}</td>
+                        <td style={{ fontWeight: 700 }}>{f.custom_id || `#FLT-${f.id}`}</td>
+                        <td><span className="status-pill active" style={{ background: "#eff6ff", color: "#1e40af" }}>{f.leg || f.type || "Arrival"}</span></td>
+                        <td style={{ fontWeight: 700 }}>{f.flightNo || f.flight_no}</td>
                         <td style={{ fontWeight: 600 }}>{f.route}</td>
                         <td>{formatDateTime(f.date, f.time)}</td>
                         <td>
@@ -746,9 +746,9 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                         <td>
                           <button
                             onClick={() => setSelectedProfileFlight({
-                              id: f.id,
-                              type: f.leg,
-                              flightNo: f.flightNo,
+                              id: f.custom_id || f.id,
+                              type: f.leg || f.type || "Arrival",
+                              flightNo: f.flightNo || f.flight_no,
                               airline: "N/A",
                               sector: f.route,
                               dateTime: formatDateTime(f.date, f.time),
@@ -785,7 +785,7 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                       const trainAllocation = t.allocation || (t.train_no ? `${t.train_no}${t.class ? ` (${t.class})` : t.leg ? ` (${t.leg})` : ""}` : "N/A");
                       return (
                         <tr key={t.id}>
-                          <td style={{ fontWeight: 700 }}>{t.id}</td>
+                          <td style={{ fontWeight: 700 }}>{t.custom_id || `#TRN-${t.id}`}</td>
                           <td>{trainDateTime}</td>
                           <td style={{ fontWeight: 600 }}>{t.route}</td>
                           <td>{trainAllocation}</td>

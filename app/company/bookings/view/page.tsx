@@ -365,14 +365,39 @@ function BookingViewContent() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button 
-            onClick={() => router.push(`/company/bookings/edit?id=${booking.id || booking.booking_code}`)} 
-            className="btn-submit"
-            style={{ padding: "10px 18px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", background: "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)", border: "none", color: "#0f172a", borderRadius: "8px" }}
-          >
-            <i className="fas fa-edit"></i>
-            <span>Edit Booking</span>
-          </button>
+          {(() => {
+            const isEditable = (booking.status || "").toLowerCase().includes("pending");
+            return (
+              <button 
+                onClick={() => {
+                  if (isEditable) {
+                    router.push(`/company/bookings/edit?id=${booking.id || booking.booking_code}`);
+                  } else {
+                    showToast("Confirmed bookings cannot be edited.", "error");
+                  }
+                }}
+                disabled={!isEditable}
+                title={isEditable ? "Edit Booking" : "Editing locked for confirmed bookings"}
+                className="btn-submit"
+                style={{
+                  padding: "10px 18px",
+                  fontWeight: "700",
+                  cursor: isEditable ? "pointer" : "not-allowed",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  background: isEditable ? "linear-gradient(135deg, #d4af37 0%, #b48a1d 100%)" : "#475569",
+                  opacity: isEditable ? 1 : 0.6,
+                  border: "none",
+                  color: isEditable ? "#0f172a" : "#cbd5e1",
+                  borderRadius: "8px"
+                }}
+              >
+                <i className={isEditable ? "fas fa-edit" : "fas fa-lock"}></i>
+                <span>{isEditable ? "Edit Booking" : "Editing Locked"}</span>
+              </button>
+            );
+          })()}
           <button 
             onClick={() => router.push("/company/bookings")} 
             className="form-btn-back"

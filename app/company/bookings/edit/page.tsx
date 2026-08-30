@@ -512,6 +512,11 @@ function BookingEditContent() {
     e.preventDefault();
     if (!targetId) return;
 
+    if (bookingStatus === "Confirmed" || bookingStatus === "Active Dispatch" || bookingStatus === "Completed") {
+      showToast("Confirmed bookings cannot be edited.", "error");
+      return;
+    }
+
     if (!customer) {
       showToast("Please select a customer.", "error");
       return;

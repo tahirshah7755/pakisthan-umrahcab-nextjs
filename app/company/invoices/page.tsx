@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import { exportToExcel } from "@/utils/excelHelper";
 import { getSaudiTodayDate } from "@/utils/formatters";
@@ -20,6 +21,7 @@ interface InvoiceRecord {
 }
 
 export default function CompanyInvoicesPage() {
+  const router = useRouter();
   const { settings } = useWebsiteSettings();
   const brandName = settings?.site_title?.split("-")[0]?.trim() || settings?.site_title || "Heba Cab";
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -488,7 +490,9 @@ export default function CompanyInvoicesPage() {
                 ) : (
                   invoices.map((inv) => (
                     <tr key={inv.id}>
-                      <td style={{ fontWeight: 700, color: "#1e293b" }}>{inv.invoice_code}</td>
+                      <td style={{ fontWeight: 700, color: "#2563eb", cursor: "pointer" }} onClick={() => router.push(`/company/invoices/${inv.id}`)}>
+                        {inv.invoice_code}
+                      </td>
                       <td style={{ fontWeight: 600 }}>{inv.customer}</td>
                       <td>{inv.date}</td>
                       <td>{inv.period || "N/A"}</td>
@@ -503,8 +507,8 @@ export default function CompanyInvoicesPage() {
                       <td>
                         <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
                           <button
-                            onClick={() => setSelectedInvoiceForView(inv)}
-                            title="View Invoice Details"
+                            onClick={() => router.push(`/company/invoices/${inv.id}`)}
+                            title="View Full Invoice Sheet"
                             style={{
                               background: "#eff6ff",
                               border: "none",

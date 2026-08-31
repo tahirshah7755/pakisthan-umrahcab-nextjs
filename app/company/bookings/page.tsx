@@ -620,15 +620,15 @@ function CompanyBookingsContent() {
                             const isEditable = (b.status || "").toLowerCase().includes("pending");
                             return (
                               <button
+                                type="button"
                                 onClick={() => {
                                   if (isEditable) {
                                     router.push(`/company/bookings/edit?id=${b.id}`);
                                   } else {
-                                    showToast("Confirmed bookings cannot be edited.", "error");
+                                    showToast("Confirmed / Approved bookings cannot be edited.", "error");
                                   }
                                 }}
-                                disabled={!isEditable}
-                                title={isEditable ? "Edit Booking" : "Editing locked for confirmed bookings"}
+                                title={isEditable ? "Edit Booking" : "Editing locked for confirmed/approved bookings"}
                                 style={{
                                   background: "#f1f5f9",
                                   border: "none",
@@ -640,7 +640,7 @@ function CompanyBookingsContent() {
                                   opacity: isEditable ? 1 : 0.4,
                                 }}
                               >
-                                <i className="fas fa-pencil" style={{ fontSize: "12px" }}></i>
+                                <i className={isEditable ? "fas fa-pencil" : "fas fa-lock"} style={{ fontSize: "12px" }}></i>
                               </button>
                             );
                           })()}

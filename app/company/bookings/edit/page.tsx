@@ -381,7 +381,16 @@ function BookingEditContent() {
           setPickupLocation(b.pickup || "");
           setDropoffLocation(b.destination || "");
 
-          // Map status
+          // Map status & verify editability
+          const isEditable = (b.status || "").toLowerCase().includes("pending");
+          if (!isEditable) {
+            showToast("Confirmed / Approved bookings cannot be edited.", "error");
+            setTimeout(() => {
+              router.push("/company/bookings");
+            }, 1000);
+            return;
+          }
+
           let uiStatus = "Pending";
           if (b.status === "Active Dispatch" || b.status === "Confirmed Booking") uiStatus = "Confirmed";
           else if (b.status === "Completed") uiStatus = "Completed";

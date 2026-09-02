@@ -433,32 +433,67 @@ function BookingViewContent() {
           </h4>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <button 
-              onClick={() => router.push(rawCustomerId ? `/company/bookings/add?customer_id=${rawCustomerId}` : `/company/bookings/add`)}
-              style={{ background: "#0f172a", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+              onClick={() => {
+                if (isBookingEditable) {
+                  router.push(rawCustomerId ? `/company/bookings/add?customer_id=${rawCustomerId}` : `/company/bookings/add`);
+                } else {
+                  showToast("Booking is complete or confirmed by admin. Cannot add new booking, flight, hotel, ride or train.", "error");
+                }
+              }}
+              style={{ background: isBookingEditable ? "#0f172a" : "#64748b", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: isBookingEditable ? "pointer" : "not-allowed", opacity: isBookingEditable ? 1 : 0.65, display: "flex", alignItems: "center", gap: "5px" }}
+              title={isBookingEditable ? "Add Booking" : "Locked for completed/confirmed booking"}
             >
               <i className="fas fa-plus"></i> Add Booking
             </button>
             <button 
-              onClick={() => router.push(`/company/flights/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`)}
-              style={{ background: "#0284c7", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+              onClick={() => {
+                if (isBookingEditable) {
+                  router.push(`/company/flights/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`);
+                } else {
+                  showToast("Booking is complete or confirmed by admin. Cannot add new booking, flight, hotel, ride or train.", "error");
+                }
+              }}
+              style={{ background: isBookingEditable ? "#0284c7" : "#64748b", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: isBookingEditable ? "pointer" : "not-allowed", opacity: isBookingEditable ? 1 : 0.65, display: "flex", alignItems: "center", gap: "5px" }}
+              title={isBookingEditable ? "Add Flight" : "Locked for completed/confirmed booking"}
             >
               <i className="fas fa-plane"></i> Add Flight
             </button>
             <button 
-              onClick={() => router.push(`/company/trains/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`)}
-              style={{ background: "#059669", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+              onClick={() => {
+                if (isBookingEditable) {
+                  router.push(`/company/trains/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`);
+                } else {
+                  showToast("Booking is complete or confirmed by admin. Cannot add new booking, flight, hotel, ride or train.", "error");
+                }
+              }}
+              style={{ background: isBookingEditable ? "#059669" : "#64748b", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: isBookingEditable ? "pointer" : "not-allowed", opacity: isBookingEditable ? 1 : 0.65, display: "flex", alignItems: "center", gap: "5px" }}
+              title={isBookingEditable ? "Add Train" : "Locked for completed/confirmed booking"}
             >
               <i className="fas fa-train"></i> Add Train
             </button>
             <button 
-              onClick={() => router.push(`/company/hotels/assignments/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`)}
-              style={{ background: "#d97706", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+              onClick={() => {
+                if (isBookingEditable) {
+                  router.push(`/company/hotels/assignments/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`);
+                } else {
+                  showToast("Booking is complete or confirmed by admin. Cannot add new booking, flight, hotel, ride or train.", "error");
+                }
+              }}
+              style={{ background: isBookingEditable ? "#d97706" : "#64748b", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: isBookingEditable ? "pointer" : "not-allowed", opacity: isBookingEditable ? 1 : 0.65, display: "flex", alignItems: "center", gap: "5px" }}
+              title={isBookingEditable ? "Add Hotel" : "Locked for completed/confirmed booking"}
             >
               <i className="fas fa-hotel"></i> Add Hotel
             </button>
             <button 
-              onClick={() => router.push(`/company/services/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`)}
-              style={{ background: "#7c3aed", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+              onClick={() => {
+                if (isBookingEditable) {
+                  router.push(`/company/services/add${rawCustomerId ? `?customer_id=${rawCustomerId}` : ''}`);
+                } else {
+                  showToast("Booking is complete or confirmed by admin. Cannot add new booking, flight, hotel, ride or train.", "error");
+                }
+              }}
+              style={{ background: isBookingEditable ? "#7c3aed" : "#64748b", color: "#ffffff", border: "none", borderRadius: "6px", padding: "6px 12px", fontSize: "12px", fontWeight: "700", cursor: isBookingEditable ? "pointer" : "not-allowed", opacity: isBookingEditable ? 1 : 0.65, display: "flex", alignItems: "center", gap: "5px" }}
+              title={isBookingEditable ? "Add Service" : "Locked for completed/confirmed booking"}
             >
               <i className="fas fa-concierge-bell"></i> Add Service
             </button>

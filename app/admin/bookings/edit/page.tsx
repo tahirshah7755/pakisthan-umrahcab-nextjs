@@ -38,6 +38,7 @@ function parseNotes(notesStr: string, carPrice: number) {
     tafweejRequired: false,
     cashToReceive: 0,
     paymentMethod: "Credit",
+    visaType: "Umrah Visa",
     receivedAmount: "",
     pendingAmount: "",
     internalNotes: "",
@@ -63,6 +64,9 @@ function parseNotes(notesStr: string, carPrice: number) {
       matchedCount++;
     } else if (cleanPart.startsWith("Timing Status:")) {
       result.timingStatus = cleanPart.substring("Timing Status:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Visa Type:")) {
+      result.visaType = cleanPart.substring("Visa Type:".length).trim();
       matchedCount++;
     } else if (cleanPart.startsWith("Bags:")) {
       result.bags = parseInt(cleanPart.substring("Bags:".length).trim()) || 0;
@@ -124,6 +128,7 @@ function BookingEditContent() {
   const [dropoffLocation, setDropoffLocation] = useState("");
   const [timingStatus, setTimingStatus] = useState("Confirmed");
   const [bookingStatus, setBookingStatus] = useState("Pending");
+  const [visaType, setVisaType] = useState("Umrah Visa");
   const [adults, setAdults] = useState<number | "">(0);
   const [childrenCount, setChildrenCount] = useState<number | "">(0);
   const [bags, setBags] = useState<number | "">(0);
@@ -443,6 +448,7 @@ function BookingEditContent() {
           setTripPackage(parsed.tripPackage);
           setVehicle(parsed.vehicle || b.car_type || "");
           setTimingStatus(parsed.timingStatus);
+          setVisaType(b.visa_type || parsed.visaType || "Umrah Visa");
           setAdults(parsed.adults || 0);
           setChildrenCount(parsed.childrenCount || 0);
           setBags(parsed.bags || 0);
@@ -638,7 +644,7 @@ function BookingEditContent() {
       const whatsappContact = getCustomerPhoneWithCode(selectedCustomerObj);
       const customerEmail = selectedCustomerObj?.email || "";
 
-      const notesField = `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`;
+      const notesField = `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Visa Type: ${visaType} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`;
 
       const updatedFields = {
         customer_id: selectedCustomerObj ? selectedCustomerObj.id : null,
@@ -652,6 +658,7 @@ function BookingEditContent() {
         full_name: fullName,
         email: customerEmail,
         whatsapp: whatsappContact,
+        visa_type: visaType,
         notes: notesField,
         status: dbStatus,
         payment_method: paymentMethod,
@@ -1058,6 +1065,25 @@ function BookingEditContent() {
                 <option value="Confirmed">Confirmed</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
+              </select>
+              <i className="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
+          {/* Visa Type */}
+          <div>
+            <label className="form-label">Visa Type *</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-passport form-icon"></i>
+              <select
+                className="form-input form-select"
+                value={visaType}
+                onChange={(e) => setVisaType(e.target.value)}
+                required
+              >
+                <option value="Umrah Visa">Umrah Visa</option>
+                <option value="Visit Visa">Visit Visa</option>
+                <option value="On Arrival Visa">On Arrival Visa</option>
               </select>
               <i className="fas fa-chevron-down select-arrow"></i>
             </div>

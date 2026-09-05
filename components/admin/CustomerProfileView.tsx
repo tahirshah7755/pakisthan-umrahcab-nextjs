@@ -1204,6 +1204,10 @@ export const CustomerProfileView: React.FC<CustomerProfileViewProps> = ({
                 <span style={{ fontSize: "14px", fontWeight: "600" }}>{selectedProfileBooking.pickupLocation} &rarr; {selectedProfileBooking.dropoffLocation}</span>
               </div>
               <div>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Visa Type</span>
+                <span style={{ fontSize: "15px", fontWeight: "600" }}><i className="fas fa-passport" style={{ marginRight: "6px", color: "#64748b" }}></i>{selectedProfileBooking.visaType || "Umrah Visa"}</span>
+              </div>
+              <div>
                 <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "block" }}>Billing Value</span>
                 <span style={{ fontSize: "15px", fontWeight: "700", color: "#16a34a" }}>SAR {selectedProfileBooking.finalPrice.toFixed(2)}</span>
               </div>

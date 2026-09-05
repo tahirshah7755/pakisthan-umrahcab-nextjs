@@ -19,6 +19,7 @@ function parseNotes(notesStr: string, carPrice: number) {
     tafweejRequired: false,
     cashToReceive: 0,
     paymentMethod: "Credit",
+    visaType: "Umrah Visa",
     receivedAmount: "",
     pendingAmount: "",
     internalNotes: "",
@@ -45,6 +46,9 @@ function parseNotes(notesStr: string, carPrice: number) {
       matchedCount++;
     } else if (cleanPart.startsWith("Timing Status:")) {
       result.timingStatus = cleanPart.substring("Timing Status:".length).trim();
+      matchedCount++;
+    } else if (cleanPart.startsWith("Visa Type:")) {
+      result.visaType = cleanPart.substring("Visa Type:".length).trim();
       matchedCount++;
     } else if (cleanPart.startsWith("Bags:")) {
       result.bags = parseInt(cleanPart.substring("Bags:".length).trim()) || 0;
@@ -648,6 +652,13 @@ function BookingViewContent() {
                 <div>
                   <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Passengers Info</span>
                   <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}><i className="fas fa-users" style={{ marginRight: "6px", color: "#64748b" }}></i> {booking.passengers || `${parsed.adults} Passengers`}</span>
+                </div>
+                <div>
+                  <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Visa Type</span>
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>
+                    <i className="fas fa-passport" style={{ marginRight: "6px", color: "#64748b" }}></i>
+                    {booking.visa_type || parsed.visaType || "Umrah Visa"}
+                  </span>
                 </div>
                 <div>
                   <span style={{ fontSize: "12px", color: "#64748b", display: "block", textTransform: "uppercase", fontWeight: "700", marginBottom: "4px" }}>Is Tafweej Required?</span>

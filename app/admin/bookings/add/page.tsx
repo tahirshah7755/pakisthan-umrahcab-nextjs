@@ -37,6 +37,7 @@ function AddNewBookingContent() {
   const [dropoffLocation, setDropoffLocation] = useState("");
   const [timingStatus, setTimingStatus] = useState("Confirmed");
   const [bookingStatus, setBookingStatus] = useState("Pending");
+  const [visaType, setVisaType] = useState("Umrah Visa");
   const [adults, setAdults] = useState<number | "">(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("last_booking_adults");
@@ -605,7 +606,8 @@ function AddNewBookingContent() {
         email: customerEmail,
         whatsapp: whatsappContact,
         flight_no: "",
-        notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`,
+        visa_type: visaType,
+        notes: `Route: ${tripPackage} | Vehicle: ${vehicle} | Passengers: ${Number(adults) + Number(childrenCount)} | Timing Status: ${timingStatus} | Booking Status: ${bookingStatus} | Visa Type: ${visaType} | Bags: ${bags} | Price Before Discount: ${priceBeforeDiscount} | Discount: ${discount} | Discount Reason: ${discountReason} | Tafweej Required: ${tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${cashToReceive} | Payment Method: ${paymentMethod} | Received Amount: ${receivedAmount} | Pending Amount: ${pendingAmount} | Internal Notes: ${internalNotes} | External Notes: ${externalNotes}`,
         payment_method: paymentMethod,
         received_amount: paymentMethod === "Cash" ? (parseFloat(receivedAmount) || 0) : null,
         pending_amount: paymentMethod === "Cash" ? (parseFloat(pendingAmount) || 0) : null,
@@ -1026,6 +1028,25 @@ function AddNewBookingContent() {
                 <option value="Confirmed">Confirmed</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
+              </select>
+              <i className="fas fa-chevron-down select-arrow"></i>
+            </div>
+          </div>
+
+          {/* Visa Type */}
+          <div>
+            <label className="form-label">Visa Type *</label>
+            <div className="form-input-wrapper">
+              <i className="fas fa-passport form-icon"></i>
+              <select
+                className="form-input form-select"
+                value={visaType}
+                onChange={(e) => setVisaType(e.target.value)}
+                required
+              >
+                <option value="Umrah Visa">Umrah Visa</option>
+                <option value="Visit Visa">Visit Visa</option>
+                <option value="On Arrival Visa">On Arrival Visa</option>
               </select>
               <i className="fas fa-chevron-down select-arrow"></i>
             </div>

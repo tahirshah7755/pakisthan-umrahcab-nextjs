@@ -888,7 +888,7 @@ export default function PaymentsPage() {
                           <td>
                             <select
                               value={p.status || "Pending"}
-                              disabled={p.status === "Approved" || p.status === "Success" || p.status === "Verified" || p.status === "Cleared"}
+                              disabled={["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase())}
                               onChange={async (e) => {
                                 const newStatus = e.target.value;
                                 if (newStatus === "Approved") {
@@ -910,9 +910,9 @@ export default function PaymentsPage() {
                                 }
                               }}
                               style={{
-                                background: p.status === "Approved" || p.status === "Success" || p.status === "Verified" || p.status === "Cleared" ? "#e6f4ea" : p.status === "Pending" ? "#fef3c7" : "#fce8e6",
-                                color: p.status === "Approved" || p.status === "Success" || p.status === "Verified" || p.status === "Cleared" ? "#137333" : p.status === "Pending" ? "#b06000" : "#c5221f",
-                                padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", border: "1px solid rgba(0,0,0,0.05)", cursor: (p.status === "Approved" || p.status === "Success" || p.status === "Verified" || p.status === "Cleared") ? "not-allowed" : "pointer", outline: "none", opacity: (p.status === "Approved" || p.status === "Success" || p.status === "Verified" || p.status === "Cleared") ? 0.85 : 1
+                                background: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? "#e6f4ea" : (p.status || "").toLowerCase() === "pending" ? "#fef3c7" : "#fce8e6",
+                                color: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? "#137333" : (p.status || "").toLowerCase() === "pending" ? "#b06000" : "#c5221f",
+                                padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "700", border: "1px solid rgba(0,0,0,0.05)", cursor: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? "not-allowed" : "pointer", outline: "none", opacity: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? 0.85 : 1
                               }}
                             >
                               <option value="Pending">Pending</option>
@@ -1149,9 +1149,19 @@ export default function PaymentsPage() {
                   />
                 </div>
                 {selectedPayment?.method && (selectedPayment.method.toLowerCase().includes("loan") || selectedPayment.method.toLowerCase().includes("credit")) ? (
-                  <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
-                    If the received amount is less than the requested amount, a new pending payment of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created as due.
-                  </span>
+                  (selectedPayment.method.toLowerCase() === "loan due" || selectedPayment.method.toLowerCase().includes("due")) ? (
+                    <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                      {Number(receivedAmount) < selectedPayment.amount ? (
+                        <>Partial loan due repayment of <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> will be approved. A new pending record of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created for the remaining due.</>
+                      ) : (
+                        <>Full loan due repayment of <strong>{fmt(selectedPayment.amount, selectedPayment.currency)}</strong> will be approved. This due record will be locked and cleared with no additional due fields created.</>
+                      )}
+                    </span>
+                  ) : (
+                    <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                      If the received amount is less than the requested amount, a new pending payment of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created as due.
+                    </span>
+                  )
                 ) : (
                   <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
                     The approved received amount of <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> will be credited directly to <strong>{selectedPayment.company}</strong>'s ledger balance.

@@ -220,6 +220,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
     dropoffLocation: string;
     timingStatus: string;
     bookingStatus: string;
+    visaType?: string;
     adults: number | "";
     childrenCount: number | "";
     bags: number | "";
@@ -250,6 +251,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
       dropoffLocation: "",
       timingStatus: "Confirmed",
       bookingStatus: "Pending",
+      visaType: "Umrah Visa",
       adults: 0,
       childrenCount: 0,
       bags: 0,
@@ -897,7 +899,8 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
           email: custEmail || null,
           whatsapp: formattedPhone || "N/A",
           flight_no: bookingFlightNo,
-          notes: `Route: ${route.tripPackage} | Vehicle: ${route.vehicle} | Passengers: ${Number(route.adults || 0) + Number(route.childrenCount || 0)} | Timing Status: ${route.timingStatus} | Booking Status: ${route.bookingStatus} | Bags: ${route.bags || 0} | Discount Reason: ${route.discountReason} | Tafweej Required: ${route.tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${route.cashToReceive || 0} | Internal Notes: ${route.internalNotes} | External Notes: ${route.externalNotes}${notesInfo}`,
+          visa_type: route.visaType || "Umrah Visa",
+          notes: `Route: ${route.tripPackage} | Vehicle: ${route.vehicle} | Passengers: ${Number(route.adults || 0) + Number(route.childrenCount || 0)} | Timing Status: ${route.timingStatus} | Booking Status: ${route.bookingStatus} | Visa Type: ${route.visaType || "Umrah Visa"} | Bags: ${route.bags || 0} | Discount Reason: ${route.discountReason} | Tafweej Required: ${route.tafweejRequired ? "Yes" : "No"} | Cash to Receive: ${route.cashToReceive || 0} | Internal Notes: ${route.internalNotes} | External Notes: ${route.externalNotes}${notesInfo}`,
           payment_method: route.paymentMethod || "Credit",
           received_amount: route.paymentMethod === "Cash" ? (Number(route.receivedAmount) || 0) : null,
           pending_amount: route.paymentMethod === "Cash" ? (Number(route.pendingAmount) || 0) : null,
@@ -1555,6 +1558,25 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           )}
                         </div>
 
+                        {/* Visa Type */}
+                        <div>
+                          <label className="form-label">Visa Type *</label>
+                          <div className="form-input-wrapper" style={{ position: "relative" }}>
+                            <i className="fas fa-passport form-icon" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}></i>
+                            <select
+                              className="form-input form-select"
+                              value={route.visaType || "Umrah Visa"}
+                              onChange={(e) => updateRouteField(index, "visaType", e.target.value)}
+                              required
+                              style={{ paddingLeft: "42px", width: "100%" }}
+                            >
+                              <option value="Umrah Visa">Umrah Visa</option>
+                              <option value="Visit Visa">Visit Visa</option>
+                              <option value="On Arrival Visa">On Arrival Visa</option>
+                            </select>
+                          </div>
+                        </div>
+
 
 
                         {/* Adults */}
@@ -1854,6 +1876,7 @@ export const AddCustomerForm: React.FC<AddCustomerFormProps> = ({
                           dropoffLocation: "",
                           timingStatus: "Confirmed",
                           bookingStatus: "Pending",
+                          visaType: lastRoute && lastRoute.visaType ? lastRoute.visaType : "Umrah Visa",
                           adults: lastRoute && lastRoute.adults !== undefined ? lastRoute.adults : 0,
                           childrenCount: lastRoute && lastRoute.childrenCount !== undefined ? lastRoute.childrenCount : 0,
                           bags: lastRoute && lastRoute.bags !== undefined ? lastRoute.bags : 0,

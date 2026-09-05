@@ -1023,7 +1023,7 @@ export default function PaymentsPage() {
         )}
       </div>
 
-      {/* Premium Approval Modal */}
+      {/* Premium Dynamic Approval Modal */}
       {showApprovalModal && selectedPayment && (
         <div style={{
           position: "fixed",
@@ -1042,222 +1042,267 @@ export default function PaymentsPage() {
           <div style={{
             backgroundColor: "#ffffff",
             width: "100%",
-            maxWidth: "500px",
+            maxWidth: "540px",
             borderRadius: "16px",
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
             overflow: "hidden",
             border: "1px solid #e2e8f0"
           }}>
-            {/* Modal Header */}
-            <div style={{
-              background: "linear-gradient(135deg, #0f766e, #0d9488)",
-              padding: "20px 24px",
-              color: "#ffffff",
-              position: "relative"
-            }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", display: "flex", alignItems: "center", gap: "10px" }}>
-                <i className="fas fa-check-circle" style={{ fontSize: "20px" }}></i>
-                Approve Payment Request
-              </h3>
-              <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#ccfbf1", opacity: 0.9 }}>
-                Verify and approve deposits to credit B2B agent balance
-              </p>
-              <button 
-                onClick={() => setShowApprovalModal(false)}
-                style={{
-                  position: "absolute",
-                  right: "20px",
-                  top: "20px",
-                  background: "transparent",
-                  border: "none",
-                  color: "#ffffff",
-                  fontSize: "18px",
-                  cursor: "pointer",
-                  opacity: 0.8
-                }}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
+            {(() => {
+              const mLower = (selectedPayment.method || "").toLowerCase();
+              const isDue = mLower === "loan due" || mLower.includes("due");
+              const isLoanReq = !isDue && (mLower.includes("loan") || mLower.includes("credit"));
 
-            {/* Modal Body */}
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* Payment Details Card */}
-              <div style={{
-                background: "#f8fafc",
-                borderRadius: "12px",
-                padding: "16px",
-                border: "1px solid #e2e8f0",
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-                fontSize: "13px"
-              }}>
-                <div>
-                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Ref ID</span>
-                  <strong style={{ color: "#1e293b" }}>{selectedPayment.custom_id || `PAY-${selectedPayment.id}`}</strong>
-                </div>
-                <div>
-                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Company</span>
-                  <strong style={{ color: "#1e293b" }}>{selectedPayment.company}</strong>
-                </div>
-                <div>
-                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Requested Amount</span>
-                  <strong style={{ color: "#0f766e", fontSize: "14px" }}>{fmt(selectedPayment.amount, selectedPayment.currency)}</strong>
-                </div>
-                <div>
-                  <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Payment Method</span>
-                  <strong style={{ color: "#1e293b" }}>{selectedPayment.method}</strong>
-                </div>
-              </div>
+              const headerBg = isDue 
+                ? "linear-gradient(135deg, #059669, #047857)" 
+                : isLoanReq 
+                  ? "linear-gradient(135deg, #4f46e5, #3730a3)" 
+                  : "linear-gradient(135deg, #0f766e, #0d9488)";
 
-              {/* Form Input fields */}
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
-                  Received Amount *
-                </label>
-                <div style={{ position: "relative" }}>
-                  <span style={{
-                    position: "absolute",
-                    left: "14px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "#64748b",
-                    fontWeight: "600",
-                    fontSize: "14px"
+              const modalTitle = isDue 
+                ? "Confirm Loan Repayment Received" 
+                : isLoanReq 
+                  ? "Approve Agent Loan Request" 
+                  : "Approve Payment Deposit";
+
+              const modalSub = isDue 
+                ? "Record repayment received from agent to clear outstanding loan debt" 
+                : isLoanReq 
+                  ? "Grants booking credit to agent & creates tracking Loan Due record" 
+                  : "Verify deposit proof & credit corporate booking balance";
+
+              return (
+                <>
+                  {/* Modal Header */}
+                  <div style={{
+                    background: headerBg,
+                    padding: "20px 24px",
+                    color: "#ffffff",
+                    position: "relative"
                   }}>
-                    {selectedPayment.currency}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    max={selectedPayment.amount}
-                    value={receivedAmount}
-                    onChange={(e) => setReceivedAmount(e.target.value)}
-                    placeholder="Enter amount"
-                    style={{
-                      width: "100%",
-                      padding: "10px 14px 10px 52px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      fontSize: "14px",
-                      outline: "none",
-                      fontWeight: "600",
-                      color: "#1e293b"
-                    }}
-                  />
-                </div>
-                {selectedPayment?.method && (selectedPayment.method.toLowerCase().includes("loan") || selectedPayment.method.toLowerCase().includes("credit")) ? (
-                  (selectedPayment.method.toLowerCase() === "loan due" || selectedPayment.method.toLowerCase().includes("due")) ? (
-                    <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
-                      {Number(receivedAmount) < selectedPayment.amount ? (
-                        <>Partial loan due repayment of <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> will be approved. A new pending record of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created for the remaining due.</>
+                    <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", display: "flex", alignItems: "center", gap: "10px" }}>
+                      <i className={isDue ? "fas fa-hand-holding-dollar" : isLoanReq ? "fas fa-coins" : "fas fa-check-circle"} style={{ fontSize: "20px" }}></i>
+                      {modalTitle}
+                    </h3>
+                    <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "rgba(255, 255, 255, 0.9)" }}>
+                      {modalSub}
+                    </p>
+                    <button 
+                      onClick={() => setShowApprovalModal(false)}
+                      style={{
+                        position: "absolute",
+                        right: "20px",
+                        top: "20px",
+                        background: "transparent",
+                        border: "none",
+                        color: "#ffffff",
+                        fontSize: "18px",
+                        cursor: "pointer",
+                        opacity: 0.8
+                      }}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                    {/* Payment Details Card */}
+                    <div style={{
+                      background: "#f8fafc",
+                      borderRadius: "12px",
+                      padding: "16px",
+                      border: "1px solid #e2e8f0",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "12px",
+                      fontSize: "13px"
+                    }}>
+                      <div>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Ref ID</span>
+                        <strong style={{ color: "#1e293b" }}>{selectedPayment.custom_id || `PAY-${selectedPayment.id}`}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Company</span>
+                        <strong style={{ color: "#1e293b" }}>{selectedPayment.company}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>{isDue ? "Outstanding Due Amount" : "Requested Amount"}</span>
+                        <strong style={{ color: isDue ? "#dc2626" : "#0f766e", fontSize: "14px" }}>{fmt(selectedPayment.amount, selectedPayment.currency)}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: "#64748b", display: "block", fontSize: "11px", textTransform: "uppercase", fontWeight: "600" }}>Payment Method</span>
+                        <strong style={{ color: "#1e293b" }}>{selectedPayment.method}</strong>
+                      </div>
+                    </div>
+
+                    {/* Action Explanation Box */}
+                    <div style={{
+                      background: isDue ? "#f0fdf4" : isLoanReq ? "#eeef2e" : "#eff6ff",
+                      backgroundColor: isDue ? "#f0fdf4" : isLoanReq ? "#f5f3ff" : "#eff6ff",
+                      border: `1px solid ${isDue ? "#bbf7d0" : isLoanReq ? "#ddd6fe" : "#bfdbfe"}`,
+                      borderRadius: "10px",
+                      padding: "14px",
+                      fontSize: "12px",
+                      color: isDue ? "#166534" : isLoanReq ? "#4338ca" : "#1e40af"
+                    }}>
+                      <div style={{ fontWeight: "700", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <i className={isDue ? "fas fa-info-circle" : isLoanReq ? "fas fa-exclamation-circle" : "fas fa-info-circle"}></i>
+                        <span>{isDue ? "Loan Repayment Impact:" : isLoanReq ? "Loan Request Approval Impact:" : "Deposit Approval Impact:"}</span>
+                      </div>
+                      {isDue ? (
+                        <ul style={{ margin: 0, paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <li>Confirms Admin received <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> repayment from <strong>{selectedPayment.company}</strong>.</li>
+                          <li>Clears agent's outstanding loan debt. <strong>No additional credit is added to agent balance</strong>.</li>
+                          {Number(receivedAmount) < selectedPayment.amount ? (
+                            <li>Remaining balance of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will stay as a new pending due entry.</li>
+                          ) : (
+                            <li>Full repayment locks this entry. <strong>No extra due fields will be created</strong>.</li>
+                          )}
+                        </ul>
+                      ) : isLoanReq ? (
+                        <ul style={{ margin: 0, paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <li>Credits <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> directly to <strong>{selectedPayment.company}</strong>'s booking wallet.</li>
+                          <li>Generates an auto-tracking <strong>Loan Due</strong> entry (status Pending) so you can track agent repayment later.</li>
+                        </ul>
                       ) : (
-                        <>Full loan due repayment of <strong>{fmt(selectedPayment.amount, selectedPayment.currency)}</strong> will be approved. This due record will be locked and cleared with no additional due fields created.</>
+                        <ul style={{ margin: 0, paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <li>Credits <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> directly to <strong>{selectedPayment.company}</strong>'s booking wallet.</li>
+                        </ul>
                       )}
-                    </span>
-                  ) : (
-                    <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
-                      If the received amount is less than the requested amount, a new pending payment of <strong>{fmt(selectedPayment.amount - (Number(receivedAmount) || 0), selectedPayment.currency)}</strong> will be created as due.
-                    </span>
-                  )
-                ) : (
-                  <span style={{ display: "block", fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
-                    The approved received amount of <strong>{fmt(Number(receivedAmount) || 0, selectedPayment.currency)}</strong> will be credited directly to <strong>{selectedPayment.company}</strong>'s ledger balance.
-                  </span>
-                )}
-              </div>
+                    </div>
 
-              <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
-                  Approval Notes / Remarks
-                </label>
-                <textarea
-                  value={approvalNotes}
-                  onChange={(e) => setApprovalNotes(e.target.value)}
-                  placeholder="e.g. Received partial cash at counter, remaining will pay tomorrow."
-                  rows={3}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "13px",
-                    outline: "none",
-                    fontFamily: "inherit",
-                    resize: "none",
-                    color: "#1e293b"
-                  }}
-                />
-              </div>
-            </div>
+                    {/* Form Input fields */}
+                    <div>
+                      <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                        {isDue ? "Amount Received from Agent *" : "Approved Amount *"}
+                      </label>
+                      <div style={{ position: "relative" }}>
+                        <span style={{
+                          position: "absolute",
+                          left: "14px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          color: "#64748b",
+                          fontWeight: "600",
+                          fontSize: "14px"
+                        }}>
+                          {selectedPayment.currency}
+                        </span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max={selectedPayment.amount}
+                          value={receivedAmount}
+                          onChange={(e) => setReceivedAmount(e.target.value)}
+                          placeholder="Enter amount"
+                          style={{
+                            width: "100%",
+                            padding: "10px 14px 10px 52px",
+                            borderRadius: "8px",
+                            border: "1px solid #cbd5e1",
+                            fontSize: "14px",
+                            outline: "none",
+                            fontWeight: "600",
+                            color: "#1e293b"
+                          }}
+                        />
+                      </div>
+                    </div>
 
-            {/* Modal Footer */}
-            <div style={{
-              background: "#f8fafc",
-              padding: "16px 24px",
-              borderTop: "1px solid #e2e8f0",
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "12px"
-            }}>
-              <button
-                type="button"
-                onClick={() => setShowApprovalModal(false)}
-                disabled={isSubmittingApproval}
-                style={{
-                  background: "#ffffff",
-                  color: "#64748b",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: "pointer"
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount}
-                onClick={async () => {
-                  setIsSubmittingApproval(true);
-                  try {
-                    await updatePaymentStatus({
-                      id: selectedPayment.id,
-                      status: "Approved",
-                      approved_amount: Number(receivedAmount),
-                      notes: approvalNotes
-                    }).unwrap();
-                    showToast(`Payment ${selectedPayment.custom_id || `PAY-${selectedPayment.id}`} approved successfully!`, "success");
-                    setShowApprovalModal(false);
-                  } catch (err) {
-                    console.error(err);
-                    showToast("Failed to approve payment.", "error");
-                  } finally {
-                    setIsSubmittingApproval(false);
-                  }
-                }}
-                style={{
-                  background: "linear-gradient(135deg, #0d9488, #0f766e)",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "8px 20px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: (isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount) ? "not-allowed" : "pointer",
-                  opacity: (isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount) ? 0.7 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px"
-                }}
-              >
-                {isSubmittingApproval ? "Approving..." : "Confirm Approval"}
-              </button>
-            </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "13px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
+                        Approval Notes / Remarks
+                      </label>
+                      <textarea
+                        value={approvalNotes}
+                        onChange={(e) => setApprovalNotes(e.target.value)}
+                        placeholder={isDue ? "e.g. Received cash payment at office counter." : "e.g. Verified bank transfer transaction ID."}
+                        rows={2}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "13px",
+                          outline: "none",
+                          fontFamily: "inherit",
+                          resize: "none",
+                          color: "#1e293b"
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div style={{
+                    background: "#f8fafc",
+                    padding: "16px 24px",
+                    borderTop: "1px solid #e2e8f0",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "12px"
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowApprovalModal(false)}
+                      disabled={isSubmittingApproval}
+                      style={{
+                        background: "#ffffff",
+                        color: "#64748b",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        padding: "8px 16px",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount}
+                      onClick={async () => {
+                        setIsSubmittingApproval(true);
+                        try {
+                          await updatePaymentStatus({
+                            id: selectedPayment.id,
+                            status: "Approved",
+                            approved_amount: Number(receivedAmount),
+                            notes: approvalNotes
+                          }).unwrap();
+                          showToast(`Payment ${selectedPayment.custom_id || `PAY-${selectedPayment.id}`} approved successfully!`, "success");
+                          setShowApprovalModal(false);
+                        } catch (err) {
+                          console.error(err);
+                          showToast("Failed to approve payment.", "error");
+                        } finally {
+                          setIsSubmittingApproval(false);
+                        }
+                      }}
+                      style={{
+                        background: headerBg,
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "8px 20px",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: (isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount) ? "not-allowed" : "pointer",
+                        opacity: (isSubmittingApproval || !receivedAmount || Number(receivedAmount) <= 0 || Number(receivedAmount) > selectedPayment.amount) ? 0.7 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      {isSubmittingApproval ? "Processing..." : isDue ? "Confirm Repayment Received" : "Confirm Approval"}
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

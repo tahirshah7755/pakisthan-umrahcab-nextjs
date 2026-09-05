@@ -930,7 +930,8 @@ export default function PaymentsPage() {
                                 <i className="fas fa-print"></i>
                               </button>
                               <button
-                                title="Delete Payment Record"
+                                title={["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? "Approved transactions cannot be deleted" : "Delete Payment Record"}
+                                disabled={["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase())}
                                 onClick={async () => {
                                   if (confirm(`Are you sure you want to delete payment record ${p.custom_id || `PAY-${p.id}`}?`)) {
                                     try {
@@ -942,7 +943,19 @@ export default function PaymentsPage() {
                                     }
                                   }
                                 }}
-                                style={{ background: "#fef2f2", color: "#ef4444", border: "none", borderRadius: "6px", width: "28px", height: "28px", cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+                                style={{ 
+                                  background: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? "#f1f5f9" : "#fef2f2", 
+                                  color: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? "#cbd5e1" : "#ef4444", 
+                                  border: "none", 
+                                  borderRadius: "6px", 
+                                  width: "28px", 
+                                  height: "28px", 
+                                  cursor: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? "not-allowed" : "pointer", 
+                                  display: "inline-flex", 
+                                  alignItems: "center", 
+                                  justifyContent: "center",
+                                  opacity: ["approved", "success", "verified", "cleared", "paid"].includes((p.status || "").toLowerCase()) ? 0.6 : 1
+                                }}
                               >
                                 <i className="fas fa-trash-alt"></i>
                               </button>

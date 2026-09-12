@@ -157,7 +157,7 @@ export default function BookingStatusPage() {
                       </div>
                       <div>
                         <span style={{ color: "var(--uc-muted)", fontSize: "12px" }}>Selected Vehicle</span>
-                        <p style={{ fontWeight: 600, color: "#24292e" }}>{b.carType} ({b.carPrice} SAR)</p>
+                        <p style={{ fontWeight: 600, color: "#24292e" }}>{b.carType}</p>
                       </div>
                       <div>
                         <span style={{ color: "var(--uc-muted)", fontSize: "12px" }}>Pickup Route Trip</span>

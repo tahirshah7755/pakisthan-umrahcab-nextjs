@@ -1232,7 +1232,7 @@ Pickup Details:
 🚗 Car Type: (${carType})
 💵 Cash Receive From Customer: ${cashPending} SAR
 ℹ️ Extra Information: ${extraInfo ? extraInfo : ""}
-🛄 🛄 Visa Type: (${getVisaType(b)})`;
+🛄 🛄 Visa Type: (${getVisaType(booking)})`;
   };
 
   const getAgentCopy = (b: any) => {
@@ -1301,7 +1301,7 @@ Pickup Details:
 🚗 Car Type: (${carType})
 💵 Cash Receive From Customer: ${cashPending} SAR
 ℹ️ Extra Information: ${extraInfo ? extraInfo : ""}
-🛄 🛄 Visa Type: (${getVisaType(b)})
+🛄 🛄 Visa Type: (${getVisaType(booking)})
 ${sitePhone ? `\nFor Driver Details:\nPlease Contact On: ${sitePhone}` : ""}
 Thanks for choosing ${siteTitle}`;
   };

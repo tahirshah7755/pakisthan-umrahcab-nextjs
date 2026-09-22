@@ -84,7 +84,7 @@ function CustomerViewContent() {
                   customerId: b.customer_id ? String(b.customer_id) : "1",
                   status: uiStatus,
                   finalPrice: parseFloat(b.car_price || 0),
-                  visaType: b.visa_type || "Umrah Visa",
+                  visaType: b.visa_type || b.visaType || "",
                 };
               }));
             }

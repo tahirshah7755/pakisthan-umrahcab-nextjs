@@ -1111,7 +1111,12 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
   });
   const [phone, setPhone] = useState("");
   const getVisaType = (b: any) => {
-    if (b.visa_type) return b.visa_type;
+    if (!b) return "Umrah";
+    // Agar database mein visa_type maujood hai toh wahi utha le
+    if (b.visa_type && b.visa_type.trim() !== "") {
+      return b.visa_type;
+    }
+    // Agar wahan nahi hai toh notes check karein (backup ke tor par)
     if (b.notes) {
       const parts = String(b.notes).split(" | ");
       for (const part of parts) {

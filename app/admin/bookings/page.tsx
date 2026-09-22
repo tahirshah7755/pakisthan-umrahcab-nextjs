@@ -1097,7 +1097,19 @@ export default function BookingsList() {
     </div>
   );
 }
-
+const getVisaType = (b: any) => {
+    if (b.visa_type) return b.visa_type;
+    if (b.notes) {
+      const parts = String(b.notes).split(" | ");
+      for (const part of parts) {
+        const clean = part.trim();
+        if (clean.startsWith("Visa Type:")) {
+          return clean.substring("Visa Type:".length).trim();
+        }
+      }
+    }
+    return "Umrah"; // Fallback
+  };
 function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen: boolean; onClose: () => void }) {
   const { settings: websiteSettings } = useWebsiteSettings();
   const siteTitle = websiteSettings?.site_title || "Official Voucher";
@@ -1221,7 +1233,7 @@ Pickup Details:
 🚗 Car Type: (${carType})
 💵 Cash Receive From Customer: ${cashPending} SAR
 ℹ️ Extra Information: ${extraInfo ? extraInfo : ""}
-🛄 Visa Type: ( Umrah )`;
+🛄 🛄 Visa Type: (${getVisaType(b)})`;
   };
 
   const getAgentCopy = (b: any) => {
@@ -1290,7 +1302,7 @@ Pickup Details:
 🚗 Car Type: (${carType})
 💵 Cash Receive From Customer: ${cashPending} SAR
 ℹ️ Extra Information: ${extraInfo ? extraInfo : ""}
-🛄 Visa Type: ( Umrah )
+🛄 🛄 Visa Type: (${getVisaType(b)})
 ${sitePhone ? `\nFor Driver Details:\nPlease Contact On: ${sitePhone}` : ""}
 Thanks for choosing ${siteTitle}`;
   };

@@ -1097,19 +1097,6 @@ export default function BookingsList() {
     </div>
   );
 }
-const getVisaType = (b: any) => {
-    if (b.visa_type) return b.visa_type;
-    if (b.notes) {
-      const parts = String(b.notes).split(" | ");
-      for (const part of parts) {
-        const clean = part.trim();
-        if (clean.startsWith("Visa Type:")) {
-          return clean.substring("Visa Type:".length).trim();
-        }
-      }
-    }
-    return "Umrah"; // Fallback
-  };
 function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen: boolean; onClose: () => void }) {
   const { settings: websiteSettings } = useWebsiteSettings();
   const siteTitle = websiteSettings?.site_title || "Official Voucher";
@@ -1123,7 +1110,19 @@ function ShareTemplateModal({ booking, isOpen, onClose }: { booking: any; isOpen
     client: ""
   });
   const [phone, setPhone] = useState("");
-
+  const getVisaType = (b: any) => {
+    if (b.visa_type) return b.visa_type;
+    if (b.notes) {
+      const parts = String(b.notes).split(" | ");
+      for (const part of parts) {
+        const clean = part.trim();
+        if (clean.startsWith("Visa Type:")) {
+          return clean.substring("Visa Type:".length).trim();
+        }
+      }
+    }
+    return "Umrah"; // Fallback
+  };
   const formatDateVoucher = (dStr: string | null | undefined) => {
     if (!dStr) return "";
     try {

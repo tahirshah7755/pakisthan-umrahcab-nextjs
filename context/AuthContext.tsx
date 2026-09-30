@@ -283,7 +283,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   pathname === "/login" ||
   pathname === "/public-site/booking-status" ||
   pathname.startsWith("/driver") ||
-  pathname.startsWith("/company");
+  pathname.startsWith("/company");|| pathname.startsWith("/print");
       if (!savedUser && !isPublicRoute) {
         router.push("/login");
       }

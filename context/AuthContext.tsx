@@ -279,11 +279,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       const isPublicRoute =
-  pathname === "/" ||
-  pathname === "/login" ||
-  pathname === "/public-site/booking-status" ||
-  pathname.startsWith("/driver") ||
-  pathname.startsWith("/company");|| pathname.startsWith("/print");
+        pathname === "/" ||
+        pathname === "/login" ||
+        pathname === "/public-site/booking-status" ||
+        pathname.startsWith("/driver") ||
+        pathname.startsWith("/company") ||
+        pathname.startsWith("/print");
+        
       if (!savedUser && !isPublicRoute) {
         router.push("/login");
       }

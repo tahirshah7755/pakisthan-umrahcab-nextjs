@@ -27,7 +27,7 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Heba Cab - Portal",
+  title: "Best Umrah Taxi Saudi Arabia | Luxury VIP Transport, 24/7 Support – HebaCab",
   description: "High-Performance Transport Management Hub",
 };
 
